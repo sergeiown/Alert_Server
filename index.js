@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { fetchDataAndSaveToFile } = require('./modules/api');
+const showNotification = require('./modules/notification');
 
 const logFilePath = path.join(__dirname, 'log.txt');
 const currentDateTime = new Date().toLocaleString('UA').replace(',', '');
@@ -11,3 +12,5 @@ fs.appendFileSync(logFilePath, successMessage, 'utf-8');
 fetchDataAndSaveToFile();
 
 setInterval(fetchDataAndSaveToFile, 60000);
+
+showNotification();
