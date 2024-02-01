@@ -9,7 +9,7 @@ const getTokenFromFile = () => {
         const fileContent = fs.readFileSync(tokenFilePath, 'utf-8');
         return JSON.parse(fileContent).token;
     } catch (error) {
-        logError(`Error reading a token from a file: ${error.message}`);
+        logError(`Reading a token from a file error: ${error.message}`);
         return null;
     }
 };

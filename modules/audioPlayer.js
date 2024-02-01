@@ -1,5 +1,6 @@
 const { exec } = require('child_process');
 const path = require('path');
+const { logError } = require('./logger');
 
 const playAlertSound = () => {
     // Викликаємо powershell для відтворення звуку без відображення програвача
@@ -7,7 +8,7 @@ const playAlertSound = () => {
         `powershell -c (New-Object System.Media.SoundPlayer '${path.join(__dirname, '../alert.wav')}').PlaySync()`,
         (err) => {
             if (err) {
-                console.error(`Audio playback error: ${err}`);
+                logError(`Audio playback error: ${err}`);
             }
         }
     );

@@ -40,7 +40,7 @@ const fetchDataAndSaveToFile = async () => {
         fs.appendFileSync(logFilePath, successMessage, 'utf-8');
         console.log(successMessage);
     } catch (error) {
-        logError(`Error while making an API request: ${error.message}`);
+        logError(`API request error: ${error.message}`);
     }
 };
 
