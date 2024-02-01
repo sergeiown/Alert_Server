@@ -1,0 +1,22 @@
+[
+    {
+        "id": "air_raid",
+        "name": "Повітряна тривога"
+    },
+    {
+        "id": "artillery_shelling",
+        "name": "Артилерійський обстріл"
+    },
+    {
+        "id": "urban_fights",
+        "name": "Вуличні бої"
+    },
+    {
+        "id": "chemical",
+        "name": "Хімічна тривога"
+    },
+    {
+        "id": "nuclear",
+        "name": "Ядерна тривога"
+    }
+]
