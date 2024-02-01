@@ -1,3 +1,4 @@
+const { log } = require('console');
 const fs = require('fs');
 const path = require('path');
 
@@ -8,6 +9,7 @@ const logError = (errorMessage) => {
     const logMessage = `${currentDateTime} ERROR: ${errorMessage}\n`;
 
     fs.appendFileSync(logFilePath, logMessage, 'utf-8');
+    console.log(logMessage);
 };
 
 module.exports = { logError };
