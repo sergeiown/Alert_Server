@@ -1,17 +1,9 @@
-const fs = require('fs');
-const path = require('path');
 const { fetchDataAndSaveToFile } = require('./modules/api');
 const showNotification = require('./modules/notification');
+const { logError } = require('./modules/logger');
 
-const logFilePath = path.join(__dirname, 'log.txt');
-const currentDateTime = new Date().toLocaleString('UA').replace(',', '');
-
-const successMessage = `${currentDateTime} Starting the server\n`;
-fs.appendFileSync(logFilePath, successMessage, 'utf-8');
-console.log(successMessage);
+logError(`Start of the server`);
 
 fetchDataAndSaveToFile();
-
-setInterval(fetchDataAndSaveToFile, 60000);
 
 showNotification();
