@@ -4,18 +4,18 @@ setlocal enabledelayedexpansion
 echo Enter the full path to the start_hidden.bat file:
 set /p bat_path=
 
-:: Перевірка чи файл існує
+:: Check if the file exists
 if not exist "!bat_path!" (
     echo File not found. Please check the path and try again.
     timeout /t 2 /nobreak > nul
     goto :eof
 )
 
-:: Додавання до автозапуску
-set "startup_folder=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
-copy "!bat_path!" "!startup_folder!"
+:: Add to startup via registry
+reg add HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v "start_hidden" /t REG_SZ /d "!bat_path!" /f
 
-echo start_hidden.bat successfully added to startup!
+echo start_hidden.bat successfully added to startup via the registry!
 pause
 
 :end
+
