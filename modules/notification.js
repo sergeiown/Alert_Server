@@ -1,4 +1,3 @@
-const { exec } = require('child_process');
 const notifier = require('node-notifier');
 const path = require('path');
 const checkLocations = require('./checkLocations');
