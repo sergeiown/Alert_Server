@@ -9,7 +9,7 @@ const logError = (errorMessage) => {
     const logMessage = `${currentDateTime} ${errorMessage}\n`;
 
     fs.appendFileSync(logFilePath, logMessage, 'utf-8');
-    console.log(logMessage);
+    log(logMessage);
 };
 
 module.exports = { logError };
