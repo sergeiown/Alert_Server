@@ -64,4 +64,4 @@ const showNotification = async () => {
 
 setInterval(showNotification, 30000);
 
-module.exports = showNotification;
+module.exports = { showNotification };
