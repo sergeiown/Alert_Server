@@ -14,11 +14,12 @@ const showNotification = async () => {
             if (!displayedAlerts.has(alert.id)) {
                 // Важливе повідомлення про новий alert
                 notifier.notify({
-                    title: 'Важливе повідомлення!',
-                    message: `Тип тривоги: ${alert.alert_type}\nnЛокація: ${alert.location_title}`,
+                    title: 'Тривога!',
+                    message: `${alert.alert_type}\n${alert.location_title}`,
                     sound: true,
                     icon: path.join(__dirname, '../alert.png'),
-                    urgency: 'critical', // Важливість повідомлення
+                    wait: true,
+                    urgency: 'critical',
                 });
                 // Додаємо ідентифікатор до списку виведених повідомлень
                 displayedAlerts.add(alert.id);
@@ -31,10 +32,11 @@ const showNotification = async () => {
                 // Виводимо повідомлення про відміну тривоги
                 notifier.notify({
                     title: 'Тривога скасована',
-                    message: 'Всі тривоги відмінено.',
+                    message: `Всі тривоги відмінено.\n${alert.location_title}`,
                     sound: true,
                     icon: path.join(__dirname, '../alert.png'),
-                    urgency: 'critical', // Важливість повідомлення
+                    wait: true,
+                    urgency: 'critical',
                 });
                 // Видаляємо ідентифікатор зі списку виведених повідомлень
                 displayedAlerts.delete(displayedAlert);
