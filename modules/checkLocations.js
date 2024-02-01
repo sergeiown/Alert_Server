@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { logError } = require('./logger');
 
 const checkLocations = () => {
     try {
@@ -18,7 +19,7 @@ const checkLocations = () => {
             return { alerts: [] };
         }
     } catch (error) {
-        console.error(`Помилка: ${error.message}`);
+        logError(`Check location error: ${error.message}`);
         return { alerts: [] };
     }
 };

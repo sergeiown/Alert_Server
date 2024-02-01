@@ -4,6 +4,7 @@ const path = require('path');
 const checkLocations = require('./checkLocations');
 const alertTypes = require('../alert.json');
 const playAlertSound = require('./audioPlayer');
+const { logError } = require('./logger');
 
 // Зберігаємо ідентифікатори виведених повідомлень разом із location_title
 const displayedAlerts = new Map();
@@ -54,7 +55,7 @@ const showNotification = async () => {
             }
         });
     } catch (error) {
-        console.error(`Помилка: ${error.message}`);
+        logError(`Notification error: ${error.message}`);
     }
 };
 
