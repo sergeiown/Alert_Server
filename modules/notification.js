@@ -51,7 +51,7 @@ const showNotification = async () => {
                     urgency: 'critical',
                 });
 
-                logError(`Alert is cancelled: ${locationTitle}`);
+                logError(`Alert cancellation: ${locationTitle}`);
 
                 // Видаляємо ідентифікатор зі списку виведених повідомлень
                 displayedAlerts.delete(displayedAlert);
