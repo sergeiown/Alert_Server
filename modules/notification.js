@@ -1,3 +1,4 @@
+const { exec } = require('child_process');
 const notifier = require('node-notifier');
 const path = require('path');
 const checkLocations = require('./checkLocations');
@@ -5,6 +6,18 @@ const alertTypes = require('../alert.json');
 
 // Зберігаємо ідентифікатори виведених повідомлень разом із location_title
 const displayedAlerts = new Map();
+
+const playAlertSound = () => {
+    // Викликаємо powershell для відтворення звуку без відображення програвача
+    exec(
+        `powershell -c (New-Object System.Media.SoundPlayer '${path.join(__dirname, '../alert.wav')}').PlaySync()`,
+        (err) => {
+            if (err) {
+                console.error(`Audio playback error: ${err}`);
+            }
+        }
+    );
+};
 
 const showNotification = async () => {
     try {
@@ -20,11 +33,15 @@ const showNotification = async () => {
                 notifier.notify({
                     title: `${alertType ? alertType.name : alert.alert_type}`,
                     message: `${alert.location_title}`,
-                    sound: true,
+                    sound: false, // Вимикаємо внутрішній звук notifier
                     icon: path.join(__dirname, '../alert.png'),
                     wait: true,
                     urgency: 'critical',
                 });
+
+                // Відтворюємо звук
+                playAlertSound();
+
                 // Зберігаємо інформацію про alert для майбутнього використання
                 displayedAlerts.set(alert.id, alert.location_title);
             }
@@ -42,6 +59,7 @@ const showNotification = async () => {
                     wait: true,
                     urgency: 'critical',
                 });
+
                 // Видаляємо ідентифікатор зі списку виведених повідомлень
                 displayedAlerts.delete(displayedAlert);
             }
