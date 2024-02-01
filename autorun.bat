@@ -16,6 +16,6 @@ set "startup_folder=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
 copy "!bat_path!" "!startup_folder!"
 
 echo start_hidden.bat successfully added to startup!
-timeout /t 2 /nobreak > nul
+pause
 
 :end
