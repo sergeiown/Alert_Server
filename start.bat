@@ -1,2 +1,4 @@
-@echo on
-node index.js
+@echo off
+start /b powershell -WindowStyle Hidden -Command "node index.js"
+
+
