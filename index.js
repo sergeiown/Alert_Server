@@ -8,6 +8,7 @@ const currentDateTime = new Date().toLocaleString('UA').replace(',', '');
 
 const successMessage = `${currentDateTime} Starting the server\n`;
 fs.appendFileSync(logFilePath, successMessage, 'utf-8');
+console.log(successMessage);
 
 fetchDataAndSaveToFile();
 
