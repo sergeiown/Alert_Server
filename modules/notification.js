@@ -29,8 +29,9 @@ const showNotification = async () => {
                     urgency: 'critical',
                 });
 
-                // Відтворюємо звук
                 playAlertSound();
+
+                logError(`Alert ${alert.alert_type}: ${alert.location_title}`);
 
                 // Зберігаємо інформацію про alert для майбутнього використання
                 displayedAlerts.set(alert.id, alert.location_title);
@@ -49,6 +50,8 @@ const showNotification = async () => {
                     wait: true,
                     urgency: 'critical',
                 });
+
+                logError(`Alert is cancelled: ${locationTitle}`);
 
                 // Видаляємо ідентифікатор зі списку виведених повідомлень
                 displayedAlerts.delete(displayedAlert);
