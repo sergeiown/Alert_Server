@@ -34,11 +34,9 @@ const fetchDataAndSaveToFile = async () => {
             JSON.stringify({ alerts, last_updated_at: lastUpdatedAt }, null, 2)
         );
 
-        const currentDateTime = new Date().toLocaleString('UA').replace(',', '');
-        const successMessage = `${currentDateTime} Successful data update\n`;
+        const successMessage = `Successful data update`;
 
-        fs.appendFileSync(logFilePath, successMessage, 'utf-8');
-        console.log(successMessage);
+        logError(successMessage);
     } catch (error) {
         logError(`API request error: ${error.message}`);
     }
