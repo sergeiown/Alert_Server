@@ -1,6 +1,6 @@
 @echo off
 
-set "SessionFile=session.tmp"
+set "SessionFile=%temp%\session.tmp"
 
 :: Зчитування PID з файлу session.tmp
 for /f %%i in ('type %SessionFile% 2^>nul') do set "NodePID=%%i"
