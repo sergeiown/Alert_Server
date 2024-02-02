@@ -2,7 +2,7 @@
 
 Простий Node.js сервер, який із завданою періодичністю отримує дані про тривоги з [alerts.in.ua API](https://alerts.in.ua/) та зберігає їх у файл `current_alert.json` з подальшою обробкою ти виводом пвідомлення про початок та закінчення тривоги для зазначеного регіону України.
 
-![image](https://github.com/sergeiown/Current_Alert_UA/assets/112722061/fc08a5a2-2717-431e-9cf5-cc428e2509f5)
+![image](https://github.com/sergeiown/Current_Alert_UA/assets/112722061/1b06dee4-72ba-4198-a290-8c1624be6e1c)
 
 ## Встановлення
 
