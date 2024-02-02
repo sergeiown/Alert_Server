@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
 const { getTokenFromFile } = require('./token');
-const { logError } = require('./logger');
+const { logEvent } = require('./logger');
 
 const apiUrl = 'https://api.alerts.in.ua/v1/alerts/active.json';
 
@@ -11,7 +11,7 @@ const fetchDataAndSaveToFile = async () => {
         const token = getTokenFromFile();
 
         if (!token) {
-            logError('Emergency server shutdown');
+            logEvent('Emergency server shutdown');
             process.exit(1);
         }
 
@@ -31,11 +31,9 @@ const fetchDataAndSaveToFile = async () => {
             JSON.stringify({ alerts, last_updated_at: lastUpdatedAt }, null, 2)
         );
 
-        const successMessage = `Successful data update`;
-
-        logError(successMessage);
+        logEvent(`Successful data update`);
     } catch (error) {
-        logError(`API request error: ${error.message}`);
+        logEvent(`API request error: ${error.message}`);
     }
 };
 

@@ -3,7 +3,7 @@ const path = require('path');
 const checkLocations = require('./checkLocations');
 const alertTypes = require('../alert.json');
 const playAlertSound = require('./audioPlayer');
-const { logError } = require('./logger');
+const { logEvent } = require('./logger');
 
 // Зберігаємо ідентифікатори виведених повідомлень разом із location_title
 const displayedAlerts = new Map();
@@ -30,7 +30,7 @@ const showNotification = async () => {
 
                 playAlertSound();
 
-                logError(`Alert ${alert.alert_type}: ${alert.location_title}`);
+                logEvent(`Alert ${alert.alert_type}: ${alert.location_title}`);
 
                 // Зберігаємо інформацію про alert для майбутнього використання
                 displayedAlerts.set(alert.id, alert.location_title);
@@ -50,14 +50,14 @@ const showNotification = async () => {
                     urgency: 'critical',
                 });
 
-                logError(`Alert cancellation: ${locationTitle}`);
+                logEvent(`Alert cancellation: ${locationTitle}`);
 
                 // Видаляємо ідентифікатор зі списку виведених повідомлень
                 displayedAlerts.delete(displayedAlert);
             }
         });
     } catch (error) {
-        logError(`Notification error: ${error.message}`);
+        logEvent(`Notification error: ${error.message}`);
     }
 };
 
