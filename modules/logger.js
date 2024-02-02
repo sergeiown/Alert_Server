@@ -4,7 +4,16 @@ const path = require('path');
 
 const logFilePath = path.join(__dirname, '../log.csv');
 
+const initializeLogFile = () => {
+    if (!fs.existsSync(logFilePath)) {
+        const header = 'Date,Time,Event';
+        fs.writeFileSync(logFilePath, header + '\n', 'utf-8');
+    }
+};
+
 const logError = (eventMessage) => {
+    initializeLogFile();
+
     const currentDateTime = new Date()
         .toLocaleString('UA', {
             year: 'numeric',
