@@ -18,5 +18,3 @@ timeout /t 1 /nobreak >nul
 for /f "tokens=2 delims=," %%i in ('tasklist /nh /fi "imagename eq node.exe" /fo csv ^| findstr /i "node.exe"') do (
     echo %%i > %SessionFile%
 )
-
-
