@@ -11,7 +11,7 @@ const initializeLogFile = () => {
     }
 };
 
-const logError = (eventMessage) => {
+const logEvent = (eventMessage) => {
     initializeLogFile();
 
     const currentDateTime = new Date()
@@ -31,4 +31,4 @@ const logError = (eventMessage) => {
     log(logMessage);
 };
 
-module.exports = { logError };
+module.exports = { logEvent };

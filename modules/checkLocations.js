@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { logError } = require('./logger');
+const { logEvent } = require('./logger');
 
 const checkLocations = () => {
     try {
@@ -12,14 +12,12 @@ const checkLocations = () => {
         );
 
         if (locationsInCurrentAlert.length > 0) {
-            // console.log('Локації з Usage = 1, які є в current_alert.json:', locationsInCurrentAlert);
             return { alerts: locationsInCurrentAlert };
         } else {
-            // console.log('Немає локацій з Usage = 1 в current_alert.json');
             return { alerts: [] };
         }
     } catch (error) {
-        logError(`Check location error: ${error.message}`);
+        logEvent(`Check location error: ${error.message}`);
         return { alerts: [] };
     }
 };
