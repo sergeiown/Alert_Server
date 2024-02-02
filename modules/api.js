@@ -5,16 +5,13 @@ const { getTokenFromFile } = require('./token');
 const { logError } = require('./logger');
 
 const apiUrl = 'https://api.alerts.in.ua/v1/alerts/active.json';
-const logFilePath = path.join(__dirname, '../log.txt');
 
 const fetchDataAndSaveToFile = async () => {
     try {
         const token = getTokenFromFile();
 
         if (!token) {
-            logError(
-                'Failed to retrieve a token from a file. Make sure that the token.json file has the correct format and contains the token.'
-            );
+            logError('Emergency server shutdown');
             process.exit(1);
         }
 

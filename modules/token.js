@@ -10,7 +10,6 @@ const getTokenFromFile = () => {
         return JSON.parse(fileContent).token;
     } catch (error) {
         logError(`Reading a token from a file error: ${error.message}`);
-        logError(`Emergency server shutdown`);
         return null;
     }
 };
