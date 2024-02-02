@@ -23,7 +23,7 @@ const showNotification = async () => {
                     title: `${alertType ? alertType.name : alert.alert_type}`,
                     message: `${alert.location_title}`,
                     sound: false,
-                    icon: path.join(__dirname, '../alert.png'),
+                    icon: path.join(__dirname, '../resources/images/alert.png'),
                     wait: true,
                     urgency: 'critical',
                 });
@@ -45,7 +45,7 @@ const showNotification = async () => {
                     title: 'Тривога скасована',
                     message: `${locationTitle}`,
                     sound: true,
-                    icon: path.join(__dirname, '../alert.png'),
+                    icon: path.join(__dirname, '../resources/images/alert.png'),
                     wait: true,
                     urgency: 'critical',
                 });
