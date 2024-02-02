@@ -23,7 +23,7 @@ function createTrayIcon() {
         main.add(alertsItem);
 
         let quit = tray.item('Вихід', () => {
-            logEvent(`Server is stopped by user`);
+            logEvent(`The server is stopped by the user`);
             tray.kill();
             process.exit();
         });
