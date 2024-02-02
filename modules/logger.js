@@ -2,7 +2,7 @@ const { log } = require('console');
 const fs = require('fs');
 const path = require('path');
 
-const logFilePath = path.join(__dirname, '../log.txt');
+const logFilePath = path.join(__dirname, '../log.csv');
 
 const logError = (eventMessage) => {
     const currentDateTime = new Date()
@@ -14,23 +14,11 @@ const logError = (eventMessage) => {
             minute: '2-digit',
             second: '2-digit',
         })
-        .replace(',', '');
+        .replace(/,\s*/g, ',');
 
-    const maxMessageLength = 100;
-    const separator = '.';
+    const logMessage = `${currentDateTime},${eventMessage.trim()}`;
 
-    if (eventMessage.length > maxMessageLength - currentDateTime.length - separator.length) {
-        eventMessage = eventMessage.slice(0, maxMessageLength - currentDateTime.length - separator.length);
-    }
-
-    const eventMessagePadded = eventMessage.padStart(
-        maxMessageLength - currentDateTime.length - separator.length,
-        separator
-    );
-
-    const logMessage = `[${currentDateTime}]${eventMessagePadded}\n`;
-
-    fs.appendFileSync(logFilePath, logMessage, 'utf-8');
+    fs.appendFileSync(logFilePath, logMessage + '\n', 'utf-8');
     log(logMessage);
 };
 
