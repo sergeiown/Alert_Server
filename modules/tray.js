@@ -10,7 +10,7 @@ function createTrayIcon() {
 
     Tray.create(function (tray) {
         // Пункт меню 'Поточні тривоги'
-        let main = tray.item('Поточні тривоги');
+        let main = tray.item('\uFEFFПоточні тривоги');
 
         let alertsItem = tray.item('alerts.in.ua', () => {
             exec('start https://alerts.in.ua/?pwa', (error, stdout, stderr) => {
@@ -23,10 +23,10 @@ function createTrayIcon() {
         main.add(alertsItem);
 
         // Пункт меню 'Інформація'
-        let logView = tray.item('Інформація');
+        let logView = tray.item('\uFEFFІнформація');
 
         // Підпункт 'Інформація' => 'Перегляд журналу'
-        let logItem = tray.item('Перегляд журналу', () => {
+        let logItem = tray.item('\uFEFFПерегляд журналу', () => {
             exec('start log.csv', (error, stdout, stderr) => {
                 if (error) {
                     logEvent(`Error opening the log file: ${error.message}`);
@@ -37,7 +37,7 @@ function createTrayIcon() {
         logView.add(logItem);
 
         // Підпункт 'Інформація' => 'Про програму'
-        let about = tray.item('Про програму', () => {
+        let about = tray.item('\uFEFFПро програму', () => {
             const aboutMessage = `Локальний сервер оновлення тривог - це Node.js сервер, який із завданою періодичністю отримує дані про тривоги з alerts.in.ua API та зберігає їх дані з подальшою обробкою і виводом повідомлення про початок та закінчення тривоги для зазначеного регіону України.                                                                                                                                      Copyright (c) 2024 Serhii I. Myshko`;
 
             const vbsPath = path.join(__dirname, 'msgbox.vbs');
@@ -61,7 +61,7 @@ function createTrayIcon() {
         logView.add(about);
 
         // Пункт меню 'Вихід'
-        let quit = tray.item('Вихід', () => {
+        let quit = tray.item('\uFEFFВихід', () => {
             logEvent(`The server is stopped by the user`);
             tray.kill();
             process.exit();
@@ -78,14 +78,14 @@ function createTrayIcon() {
                     if (isAlertActive) {
                         isAlertActive = false;
                         const imagePath = path.join(__dirname, '../resources/images/tray.png');
-                        tray.setTitle('Alert server: в заданому регіоні тривога відсутня');
+                        tray.setTitle('\uFEFFAlert server: в заданому регіоні тривога відсутня');
                         tray.setIcon(fs.readFileSync(imagePath));
                     }
                 } else {
                     if (!isAlertActive) {
                         isAlertActive = true;
                         const imagePath = path.join(__dirname, '../resources/images/tray_alert.png');
-                        tray.setTitle('Alert server: активна тривога!');
+                        tray.setTitle('\uFEFFAlert server: активна тривога!');
                         tray.setIcon(fs.readFileSync(imagePath));
                     }
                 }
