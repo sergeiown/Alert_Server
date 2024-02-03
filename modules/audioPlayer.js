@@ -30,4 +30,5 @@ const playAlertCancellationSound = () => {
         }
     );
 };
+
 module.exports = { playAlertSound, playAlertCancellationSound };

@@ -33,10 +33,9 @@ const showNotification = async () => {
                 // Створюємо файл alert_active.tmp в папці %temp%
                 fs.writeFileSync(path.join(os.tmpdir(), 'alert_active.tmp'), '');
 
-                // Встановлюємо кількість повторів аудіосповіщення
-                for (let i = 0; i < 2; i++) {
-                    playAlertSound();
-                }
+                // Подвійне відтворення звукового сповіщення
+                playAlertSound();
+                setTimeout(playAlertSound, 14000);
 
                 logEvent(`Alert ${alert.alert_type}: ${alert.location_title}`);
 
@@ -61,9 +60,8 @@ const showNotification = async () => {
                 // Видаляємо файл alert_active.tmp з папки %temp%
                 fs.unlinkSync(path.join(os.tmpdir(), 'alert_active.tmp'));
 
-                for (let i = 0; i < 2; i++) {
-                    playAlertCancellationSound();
-                }
+                playAlertCancellationSound();
+                setTimeout(playAlertCancellationSound, 6000);
 
                 logEvent(`Alert cancellation: ${locationTitle}`);
 
