@@ -94,7 +94,7 @@ function createTrayIcon() {
 
         setInterval(checkAlertStatus, 5000);
 
-        tray.setTitle('Alert server');
+        tray.setTitle('Alert server: в заданому регіоні тривога відсутня');
 
         tray.notify('Alert server', 'Сервер працює, тривоги відстежуються.');
 
