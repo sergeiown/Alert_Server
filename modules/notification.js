@@ -1,5 +1,7 @@
 const notifier = require('node-notifier');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 const checkLocations = require('./checkLocations');
 const alertTypes = require('../alert.json');
 const { playAlertSound, playAlertCancellationSound } = require('./audioPlayer');
@@ -28,6 +30,9 @@ const showNotification = async () => {
                     urgency: 'critical',
                 });
 
+                // Створюємо файл alert_active.tmp в папці %temp%
+                fs.writeFileSync(path.join(os.tmpdir(), 'alert_active.tmp'), '');
+
                 // Встановлюємо кількість повторів аудіосповіщення
                 for (let i = 0; i < 2; i++) {
                     playAlertSound();
@@ -52,6 +57,9 @@ const showNotification = async () => {
                     wait: false,
                     urgency: 'critical',
                 });
+
+                // Видаляємо файл alert_active.tmp з папки %temp%
+                fs.unlinkSync(path.join(os.tmpdir(), 'alert_active.tmp'));
 
                 for (let i = 0; i < 2; i++) {
                     playAlertCancellationSound();
