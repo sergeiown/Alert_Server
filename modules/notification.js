@@ -26,7 +26,7 @@ const showNotification = async () => {
                     title: `${alertType ? alertType.name : alert.alert_type}`,
                     message: `${alert.location_title}`,
                     sound: false,
-                    wait: false,
+                    wait: true,
                     urgency: 'critical',
                 });
 
@@ -53,7 +53,7 @@ const showNotification = async () => {
                     title: 'Тривога скасована',
                     message: `${locationTitle}`,
                     sound: false,
-                    wait: false,
+                    wait: true,
                     urgency: 'critical',
                 });
 
