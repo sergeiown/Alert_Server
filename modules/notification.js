@@ -20,11 +20,11 @@ const showNotification = async () => {
             if (!displayedAlerts.has(alert.id)) {
                 // Повідомлення про новий alert
                 notifier.notify({
+                    icon: path.join(__dirname, '../resources/images/alert.png'),
                     title: `${alertType ? alertType.name : alert.alert_type}`,
                     message: `${alert.location_title}`,
                     sound: false,
-                    icon: path.join(__dirname, '../resources/images/alert.png'),
-                    wait: true,
+                    wait: false,
                     urgency: 'critical',
                 });
 
@@ -45,11 +45,11 @@ const showNotification = async () => {
             if (!alerts.some((alert) => alert.id === displayedAlert)) {
                 // Виводимо повідомлення про відміну тривоги
                 notifier.notify({
+                    icon: path.join(__dirname, '../resources/images/alert.png'),
                     title: 'Тривога скасована',
                     message: `${locationTitle}`,
                     sound: false,
-                    icon: path.join(__dirname, '../resources/images/alert.png'),
-                    wait: true,
+                    wait: false,
                     urgency: 'critical',
                 });
 
