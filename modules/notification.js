@@ -2,7 +2,7 @@ const notifier = require('node-notifier');
 const path = require('path');
 const checkLocations = require('./checkLocations');
 const alertTypes = require('../alert.json');
-const playAlertSound = require('./audioPlayer');
+const { playAlertSound, playAlertCancellationSound } = require('./audioPlayer');
 const { logEvent } = require('./logger');
 
 // Зберігаємо ідентифікатори виведених повідомлень разом із location_title
@@ -28,7 +28,10 @@ const showNotification = async () => {
                     urgency: 'critical',
                 });
 
-                playAlertSound();
+                // Встановлюємо кількість повторів аудіосповіщення
+                for (let i = 0; i < 2; i++) {
+                    playAlertSound();
+                }
 
                 logEvent(`Alert ${alert.alert_type}: ${alert.location_title}`);
 
@@ -44,11 +47,15 @@ const showNotification = async () => {
                 notifier.notify({
                     title: 'Тривога скасована',
                     message: `${locationTitle}`,
-                    sound: true,
+                    sound: false,
                     icon: path.join(__dirname, '../resources/images/alert.png'),
                     wait: true,
                     urgency: 'critical',
                 });
+
+                for (let i = 0; i < 2; i++) {
+                    playAlertCancellationSound();
+                }
 
                 logEvent(`Alert cancellation: ${locationTitle}`);
 
@@ -61,6 +68,6 @@ const showNotification = async () => {
     }
 };
 
-setInterval(showNotification, 30000);
+setInterval(showNotification, 15000);
 
 module.exports = { showNotification };
