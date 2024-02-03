@@ -49,7 +49,7 @@ const showNotification = async () => {
             if (!alerts.some((alert) => alert.id === displayedAlert)) {
                 // Виводимо повідомлення про відміну тривоги
                 notifier.notify({
-                    icon: path.join(__dirname, '../resources/images/alert.png'),
+                    icon: path.join(__dirname, '../resources/images/alert_cancellation.png'),
                     title: 'Тривога скасована',
                     message: `${locationTitle}`,
                     sound: false,
