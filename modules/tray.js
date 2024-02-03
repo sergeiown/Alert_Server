@@ -5,7 +5,7 @@ const { exec } = require('child_process');
 const { logEvent } = require('./logger');
 
 function createTrayIcon() {
-    const imagePath = path.join(__dirname, '../resources/images/alert.png');
+    const imagePath = path.join(__dirname, '../resources/images/tray.png');
     const imageBuffer = fs.readFileSync(imagePath);
 
     Tray.create(function (tray) {
