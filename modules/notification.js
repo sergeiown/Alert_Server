@@ -10,6 +10,11 @@ const { logEvent } = require('./logger');
 // Зберігаємо ідентифікатори виведених повідомлень разом із location_title
 const displayedAlerts = new Map();
 
+// Перевіряємо наявність помилково залишеного з попердньої сесії alert_active.tmp
+if (fs.existsSync(path.join(os.tmpdir(), 'alert_active.tmp'))) {
+    fs.unlinkSync(path.join(os.tmpdir(), 'alert_active.tmp'));
+}
+
 const showNotification = async () => {
     try {
         const { alerts } = await checkLocations();
