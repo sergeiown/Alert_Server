@@ -17,4 +17,17 @@ const playAlertSound = () => {
     );
 };
 
-module.exports = playAlertSound;
+const playAlertCancellationSound = () => {
+    exec(
+        `powershell -c (New-Object System.Media.SoundPlayer '${path.join(
+            __dirname,
+            '../resources/audio/alert_cancellation.wav'
+        )}').PlaySync()`,
+        (err) => {
+            if (err) {
+                logEvent(`Audio playback error: ${err}`);
+            }
+        }
+    );
+};
+module.exports = { playAlertSound, playAlertCancellationSound };
