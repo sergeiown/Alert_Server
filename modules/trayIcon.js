@@ -8,7 +8,7 @@ function createTrayIcon() {
     let isAlertActive = false;
 
     Tray.create(function (tray) {
-        // Пункт меню 'Поточні тривоги'
+        // Пункт меню 'Перегляд мапи поточних тривог'
         const alertsItem = createAlertsMenu(tray);
 
         // Пункт меню 'Інформація'
