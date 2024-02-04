@@ -89,13 +89,32 @@ function createSettingsMenu(tray) {
     function createNotificationRegionsItem(tray) {
         const notificationRegionsItem = tray.item('\uFEFFРегіони для сповіщення');
 
-        function createCheckboxItem(tray) {
-            const checkboxItem = tray.item('\uFEFFПункт переліка регіонів', { checked: true });
+        function updateLocationJson(locations) {
+            const jsonPath = path.join(__dirname, '../location.json');
+
+            logEvent('Оновлення файлу');
+            fs.writeFileSync(jsonPath, JSON.stringify(locations, null, 2), 'utf-8');
+        }
+
+        function createCheckboxItem(tray, location) {
+            const checkboxItem = tray.item(location.Location, {
+                type: 'checkbox',
+                checked: location.Usage === '1',
+                action: () => {
+                    location.Usage = location.Usage === '1' ? '0' : '1';
+                    updateLocationJson(locations);
+                },
+            });
 
             return checkboxItem;
         }
 
-        notificationRegionsItem.add(createCheckboxItem(tray));
+        const jsonPath = path.join(__dirname, '../location.json');
+        const locations = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+
+        for (const location of locations) {
+            notificationRegionsItem.add(createCheckboxItem(tray, location));
+        }
 
         return notificationRegionsItem;
     }

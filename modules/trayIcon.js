@@ -23,7 +23,7 @@ function createTrayIcon() {
         // Пункт меню 'Вихід'
         const quit = createExitMenu(tray);
 
-        tray.setMenu(menuTitle, tray.separator(), alertsItem, logView, settings, tray.separator(), quit);
+        tray.setMenu(menuTitle, tray.separator(), alertsItem, settings, logView, tray.separator(), quit);
 
         // Оновлення трея у відповідності до наявності тривоги
         function checkAlertStatus() {
