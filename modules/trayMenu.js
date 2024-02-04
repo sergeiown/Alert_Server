@@ -63,6 +63,27 @@ function createInfoMenu(tray) {
     return logView;
 }
 
+function createSettingsMenu(tray) {
+    const settingsMenu = tray.item('\uFEFFНалаштування');
+
+    function createRunOnStartupItem(tray) {
+        const runOnStartupItem = tray.item('\uFEFFЗапускати разом з системою', { type: 'checkbox', checked: true });
+
+        return runOnStartupItem;
+    }
+
+    function createNotificationRegionsItem(tray) {
+        const notificationRegionsItem = tray.item('\uFEFFРегіони для сповіщення');
+
+        return notificationRegionsItem;
+    }
+
+    settingsMenu.add(createRunOnStartupItem(tray));
+    settingsMenu.add(createNotificationRegionsItem(tray));
+
+    return settingsMenu;
+}
+
 function createExitMenu(tray) {
     const quit = tray.item('\uFEFFВихід', () => {
         logEvent(`The server is stopped by the user`);
@@ -73,4 +94,4 @@ function createExitMenu(tray) {
     return quit;
 }
 
-module.exports = { createAlertsMenu, createInfoMenu, createExitMenu };
+module.exports = { createAlertsMenu, createInfoMenu, createSettingsMenu, createExitMenu };
