@@ -5,7 +5,7 @@ const { logEvent } = require('./logger');
 
 // Пункт меню 'Назва'
 function createTitleMenu(tray) {
-    const menuTitle = tray.item('⚠ Alert server', { bold: true, disabled: true });
+    const menuTitle = tray.item('🔔               Alert server               🔔', { bold: true, disabled: true });
 
     return menuTitle;
 }
@@ -92,7 +92,7 @@ function createSettingsMenu(tray) {
         function updateLocationJson(locations) {
             const jsonPath = path.join(__dirname, '../location.json');
 
-            logEvent('Оновлення файлу');
+            logEvent('User update of regions for notification');
             fs.writeFileSync(jsonPath, JSON.stringify(locations, null, 2), 'utf-8');
         }
 
