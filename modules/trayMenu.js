@@ -3,6 +3,13 @@ const fs = require('fs');
 const { exec } = require('child_process');
 const { logEvent } = require('./logger');
 
+// Пункт меню 'Назва'
+function createTitleMenu(tray) {
+    const menuTitle = tray.item('⚠ Alert server', { bold: true, disabled: true });
+
+    return menuTitle;
+}
+
 // Пункт меню 'Перегляд мапи поточних тривог'
 function createAlertsMenu(tray) {
     const alertsItem = tray.item('\uFEFFПерегляд мапи поточних тривог', () => {
@@ -73,7 +80,7 @@ function createSettingsMenu(tray) {
 
     // Підпункт меню 'Налаштування' => 'Запускати разом з системою'
     function createRunOnStartupItem(tray) {
-        const runOnStartupItem = tray.item('\uFEFFЗапускати разом з системою', { type: 'checkbox', checked: true });
+        const runOnStartupItem = tray.item('\uFEFFЗапускати разом з системою', { checked: true });
 
         return runOnStartupItem;
     }
@@ -81,6 +88,14 @@ function createSettingsMenu(tray) {
     // Підпункт меню 'Налаштування' => 'Регіони для сповіщення'
     function createNotificationRegionsItem(tray) {
         const notificationRegionsItem = tray.item('\uFEFFРегіони для сповіщення');
+
+        function createCheckboxItem(tray) {
+            const checkboxItem = tray.item('\uFEFFПункт переліка регіонів', { checked: true });
+
+            return checkboxItem;
+        }
+
+        notificationRegionsItem.add(createCheckboxItem(tray));
 
         return notificationRegionsItem;
     }
@@ -93,13 +108,16 @@ function createSettingsMenu(tray) {
 
 // Пункт меню 'Вихід'
 function createExitMenu(tray) {
-    const quit = tray.item('\uFEFFВихід', () => {
-        logEvent(`The server is stopped by the user`);
-        tray.kill();
-        process.exit();
+    const quit = tray.item('\uFEFFВихід', {
+        bold: true,
+        action: () => {
+            logEvent(`The server is stopped by the user`);
+            tray.kill();
+            process.exit();
+        },
     });
 
     return quit;
 }
 
-module.exports = { createAlertsMenu, createInfoMenu, createSettingsMenu, createExitMenu };
+module.exports = { createTitleMenu, createAlertsMenu, createInfoMenu, createSettingsMenu, createExitMenu };

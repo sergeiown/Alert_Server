@@ -1,13 +1,16 @@
 const Tray = require('trayicon');
 const fs = require('fs');
 const path = require('path');
-const { createAlertsMenu, createInfoMenu, createSettingsMenu, createExitMenu } = require('./trayMenu');
+const { createTitleMenu, createAlertsMenu, createInfoMenu, createSettingsMenu, createExitMenu } = require('./trayMenu');
 
 function createTrayIcon() {
     const imagePath = path.join(__dirname, '../resources/images/tray.png');
     let isAlertActive = false;
 
     Tray.create(function (tray) {
+        // Пункт меню 'Назва'
+        const menuTitle = createTitleMenu(tray);
+
         // Пункт меню 'Перегляд мапи поточних тривог'
         const alertsItem = createAlertsMenu(tray);
 
@@ -20,7 +23,7 @@ function createTrayIcon() {
         // Пункт меню 'Вихід'
         const quit = createExitMenu(tray);
 
-        tray.setMenu(alertsItem, logView, settings, quit);
+        tray.setMenu(menuTitle, tray.separator(), alertsItem, logView, settings, tray.separator(), quit);
 
         // Оновлення трея у відповідності до наявності тривоги
         function checkAlertStatus() {
