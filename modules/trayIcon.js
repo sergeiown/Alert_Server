@@ -52,7 +52,7 @@ function createTrayIcon() {
 
         tray.setTitle('Alert server: в заданому регіоні тривога відсутня');
 
-        tray.notify('Alert server', 'Сервер працює, тривоги відстежуються.');
+        tray.notify('Alert server', 'Тривоги відстежуються.');
 
         tray.setIcon(fs.readFileSync(imagePath));
     });
