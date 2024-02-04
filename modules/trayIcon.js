@@ -34,14 +34,14 @@ function createTrayIcon() {
                     if (isAlertActive) {
                         isAlertActive = false;
                         const imagePath = path.join(__dirname, '../resources/images/tray.png');
-                        tray.setTitle('\uFEFFAlert server: в заданому регіоні тривога відсутня');
+                        tray.setTitle('Alert server: в заданому регіоні тривога відсутня');
                         tray.setIcon(fs.readFileSync(imagePath));
                     }
                 } else {
                     if (!isAlertActive) {
                         isAlertActive = true;
                         const imagePath = path.join(__dirname, '../resources/images/tray_alert.png');
-                        tray.setTitle('\uFEFFAlert server: активна тривога!');
+                        tray.setTitle('Alert server: активна тривога!');
                         tray.setIcon(fs.readFileSync(imagePath));
                     }
                 }
