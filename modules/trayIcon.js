@@ -1,7 +1,14 @@
 const Tray = require('trayicon');
 const fs = require('fs');
 const path = require('path');
-const { createTitleMenu, createAlertsMenu, createInfoMenu, createSettingsMenu, createExitMenu } = require('./trayMenu');
+const {
+    createTitleMenu,
+    createUpdateDateTimeMenu,
+    createAlertsMenu,
+    createInfoMenu,
+    createSettingsMenu,
+    createExitMenu,
+} = require('./trayMenu');
 
 function createTrayIcon() {
     const imagePath = path.join(__dirname, '../resources/images/tray.png');
@@ -10,6 +17,9 @@ function createTrayIcon() {
     Tray.create(function (tray) {
         // Пункт меню 'Назва'
         const menuTitle = createTitleMenu(tray);
+
+        // Пункт меню 'Оновлення даних'
+        const UpdateDateTimeMenu = createUpdateDateTimeMenu(tray);
 
         // Пункт меню 'Перегляд мапи поточних тривог'
         const alertsItem = createAlertsMenu(tray);
@@ -23,7 +33,16 @@ function createTrayIcon() {
         // Пункт меню 'Вихід'
         const quit = createExitMenu(tray);
 
-        tray.setMenu(menuTitle, tray.separator(), alertsItem, settings, logView, tray.separator(), quit);
+        tray.setMenu(
+            menuTitle,
+            UpdateDateTimeMenu,
+            tray.separator(),
+            alertsItem,
+            settings,
+            logView,
+            tray.separator(),
+            quit
+        );
 
         // Оновлення трея у відповідності до наявності тривоги
         function checkAlertStatus() {
@@ -52,7 +71,7 @@ function createTrayIcon() {
 
         tray.setTitle('Alert server: в заданому регіоні тривога відсутня');
 
-        tray.notify('Alert server', 'Тривоги відстежуються.');
+        tray.notify('Alert server', 'Тpивоги відстежуються.');
 
         tray.setIcon(fs.readFileSync(imagePath));
     });
