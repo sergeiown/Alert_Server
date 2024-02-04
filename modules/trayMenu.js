@@ -12,7 +12,7 @@ function createTitleMenu(tray) {
 
 // Пункт меню 'Перегляд мапи поточних тривог'
 function createAlertsMenu(tray) {
-    const alertsItem = tray.item('\uFEFFПерегляд мапи поточних тривог', () => {
+    const alertsItem = tray.item('Перегляд мапи поточних тривог', () => {
         exec('start https://alerts.in.ua/?pwa', (error, stdout, stderr) => {
             if (error) {
                 logEvent(`Error opening URL: ${error.message}`);
@@ -26,11 +26,11 @@ function createAlertsMenu(tray) {
 
 // Пункт меню 'Інформація'
 function createInfoMenu(tray) {
-    const logView = tray.item('\uFEFFІнформація');
+    const logView = tray.item('Інформація');
 
     // Підпункт меню 'Інформація' => 'Перегляд журналу'
     function createLogItem(tray) {
-        const logItem = tray.item('\uFEFFПерегляд журналу', () => {
+        const logItem = tray.item('Перегляд журналу', () => {
             exec('start log.csv', (error, stdout, stderr) => {
                 if (error) {
                     logEvent(`Error opening the log file: ${error.message}`);
@@ -48,7 +48,7 @@ function createInfoMenu(tray) {
 
         const vbsPath = path.join(__dirname, 'msgbox.vbs');
 
-        const aboutItem = tray.item('\uFEFFПро програму', () => {
+        const aboutItem = tray.item('Про програму', () => {
             fs.writeFileSync(
                 vbsPath,
                 `MsgBox "${aboutMessage.replace(/\r?\n/g, ' ')}", 64, "Про програму"`,
@@ -76,18 +76,18 @@ function createInfoMenu(tray) {
 
 // Пункт меню 'Налаштування'
 function createSettingsMenu(tray) {
-    const settingsMenu = tray.item('\uFEFFНалаштування');
+    const settingsMenu = tray.item('Налаштування');
 
     // Підпункт меню 'Налаштування' => 'Запускати разом з системою'
     function createRunOnStartupItem(tray) {
-        const runOnStartupItem = tray.item('\uFEFFЗапускати разом з системою', { checked: true });
+        const runOnStartupItem = tray.item('Запускати разом з системою', { checked: true });
 
         return runOnStartupItem;
     }
 
     // Підпункт меню 'Налаштування' => 'Регіони для сповіщення'
     function createNotificationRegionsItem(tray) {
-        const notificationRegionsItem = tray.item('\uFEFFРегіони для сповіщення');
+        const notificationRegionsItem = tray.item('Регіони для сповіщення');
 
         function updateLocationJson(locations) {
             const jsonPath = path.join(__dirname, '../location.json');
@@ -127,7 +127,7 @@ function createSettingsMenu(tray) {
 
 // Пункт меню 'Вихід'
 function createExitMenu(tray) {
-    const quit = tray.item('\uFEFFВихід', {
+    const quit = tray.item('Вихід', {
         bold: true,
         action: () => {
             logEvent(`The server is stopped by the user`);
