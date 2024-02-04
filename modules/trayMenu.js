@@ -3,6 +3,7 @@ const fs = require('fs');
 const { exec } = require('child_process');
 const { logEvent } = require('./logger');
 
+// Пункт меню 'Перегляд мапи поточних тривог'
 function createAlertsMenu(tray) {
     const alertsItem = tray.item('\uFEFFПерегляд мапи поточних тривог', () => {
         exec('start https://alerts.in.ua/?pwa', (error, stdout, stderr) => {
@@ -16,9 +17,11 @@ function createAlertsMenu(tray) {
     return alertsItem;
 }
 
+// Пункт меню 'Інформація'
 function createInfoMenu(tray) {
     const logView = tray.item('\uFEFFІнформація');
 
+    // Підпункт меню 'Інформація' => 'Перегляд журналу'
     function createLogItem(tray) {
         const logItem = tray.item('\uFEFFПерегляд журналу', () => {
             exec('start log.csv', (error, stdout, stderr) => {
@@ -32,6 +35,7 @@ function createInfoMenu(tray) {
         return logItem;
     }
 
+    // Підпункт меню 'Інформація' => 'Про програму'
     function createAboutItem(tray) {
         const aboutMessage = `Локальний сервер оновлення тривог - це Node.js сервер, який із заданою періодичністю отримує дані про тривоги з alerts.in.ua API та зберігає їх дані з подальшою обробкою і виводом повідомлення про початок та закінчення тривоги для зазначеного регіону України.                                                                                                                                     Copyright (c) 2024 Serhii I. Myshko`;
 
@@ -63,15 +67,18 @@ function createInfoMenu(tray) {
     return logView;
 }
 
+// Пункт меню 'Налаштування'
 function createSettingsMenu(tray) {
     const settingsMenu = tray.item('\uFEFFНалаштування');
 
+    // Підпункт меню 'Налаштування' => 'Запускати разом з системою'
     function createRunOnStartupItem(tray) {
         const runOnStartupItem = tray.item('\uFEFFЗапускати разом з системою', { type: 'checkbox', checked: true });
 
         return runOnStartupItem;
     }
 
+    // Підпункт меню 'Налаштування' => 'Регіони для сповіщення'
     function createNotificationRegionsItem(tray) {
         const notificationRegionsItem = tray.item('\uFEFFРегіони для сповіщення');
 
@@ -84,6 +91,7 @@ function createSettingsMenu(tray) {
     return settingsMenu;
 }
 
+// Пункт меню 'Вихід'
 function createExitMenu(tray) {
     const quit = tray.item('\uFEFFВихід', () => {
         logEvent(`The server is stopped by the user`);
