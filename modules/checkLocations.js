@@ -22,4 +22,4 @@ const checkLocations = () => {
     }
 };
 
-module.exports = checkLocations;
+module.exports = { checkLocations };
