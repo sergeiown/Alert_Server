@@ -18,6 +18,8 @@ function createAlertsMenu(tray) {
                 logEvent(`Error opening URL: ${error.message}`);
                 return;
             }
+            logEvent(`stdout: ${stdout}`);
+            logEvent(`stderr: ${stderr}`);
         });
     });
 
@@ -36,6 +38,8 @@ function createInfoMenu(tray) {
                     logEvent(`Error opening the log file: ${error.message}`);
                     return;
                 }
+                logEvent(`stdout: ${stdout}`);
+                logEvent(`stderr: ${stderr}`);
             });
         });
 
@@ -60,6 +64,8 @@ function createInfoMenu(tray) {
                     logEvent(`Error opening the message window: ${error.message}`);
                     return;
                 }
+                logEvent(`stdout: ${stdout}`);
+                logEvent(`stderr: ${stderr}`);
 
                 fs.unlinkSync(vbsPath);
             });
@@ -80,9 +86,39 @@ function createSettingsMenu(tray) {
 
     // Підпункт меню 'Налаштування' => 'Запускати разом з системою'
     function createRunOnStartupItem(tray) {
-        const runOnStartupItem = tray.item('Запускати разом з системою', { checked: true });
+        const isFileExists = checkStartupFile();
+        const runOnStartupItem = tray.item('Запускати разом з системою', {
+            checked: isFileExists,
+            action: () => {
+                exec(path.join(__dirname, '../startup_activator.bat'), (error, stdout, stderr) => {
+                    if (error) {
+                        logEvent(`Error executing startup_activator.bat: ${error.message}`);
+                        return;
+                    }
+                    stdout.trim() !== '' ? logEvent(`stdout: ${stdout}`) : null;
+                    stderr.trim() !== '' ? logEvent(`stderr: ${stderr}`) : null;
+                });
+                checkStartupFile() ? logEvent(`Auto startup disabled`) : logEvent(`Auto startup enabled`);
+            },
+        });
 
         return runOnStartupItem;
+    }
+
+    function checkStartupFile() {
+        const startupFilePath = path.join(
+            process.env.APPDATA,
+            'Microsoft',
+            'Windows',
+            'Start Menu',
+            'Programs',
+            'Startup',
+            'start_alertserver_hidden.lnk'
+        );
+
+        const isFileExists = fs.existsSync(startupFilePath);
+
+        return isFileExists;
     }
 
     // Підпункт меню 'Налаштування' => 'Регіони для сповіщення'
