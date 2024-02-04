@@ -18,8 +18,8 @@ function createAlertsMenu(tray) {
                 logEvent(`Error opening URL: ${error.message}`);
                 return;
             }
-            logEvent(`stdout: ${stdout}`);
-            logEvent(`stderr: ${stderr}`);
+            stdout.trim() !== '' ? logEvent(`stdout: ${stdout}`) : null;
+            stderr.trim() !== '' ? logEvent(`stderr: ${stderr}`) : null;
         });
     });
 
@@ -38,8 +38,8 @@ function createInfoMenu(tray) {
                     logEvent(`Error opening the log file: ${error.message}`);
                     return;
                 }
-                logEvent(`stdout: ${stdout}`);
-                logEvent(`stderr: ${stderr}`);
+                stdout.trim() !== '' ? logEvent(`stdout: ${stdout}`) : null;
+                stderr.trim() !== '' ? logEvent(`stderr: ${stderr}`) : null;
             });
         });
 
@@ -64,8 +64,8 @@ function createInfoMenu(tray) {
                     logEvent(`Error opening the message window: ${error.message}`);
                     return;
                 }
-                logEvent(`stdout: ${stdout}`);
-                logEvent(`stderr: ${stderr}`);
+                stdout.trim() !== '' ? logEvent(`stdout: ${stdout}`) : null;
+                stderr.trim() !== '' ? logEvent(`stderr: ${stderr}`) : null;
 
                 fs.unlinkSync(vbsPath);
             });
