@@ -5,9 +5,37 @@ const { logEvent } = require('./logger');
 
 // Пункт меню 'Назва'
 function createTitleMenu(tray) {
-    const menuTitle = tray.item('🔔               Alert server               🔔', { bold: true, disabled: true });
+    const menuTitle = tray.item('🔔                  Alert server                  🔔', { bold: true, disabled: true });
 
     return menuTitle;
+}
+
+// Пункт меню 'Оновлення даних'
+function createUpdateDateTimeMenu(tray) {
+    function getLastUpdateDateTime() {
+        const filePath = path.join(__dirname, '../current_alert.json');
+        const jsonData = fs.readFileSync(filePath, 'utf-8');
+        const { last_updated_at } = JSON.parse(jsonData);
+
+        const updatedAt = new Date(last_updated_at);
+        const formattedDate = updatedAt
+            .toLocaleString('uk-UA', {
+                day: 'numeric',
+                month: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+            })
+            .replace(',', '');
+
+        return formattedDate;
+    }
+
+    const lastUpdate = getLastUpdateDateTime();
+    const lastUpdateDateTime = tray.item(`Остання зміна стану: ${lastUpdate}`, { disabled: true });
+
+    return lastUpdateDateTime;
 }
 
 // Пункт меню 'Перегляд мапи поточних тривог'
@@ -123,7 +151,7 @@ function createSettingsMenu(tray) {
 
     // Підпункт меню 'Налаштування' => 'Регіони для сповіщення'
     function createNotificationRegionsItem(tray) {
-        const notificationRegionsItem = tray.item('Регіони для сповіщення');
+        const notificationRegionsItem = tray.item('Регiони для відстеження');
 
         function updateLocationJson(locations) {
             const jsonPath = path.join(__dirname, '../location.json');
@@ -175,4 +203,11 @@ function createExitMenu(tray) {
     return quit;
 }
 
-module.exports = { createTitleMenu, createAlertsMenu, createInfoMenu, createSettingsMenu, createExitMenu };
+module.exports = {
+    createTitleMenu,
+    createUpdateDateTimeMenu,
+    createAlertsMenu,
+    createInfoMenu,
+    createSettingsMenu,
+    createExitMenu,
+};
