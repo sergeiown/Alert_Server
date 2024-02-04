@@ -1,8 +1,7 @@
 const Tray = require('trayicon');
 const fs = require('fs');
 const path = require('path');
-const { exec } = require('child_process');
-const { logEvent } = require('./logger');
+const { createAlertsMenu, createInfoMenu, createExitMenu } = require('./trayMenu');
 
 function createTrayIcon() {
     const imagePath = path.join(__dirname, '../resources/images/tray.png');
@@ -10,64 +9,15 @@ function createTrayIcon() {
 
     Tray.create(function (tray) {
         // Пункт меню 'Поточні тривоги'
-        let main = tray.item('\uFEFFПоточні тривоги');
-
-        let alertsItem = tray.item('alerts.in.ua', () => {
-            exec('start https://alerts.in.ua/?pwa', (error, stdout, stderr) => {
-                if (error) {
-                    logEvent(`Помилка відкриття URL: ${error.message}`);
-                    return;
-                }
-            });
-        });
-        main.add(alertsItem);
+        const alertsItem = createAlertsMenu(tray);
 
         // Пункт меню 'Інформація'
-        let logView = tray.item('\uFEFFІнформація');
-
-        // Підпункт 'Інформація' => 'Перегляд журналу'
-        let logItem = tray.item('\uFEFFПерегляд журналу', () => {
-            exec('start log.csv', (error, stdout, stderr) => {
-                if (error) {
-                    logEvent(`Error opening the log file: ${error.message}`);
-                    return;
-                }
-            });
-        });
-        logView.add(logItem);
-
-        // Підпункт 'Інформація' => 'Про програму'
-        let about = tray.item('\uFEFFПро програму', () => {
-            const aboutMessage = `Локальний сервер оновлення тривог - це Node.js сервер, який із заданою періодичністю отримує дані про тривоги з alerts.in.ua API та зберігає їх дані з подальшою обробкою і виводом повідомлення про початок та закінчення тривоги для зазначеного регіону України.                                                                                                                                      Copyright (c) 2024 Serhii I. Myshko`;
-
-            const vbsPath = path.join(__dirname, 'msgbox.vbs');
-
-            fs.writeFileSync(
-                vbsPath,
-                `MsgBox "${aboutMessage.replace(/\r?\n/g, ' ')}", 64, "Про програму"`,
-                'utf-16le'
-            );
-
-            exec(`start wscript.exe "${vbsPath}"`, (error, stdout, stderr) => {
-                if (error) {
-                    logEvent(`Error opening the message window: ${error.message}`);
-                    return;
-                }
-
-                fs.unlinkSync(vbsPath);
-            });
-        });
-
-        logView.add(about);
+        const logView = createInfoMenu(tray);
 
         // Пункт меню 'Вихід'
-        let quit = tray.item('\uFEFFВихід', () => {
-            logEvent(`The server is stopped by the user`);
-            tray.kill();
-            process.exit();
-        });
+        const quit = createExitMenu(tray);
 
-        tray.setMenu(main, logView, quit);
+        tray.setMenu(alertsItem, logView, quit);
 
         // Оновлення трея у відповідності до наявності тривоги
         function checkAlertStatus() {
