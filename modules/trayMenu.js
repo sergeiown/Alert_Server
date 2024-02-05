@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
+const os = require('os');
 const { logEvent } = require('./logger');
 
 // Пункт меню 'Назва'
@@ -85,7 +86,7 @@ function createInfoMenu(tray) {
     function createAboutItem(tray) {
         const aboutMessage = `Локальний сервер оновлення тривог - це Node.js сервер, який із заданою періодичністю отримує дані про тривоги з alerts.in.ua API та зберігає їх дані з подальшою обробкою і виводом повідомлення про початок та закінчення тривоги для зазначеного регіону України.                                                                                                                                     Copyright (c) 2024 Serhii I. Myshko`;
 
-        const vbsPath = path.join(__dirname, 'msgbox.vbs');
+        const vbsPath = path.join(os.tmpdir(), 'msgbox.vbs');
 
         const aboutItem = tray.item('Про програму', () => {
             fs.writeFileSync(
