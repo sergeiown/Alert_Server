@@ -98,6 +98,6 @@ const showNotification = async () => {
     }
 };
 
-setInterval(showNotification, 15000);
+setInterval(showNotification, 10000);
 
 module.exports = { showNotification };

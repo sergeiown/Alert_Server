@@ -1,15 +1,21 @@
-const fs = require('fs');
+const fs = require('fs').promises;
 const { logEvent } = require('./logger');
 
-const checkLocations = () => {
+const checkLocations = async () => {
     try {
-        const currentAlertData = JSON.parse(fs.readFileSync('./current_alert.json', 'utf-8'));
-        const locationsData = JSON.parse(fs.readFileSync('./location.json', 'utf-8'));
+        let currentAlertData;
+
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+
+        currentAlertData = JSON.parse(await fs.readFile('./current_alert.json', 'utf-8'));
+        const locationsData = JSON.parse(await fs.readFile('./location.json', 'utf-8'));
 
         const locationsWithUsageOne = locationsData.filter((location) => location.Usage === '1');
         const locationsInCurrentAlert = currentAlertData.alerts.filter((alert) =>
             locationsWithUsageOne.some((location) => location.Location === alert.location_oblast)
         );
+
+        logEvent(`Current alert successful update`);
 
         if (locationsInCurrentAlert.length > 0) {
             return { alerts: locationsInCurrentAlert };
@@ -17,7 +23,7 @@ const checkLocations = () => {
             return { alerts: [] };
         }
     } catch (error) {
-        logEvent(`Check location error: ${error.message}`);
+        logEvent(`Current alert update error: ${error.message}`);
         return { alerts: [] };
     }
 };
