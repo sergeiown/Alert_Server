@@ -31,7 +31,7 @@ const fetchDataAndSaveToFile = async () => {
             JSON.stringify({ alerts, last_updated_at: lastUpdatedAt }, null, 2)
         );
 
-        logEvent(`Successful data update`);
+        logEvent(`Successful API request`);
     } catch (error) {
         logEvent(`API request error: ${error.message}`);
     }
