@@ -7,7 +7,7 @@ IF %ERRORLEVEL% NEQ 0 (
     
     winget install OpenJS.NodeJS
     
-    timeout /nobreak /t 1 >nul
+    echo. & timeout /nobreak /t 2 >nul
 
 ) ELSE (
     echo Node.js is present in the system.
