@@ -38,7 +38,7 @@ function createUpdateDateTimeMenu(tray) {
     }
 
     const lastUpdate = getLastUpdateDateTime();
-    const lastUpdateDateTime = tray.item(`Остання зміна стану: ${lastUpdate}`, { disabled: true });
+    let lastUpdateDateTime = tray.item(`Остання зміна стану: ${lastUpdate}`, { disabled: true });
 
     setInterval(updateLastUpdateDateTime, 60000);
 
