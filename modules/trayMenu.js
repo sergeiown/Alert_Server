@@ -67,7 +67,7 @@ function createInfoMenu(tray) {
 
     // Підпункт меню 'Інформація' => 'Перегляд журналу'
     function createLogItem(tray) {
-        const logItem = tray.item('Перегляд журналу', () => {
+        const logItem = tray.item('Файл журналу', () => {
             exec('start log.csv', (error, stdout, stderr) => {
                 if (error) {
                     logEvent(`Error opening the log file: ${error.message}`);
