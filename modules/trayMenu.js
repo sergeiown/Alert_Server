@@ -163,7 +163,7 @@ function createSettingsMenu(tray) {
         function updateLocationJson(locations) {
             const jsonPath = path.join(__dirname, '../location.json');
 
-            logEvent('User update of regions for notification');
+            logEvent('Regions for notification updated');
             fs.writeFileSync(jsonPath, JSON.stringify(locations, null, 2), 'utf-8');
         }
 
