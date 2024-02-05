@@ -18,7 +18,7 @@ const initializeLogFile = () => {
 const logEvent = (eventMessage) => {
     initializeLogFile();
 
-    const maxFileSize = 100 * 1024; // 100Kb
+    const maxFileSize = 256 * 1024; // 256Kb
 
     const currentDateTime = new Date()
         .toLocaleString('UA', {
@@ -35,11 +35,11 @@ const logEvent = (eventMessage) => {
         const stats = fs.statSync(logFilePath);
         if (stats.size > maxFileSize) {
             const fileContent = fs.readFileSync(logFilePath, 'utf-8').split('\n');
-            const newContent = 'Date,Time,Event\n' + fileContent.slice(10).join('\n');
+            const newContent = 'Date,Time,Event\n' + fileContent.slice(25).join('\n');
             const fileSize = `${currentDateTime},Log file size: ${(stats.size / 1024).toFixed(2)} Kb`;
             const fileReduction = `${currentDateTime},Log file size reduced`;
 
-            fs.writeFileSync(logFilePath, newContent + '\n' + fileSize + '\n' + fileReduction, 'utf-8');
+            fs.writeFileSync(logFilePath, newContent + '\n' + fileSize + '\n' + fileReduction + '\n', 'utf-8');
             log(fileSize + '\n' + fileReduction);
         }
     } catch (error) {
@@ -48,7 +48,7 @@ const logEvent = (eventMessage) => {
 
     const logMessage = `${currentDateTime},${eventMessage.trim()}`;
 
-    fs.appendFileSync(logFilePath, logMessage + '\n', 'utf-8');
+    fs.appendFileSync(logFilePath, logMessage, 'utf-8');
     log(logMessage);
 };
 
