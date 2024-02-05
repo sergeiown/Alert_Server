@@ -2,6 +2,7 @@ const notifier = require('node-notifier');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { exec } = require('child_process');
 const { checkLocations } = require('./checkLocations');
 const alertTypes = require('../alert.json');
 const { playAlertSound, playAlertCancellationSound } = require('./audioPlayer');
@@ -32,7 +33,17 @@ const showNotification = async () => {
                     message: `${alert.location_title}`,
                     sound: false,
                     wait: true,
-                    urgency: 'critical',
+                });
+                notifier.on('click', function () {
+                    setTimeout(() => {}, 28000);
+                    exec('start https://alerts.in.ua/?pwa', (error, stdout, stderr) => {
+                        if (error) {
+                            logEvent(`Error opening URL: ${error.message}`);
+                            return;
+                        }
+                        stdout.trim() !== '' ? logEvent(`stdout: ${stdout}`) : null;
+                        stderr.trim() !== '' ? logEvent(`stderr: ${stderr}`) : null;
+                    });
                 });
 
                 // Створюємо файл alert_active.tmp в папці %temp%
@@ -59,7 +70,17 @@ const showNotification = async () => {
                     message: `${locationTitle}`,
                     sound: false,
                     wait: true,
-                    urgency: 'critical',
+                });
+                notifier.on('click', function () {
+                    setTimeout(() => {}, 12000);
+                    exec('start https://alerts.in.ua/?pwa', (error, stdout, stderr) => {
+                        if (error) {
+                            logEvent(`Error opening URL: ${error.message}`);
+                            return;
+                        }
+                        stdout.trim() !== '' ? logEvent(`stdout: ${stdout}`) : null;
+                        stderr.trim() !== '' ? logEvent(`stderr: ${stderr}`) : null;
+                    });
                 });
 
                 // Видаляємо файл alert_active.tmp з папки %temp%
