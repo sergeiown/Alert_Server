@@ -35,7 +35,16 @@ const showNotification = async () => {
                     wait: true,
                 });
                 notifier.on('click', function () {
-                    setTimeout(() => {}, 28000);
+                    exec('start https://alerts.in.ua/?pwa', (error, stdout, stderr) => {
+                        if (error) {
+                            logEvent(`Error opening URL: ${error.message}`);
+                            return;
+                        }
+                        stdout.trim() !== '' ? logEvent(`stdout: ${stdout}`) : null;
+                        stderr.trim() !== '' ? logEvent(`stderr: ${stderr}`) : null;
+                    });
+                });
+                notifier.on('timeout', function () {
                     exec('start https://alerts.in.ua/?pwa', (error, stdout, stderr) => {
                         if (error) {
                             logEvent(`Error opening URL: ${error.message}`);
@@ -70,17 +79,6 @@ const showNotification = async () => {
                     message: `${locationTitle}`,
                     sound: false,
                     wait: true,
-                });
-                notifier.on('click', function () {
-                    setTimeout(() => {}, 12000);
-                    exec('start https://alerts.in.ua/?pwa', (error, stdout, stderr) => {
-                        if (error) {
-                            logEvent(`Error opening URL: ${error.message}`);
-                            return;
-                        }
-                        stdout.trim() !== '' ? logEvent(`stdout: ${stdout}`) : null;
-                        stderr.trim() !== '' ? logEvent(`stderr: ${stderr}`) : null;
-                    });
                 });
 
                 // Видаляємо файл alert_active.tmp з папки %temp%
