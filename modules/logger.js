@@ -39,7 +39,7 @@ const logEvent = (eventMessage) => {
             const fileSize = `${currentDateTime},Log file size: ${(stats.size / 1024).toFixed(2)} Kb`;
             const fileReduction = `${currentDateTime},Log file size reduced`;
 
-            fs.writeFileSync(logFilePath, newContent + '\n' + fileSize + '\n' + fileReduction + '\n', 'utf-8');
+            fs.writeFileSync(logFilePath, newContent + '\n' + fileSize + '\n' + fileReduction, 'utf-8');
             log(fileSize + '\n' + fileReduction);
         }
     } catch (error) {
@@ -48,7 +48,7 @@ const logEvent = (eventMessage) => {
 
     const logMessage = `${currentDateTime},${eventMessage.trim()}`;
 
-    fs.appendFileSync(logFilePath, logMessage, 'utf-8');
+    fs.appendFileSync(logFilePath, '\n' + logMessage, 'utf-8');
     log(logMessage);
 };
 
