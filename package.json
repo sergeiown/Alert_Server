@@ -4,9 +4,15 @@
     "description": "Server that receives alarm data from the alerts.in.ua",
     "author": "Serhii I. Myshko",
     "main": "index.js",
+    "bin": {
+        "current_alert": "./index.js"
+    },
     "dependencies": {
         "axios": "^1.6.7",
         "node-notifier": "^10.0.1",
         "trayicon": "^1.2.2"
+    },
+    "scripts": {
+        "start": "node index.js"
     }
 }
