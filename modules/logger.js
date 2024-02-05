@@ -36,10 +36,11 @@ const logEvent = (eventMessage) => {
         if (stats.size > maxFileSize) {
             const fileContent = fs.readFileSync(logFilePath, 'utf-8').split('\n');
             const newContent = 'Date,Time,Event\n' + fileContent.slice(10).join('\n');
-            const fileSize = `${currentDateTime},Log file size: ${(stats.size / 1024).toFixed(2)} Kb and reduced.`;
+            const fileSize = `${currentDateTime},Log file size: ${(stats.size / 1024).toFixed(2)} Kb`;
+            const fileReduction = `${currentDateTime},Log file size reduced`;
 
-            fs.writeFileSync(logFilePath, newContent + '\n' + fileSize, 'utf-8');
-            log(fileSize);
+            fs.writeFileSync(logFilePath, newContent + '\n' + fileSize + '\n' + fileReduction, 'utf-8');
+            log(fileSize + '\n' + fileReduction);
         }
     } catch (error) {
         error(`Log file reduction error: ${error.message}`);
