@@ -1,4 +1,4 @@
-const { log, error } = require('console');
+const { log } = require('console');
 const fs = require('fs');
 const path = require('path');
 
@@ -11,7 +11,7 @@ const initializeLogFile = () => {
             fs.writeFileSync(logFilePath, header + '\n', 'utf-8');
         }
     } catch (error) {
-        error(`Error initializing log file: ${error.message}`);
+        log.error(`Error initializing log file: ${error.message}`);
     }
 };
 
@@ -43,7 +43,7 @@ const logEvent = (eventMessage) => {
             log(fileSize + '\n' + fileReduction);
         }
     } catch (error) {
-        error(`Log file reduction error: ${error.message}`);
+        log.error(`Log file reduction error: ${error.message}`);
     }
 
     const logMessage = `${currentDateTime},${eventMessage.trim()}`;
