@@ -14,40 +14,6 @@ function createTitleMenu(tray) {
     return menuTitle;
 }
 
-// Пункт меню 'Оновлення даних'
-function createUpdateDateTimeMenu(tray) {
-    function getLastUpdateDateTime() {
-        setTimeout(() => {}, 1000);
-        const filePath = path.join(__dirname, '../current_alert.json');
-        const jsonData = fs.readFileSync(filePath, 'utf-8');
-        const { last_updated_at } = JSON.parse(jsonData);
-
-        const updatedAt = new Date(last_updated_at);
-        const formattedDate = updatedAt
-            .toLocaleString('uk-UA', {
-                day: 'numeric',
-                month: 'numeric',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-            })
-            .replace(',', '');
-
-        return formattedDate;
-    }
-
-    const lastUpdate = getLastUpdateDateTime();
-    let lastUpdateDateTime = tray.item(`Остання зміна стану: ${lastUpdate}`, { disabled: true });
-
-    setInterval(() => {
-        lastUpdate;
-        tray.item(`Остання зміна стану: ${lastUpdate}`, { disabled: true });
-    }, 5000);
-
-    return lastUpdateDateTime;
-}
-
 // Пункт меню 'Перегляд мапи поточних тривог'
 function createAlertsMenu(tray) {
     const alertsItem = tray.item('Перегляд мапи поточних тривог', () => {
@@ -215,7 +181,6 @@ function createExitMenu(tray) {
 
 module.exports = {
     createTitleMenu,
-    createUpdateDateTimeMenu,
     createAlertsMenu,
     createInfoMenu,
     createSettingsMenu,

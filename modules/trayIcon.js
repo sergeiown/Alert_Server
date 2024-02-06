@@ -4,14 +4,7 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 const Tray = require('trayicon');
 const fs = require('fs');
 const path = require('path');
-const {
-    createTitleMenu,
-    createUpdateDateTimeMenu,
-    createAlertsMenu,
-    createInfoMenu,
-    createSettingsMenu,
-    createExitMenu,
-} = require('./trayMenu');
+const { createTitleMenu, createAlertsMenu, createInfoMenu, createSettingsMenu, createExitMenu } = require('./trayMenu');
 
 function createTrayIcon() {
     const imagePath = path.join(__dirname, '../resources/images/tray.png');
@@ -19,22 +12,12 @@ function createTrayIcon() {
 
     Tray.create(function (tray) {
         const menuTitle = createTitleMenu(tray);
-        const UpdateDateTimeMenu = createUpdateDateTimeMenu(tray);
         const alertsItem = createAlertsMenu(tray);
         const settings = createSettingsMenu(tray);
         const logView = createInfoMenu(tray);
         const quit = createExitMenu(tray);
 
-        tray.setMenu(
-            menuTitle,
-            UpdateDateTimeMenu,
-            tray.separator(),
-            alertsItem,
-            settings,
-            logView,
-            tray.separator(),
-            quit
-        );
+        tray.setMenu(menuTitle, tray.separator(), alertsItem, settings, logView, tray.separator(), quit);
 
         // Оновлення іконки трея у відповідності до наявності тривоги
         function checkAlertStatus() {
