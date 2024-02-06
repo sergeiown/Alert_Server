@@ -124,7 +124,7 @@ function createSettingsMenu(tray) {
         const runOnStartupItem = tray.item('Запускати разом з системою', {
             checked: isFileExists,
             action: () => {
-                exec(path.join(__dirname, '../startup_activator.bat'), (error, stdout, stderr) => {
+                exec(`"${path.join(__dirname, '../startup_activator.bat')}"`, (error, stdout, stderr) => {
                     if (error) {
                         logEvent(`Error executing startup_activator.bat: ${error.message}`);
                         return;
