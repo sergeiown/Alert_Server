@@ -12,7 +12,7 @@ function createTitleMenu(tray) {
 }
 
 // Пункт меню 'Оновлення даних'
-function createUpdateDateTimeMenu(tray) {
+async function createUpdateDateTimeMenu(tray) {
     async function getLastUpdateDateTime() {
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -35,7 +35,7 @@ function createUpdateDateTimeMenu(tray) {
         return formattedDate;
     }
 
-    const lastUpdate = getLastUpdateDateTime();
+    const lastUpdate = await getLastUpdateDateTime();
     let lastUpdateDateTime = tray.item(`Остання зміна стану: ${lastUpdate}`, { disabled: true });
 
     return lastUpdateDateTime;
