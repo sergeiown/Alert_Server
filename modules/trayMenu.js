@@ -157,7 +157,7 @@ function createSettingsMenu(tray) {
 
     // Підпункт меню 'Налаштування' => 'Регіони для сповіщення'
     function createNotificationRegionsItem(tray) {
-        const notificationRegionsItem = tray.item('Регiони для відстеження');
+        const notificationRegionsItem = tray.item('Регіони для сповіщення');
 
         function updateLocationJson(locations) {
             const jsonPath = path.join(__dirname, '../location.json');
