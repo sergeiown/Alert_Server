@@ -1,3 +1,6 @@
+:: Copyright (c) 2024 Serhii I. Myshko
+:: https://github.com/sergeiown/Alert_Server/blob/main/LICENSE
+
 @echo off
 
 :: Перевірка наявності Node.js та встановлених залежностей
