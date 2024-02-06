@@ -44,7 +44,7 @@ const showNotification = async () => {
                         stderr.trim() !== '' ? logEvent(`stderr: ${stderr}`) : null;
                     });
                 });
-                notifier.on('timeout', function () {
+                /*                 notifier.on('timeout', function () {
                     exec('start https://alerts.in.ua/?pwa', (error, stdout, stderr) => {
                         if (error) {
                             logEvent(`Error opening URL: ${error.message}`);
@@ -53,7 +53,7 @@ const showNotification = async () => {
                         stdout.trim() !== '' ? logEvent(`stdout: ${stdout}`) : null;
                         stderr.trim() !== '' ? logEvent(`stderr: ${stderr}`) : null;
                     });
-                });
+                }); */
 
                 // Створюємо файл alert_active.tmp в папці %temp%
                 fs.writeFileSync(path.join(os.tmpdir(), 'alert_active.tmp'), '');

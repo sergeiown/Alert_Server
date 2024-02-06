@@ -12,7 +12,7 @@ const checkLocations = async () => {
 
         const locationsWithUsageOne = locationsData.filter((location) => location.Usage === '1');
         const locationsInCurrentAlert = currentAlertData.alerts.filter((alert) =>
-            locationsWithUsageOne.some((location) => location.Location === alert.location_oblast)
+            locationsWithUsageOne.some((location) => location.UID === alert.location_uid)
         );
 
         logEvent(`Current alert successful update`);
