@@ -1,4 +1,8 @@
+:: Copyright (c) 2024 Serhii I. Myshko
+:: https://github.com/sergeiown/Alert_Server/blob/main/LICENSE
+
 @echo off
+
 set shortcutName=start_alertserver_hidden
 set targetPath=%CD%\start_alertserver_hidden.bat
 set shortcutPath=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\%shortcutName%.lnk

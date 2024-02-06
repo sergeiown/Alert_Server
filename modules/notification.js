@@ -1,3 +1,6 @@
+/* Copyright (c) 2024 Serhii I. Myshko
+https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
+
 const notifier = require('node-notifier');
 const path = require('path');
 const fs = require('fs');
