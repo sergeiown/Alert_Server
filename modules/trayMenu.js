@@ -17,7 +17,7 @@ function createTitleMenu(tray) {
 // Пункт меню 'Оновлення даних'
 async function createUpdateDateTimeMenu(tray) {
     async function getLastUpdateDateTime() {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 300));
 
         const filePath = path.join(__dirname, '../current_alert.json');
         const jsonData = fs.readFileSync(filePath, 'utf-8');
@@ -155,9 +155,9 @@ function createSettingsMenu(tray) {
         return isFileExists;
     }
 
-    // Підпункт меню 'Налаштування' => 'Регіони для сповіщення'
+    // Підпункт меню 'Налаштування' => 'Вибір регіонів'
     function createNotificationRegionsItem(tray) {
-        const notificationRegionsItem = tray.item('Регіони для сповіщення');
+        const notificationRegionsItem = tray.item('Вибір регіонів');
 
         function updateLocationJson(locations) {
             const jsonPath = path.join(__dirname, '../location.json');
