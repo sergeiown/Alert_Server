@@ -25,11 +25,11 @@ Node.js сервер, який із заданою періодичністю о
 
 Індикація стану і керування налаштуваннями відбуваються через tray icon. Серед налаштувань доступний запуск сервера під час старту системи та вибір регіонів, щодо яких відбуватиметься відстеження наявності тривог.
 
-Інформування, щодо поточної тривоги та відміни тривоги, збереження історії тривог відбувається через Windows Notification Center. Додатково використовується індикація тривоги через tray icon.
+Інформування, щодо поточної тривоги та відміни тривоги, збереження історії тривог відбувається через Windows Notification Center. Додатково використовується індикація тривоги через tray icon та звукове опвіщення.
 
 | Appearance:  | | |
 | --- | --- | --- |
-| ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/455fbc88-5d9d-4b68-a1ca-26556759e9fa) | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/0c87f7a9-8ec2-4825-bd66-158231252f26) | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/8590e12e-8cd3-41c4-87cc-251eeddc3ab9) |
+| ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/455fbc88-5d9d-4b68-a1ca-26556759e9fa) | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/0c87f7a9-8ec2-4825-bd66-158231252f26) | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/69d8daa9-8d13-44c5-83d8-4b74daf7e8ab) |
 
 ## Внесок
 
