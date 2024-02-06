@@ -13,38 +13,34 @@ const {
 function createTrayIcon() {
     const imagePath = path.join(__dirname, '../resources/images/tray.png');
     let isAlertActive = false;
+    let UpdateDateTimeMenu;
+    let settings;
 
     Tray.create(function (tray) {
-        // Пункт меню 'Назва'
+        // Пункти меню, які не міняються
         const menuTitle = createTitleMenu(tray);
-
-        // Пункт меню 'Оновлення даних'
-        const UpdateDateTimeMenu = createUpdateDateTimeMenu(tray);
-
-        // Пункт меню 'Перегляд мапи поточних тривог'
         const alertsItem = createAlertsMenu(tray);
-
-        // Пункт меню 'Інформація'
         const logView = createInfoMenu(tray);
-
-        // Пункт меню 'Налаштування'
-        const settings = createSettingsMenu(tray);
-
-        // Пункт меню 'Вихід'
         const quit = createExitMenu(tray);
 
-        tray.setMenu(
-            menuTitle,
-            UpdateDateTimeMenu,
-            tray.separator(),
-            alertsItem,
-            settings,
-            logView,
-            tray.separator(),
-            quit
-        );
+        // Функція для оновлення меню з часом оновлення даних
+        function updateDateTimeMenu() {
+            UpdateDateTimeMenu = createUpdateDateTimeMenu(tray);
+            settings = createSettingsMenu(tray);
 
-        // Оновлення трея у відповідності до наявності тривоги
+            tray.setMenu(
+                menuTitle,
+                UpdateDateTimeMenu,
+                tray.separator(),
+                alertsItem,
+                settings,
+                logView,
+                tray.separator(),
+                quit
+            );
+        }
+
+        // Оновлення іконки трея у відповідності до наявності тривоги
         function checkAlertStatus() {
             const tempFilePath = path.join(process.env.TEMP, 'alert_active.tmp');
 
@@ -52,7 +48,6 @@ function createTrayIcon() {
                 if (err) {
                     if (isAlertActive) {
                         isAlertActive = false;
-                        const imagePath = path.join(__dirname, '../resources/images/tray.png');
                         tray.setTitle('Alert server: в заданому регіоні тривога відсутня');
                         tray.setIcon(fs.readFileSync(imagePath));
                     }
@@ -67,12 +62,15 @@ function createTrayIcon() {
             });
         }
 
-        setInterval(checkAlertStatus, 5000);
+        updateDateTimeMenu();
+        setInterval(() => {
+            checkAlertStatus();
+            updateDateTimeMenu();
+        }, 5000);
 
+        // Початкові значення
         tray.setTitle('Alert server: в заданому регіоні тривога відсутня');
-
         tray.notify('Alert server', 'Тpивоги відстежуються.');
-
         tray.setIcon(fs.readFileSync(imagePath));
     });
 }
