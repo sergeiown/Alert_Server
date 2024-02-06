@@ -15,10 +15,9 @@ function createTitleMenu(tray) {
 }
 
 // Пункт меню 'Оновлення даних'
-async function createUpdateDateTimeMenu(tray) {
-    async function getLastUpdateDateTime() {
-        await new Promise((resolve) => setTimeout(resolve, 300));
-
+function createUpdateDateTimeMenu(tray) {
+    function getLastUpdateDateTime() {
+        setTimeout(() => {}, 1000);
         const filePath = path.join(__dirname, '../current_alert.json');
         const jsonData = fs.readFileSync(filePath, 'utf-8');
         const { last_updated_at } = JSON.parse(jsonData);
@@ -38,8 +37,13 @@ async function createUpdateDateTimeMenu(tray) {
         return formattedDate;
     }
 
-    const lastUpdate = await getLastUpdateDateTime();
+    const lastUpdate = getLastUpdateDateTime();
     let lastUpdateDateTime = tray.item(`Остання зміна стану: ${lastUpdate}`, { disabled: true });
+
+    setInterval(() => {
+        lastUpdate;
+        tray.item(`Остання зміна стану: ${lastUpdate}`, { disabled: true });
+    }, 5000);
 
     return lastUpdateDateTime;
 }

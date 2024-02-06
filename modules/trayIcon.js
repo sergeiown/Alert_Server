@@ -16,32 +16,25 @@ const {
 function createTrayIcon() {
     const imagePath = path.join(__dirname, '../resources/images/tray.png');
     let isAlertActive = false;
-    let UpdateDateTimeMenu;
-    let settings;
 
     Tray.create(function (tray) {
-        // Пункти меню, які не міняються
         const menuTitle = createTitleMenu(tray);
+        const UpdateDateTimeMenu = createUpdateDateTimeMenu(tray);
         const alertsItem = createAlertsMenu(tray);
+        const settings = createSettingsMenu(tray);
         const logView = createInfoMenu(tray);
         const quit = createExitMenu(tray);
 
-        // Функція для оновлення меню з часом оновлення даних
-        async function updateDateTimeMenu() {
-            UpdateDateTimeMenu = await createUpdateDateTimeMenu(tray);
-            settings = createSettingsMenu(tray);
-
-            tray.setMenu(
-                menuTitle,
-                UpdateDateTimeMenu,
-                tray.separator(),
-                alertsItem,
-                settings,
-                logView,
-                tray.separator(),
-                quit
-            );
-        }
+        tray.setMenu(
+            menuTitle,
+            UpdateDateTimeMenu,
+            tray.separator(),
+            alertsItem,
+            settings,
+            logView,
+            tray.separator(),
+            quit
+        );
 
         // Оновлення іконки трея у відповідності до наявності тривоги
         function checkAlertStatus() {
@@ -65,10 +58,8 @@ function createTrayIcon() {
             });
         }
 
-        updateDateTimeMenu();
         setInterval(() => {
             checkAlertStatus();
-            updateDateTimeMenu();
         }, 5000);
 
         // Початкові значення
