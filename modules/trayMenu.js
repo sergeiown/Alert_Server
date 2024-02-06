@@ -13,7 +13,9 @@ function createTitleMenu(tray) {
 
 // Пункт меню 'Оновлення даних'
 function createUpdateDateTimeMenu(tray) {
-    function getLastUpdateDateTime() {
+    async function getLastUpdateDateTime() {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
         const filePath = path.join(__dirname, '../current_alert.json');
         const jsonData = fs.readFileSync(filePath, 'utf-8');
         const { last_updated_at } = JSON.parse(jsonData);
