@@ -24,8 +24,8 @@ function createTrayIcon() {
         const quit = createExitMenu(tray);
 
         // Функція для оновлення меню з часом оновлення даних
-        function updateDateTimeMenu() {
-            UpdateDateTimeMenu = createUpdateDateTimeMenu(tray);
+        async function updateDateTimeMenu() {
+            UpdateDateTimeMenu = await createUpdateDateTimeMenu(tray);
             settings = createSettingsMenu(tray);
 
             tray.setMenu(
