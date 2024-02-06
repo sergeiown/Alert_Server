@@ -2,27 +2,12 @@ const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
 const { logEvent } = require('./logger');
-
-const apiUrl = 'https://api.alerts.in.ua/v1/alerts/active.json';
+const query = 'aHR0cHM6Ly9yYWluLWZvcmVzdC53ZWIuYXBwL2Fzc2V0cy9xdWVyeV9pbmZvLmpzb24=';
 
 const fetchDataAndSaveToFile = async () => {
     try {
-        const queryInfo = await getqueryInfo();
-
-        if (!queryInfo) {
-            logEvent('Emergency server shutdown');
-            process.exit(1);
-        }
-
-        const options = {
-            headers: {
-                Authorization: `Bearer ${queryInfo}`,
-            },
-        };
-
-        console.log(options);
-
-        const response = await axios.get(apiUrl, options);
+        const info = await getqueryInfo();
+        const response = await axios.get(atob(info));
         const data = response.data;
         const alerts = data.alerts;
         const lastUpdatedAt = data.meta.last_updated_at;
@@ -39,13 +24,13 @@ const fetchDataAndSaveToFile = async () => {
 
     async function getqueryInfo() {
         try {
-            const url = 'https://rain-forest.web.app/assets/query_info.json';
+            const url = atob(query);
             const response = await axios.get(url);
-            const info = response.data.info;
+            const { info } = response.data;
             return info;
         } catch (error) {
             logEvent(`Error fetching query info: ${error.message}`);
-            return null;
+            process.exit(1);
         }
     }
 };
