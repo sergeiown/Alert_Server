@@ -8,7 +8,7 @@ const checkLocations = async () => {
     try {
         let currentAlertData;
 
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         currentAlertData = JSON.parse(await fs.readFile('./current_alert.json', 'utf-8'));
         const locationsData = JSON.parse(await fs.readFile('./location.json', 'utf-8'));
