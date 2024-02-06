@@ -147,7 +147,7 @@ function createSettingsMenu(tray) {
             'Start Menu',
             'Programs',
             'Startup',
-            'start_alertserver_hidden.lnk'
+            'Alert server.lnk'
         );
 
         const isFileExists = fs.existsSync(startupFilePath);
