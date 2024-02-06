@@ -8,7 +8,7 @@ const initializeLogFile = () => {
     try {
         if (!fs.existsSync(logFilePath)) {
             const header = 'Date,Time,Event';
-            fs.writeFileSync(logFilePath, header + '\n', 'utf-8');
+            fs.writeFileSync(logFilePath, header, 'utf-8');
         }
     } catch (error) {
         log.error(`Error initializing log file: ${error.message}`);
