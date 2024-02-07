@@ -9,7 +9,7 @@ Node.js сервер, який із заданою періодичністю о
 На поточний момент реалізована можливість повністю автоматизованого встановлення. Інсталятор виконано у мінімалістичному варіанті з використанням Batch scripts та PowerShell.
 
 Порядок дій:
-- завантажити інсталятор `Alert server setup.zip` доступний за посиланням: [Alert server releases](https://github.com/sergeiown/Alert_Server/releases);
+- завантажити інсталятор `Alert_server_setup.zip` доступний за посиланням: [Alert server releases](https://github.com/sergeiown/Alert_Server/releases);
 - видобути у вибраному розташуванні;
 - запустити `Alert server setup.bat`.
 
