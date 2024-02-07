@@ -11,7 +11,7 @@ Node.js сервер, який із заданою періодичністю о
 Порядок дій:
 - завантажити інсталятор `Alert_server_setup.zip` доступний за посиланням: [Alert server releases](https://github.com/sergeiown/Alert_Server/releases);
 - видобути у вибраному розташуванні;
-- запустити `Alert server setup.bat`.
+- запустити `Alert_server_setup.bat`.
 
 Інсталяція буде виконана в розташуванні `%userprofile%\Documents\Alert server`, під час встановлення буде перевірено наявність [Git](https://git-scm.com/) та [Node.js](https://nodejs.org/en) та їх інсталяція за необхідності.
 
