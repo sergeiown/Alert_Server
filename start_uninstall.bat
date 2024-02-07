@@ -3,7 +3,9 @@
 
 @echo off
 
-rmdir /s /q "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Alert server\"
+taskkill /f /im "node.exe" >nul 2>nul
+timeout /t 1 /nobreak >nul
 
+rmdir /s /q "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Alert server\"
 cd ..
 rmdir /s /q "%CD%"
