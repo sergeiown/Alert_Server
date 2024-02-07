@@ -9,7 +9,7 @@ where node > nul 2>nul
 if %ERRORLEVEL% neq 0 (
     winget install OpenJS.NodeJS
 
-    call refreshenv
+    setx PATH "%PATH%;C:\Program Files\nodejs" /M
     
     echo. & timeout /nobreak /t 2 >nul
 
