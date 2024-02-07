@@ -52,7 +52,7 @@ function createInfoMenu(tray) {
 
     // Підпункт меню 'Інформація' => 'Про програму'
     function createAboutItem(tray) {
-        const aboutMessage = `Node.js сервер, який із заданою періодичністю отримує дані про тривоги, що надаються alerts.in.ua з подальшою обробкою і виводом пвідомлення про початок та закінчення тривоги для зазначеного регіону України.                                                                                                          Copyright (c) 2024 Serhii I. Myshko`;
+        const aboutMessage = `Node.js сервер, який із заданою періодичністю отримує дані про тривоги, що надаються alerts.in.ua з подальшою обробкою і виводом повідомлення про початок та закінчення тривоги для зазначеного регіону України.                                                                                                          Copyright (c) 2024 Serhii I. Myshko`;
 
         const vbsPath = path.join(os.tmpdir(), 'msgbox.vbs');
 
