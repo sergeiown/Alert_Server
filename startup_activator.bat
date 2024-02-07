@@ -9,6 +9,12 @@ set shortcutPath=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\%shortc
 set iconPath=%SystemRoot%\System32\SHELL32.dll,77
 set workingDirectory=%CD%
 
+whoami /groups | find "S-1-16-12288" > nul
+    if %errorlevel% neq 0 (
+        powershell -Command "Start-Process '%0' -Verb RunAs"
+        exit /b
+    )
+
 if exist "%shortcutPath%" (
     del "%shortcutPath%"
 ) else (
