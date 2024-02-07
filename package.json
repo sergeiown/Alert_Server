@@ -1,11 +1,11 @@
 {
-    "name": "current_alert",
+    "name": "alert_server",
     "version": "1.0.0",
-    "description": "Server that receives alarm data from the alerts.in.ua",
+    "description": "Server that receives alert data from the alerts.in.ua at a specified frequency and displays it through the Windows notification centre",
     "author": "Serhii I. Myshko",
     "main": "index.js",
     "bin": {
-        "current_alert": "./index.js"
+        "alert_server": "./index.js"
     },
     "dependencies": {
         "axios": "^1.6.7",
