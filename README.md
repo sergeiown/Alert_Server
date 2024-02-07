@@ -33,13 +33,15 @@ Node.js сервер, який із заданою періодичністю о
 
 Інформування, щодо поточної тривоги та відміни тривоги, збереження історії тривог відбувається через Windows Notification Center. Додатково використовується індикація тривоги через tray icon та звукове опвіщення.
 
-| Appearance:  | | |
+| Зовнішній вигляд:  | | |
 | --- | --- | --- |
 | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/455fbc88-5d9d-4b68-a1ca-26556759e9fa) | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/0c87f7a9-8ec2-4825-bd66-158231252f26) | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/69d8daa9-8d13-44c5-83d8-4b74daf7e8ab) |
 
 ## Видалення
 
-В разі необхідності деінсталяції локального сервера оновлення тривог потрібно використати ярлик `Uninstall` в меню "Пуск => Alert server".
+| Рекомендація: |  |
+| --- | --- |
+| В разі необхідності деінсталяції локального сервера оновлення тривог потрібно використати ярлик `Uninstall` в меню "Пуск => Alert server". | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/450c8a2b-196d-4bbf-82a1-12e48a39cba9) |
 
 ## Внесок
 
