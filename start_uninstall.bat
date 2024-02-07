@@ -17,7 +17,7 @@ del /q "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Alert server.lnk
 
 rmdir /s /q "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Alert server\"
 
-rmdir /s /q "%userprofile%\Documents\Alert server"
+rmdir /s /q "%ProgramFiles%\Alert server"
 
 cls & echo Alert server successfully uninstalled.
 
