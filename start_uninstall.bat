@@ -19,6 +19,6 @@ rmdir /s /q "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Alert server\"
 
 rmdir /s /q "%userprofile%\Documents\Alert server"
 
-echo Alert server successfully uninstalled.
+cls & echo Alert server successfully uninstalled.
 
 timeout /t 3 /nobreak > nul
