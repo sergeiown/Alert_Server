@@ -22,7 +22,7 @@ const fetchDataAndSaveToFile = async () => {
 
         logEvent(`Successful API request`);
     } catch (error) {
-        logEvent(`API request error: ${error.message}`);
+        logEvent(`Internet connection check required`);
     }
 
     async function getqueryInfo() {
@@ -32,8 +32,8 @@ const fetchDataAndSaveToFile = async () => {
             const { info } = response.data;
             return info;
         } catch (error) {
-            logEvent(`Error fetching query info: ${error.message}`);
-            process.exit(1);
+            logEvent(`Fetching query info error`);
+            return null;
         }
     }
 };
