@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
 const os = require('os');
+const messages = require('../messages.json');
 const { logEvent } = require('./logger');
 
 // Пункт меню 'Назва'
@@ -19,11 +20,11 @@ function createAlertsMenu(tray) {
     const alertsItem = tray.item('Перегляд мапи поточних тривог', () => {
         exec('start https://alerts.in.ua/?pwa', (error, stdout, stderr) => {
             if (error) {
-                logEvent(`Error opening URL: ${error.message}`);
+                logEvent(atob(messages.msg_10));
                 return;
             }
-            stdout.trim() !== '' ? logEvent(`stdout: ${stdout}`) : null;
-            stderr.trim() !== '' ? logEvent(`stderr: ${stderr}`) : null;
+            stdout.trim() !== '' ? logEvent(stdout) : null;
+            stderr.trim() !== '' ? logEvent(stderr) : null;
         });
     });
 
@@ -39,11 +40,11 @@ function createInfoMenu(tray) {
         const logItem = tray.item('Файл журналу', () => {
             exec('start log.csv', (error, stdout, stderr) => {
                 if (error) {
-                    logEvent(`Error opening the log file: ${error.message}`);
+                    logEvent(atob(messages.msg_13));
                     return;
                 }
-                stdout.trim() !== '' ? logEvent(`stdout: ${stdout}`) : null;
-                stderr.trim() !== '' ? logEvent(`stderr: ${stderr}`) : null;
+                stdout.trim() !== '' ? logEvent(stdout) : null;
+                stderr.trim() !== '' ? logEvent(stderr) : null;
             });
         });
 
@@ -65,11 +66,11 @@ function createInfoMenu(tray) {
 
             exec(`start wscript.exe "${vbsPath}"`, (error, stdout, stderr) => {
                 if (error) {
-                    logEvent(`Error opening the message window: ${error.message}`);
+                    logEvent(atob(messages.msg_14));
                     return;
                 }
-                stdout.trim() !== '' ? logEvent(`stdout: ${stdout}`) : null;
-                stderr.trim() !== '' ? logEvent(`stderr: ${stderr}`) : null;
+                stdout.trim() !== '' ? logEvent(stdout) : null;
+                stderr.trim() !== '' ? logEvent(stderr) : null;
 
                 fs.unlinkSync(vbsPath);
             });
@@ -96,13 +97,13 @@ function createSettingsMenu(tray) {
             action: () => {
                 exec(`"${path.join(__dirname, '../startup_activator.bat')}"`, (error, stdout, stderr) => {
                     if (error) {
-                        logEvent(`Error executing startup_activator.bat: ${error.message}`);
+                        logEvent(atob(messages.msg_15));
                         return;
                     }
-                    stdout.trim() !== '' ? logEvent(`stdout: ${stdout}`) : null;
-                    stderr.trim() !== '' ? logEvent(`stderr: ${stderr}`) : null;
+                    stdout.trim() !== '' ? logEvent(stdout) : null;
+                    stderr.trim() !== '' ? logEvent(stderr) : null;
                 });
-                checkStartupFile() ? logEvent(`Auto startup disabled`) : logEvent(`Auto startup enabled`);
+                checkStartupFile() ? logEvent(atob(messages.msg_16)) : logEvent(atob(messages.msg_17));
             },
         });
 
@@ -132,7 +133,7 @@ function createSettingsMenu(tray) {
         function updateLocationJson(locations) {
             const jsonPath = path.join(__dirname, '../location.json');
 
-            logEvent('Regions for notification updated');
+            logEvent(atob(messages.msg_18));
             fs.writeFileSync(jsonPath, JSON.stringify(locations, null, 2), 'utf-8');
         }
 
@@ -170,7 +171,7 @@ function createExitMenu(tray) {
     const quit = tray.item('Вихід', {
         bold: true,
         action: () => {
-            logEvent(`The server is stopped by the user`);
+            logEvent(atob(messages.msg_19));
             tray.kill();
             process.exit();
         },

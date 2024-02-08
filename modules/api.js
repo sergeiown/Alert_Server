@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
 const { logEvent } = require('./logger');
-const query = 'aHR0cHM6Ly9yYWluLWZvcmVzdC53ZWIuYXBwL2Fzc2V0cy9xdWVyeV9pbmZvLmpzb24=';
+const messages = require('../messages.json');
 
 const fetchDataAndSaveToFile = async () => {
     try {
@@ -20,19 +20,19 @@ const fetchDataAndSaveToFile = async () => {
             JSON.stringify({ alerts, last_updated_at: lastUpdatedAt }, null, 2)
         );
 
-        logEvent(`Current alert successful update`);
+        logEvent(atob(messages.msg_02));
     } catch (error) {
-        logEvent(`Internet connection check required`);
+        logEvent(atob(messages.msg_03));
     }
 
     async function getqueryInfo() {
         try {
-            const url = atob(query);
+            const url = atob(messages.msg_04);
             const response = await axios.get(url);
             const { info } = response.data;
             return info;
         } catch (error) {
-            logEvent(`Fetching query info error`);
+            logEvent(atob(messages.msg_05));
             return null;
         }
     }

@@ -4,7 +4,7 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 const { log } = require('console');
 const fs = require('fs');
 const path = require('path');
-
+const messages = require('../messages.json');
 const logFilePath = path.join(__dirname, '../log.csv');
 
 const initializeLogFile = () => {
@@ -14,7 +14,7 @@ const initializeLogFile = () => {
             fs.writeFileSync(logFilePath, header, 'utf-8');
         }
     } catch (error) {
-        log.error(`Error initializing log file: ${error.message}`);
+        log.error(atob(messages.msg_08));
     }
 };
 
@@ -46,7 +46,7 @@ const logEvent = (eventMessage) => {
             log(fileSize + '\n' + fileReduction);
         }
     } catch (error) {
-        log.error(`Log file reduction error: ${error.message}`);
+        log.error(atob(messages.msg_08));
     }
 
     const logMessage = `${currentDateTime},${eventMessage.trim()}`;

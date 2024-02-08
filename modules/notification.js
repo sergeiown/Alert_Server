@@ -9,6 +9,7 @@ const { exec } = require('child_process');
 const { checkLocations } = require('./checkLocations');
 const alertTypes = require('../alert.json');
 const { playAlertSound, playAlertCancellationSound } = require('./audioPlayer');
+const messages = require('../messages.json');
 const { logEvent } = require('./logger');
 
 // Зберігаємо ідентифікатори виведених повідомлень разом із location_title
@@ -40,23 +41,13 @@ const showNotification = async () => {
                 notifier.on('click', function () {
                     exec('start https://alerts.in.ua/?pwa', (error, stdout, stderr) => {
                         if (error) {
-                            logEvent(`Error opening URL: ${error.message}`);
+                            logEvent(atob(messages.msg_10));
                             return;
                         }
-                        stdout.trim() !== '' ? logEvent(`stdout: ${stdout}`) : null;
-                        stderr.trim() !== '' ? logEvent(`stderr: ${stderr}`) : null;
+                        stdout.trim() !== '' ? logEvent(stdout) : null;
+                        stderr.trim() !== '' ? logEvent(stderr) : null;
                     });
                 });
-                /*                 notifier.on('timeout', function () {
-                    exec('start https://alerts.in.ua/?pwa', (error, stdout, stderr) => {
-                        if (error) {
-                            logEvent(`Error opening URL: ${error.message}`);
-                            return;
-                        }
-                        stdout.trim() !== '' ? logEvent(`stdout: ${stdout}`) : null;
-                        stderr.trim() !== '' ? logEvent(`stderr: ${stderr}`) : null;
-                    });
-                }); */
 
                 // Створюємо файл alert_active.tmp в папці %temp%
                 fs.writeFileSync(path.join(os.tmpdir(), 'alert_active.tmp'), '');
@@ -65,7 +56,7 @@ const showNotification = async () => {
                 playAlertSound();
                 setTimeout(playAlertSound, 14000);
 
-                logEvent(`Alert ${alert.alert_type}: ${alert.location_title}`);
+                logEvent(alert.alert_type);
 
                 // Зберігаємо інформацію про alert для майбутнього використання
                 displayedAlerts.set(alert.id, alert.location_title);
@@ -90,14 +81,14 @@ const showNotification = async () => {
                 playAlertCancellationSound();
                 setTimeout(playAlertCancellationSound, 6000);
 
-                logEvent(`Alert cancellation: ${locationTitle}`);
+                logEvent(atob(messages.msg_11));
 
                 // Видаляємо ідентифікатор зі списку виведених повідомлень
                 displayedAlerts.delete(displayedAlert);
             }
         });
     } catch (error) {
-        logEvent(`Notification error: ${error.message}`);
+        logEvent(atob(messages.msg_12));
     }
 };
 
