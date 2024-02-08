@@ -18,8 +18,6 @@ const checkLocations = async () => {
             locationsWithUsageOne.some((location) => location.UID === alert.location_uid)
         );
 
-        logEvent(`Current alert successful update`);
-
         if (locationsInCurrentAlert.length > 0) {
             return { alerts: locationsInCurrentAlert };
         } else {
