@@ -19,6 +19,8 @@ const fetchDataAndSaveToFile = async () => {
             path.join(__dirname, '../current_alert.json'),
             JSON.stringify({ alerts, last_updated_at: lastUpdatedAt }, null, 2)
         );
+
+        logEvent(`Current alert successful update`);
     } catch (error) {
         logEvent(`Internet connection check required`);
     }
