@@ -4,6 +4,7 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 const { exec } = require('child_process');
 const path = require('path');
 const { logEvent } = require('./logger');
+const messages = require('../messages.json');
 
 const playAlertSound = () => {
     // Викликаємо powershell для відтворення звуку без відображення програвача
@@ -14,7 +15,7 @@ const playAlertSound = () => {
         )}').PlaySync()`,
         (err) => {
             if (err) {
-                logEvent(`Audio playback error: ${err}`);
+                logEvent(atob(messages.msg_06));
             }
         }
     );
@@ -28,7 +29,7 @@ const playAlertCancellationSound = () => {
         )}').PlaySync()`,
         (err) => {
             if (err) {
-                logEvent(`Audio playback error: ${err}`);
+                logEvent(atob(messages.msg_06));
             }
         }
     );

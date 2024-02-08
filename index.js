@@ -5,8 +5,9 @@ const { logEvent } = require('./modules/logger');
 const { fetchDataAndSaveToFile } = require('./modules/api');
 const { showNotification } = require('./modules/notification');
 const { createTrayIcon } = require('./modules/trayIcon');
+const messages = require('./messages.json');
 
-logEvent(`Start of the server`);
+logEvent(atob(messages.msg_01));
 
 fetchDataAndSaveToFile();
 
