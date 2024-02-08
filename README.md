@@ -2,7 +2,9 @@
 
 Node.js сервер, який із заданою періодичністю отримує дані про тривоги, що надаються [alerts.in.ua](https://alerts.in.ua/) з подальшою обробкою і виводом повідомлення про початок та закінчення тривоги для зазначеного регіону України.
 
-![image](https://github.com/sergeiown/Alert_Server/assets/112722061/f9a69e2e-dd5d-4232-8e6f-0f4581bfd1bd)
+| Структура: |  |
+| --- | --- |
+| Залежності: | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/58a6dd25-288e-4788-8b20-85b0cd0e394b) |
 
 ## Встановлення
 
