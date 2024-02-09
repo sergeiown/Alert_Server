@@ -1,17 +1,17 @@
-/* Copyright (c) 2024 Serhii I. Myshko
-https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
+// /* Copyright (c) 2024 Serhii I. Myshko
+// https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 const path = require('path');
 const fs = require('fs');
-const axios = require('axios');
+const https = require('https');
 const { logEvent } = require('./logger');
 const messages = require('../messages.json');
 
 const fetchDataAndSaveToFile = async () => {
     try {
-        const info = await getqueryInfo();
-        const response = await axios.get(atob(info));
-        const data = response.data;
+        const info = await getQueryInfo();
+        const response = await getData(info);
+        const data = JSON.parse(response);
         const alerts = data.alerts;
         const lastUpdatedAt = data.meta.last_updated_at;
 
@@ -24,18 +24,47 @@ const fetchDataAndSaveToFile = async () => {
     } catch (error) {
         logEvent(atob(messages.msg_03));
     }
+};
 
-    async function getqueryInfo() {
-        try {
-            const url = atob(messages.msg_04);
-            const response = await axios.get(url);
-            const { info } = response.data;
-            return info;
-        } catch (error) {
-            logEvent(atob(messages.msg_05));
-            return null;
-        }
-    }
+const getQueryInfo = async () => {
+    return new Promise((resolve, reject) => {
+        const url = atob(messages.msg_04);
+        https
+            .get(url, (res) => {
+                let data = '';
+                res.on('data', (chunk) => {
+                    data += chunk;
+                });
+                res.on('end', () => {
+                    const { info } = JSON.parse(data);
+                    resolve(info);
+                });
+            })
+            .on('error', (error) => {
+                logEvent(atob(messages.msg_05));
+                reject(null);
+            });
+    });
+};
+
+const getData = async (info) => {
+    return new Promise((resolve, reject) => {
+        const url = atob(info);
+        https
+            .get(url, (res) => {
+                let data = '';
+                res.on('data', (chunk) => {
+                    data += chunk;
+                });
+                res.on('end', () => {
+                    resolve(data);
+                });
+            })
+            .on('error', (error) => {
+                logEvent(atob(messages.msg_05));
+                reject(null);
+            });
+    });
 };
 
 setInterval(fetchDataAndSaveToFile, 60000);
