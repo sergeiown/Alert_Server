@@ -71,9 +71,10 @@ function createNotification(title, message, image) {
     const snoreToastPath = path.resolve(__dirname, '..', 'resources', 'snoreToast', 'snoretoast.exe');
 
     exec(
-        `${snoreToastPath} -t "${title}" -m "${message}" -p "${image}" -d long -silent -appID "Alert server"`,
+        `${snoreToastPath} -t "${title}" -m "${message}" -p "${image}" -d long -silent -appID "Alert_server"`,
         (error) => {
             if (error) {
+                logEvent(atob(messages.msg_21));
                 return;
             }
         }
