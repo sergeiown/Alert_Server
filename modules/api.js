@@ -1,5 +1,5 @@
-// /* Copyright (c) 2024 Serhii I. Myshko
-// https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
+/* Copyright (c) 2024 Serhii I. Myshko
+https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 const { logEvent } = require('./logger');
 const messages = require('../messages.json');
