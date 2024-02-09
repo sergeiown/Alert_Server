@@ -8,7 +8,6 @@
         "alert_server": "./index.js"
     },
     "dependencies": {
-        "axios": "^1.6.7",
         "trayicon": "^1.2.2"
     },
     "scripts": {
