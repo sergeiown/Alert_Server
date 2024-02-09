@@ -10,7 +10,7 @@ const checkLocations = async () => {
     try {
         let currentAlertData;
 
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 3000));
 
         const currentAlertFilePath = path.join(process.env.TEMP, 'current_alert.json');
         currentAlertData = JSON.parse(await fs.readFile(currentAlertFilePath, 'utf-8'));
