@@ -46,7 +46,7 @@ const logEvent = (eventMessage) => {
             log(fileSize + '\n' + fileReduction);
         }
     } catch (error) {
-        log.error(atob(messages.msg_08));
+        log.error(atob(messages.msg_09));
     }
 
     const logMessage = `${currentDateTime},${eventMessage.trim()}`;
