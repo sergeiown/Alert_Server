@@ -1,6 +1,7 @@
 /* Copyright (c) 2024 Serhii I. Myshko
 https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
+const path = require('path');
 const fs = require('fs').promises;
 const { logEvent } = require('./logger');
 const messages = require('../messages.json');
@@ -11,7 +12,8 @@ const checkLocations = async () => {
 
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
-        currentAlertData = JSON.parse(await fs.readFile('./current_alert.json', 'utf-8'));
+        const currentAlertFilePath = path.join(process.env.TEMP, 'current_alert.json');
+        currentAlertData = JSON.parse(await fs.readFile(currentAlertFilePath, 'utf-8'));
         const locationsData = JSON.parse(await fs.readFile('./location.json', 'utf-8'));
 
         const locationsWithUsageOne = locationsData.filter((location) => location.Usage === '1');

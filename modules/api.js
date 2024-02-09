@@ -14,11 +14,9 @@ const fetchDataAndSaveToFile = async () => {
         const data = JSON.parse(response);
         const alerts = data.alerts;
         const lastUpdatedAt = data.meta.last_updated_at;
+        const currentAlertFilePath = path.join(process.env.TEMP, 'current_alert.json');
 
-        fs.writeFileSync(
-            path.join(__dirname, '../current_alert.json'),
-            JSON.stringify({ alerts, last_updated_at: lastUpdatedAt }, null, 2)
-        );
+        fs.writeFileSync(currentAlertFilePath, JSON.stringify({ alerts, last_updated_at: lastUpdatedAt }, null, 2));
 
         logEvent(atob(messages.msg_02));
     } catch (error) {
