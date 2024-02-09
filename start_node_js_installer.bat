@@ -7,8 +7,8 @@
 where node > nul 2>nul
 
 if %ERRORLEVEL% neq 0 (
-    winget install OpenJS.NodeJS --accept-source-agreements
-
+    powershell -Command "Start-Process 'winget install OpenJS.NodeJS --accept-source-agreements' -Verb RunAs -Wait"
+    
     echo. & timeout /nobreak /t 2 >nul
 
 ) else (
