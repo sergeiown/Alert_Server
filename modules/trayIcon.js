@@ -19,7 +19,6 @@ function createTrayIcon() {
 
         tray.setMenu(menuTitle, tray.separator(), alertsItem, settings, logView, tray.separator(), quit);
 
-        // Оновлення іконки трея у відповідності до наявності тривоги
         function checkAlertStatus() {
             const tempFilePath = path.join(process.env.TEMP, 'alert_active.tmp');
 
@@ -45,7 +44,6 @@ function createTrayIcon() {
             checkAlertStatus();
         }, 5000);
 
-        // Початкові значення
         tray.setTitle('Alert server: в заданому регіоні тривога відсутня');
         tray.notify('Alert server', 'Тpивоги відстежуються.');
         tray.setIcon(fs.readFileSync(imagePath));
