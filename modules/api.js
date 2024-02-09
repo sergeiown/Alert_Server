@@ -23,8 +23,6 @@ const fetchDataAndSaveToFile = async () => {
         child.on('close', (code) => {
             if (code !== 0) {
                 logEvent(atob(messages.msg_04));
-            } else {
-                logEvent(atob(messages.msg_02));
             }
         });
     } catch (error) {
