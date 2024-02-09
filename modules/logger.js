@@ -5,7 +5,8 @@ const { log } = require('console');
 const fs = require('fs');
 const path = require('path');
 const messages = require('../messages.json');
-const logFilePath = path.join(__dirname, '../log.csv');
+// const logFilePath = path.join(__dirname, '../log.csv');
+const logFilePath = path.join(process.env.TEMP, 'log.csv');
 
 const initializeLogFile = () => {
     try {
