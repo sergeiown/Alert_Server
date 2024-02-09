@@ -7,11 +7,11 @@
 for /f "delims=" %%v in ('node -v 2^>nul') do set "node_version=%%v"
 
 if not defined node_version (
-    echo Node.js is not detected and needs to be downloaded and installed.
+    echo NodeJS is not detected and needs to be downloaded and installed.
     call start_node_js_installer.bat
     
 ) else (
-    echo Node.js version installed: %node_version%
+    echo NodeJS version installed: %node_version%
 )
 
 if not exist "node_modules" (

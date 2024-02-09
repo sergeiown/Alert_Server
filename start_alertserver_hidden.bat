@@ -6,11 +6,11 @@
 :: Перевірка наявності Node.js та встановлених залежностей
 where node > nul 2>nul
 if %ERRORLEVEL% neq 0 (
-    echo Node.js is not detected and needs to be downloaded and installed.
+    echo NodeJS is not detected and needs to be downloaded and installed.
     call start_node_js_installer.bat
     
 ) else (
-    echo Node.js detected: & node -v
+    echo NodeJS detected: & node -v
 )
 
 if not exist "node_modules" (
