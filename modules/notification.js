@@ -74,7 +74,7 @@ function createNotification(title, message, image) {
         `${snoreToastPath} -t "${title}" -m "${message}" -p "${image}" -d long -silent -appID "Alert server"`,
         (error) => {
             if (error) {
-                // logEvent(atob(messages.msg_21));
+                logEvent(atob(messages.msg_21));
                 return;
             }
         }
