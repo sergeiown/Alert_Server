@@ -37,7 +37,7 @@ Node.js сервер, який із заданою періодичністю о
 
 | Зовнішній вигляд:  | |
 | --- | --- | 
-| ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/788bcfa9-6b64-4163-afa2-738bcbdcd663) | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/3fc2db2e-8e84-4804-987f-4c109df82366) | 
+| ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/967cfb51-a668-4bfb-8028-f0d4067d4469) | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/7b2c63d6-eacb-47ee-b92c-956801682c0b) | 
 ## Видалення
 
 | Рекомендація: |  |
