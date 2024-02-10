@@ -1,6 +1,8 @@
 /* Copyright (c) 2024 Serhii I. Myshko
 https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
+'use strict';
+
 const Tray = require('trayicon');
 const fs = require('fs');
 const path = require('path');

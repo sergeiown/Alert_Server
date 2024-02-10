@@ -1,6 +1,8 @@
 /* Copyright (c) 2024 Serhii I. Myshko
 https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
+'use strict';
+
 const { exec } = require('child_process');
 const path = require('path');
 const { logEvent } = require('./logger');
