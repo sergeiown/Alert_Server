@@ -7,6 +7,7 @@ const Tray = require('trayicon');
 const fs = require('fs');
 const path = require('path');
 const { createTitleMenu, createAlertsMenu, createInfoMenu, createSettingsMenu, createExitMenu } = require('./trayMenu');
+const messages = require('../messages.json');
 
 function createTrayIcon() {
     const imagePath = path.join(__dirname, '..', 'resources', 'images', 'tray.png');
@@ -28,14 +29,14 @@ function createTrayIcon() {
                 if (err) {
                     if (isAlertActive) {
                         isAlertActive = false;
-                        tray.setTitle('Alert server: в заданому регіоні тривога відсутня');
+                        tray.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
                         tray.setIcon(fs.readFileSync(imagePath));
                     }
                 } else {
                     if (!isAlertActive) {
                         isAlertActive = true;
                         const imagePath = path.join(__dirname, '..', 'resources', 'images', 'tray_alert.png');
-                        tray.setTitle('Alert server: активна тривога!');
+                        tray.setTitle(Buffer.from(messages.msg_24, 'base64').toString('utf8'));
                         tray.setIcon(fs.readFileSync(imagePath));
                     }
                 }
@@ -46,8 +47,11 @@ function createTrayIcon() {
             checkAlertStatus();
         }, 5000);
 
-        tray.setTitle('Alert server: в заданому регіоні тривога відсутня');
-        tray.notify('Alert server', 'Тpивоги відстежуються.');
+        tray.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
+        tray.notify(
+            Buffer.from(messages.msg_22, 'base64').toString('utf8'),
+            Buffer.from(messages.msg_25, 'base64').toString('utf8')
+        );
         tray.setIcon(fs.readFileSync(imagePath));
     });
 }
