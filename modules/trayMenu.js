@@ -11,15 +11,18 @@ const messages = require('../messages.json');
 
 // Пункт меню 'Назва'
 function createTitleMenu(tray) {
-    const menuTitle = tray.item('🔔                  Alert server                  🔔', { bold: true, disabled: true });
+    const menuTitle = tray.item(Buffer.from(messages.msg_26, 'base64').toString('utf8'), {
+        bold: true,
+        disabled: true,
+    });
 
     return menuTitle;
 }
 
 // Пункт меню 'Перегляд мапи поточних тривог'
 function createAlertsMenu(tray) {
-    const alertsItem = tray.item('Перегляд мапи поточних тривог', () => {
-        exec('start https://alerts.in.ua/?pwa', (error) => {
+    const alertsItem = tray.item(Buffer.from(messages.msg_27, 'base64').toString('utf8'), () => {
+        exec(Buffer.from(messages.msg_28, 'base64').toString('utf8'), (error) => {
             if (error) {
                 logEvent(atob(messages.msg_10));
                 return;
@@ -32,11 +35,11 @@ function createAlertsMenu(tray) {
 
 // Пункт меню 'Інформація'
 function createInfoMenu(tray) {
-    const logView = tray.item('Інформація');
+    const logView = tray.item(Buffer.from(messages.msg_29, 'base64').toString('utf8'));
 
     // Підпункт меню 'Інформація' => 'Перегляд журналу'
     function createLogItem(tray) {
-        const logItem = tray.item('Файл журналу', () => {
+        const logItem = tray.item(Buffer.from(messages.msg_30, 'base64').toString('utf8'), () => {
             const logFilePath = path.join(process.env.TEMP, 'log.csv');
 
             exec(`start ${logFilePath}`, (error) => {
@@ -53,14 +56,11 @@ function createInfoMenu(tray) {
     // Підпункт меню 'Інформація' => 'Про програму'
     function createAboutItem(tray) {
         const aboutMessage = Buffer.from(messages.msg_20, 'base64').toString('utf8');
+        const titleMessage = Buffer.from(messages.msg_31, 'base64').toString('utf8');
         const vbsPath = path.join(process.env.TEMP, 'msgbox.vbs');
 
-        const aboutItem = tray.item('Про програму', () => {
-            fs.writeFileSync(
-                vbsPath,
-                `MsgBox "${aboutMessage.replace(/\r?\n/g, ' ')}", 64, "Про програму"`,
-                'utf-16le'
-            );
+        const aboutItem = tray.item(Buffer.from(messages.msg_31, 'base64').toString('utf8'), () => {
+            fs.writeFileSync(vbsPath, `MsgBox "${aboutMessage}", 64, "${titleMessage}"`, 'utf-16le');
 
             exec(`start wscript.exe "${vbsPath}"`, (error) => {
                 if (error) {
@@ -83,12 +83,12 @@ function createInfoMenu(tray) {
 
 // Пункт меню 'Налаштування'
 function createSettingsMenu(tray) {
-    const settingsMenu = tray.item('Налаштування');
+    const settingsMenu = tray.item(Buffer.from(messages.msg_32, 'base64').toString('utf8'));
 
     // Підпункт меню 'Налаштування' => 'Запускати разом з системою'
     function createRunOnStartupItem(tray) {
         const isFileExists = checkStartupFile();
-        const runOnStartupItem = tray.item('Запускати разом з системою', {
+        const runOnStartupItem = tray.item(Buffer.from(messages.msg_33, 'base64').toString('utf8'), {
             checked: isFileExists,
             action: () => {
                 exec(`"${path.join(__dirname, '..', 'startup_activator.bat')}"`, (error) => {
@@ -123,7 +123,7 @@ function createSettingsMenu(tray) {
 
     // Підпункт меню 'Налаштування' => 'Вибір регіонів'
     function createNotificationRegionsItem(tray) {
-        const notificationRegionsItem = tray.item('Вибір регіонів');
+        const notificationRegionsItem = tray.item(Buffer.from(messages.msg_34, 'base64').toString('utf8'));
 
         function updateLocationJson(locations) {
             const jsonPath = path.join(__dirname, '..', 'location.json');
@@ -163,7 +163,7 @@ function createSettingsMenu(tray) {
 
 // Пункт меню 'Вихід'
 function createExitMenu(tray) {
-    const quit = tray.item('Вихід', {
+    const quit = tray.item(Buffer.from(messages.msg_35, 'base64').toString('utf8'), {
         bold: true,
         action: () => {
             logEvent(atob(messages.msg_19));

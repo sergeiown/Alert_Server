@@ -7,8 +7,8 @@ const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
 const { checkLocations } = require('./checkLocations');
-const alertTypes = require('../alert.json');
 const { playAlertSound, playAlertCancellationSound } = require('./audioPlayer');
+const alertTypes = require('../alert.json');
 const messages = require('../messages.json');
 const { logEvent } = require('./logger');
 
@@ -71,7 +71,9 @@ const showNotification = async () => {
 
 function createNotification(title, message, image) {
     const snoreToastPath = path.join(__dirname, '..', 'resources', 'snoreToast', 'snoretoast.exe');
-    const notificationCommand = `${snoreToastPath} -t "${title}" -m "${message}" -p "${image}" -d long -silent -appID "Alert server"`;
+    const notificationCommand = `${snoreToastPath} -t "${title}" -m "${message}" -p "${image}" -d long -silent -appID "${atob(
+        messages.msg_22
+    )}"`;
 
     exec(notificationCommand, (error) => {
         if (error) {
