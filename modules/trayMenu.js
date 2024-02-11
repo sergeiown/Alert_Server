@@ -19,13 +19,11 @@ function createTitleMenu(tray) {
 // Пункт меню 'Перегляд мапи поточних тривог'
 function createAlertsMenu(tray) {
     const alertsItem = tray.item('Перегляд мапи поточних тривог', () => {
-        exec('start https://alerts.in.ua/?pwa', (error, stdout, stderr) => {
+        exec('start https://alerts.in.ua/?pwa', (error) => {
             if (error) {
                 logEvent(atob(messages.msg_10));
                 return;
             }
-            stdout.trim() !== '' ? logEvent(stdout) : null;
-            stderr.trim() !== '' ? logEvent(stderr) : null;
         });
     });
 
@@ -41,13 +39,11 @@ function createInfoMenu(tray) {
         const logItem = tray.item('Файл журналу', () => {
             const logFilePath = path.join(process.env.TEMP, 'log.csv');
 
-            exec(`start ${logFilePath}`, (error, stdout, stderr) => {
+            exec(`start ${logFilePath}`, (error) => {
                 if (error) {
                     logEvent(atob(messages.msg_13));
                     return;
                 }
-                stdout.trim() !== '' ? logEvent(stdout) : null;
-                stderr.trim() !== '' ? logEvent(stderr) : null;
             });
         });
 
@@ -66,13 +62,11 @@ function createInfoMenu(tray) {
                 'utf-16le'
             );
 
-            exec(`start wscript.exe "${vbsPath}"`, (error, stdout, stderr) => {
+            exec(`start wscript.exe "${vbsPath}"`, (error) => {
                 if (error) {
                     logEvent(atob(messages.msg_14));
                     return;
                 }
-                stdout.trim() !== '' ? logEvent(stdout) : null;
-                stderr.trim() !== '' ? logEvent(stderr) : null;
 
                 fs.unlinkSync(vbsPath);
             });
@@ -97,14 +91,12 @@ function createSettingsMenu(tray) {
         const runOnStartupItem = tray.item('Запускати разом з системою', {
             checked: isFileExists,
             action: () => {
-                exec(`"${path.join(__dirname, '..', 'startup_activator.bat')}"`, (error, stdout, stderr) => {
+                exec(`"${path.join(__dirname, '..', 'startup_activator.bat')}"`, (error) => {
                     if (error) {
                         logEvent(atob(messages.msg_15));
 
                         return;
                     }
-                    stdout.trim() !== '' ? logEvent(stdout) : null;
-                    stderr.trim() !== '' ? logEvent(stderr) : null;
                 });
                 checkStartupFile() ? logEvent(atob(messages.msg_16)) : logEvent(atob(messages.msg_17));
             },
