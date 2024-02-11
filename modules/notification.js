@@ -70,17 +70,16 @@ const showNotification = async () => {
 };
 
 function createNotification(title, message, image) {
-    const snoreToastPath = path.resolve(__dirname, '..', 'resources', 'snoreToast', 'snoretoast.exe');
+    const snoreToastPath = path.join(__dirname, '..', 'resources', 'snoreToast', 'snoretoast.exe');
+    const notificationCommand = `${snoreToastPath} -t "${title}" -m "${message}" -p "${image}" -d long -silent -appID "Alert server"`;
 
-    exec(
-        `${snoreToastPath} -t "${title}" -m "${message}" -p "${image}" -d long -silent -appID "Alert server"`,
-        (error) => {
-            if (error) {
-                logEvent(atob(messages.msg_21));
-                return;
-            }
+    exec(notificationCommand, (error) => {
+        if (error) {
+            logEvent(atob(messages.msg_21));
+
+            return;
         }
-    );
+    });
 }
 
 setInterval(showNotification, 10000);
