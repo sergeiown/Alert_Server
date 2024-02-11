@@ -8,33 +8,23 @@ const path = require('path');
 const { logEvent } = require('./logger');
 const messages = require('../messages.json');
 
+const alertSound = path.join(__dirname, '..', 'resources', 'audio', 'alert.wav');
+const alertCancellationSound = path.join(__dirname, '..', 'resources', 'audio', 'alert_cancellation.wav');
+
 const playAlertSound = () => {
-    // Викликаємо powershell для відтворення звуку без відображення програвача
-    exec(
-        `powershell -c (New-Object System.Media.SoundPlayer '${path.join(
-            __dirname,
-            '../resources/audio/alert.wav'
-        )}').PlaySync()`,
-        (err) => {
-            if (err) {
-                logEvent(atob(messages.msg_06));
-            }
+    exec(`powershell -c (New-Object System.Media.SoundPlayer '${alertSound}').PlaySync()`, (err) => {
+        if (err) {
+            logEvent(atob(messages.msg_06));
         }
-    );
+    });
 };
 
 const playAlertCancellationSound = () => {
-    exec(
-        `powershell -c (New-Object System.Media.SoundPlayer '${path.join(
-            __dirname,
-            '../resources/audio/alert_cancellation.wav'
-        )}').PlaySync()`,
-        (err) => {
-            if (err) {
-                logEvent(atob(messages.msg_06));
-            }
+    exec(`powershell -c (New-Object System.Media.SoundPlayer '${alertCancellationSound}').PlaySync()`, (err) => {
+        if (err) {
+            logEvent(atob(messages.msg_06));
         }
-    );
+    });
 };
 
 module.exports = { playAlertSound, playAlertCancellationSound };

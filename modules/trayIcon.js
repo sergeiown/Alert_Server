@@ -9,7 +9,7 @@ const path = require('path');
 const { createTitleMenu, createAlertsMenu, createInfoMenu, createSettingsMenu, createExitMenu } = require('./trayMenu');
 
 function createTrayIcon() {
-    const imagePath = path.join(__dirname, '../resources/images/tray.png');
+    const imagePath = path.join(__dirname, '..', 'resources', 'images', 'tray.png');
     let isAlertActive = false;
 
     Tray.create(function (tray) {
@@ -34,7 +34,7 @@ function createTrayIcon() {
                 } else {
                     if (!isAlertActive) {
                         isAlertActive = true;
-                        const imagePath = path.join(__dirname, '../resources/images/tray_alert.png');
+                        const imagePath = path.join(__dirname, '..', 'resources', 'images', 'tray_alert.png');
                         tray.setTitle('Alert server: активна тривога!');
                         tray.setIcon(fs.readFileSync(imagePath));
                     }
