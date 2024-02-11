@@ -15,8 +15,9 @@ const checkLocations = async () => {
         await new Promise((resolve) => setTimeout(resolve, 3000));
 
         const currentAlertFilePath = path.join(process.env.TEMP, 'current_alert.json');
+        const locationFilePath = path.join(__dirname, '..', 'location.json');
         currentAlertData = JSON.parse(await fs.readFile(currentAlertFilePath, 'utf-8'));
-        const locationsData = JSON.parse(await fs.readFile('./location.json', 'utf-8'));
+        const locationsData = JSON.parse(await fs.readFile(locationFilePath, 'utf-8'));
 
         const locationsWithUsageOne = locationsData.filter((location) => location.Usage === '1');
         const locationsInCurrentAlert = currentAlertData.alerts.filter((alert) =>

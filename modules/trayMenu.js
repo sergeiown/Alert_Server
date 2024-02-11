@@ -6,9 +6,8 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
-const os = require('os');
-const messages = require('../messages.json');
 const { logEvent } = require('./logger');
+const messages = require('../messages.json');
 
 // Пункт меню 'Назва'
 function createTitleMenu(tray) {
@@ -41,6 +40,7 @@ function createInfoMenu(tray) {
     function createLogItem(tray) {
         const logItem = tray.item('Файл журналу', () => {
             const logFilePath = path.join(process.env.TEMP, 'log.csv');
+
             exec(`start ${logFilePath}`, (error, stdout, stderr) => {
                 if (error) {
                     logEvent(atob(messages.msg_13));
@@ -57,8 +57,7 @@ function createInfoMenu(tray) {
     // Підпункт меню 'Інформація' => 'Про програму'
     function createAboutItem(tray) {
         const aboutMessage = Buffer.from(messages.msg_20, 'base64').toString('utf8');
-
-        const vbsPath = path.join(os.tmpdir(), 'msgbox.vbs');
+        const vbsPath = path.join(process.env.TEMP, 'msgbox.vbs');
 
         const aboutItem = tray.item('Про програму', () => {
             fs.writeFileSync(
@@ -98,9 +97,10 @@ function createSettingsMenu(tray) {
         const runOnStartupItem = tray.item('Запускати разом з системою', {
             checked: isFileExists,
             action: () => {
-                exec(`"${path.join(__dirname, '../startup_activator.bat')}"`, (error, stdout, stderr) => {
+                exec(`"${path.join(__dirname, '..', 'startup_activator.bat')}"`, (error, stdout, stderr) => {
                     if (error) {
                         logEvent(atob(messages.msg_15));
+
                         return;
                     }
                     stdout.trim() !== '' ? logEvent(stdout) : null;
@@ -134,7 +134,7 @@ function createSettingsMenu(tray) {
         const notificationRegionsItem = tray.item('Вибір регіонів');
 
         function updateLocationJson(locations) {
-            const jsonPath = path.join(__dirname, '../location.json');
+            const jsonPath = path.join(__dirname, '..', 'location.json');
 
             logEvent(atob(messages.msg_18));
             fs.writeFileSync(jsonPath, JSON.stringify(locations, null, 2), 'utf-8');
@@ -153,7 +153,7 @@ function createSettingsMenu(tray) {
             return checkboxItem;
         }
 
-        const jsonPath = path.join(__dirname, '../location.json');
+        const jsonPath = path.join(__dirname, '..', 'location.json');
         const locations = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
 
         for (const location of locations) {

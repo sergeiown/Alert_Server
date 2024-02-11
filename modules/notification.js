@@ -5,7 +5,6 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 const path = require('path');
 const fs = require('fs');
-const os = require('os');
 const { exec } = require('child_process');
 const { checkLocations } = require('./checkLocations');
 const alertTypes = require('../alert.json');
@@ -14,9 +13,10 @@ const messages = require('../messages.json');
 const { logEvent } = require('./logger');
 
 const displayedAlerts = new Map();
+const tempFilePath = path.join(process.env.TEMP, 'alert_active.tmp');
 
-if (fs.existsSync(path.join(os.tmpdir(), 'alert_active.tmp'))) {
-    fs.unlinkSync(path.join(os.tmpdir(), 'alert_active.tmp'));
+if (fs.existsSync(tempFilePath)) {
+    fs.unlinkSync(tempFilePath);
 }
 
 const showNotification = async () => {
@@ -30,11 +30,11 @@ const showNotification = async () => {
                 // Повідомлення про новий alert
                 const title = `${alertType ? alertType.name : alert.alert_type}`;
                 const message = `${alert.location_title}`;
-                const image = path.join(__dirname, '../resources/images/tray_alert.png');
+                const image = path.join(__dirname, '..', 'resources', 'images', 'tray_alert.png');
 
                 createNotification(title, message, image);
 
-                fs.writeFileSync(path.join(os.tmpdir(), 'alert_active.tmp'), '');
+                fs.writeFileSync(tempFilePath, '');
 
                 playAlertSound();
                 setTimeout(playAlertSound, 14000);
@@ -48,13 +48,13 @@ const showNotification = async () => {
         displayedAlerts.forEach((locationTitle, displayedAlert) => {
             if (!alerts.some((alert) => alert.id === displayedAlert)) {
                 // Повідомлення про відміну тривоги
-                const image = path.join(__dirname, '../resources/images/tray.png');
+                const image = path.join(__dirname, '..', 'resources', 'images', 'tray.png');
                 const title = 'Тривога скасована';
                 const message = `${locationTitle}`;
 
                 createNotification(title, message, image);
 
-                fs.unlinkSync(path.join(os.tmpdir(), 'alert_active.tmp'));
+                fs.unlinkSync(tempFilePath);
 
                 playAlertCancellationSound();
                 setTimeout(playAlertCancellationSound, 6000);
