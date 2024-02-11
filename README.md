@@ -4,7 +4,7 @@ Node.js сервер, який із заданою періодичністю о
 
 | Структура: |  |
 | --- | --- |
-| Залежності | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/f475f1d0-3e1a-41e7-b810-24c687084b27) |
+| Залежності | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/08280db3-bf47-4b51-bc90-ab4b5d1dc5c0) |
 
 ## Встановлення
 
