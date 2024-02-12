@@ -3,7 +3,6 @@
 
 @echo off
 
-:: Перевірка наявності Node.js, завантаження та встановлення за необхідності
 where node > nul 2>nul
 
 if %ERRORLEVEL% neq 0 (
