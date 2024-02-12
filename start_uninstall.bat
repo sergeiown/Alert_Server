@@ -3,7 +3,6 @@
 
 @echo off
 
-:: Запит на підвищення привілеїв до адміністратора
 taskkill /f /im "node.exe" >nul 2>nul
 
 timeout /t 1 /nobreak >nul
