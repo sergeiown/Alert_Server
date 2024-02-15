@@ -6,7 +6,7 @@
 where node > nul 2>nul
 
 if %ERRORLEVEL% neq 0 (
-    powershell -Command "Start-Process 'winget' -ArgumentList 'install OpenJS.NodeJS --accept-source-agreements' -Verb RunAs -Wait"
+    powershell -Command "Start-Process 'winget' -ArgumentList 'install --id=OpenJS.NodeJS -e --source winget --accept-package-agreements --accept-source-agreements --disable-interactivity --silent' -Verb RunAs -Wait"
    
     echo NodeJS is successfully installed.
     
