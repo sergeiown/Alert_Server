@@ -12,7 +12,7 @@ const logFilePath = path.join(process.env.TEMP, 'log.csv');
 const initializeLogFile = () => {
     try {
         if (!fs.existsSync(logFilePath)) {
-            const header = 'Date,Time,Event';
+            const header = atob(messages.msg_36);
             fs.writeFileSync(logFilePath, header, 'utf-8');
         }
     } catch (error) {
@@ -40,9 +40,9 @@ const logEvent = (eventMessage) => {
         const stats = fs.statSync(logFilePath);
         if (stats.size > maxFileSize) {
             const fileContent = fs.readFileSync(logFilePath, 'utf-8').split('\n');
-            const newContent = 'Date,Time,Event\n' + fileContent.slice(25).join('\n');
-            const fileSize = `${currentDateTime},Log file size: ${(stats.size / 1024).toFixed(2)} Kb`;
-            const fileReduction = `${currentDateTime},Log file size reduced`;
+            const newContent = atob(messages.msg_36) + '\n' + fileContent.slice(25).join('\n');
+            const fileSize = `${currentDateTime},${atob(messages.msg_37)}: ${(stats.size / 1024).toFixed(2)} Kb`;
+            const fileReduction = `${currentDateTime},${atob(messages.msg_38)}`;
 
             fs.writeFileSync(logFilePath, newContent + '\n' + fileSize + '\n' + fileReduction, 'utf-8');
             log(fileSize + '\n' + fileReduction);
