@@ -1,5 +1,7 @@
 # ⚠ Локальний сервер оновлення тривог
 
+**[EN](https://github.com/sergeiown/Alert_Server/blob/main/README.md) | [UA](https://github.com/sergeiown/Alert_Server/blob/main/README-UA.md)**
+
 Адаптований для 64-розрядних версій Windows Node.js сервер, який із заданою періодичністю отримує дані про тривоги, що надаються [alerts.in.ua](https://alerts.in.ua/) з подальшою обробкою і виводом повідомлення про початок та закінчення тривоги для зазначеного регіону України.
 
 | Структура: |  |
