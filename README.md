@@ -1,55 +1,58 @@
-# Локальний сервер оновлення тривог
+# ⚠ Local alert update server
 
-Адаптований для 64-розрядних версій Windows Node.js сервер, який із заданою періодичністю отримує дані про тривоги, що надаються [alerts.in.ua](https://alerts.in.ua/) з подальшою обробкою і виводом повідомлення про початок та закінчення тривоги для зазначеного регіону України.
+**[EN](https://github.com/sergeiown/Alert_Server/blob/main/README.md) | [UA](https://github.com/sergeiown/Alert_Server/blob/main/README-UA.md)**
 
-| Структура: |  |
+A Node.js server adapted for 64-bit versions of Windows that receives alarm data provided by [alerts.in.ua](https://alerts.in.ua/) at a specified frequency with subsequent processing and displaying notifications about the start and end of the alert for the specified region of Ukraine.
+
+
+| Structure: |  |
 | --- | --- |
-| Залежності | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/08280db3-bf47-4b51-bc90-ab4b5d1dc5c0) |
+| Dependencies | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/08280db3-bf47-4b51-bc90-ab4b5d1dc5c0) |
 
-## Встановлення
+## Installation
 
-На поточний момент реалізована можливість повністю автоматизованого встановлення. Інсталятор виконано у мінімалістичному варіанті з використанням Batch scripts та PowerShell.
+The possibility of fully automated installation has been implemented at the moment. The installer is made in a minimalist version using Batch scripts and PowerShell.
 
-Порядок дій:
-- завантажити архів інсталятора `Alert_server_setup.zip` доступний за посиланням: [Alert server releases](https://github.com/sergeiown/Alert_Server/releases);
-- видобути інсталятор з архіву у вибраному розташуванні;
-- запустити інсталятор `Alert_server_setup.bat`.
+The procedure is as follows:
+- download the installer archive `Alert_server_setup.zip` available here: [Alert server releases](https://github.com/sergeiown/Alert_Server/releases);
+- extract the installer from the archive to the selected location;
+- run the `Alert_server_setup.bat` installer.
 
-Інсталяція буде виконана в розташуванні `%userprofile%\Documents\Alert_Server`, під час встановлення буде перевірено наявність [Git](https://git-scm.com/) та [Node.js](https://nodejs.org/en) та їх інсталяція за необхідності.
+The installation will be performed in the location `%userprofile%\Documents\Alert_Server`, during the installation the availability of [Git](https://git-scm.com/) and [Node.js](https://nodejs.org/en) will be checked and installed if necessary.
 
-Безпосередньо інсталяція локального сервера оновлення тривог складається з імпорту проєкту з репозиторію [GitHub](https://github.com/sergeiown/Alert_Server), встановлення необхідних залежностей та ярликів в меню "Пуск".
+Actually installation of the local alarm update server consists of importing the project from the [GitHub](https://github.com/sergeiown/Alert_Server) repository and installing the necessary dependencies and shortcuts in the Start menu.
 
-Код відкритий, скомпільовані файли не використовуються.
+The code is open source, no compiled files are used.
 
 ---
-***Disclamer:***  
-*Тестування та адаптація функціоналу проводились на 64-розрядних версіях Windows 10 та 11 версії 22H2.*
-*На інших платформах або версіях Windows можливості можуть бути обмежені або недоступні.*
-*Рекомендується використовувати Windows 10 версії 22H2 або Windows 11 для кращого досвіду.*
+***Disclaimer:***  
+*Testing and adaptation of the functionality was carried out on 64-bit versions of Windows 10 22H2 and 11 22H2.  
+*Features may be limited or unavailable on other platforms or versions of Windows.  
+*We recommend using Windows 10 version 22H2 or Windows 11 for the best experience.  
 
-## Використання
+## Usage
 
-Використання локального сервера оновлення тривог напрочуд просте та інтуїтивно зрозуміле. Перший запуск виконується автоматично після завершення процесу інсталяції.
+Using the local alert update server is surprisingly easy and intuitive. The first run is performed automatically after the installation process is complete.
 
-Індикація стану і керування налаштуваннями відбуваються через меню tray icon. Серед налаштувань доступний запуск сервера під час старту системи та вибір регіонів, щодо яких відбуватиметься відстеження наявності тривог.
+The status and settings are displayed and managed via the tray icon menu. You can start the server at system startup, select the regions for which alarms will be monitored and so on.
 
-Інформування, щодо поточної тривоги та відміни тривоги, збереження історії тривог відбувається через Windows Notification Center з використанням [Snoretoast](https://github.com/KDE/snoretoast). Додатково використовується індикація тривоги через tray icon та звукове оповіщення. Через меню tray icon також доступний перегляд мапи поточних тривог [alerts.in.ua](https://alerts.in.ua/).
+Notifications about the current alert and alert cancellation, as well as saving the alarm history, are provided through the Windows Notification Center using [Snoretoast](https://github.com/KDE/snoretoast). Additionally, alert indication through the tray icon and sound alerts are used. The tray icon menu also allows you to view a map of current alerts [alerts.in.ua](https://alerts.in.ua/).
 
-Всі дії записуються в лог-файл, розмір якого автоматично обмежується 256 КБ, перегляд доступний через меню tray icon.
+All actions are recorded in a log file, the size of which is automatically limited to 256 KB, and can be viewed through the tray icon menu.
 
-| Зовнішній вигляд:  | |
+| Appearance:  | |
 | --- | --- | 
 | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/967cfb51-a668-4bfb-8028-f0d4067d4469) | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/7b2c63d6-eacb-47ee-b92c-956801682c0b) | 
-## Видалення
+## Removal
 
-| Рекомендація: |  |
+| Recommendation: |  |
 | --- | --- |
-| Вразі необхідності деінсталяції локального сервера оновлення тривог потрібно використати ярлик `Uninstall` в меню "Пуск => Alert server". | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/139ee2ee-e07c-44b7-b2a2-4e42c8542dea) |
+| If you need to uninstall the local alert update server use the `Uninstall` shortcut in the Start => Alert server menu. | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/139ee2ee-e07c-44b7-b2a2-4e42c8542dea) |
 
-## Внесок
+## Contribution
 
-Якщо у вас є пропозиції або бажання запропонувати покращення до проєкту, будь ласка, відкривайте Pull Request.
+If you have suggestions or want to propose improvements to the project, please open a pull request.
 
-## Ліцензія
+## License
 
 [Copyright (c) 2024 Serhii I. Myshko](https://github.com/sergeiown/Current_Alert/blob/main/LICENSE)
