@@ -44,7 +44,7 @@
 
 | Рекомендація: |  |
 | --- | --- |
-| В разі необхідності деінсталяції локального сервера оновлення тривог потрібно використати ярлик `Uninstall` в меню "Пуск => Alert server". | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/139ee2ee-e07c-44b7-b2a2-4e42c8542dea) |
+| Вразі необхідності деінсталяції локального сервера оновлення тривог потрібно використати ярлик `Uninstall` в меню "Пуск => Alert server". | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/139ee2ee-e07c-44b7-b2a2-4e42c8542dea) |
 
 ## Внесок
 
