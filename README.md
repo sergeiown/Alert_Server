@@ -26,9 +26,10 @@ The code is open source, no compiled files are used.
 
 ---
 ***Disclaimer:***  
-*Testing and adaptation of the functionality was carried out on 64-bit versions of Windows 10 22H2 and 11 22H2.  
-*Features may be limited or unavailable on other platforms or versions of Windows.  
-*We recommend using Windows 10 version 22H2 or Windows 11 for the best experience.  
+*Testing and adaptation of the functionality was carried out on 64-bit versions of Windows 10 22H2 and 11 22H2.*  
+*Features may be limited or unavailable on other platforms or versions of Windows.*  
+*We recommend using Windows 10 version 22H2 or Windows 11 for the best experience.*  
+*Please note that only the Ukrainian version is available.*
 
 ## Usage
 
