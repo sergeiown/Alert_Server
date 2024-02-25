@@ -23,6 +23,7 @@ for /f %%i in ('type %SessionFile% 2^>nul') do set "NodePID=%%i"
 taskkill /f /pid %NodePID% >nul 2>nul
 
 start /b "" powershell -WindowStyle Hidden -Command "node index.js"
+
 echo Alert update server is successfully started.
 echo Date,Time,Event
 timeout /t 1 /nobreak >nul
