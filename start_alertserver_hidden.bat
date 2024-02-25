@@ -23,13 +23,10 @@ for /f %%i in ('type %SessionFile% 2^>nul') do set "NodePID=%%i"
 
 taskkill /f /pid %NodePID% >nul 2>nul
 
-echo CreateObject("Wscript.Shell").Run "powershell -WindowStyle Hidden -Command ""node index.js""", 0 > %VBSFile%
-start /b %VBSFile%
+start /min "" powershell -WindowStyle Hidden -Command "node index.js"
 
 echo Alert update server is successfully started.
 timeout /t 1 /nobreak > nul
-
-del %VBSFile%
 
 for /f "tokens=2 delims=," %%i in ('tasklist /nh /fi "imagename eq node.exe" /fo csv ^| findstr /i "node.exe"') do (
     echo %%i > %SessionFile%
