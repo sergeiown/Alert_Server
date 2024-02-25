@@ -16,7 +16,6 @@ if not exist "node_modules" (
     call start_dependencies_installer.bat
 )
 
-set "VBSFile=%temp%\invisible.vbs"
 set "SessionFile=%temp%\alertserver_session.tmp"
 
 for /f %%i in ('type %SessionFile% 2^>nul') do set "NodePID=%%i"
