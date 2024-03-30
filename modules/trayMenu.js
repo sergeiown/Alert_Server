@@ -42,7 +42,7 @@ function createInfoMenu(tray) {
         const logItem = tray.item(Buffer.from(messages.msg_30, 'base64').toString('utf8'), () => {
             const logFilePath = path.join(process.env.TEMP, 'log.csv');
 
-            exec(`start ${logFilePath}`, (error) => {
+            exec(`notepad ${logFilePath}`, (error) => {
                 if (error) {
                     logEvent(atob(messages.msg_13));
                     return;
