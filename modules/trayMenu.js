@@ -91,9 +91,9 @@ function createSettingsMenu(tray) {
 
     // Підпункт меню 'Налаштування' => 'Запускати разом з системою'
     function createRunOnStartupItem(tray) {
-        const isFileExists = checkStartupFile();
+        const isAudioMarker = checkStartupFile();
         const runOnStartupItem = tray.item(Buffer.from(messages.msg_33, 'base64').toString('utf8'), {
-            checked: isFileExists,
+            checked: isAudioMarker,
             action: () => {
                 exec(`"${path.join(__dirname, '..', 'startup_activator.bat')}"`, (error) => {
                     if (error) {
@@ -120,9 +120,38 @@ function createSettingsMenu(tray) {
             'Alert server.lnk'
         );
 
-        const isFileExists = fs.existsSync(startupFilePath);
+        const isAudioMarker = fs.existsSync(startupFilePath);
 
-        return isFileExists;
+        return isAudioMarker;
+    }
+
+    // Підпункт меню 'Налаштування' => 'Звук попередження'
+    function createAlertSoundItem(tray) {
+        let isAudioMarker = checkAlertSoundFile();
+        const alertSoundItem = tray.item(Buffer.from(messages.msg_28, 'base64').toString('utf8'), {
+            checked: isAudioMarker,
+            action: () => {
+                const tempDir = process.env.temp || process.env.TEMP;
+                const alertSoundFilePath = path.join(tempDir, 'alertserver_audio.tmp');
+                if (isAudioMarker) {
+                    fs.unlinkSync(alertSoundFilePath);
+                    logEvent(atob(messages.msg_39));
+                } else {
+                    fs.writeFileSync(alertSoundFilePath, '');
+                    logEvent(atob(messages.msg_40));
+                }
+                isAudioMarker = !isAudioMarker;
+                alertSoundItem.checked = isAudioMarker;
+            },
+        });
+
+        return alertSoundItem;
+    }
+
+    function checkAlertSoundFile() {
+        const tempDir = process.env.temp || process.env.TEMP;
+        const alertSoundFilePath = path.join(tempDir, 'alertserver_audio.tmp');
+        return fs.existsSync(alertSoundFilePath);
     }
 
     // Підпункт меню 'Налаштування' => 'Вибір регіонів'
@@ -160,6 +189,7 @@ function createSettingsMenu(tray) {
     }
 
     settingsMenu.add(createRunOnStartupItem(tray));
+    settingsMenu.add(createAlertSoundItem(tray));
     settingsMenu.add(createNotificationRegionsItem(tray));
 
     return settingsMenu;
