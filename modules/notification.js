@@ -84,6 +84,6 @@ function createNotification(title, message, image) {
     });
 }
 
-setInterval(showNotification, 10000);
+setInterval(showNotification, 5000);
 
 module.exports = { showNotification };
