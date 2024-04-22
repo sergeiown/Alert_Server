@@ -22,6 +22,7 @@ if (fs.existsSync(tempFilePath)) {
 const showNotification = async () => {
     try {
         const { alerts } = await checkLocations();
+        const isAudioMarker = checkAlertSoundFile();
 
         alerts.forEach((alert) => {
             const alertType = alertTypes.find((type) => type.id === alert.alert_type);
@@ -36,8 +37,10 @@ const showNotification = async () => {
 
                 fs.writeFileSync(tempFilePath, '');
 
-                playAlertSound();
-                setTimeout(playAlertSound, 14000);
+                if (isAudioMarker) {
+                    playAlertSound();
+                    setTimeout(playAlertSound, 14000);
+                }
 
                 logEvent(alert.alert_type);
 
@@ -56,8 +59,10 @@ const showNotification = async () => {
 
                 fs.unlinkSync(tempFilePath);
 
-                playAlertCancellationSound();
-                setTimeout(playAlertCancellationSound, 6000);
+                if (isAudioMarker) {
+                    playAlertCancellationSound();
+                    setTimeout(playAlertCancellationSound, 6000);
+                }
 
                 logEvent(atob(messages.msg_11));
 
@@ -82,6 +87,12 @@ function createNotification(title, message, image) {
             return;
         }
     });
+}
+
+function checkAlertSoundFile() {
+    const tempDir = process.env.temp || process.env.TEMP;
+    const alertSoundFilePath = path.join(tempDir, 'alertserver_audio.tmp');
+    return fs.existsSync(alertSoundFilePath);
 }
 
 setInterval(showNotification, 5000);
