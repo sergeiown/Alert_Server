@@ -169,6 +169,7 @@ function createSettingsMenu(tray) {
             const checkboxItem = tray.item(location.Location, {
                 type: 'checkbox',
                 checked: location.Usage === '1',
+                bold: true,
                 action: () => {
                     location.Usage = location.Usage === '1' ? '0' : '1';
                     updateLocationJson(locations);
