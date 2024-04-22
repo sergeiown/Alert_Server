@@ -22,10 +22,14 @@ function createTitleMenu(tray) {
 // Пункт меню 'Перегляд мапи поточних тривог'
 function createAlertsMenu(tray) {
     const alertsItem = tray.item(Buffer.from(messages.msg_27, 'base64').toString('utf8'), () => {
-        exec(Buffer.from(messages.msg_28, 'base64').toString('utf8'), (error) => {
+        exec('start msedge --app=https://alerts.in.ua/?pwa', (error) => {
             if (error) {
                 logEvent(atob(messages.msg_10));
-                return;
+                exec('start chrome --app=https://alerts.in.ua/?pwa', (edgeError) => {
+                    if (edgeError) {
+                        logEvent(atob(messages.msg_10));
+                    }
+                });
             }
         });
     });
