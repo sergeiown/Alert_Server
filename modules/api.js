@@ -32,6 +32,6 @@ const fetchDataAndSaveToFile = async () => {
     }
 };
 
-setInterval(fetchDataAndSaveToFile, 61000);
+setInterval(fetchDataAndSaveToFile, 60000);
 
 module.exports = { fetchDataAndSaveToFile };
