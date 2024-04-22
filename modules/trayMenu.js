@@ -44,7 +44,7 @@ function createInfoMenu(tray) {
     // Підпункт меню 'Інформація' => 'Перегляд журналу'
     function createLogItem(tray) {
         const logItem = tray.item(Buffer.from(messages.msg_30, 'base64').toString('utf8'), () => {
-            const logFilePath = path.join(process.env.TEMP, 'log.csv');
+            const logFilePath = path.join(process.env.TEMP, 'alertserver_log.csv');
 
             exec(`notepad ${logFilePath}`, (error) => {
                 if (error) {
