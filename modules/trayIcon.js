@@ -38,20 +38,18 @@ function createTrayIcon() {
                         tray.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
                         tray.setIcon(fs.readFileSync(imagePath));
                     }
-                } else if (!err) {
-                    if (!isAlertActive) {
-                        isAlertActive = true;
-                        const alertImagePath = path.join(__dirname, '..', 'resources', 'images', 'tray_alert.png');
-                        tray.setTitle(`${Buffer.from(messages.msg_24, 'base64').toString('utf8')} ${parseInt(data)}`);
-                        tray.setIcon(fs.readFileSync(alertImagePath));
-                    }
+                } else if (!err && parseInt(data) !== 0) {
+                    isAlertActive = true;
+                    const alertImagePath = path.join(__dirname, '..', 'resources', 'images', 'tray_alert.png');
+                    tray.setTitle(`${Buffer.from(messages.msg_24, 'base64').toString('utf8')} ${parseInt(data)}`);
+                    tray.setIcon(fs.readFileSync(alertImagePath));
                 }
             });
         }
 
         setInterval(() => {
             checkAlertStatus();
-        }, 5000);
+        }, 10000);
 
         tray.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
         tray.notify(
