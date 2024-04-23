@@ -24,9 +24,17 @@ const checkLocations = async () => {
             locationsWithUsageOne.some((location) => location.UID === alert.location_uid)
         );
 
-        if (locationsInCurrentAlert.length > 0) {
-            logEvent(`${atob(messages.msg_02)} ${locationsInCurrentAlert.length}`);
-            return { alerts: locationsInCurrentAlert };
+        const alertsWithLocationLat = locationsInCurrentAlert.map((alert) => {
+            const locationData = locationsData.find((location) => location.UID === alert.location_uid);
+            return {
+                ...alert,
+                location_lat: locationData ? locationData.LocationLat : null,
+            };
+        });
+
+        if (alertsWithLocationLat.length > 0) {
+            logEvent(`${atob(messages.msg_02)} ${alertsWithLocationLat.length}`);
+            return { alerts: alertsWithLocationLat };
         } else {
             return { alerts: [] };
         }

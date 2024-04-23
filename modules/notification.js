@@ -32,7 +32,6 @@ const showNotification = async () => {
             const alertType = alertTypes.find((type) => type.id === alert.alert_type);
 
             if (!displayedAlerts.has(alert.id)) {
-                // Повідомлення про новий alert
                 const title = `${alertType ? alertType.name : alert.alert_type}`;
                 const message = `${Buffer.from(messages.msg_41, 'base64').toString('utf8')} ${
                     alert.location_title
@@ -46,20 +45,22 @@ const showNotification = async () => {
                     setTimeout(playAlertSound, 14000);
                 }
 
-                logEvent(alert.alert_type);
+                logEvent(`Alert ${alert.alert_type}: ${alert.location_lat}`);
 
-                displayedAlerts.set(alert.id, alert.location_title);
+                displayedAlerts.set(alert.id, {
+                    locationTitle: alert.location_title,
+                    locationLat: alert.location_lat,
+                });
             }
         });
 
-        displayedAlerts.forEach((locationTitle, displayedAlert) => {
+        displayedAlerts.forEach((value, displayedAlert) => {
             if (!alerts.some((alert) => alert.id === displayedAlert)) {
-                // Повідомлення про відміну тривоги
                 const image = path.join(__dirname, '..', 'resources', 'images', 'tray.png');
                 const title = 'Тривога скасована';
-                const message = `${Buffer.from(messages.msg_41, 'base64').toString(
-                    'utf8'
-                )} ${locationTitle}. ${Buffer.from(messages.msg_42, 'base64').toString('utf8')} ${alertCount}`;
+                const message = `${Buffer.from(messages.msg_41, 'base64').toString('utf8')} ${
+                    value.locationTitle
+                }. ${Buffer.from(messages.msg_42, 'base64').toString('utf8')} ${alertCount}`;
 
                 createNotification(title, message, image);
 
@@ -68,7 +69,7 @@ const showNotification = async () => {
                     setTimeout(playAlertCancellationSound, 6000);
                 }
 
-                logEvent(atob(messages.msg_11));
+                logEvent(`${atob(messages.msg_11)} ${value.locationLat}`);
 
                 displayedAlerts.delete(displayedAlert);
             }
