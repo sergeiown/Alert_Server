@@ -34,7 +34,9 @@ const showNotification = async () => {
             if (!displayedAlerts.has(alert.id)) {
                 // Повідомлення про новий alert
                 const title = `${alertType ? alertType.name : alert.alert_type}`;
-                const message = `Регіон: ${alert.location_title}. Кількість активних тривог на території країни: ${alertCount}`;
+                const message = `${Buffer.from(messages.msg_41, 'base64').toString('utf8')} ${
+                    alert.location_title
+                }. ${Buffer.from(messages.msg_42, 'base64').toString('utf8')} ${alertCount}`;
                 const image = path.join(__dirname, '..', 'resources', 'images', 'tray_alert.png');
 
                 createNotification(title, message, image);
@@ -55,7 +57,9 @@ const showNotification = async () => {
                 // Повідомлення про відміну тривоги
                 const image = path.join(__dirname, '..', 'resources', 'images', 'tray.png');
                 const title = 'Тривога скасована';
-                const message = `Регіон: ${locationTitle}. Кількість активних тривог на території країни: ${alertCount}`;
+                const message = `${Buffer.from(messages.msg_41, 'base64').toString(
+                    'utf8'
+                )} ${locationTitle}. ${Buffer.from(messages.msg_42, 'base64').toString('utf8')} ${alertCount}`;
 
                 createNotification(title, message, image);
 
