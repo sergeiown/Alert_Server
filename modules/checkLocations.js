@@ -25,12 +25,9 @@ const checkLocations = async () => {
         );
 
         if (locationsInCurrentAlert.length > 0) {
-            logEvent(atob(messages.msg_02));
-
+            logEvent(`${atob(messages.msg_02)} ${locationsInCurrentAlert.length}`);
             return { alerts: locationsInCurrentAlert };
         } else {
-            logEvent(atob(messages.msg_02));
-
             return { alerts: [] };
         }
     } catch (error) {
