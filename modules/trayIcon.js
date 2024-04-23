@@ -25,19 +25,28 @@ function createTrayIcon() {
         function checkAlertStatus() {
             const tempFilePath = path.join(process.env.TEMP, 'alert_active.tmp');
 
-            fs.access(tempFilePath, fs.constants.F_OK, (err) => {
-                if (err) {
+            fs.readFile(tempFilePath, 'utf8', (err, data) => {
+                if (err && err.code === 'ENOENT') {
+                    // Якщо файл не існує (ENOENT), відключаємо сповіщення про активний алерт
                     if (isAlertActive) {
                         isAlertActive = false;
                         tray.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
                         tray.setIcon(fs.readFileSync(imagePath));
                     }
-                } else {
+                } else if (!err && parseInt(data) === 0) {
+                    // Якщо файл існує і його вміст === 0, вважаємо алерт неактивним
+                    if (isAlertActive) {
+                        isAlertActive = false;
+                        tray.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
+                        tray.setIcon(fs.readFileSync(imagePath));
+                    }
+                } else if (!err) {
+                    // Якщо файл існує і містить не 0, вважаємо алерт активним
                     if (!isAlertActive) {
                         isAlertActive = true;
-                        const imagePath = path.join(__dirname, '..', 'resources', 'images', 'tray_alert.png');
+                        const alertImagePath = path.join(__dirname, '..', 'resources', 'images', 'tray_alert.png');
                         tray.setTitle(Buffer.from(messages.msg_24, 'base64').toString('utf8'));
-                        tray.setIcon(fs.readFileSync(imagePath));
+                        tray.setIcon(fs.readFileSync(alertImagePath));
                     }
                 }
             });
