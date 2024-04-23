@@ -24,18 +24,20 @@ const showNotification = async () => {
         const { alerts } = await checkLocations();
         const isAudioMarker = checkAlertSoundFile();
 
+        let alertCount = alerts.length;
+
+        fs.writeFileSync(tempFilePath, alertCount.toString());
+
         alerts.forEach((alert) => {
             const alertType = alertTypes.find((type) => type.id === alert.alert_type);
 
             if (!displayedAlerts.has(alert.id)) {
                 // Повідомлення про новий alert
                 const title = `${alertType ? alertType.name : alert.alert_type}`;
-                const message = `${alert.location_title}`;
+                const message = `Регіон: ${alert.location_title}. Кількість активних тривог на території країни: ${alertCount}`;
                 const image = path.join(__dirname, '..', 'resources', 'images', 'tray_alert.png');
 
                 createNotification(title, message, image);
-
-                fs.writeFileSync(tempFilePath, '');
 
                 if (isAudioMarker) {
                     playAlertSound();
@@ -53,11 +55,9 @@ const showNotification = async () => {
                 // Повідомлення про відміну тривоги
                 const image = path.join(__dirname, '..', 'resources', 'images', 'tray.png');
                 const title = 'Тривога скасована';
-                const message = `${locationTitle}`;
+                const message = `Регіон: ${locationTitle}. Кількість активних тривог на території країни: ${alertCount}`;
 
                 createNotification(title, message, image);
-
-                fs.unlinkSync(tempFilePath);
 
                 if (isAudioMarker) {
                     playAlertCancellationSound();
