@@ -41,7 +41,7 @@
 
 | Зовнішній вигляд:  | |
 | --- | --- | 
-| ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/967cfb51-a668-4bfb-8028-f0d4067d4469) | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/7b2c63d6-eacb-47ee-b92c-956801682c0b) | 
+| ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/967cfb51-a668-4bfb-8028-f0d4067d4469) | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/fb611b23-b354-48e3-8de4-5911edd2481f) | 
 ## Видалення
 
 | Рекомендація: |  |
