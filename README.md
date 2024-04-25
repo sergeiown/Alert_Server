@@ -43,7 +43,7 @@ All actions are recorded in a log file, the size of which is automatically limit
 
 | Appearance:  | |
 | --- | --- | 
-| ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/967cfb51-a668-4bfb-8028-f0d4067d4469) | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/7b2c63d6-eacb-47ee-b92c-956801682c0b) | 
+| ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/967cfb51-a668-4bfb-8028-f0d4067d4469) | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/a84e6a28-fca9-472c-986f-cdd7224245d4) | 
 ## Removal
 
 | Recommendation: |  |
