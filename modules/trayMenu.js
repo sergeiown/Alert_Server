@@ -209,7 +209,6 @@ function createSettingsMenu(tray) {
 
     settingsMenu.add(createRunOnStartupItem(tray));
     settingsMenu.add(createAlertSoundItem(tray));
-    settingsMenu.add(tray.separator());
     settingsMenu.add(createNotificationRegionsItem(tray));
 
     return settingsMenu;
