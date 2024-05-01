@@ -37,11 +37,29 @@ function createAlertsMenu(tray) {
     return alertsItem;
 }
 
+// Пункт меню 'Перегляд мапи військових дій'
+function createFrontMenu(tray) {
+    const alertsItem = tray.item(Buffer.from(messages.msg_43, 'base64').toString('utf8'), () => {
+        exec('start msedge --app=https://deepstatemap.live/#6/49.1/31.2', (error) => {
+            if (error) {
+                logEvent(atob(messages.msg_10));
+                exec('start chrome --app=https://deepstatemap.live/#6/49.1/31.2', (edgeError) => {
+                    if (edgeError) {
+                        logEvent(atob(messages.msg_10));
+                    }
+                });
+            }
+        });
+    });
+
+    return alertsItem;
+}
+
 // Пункт меню 'Інформація'
 function createInfoMenu(tray) {
     const logView = tray.item(Buffer.from(messages.msg_29, 'base64').toString('utf8'));
 
-    // Підпункт меню 'Інформація' => 'Перегляд журналу'
+    // Підпункт меню 'Інформація' => 'Перегляд журналу'`
     function createLogItem(tray) {
         const logItem = tray.item(Buffer.from(messages.msg_30, 'base64').toString('utf8'), () => {
             const logFilePath = path.join(process.env.TEMP, 'alertserver_log.csv');
@@ -191,6 +209,7 @@ function createSettingsMenu(tray) {
 
     settingsMenu.add(createRunOnStartupItem(tray));
     settingsMenu.add(createAlertSoundItem(tray));
+    settingsMenu.add(tray.separator());
     settingsMenu.add(createNotificationRegionsItem(tray));
 
     return settingsMenu;
@@ -213,6 +232,7 @@ function createExitMenu(tray) {
 module.exports = {
     createTitleMenu,
     createAlertsMenu,
+    createFrontMenu,
     createInfoMenu,
     createSettingsMenu,
     createExitMenu,

@@ -6,7 +6,14 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 const Tray = require('trayicon');
 const fs = require('fs');
 const path = require('path');
-const { createTitleMenu, createAlertsMenu, createInfoMenu, createSettingsMenu, createExitMenu } = require('./trayMenu');
+const {
+    createTitleMenu,
+    createAlertsMenu,
+    createFrontMenu,
+    createInfoMenu,
+    createSettingsMenu,
+    createExitMenu,
+} = require('./trayMenu');
 const messages = require('../messages.json');
 
 function createTrayIcon() {
@@ -16,11 +23,12 @@ function createTrayIcon() {
     Tray.create(function (tray) {
         const menuTitle = createTitleMenu(tray);
         const alertsItem = createAlertsMenu(tray);
+        const frontItem = createFrontMenu(tray);
         const settings = createSettingsMenu(tray);
         const logView = createInfoMenu(tray);
         const quit = createExitMenu(tray);
 
-        tray.setMenu(menuTitle, tray.separator(), alertsItem, settings, logView, tray.separator(), quit);
+        tray.setMenu(menuTitle, tray.separator(), alertsItem, frontItem, settings, logView, tray.separator(), quit);
 
         function checkAlertStatus() {
             const tempFilePath = path.join(process.env.TEMP, 'alert_active.tmp');
