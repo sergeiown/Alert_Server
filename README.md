@@ -41,9 +41,14 @@ Notifications about the current alert and alert cancellation, as well as saving 
 
 All actions are recorded in a log file, the size of which is automatically limited to 256 KB, and can be viewed through the tray icon menu.
 
-| Appearance:  | |
-| --- | --- | 
-| ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/967cfb51-a668-4bfb-8028-f0d4067d4469) | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/a84e6a28-fca9-472c-986f-cdd7224245d4) | 
+| Appearance of notifications:  |||
+| --- | --- | --- |
+| ![info1](https://github.com/sergeiown/Alert_Server/assets/112722061/9e0bdb50-229f-4616-8425-9e7c390c104a) | ![info2](https://github.com/sergeiown/Alert_Server/assets/112722061/4ef3c9a4-9b1a-4023-89d0-267e4b5afc48) | ![info3](https://github.com/sergeiown/Alert_Server/assets/112722061/1ab1e93c-bb93-4d1c-be27-9918a6252ad4) |
+| Server start                  | Active alert                      | Cancel the alert |
+
+| Appearance of the settings:  ||
+| --- | --- |
+| ![1](https://github.com/sergeiown/Alert_Server/assets/112722061/bac9304e-e0ed-458e-a39a-4e7a321da76b) | ![111](https://github.com/sergeiown/Alert_Server/assets/112722061/b4cf4c28-d45b-47ae-af6f-a4f84befa665) | 
 ## Removal
 
 | Recommendation: |  |
