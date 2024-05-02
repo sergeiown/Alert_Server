@@ -143,6 +143,35 @@ function createSettingsMenu(tray) {
         return isAudioMarker;
     }
 
+    // Підпункт меню 'Налаштування' => 'Монохромний значок'
+    function createTrayMonoIconItem(tray) {
+        let isIconMarker = checkTrayMonoIconFile();
+        const trayMonoIcon = tray.item(Buffer.from(messages.msg_44, 'base64').toString('utf8'), {
+            checked: isIconMarker,
+            action: () => {
+                const tempDir = process.env.temp || process.env.TEMP;
+                const monoIconFilePath = path.join(tempDir, 'alertserver_icon.tmp');
+                if (isIconMarker) {
+                    fs.unlinkSync(monoIconFilePath);
+                    logEvent(atob(messages.msg_46));
+                } else {
+                    fs.writeFileSync(monoIconFilePath, '');
+                    logEvent(atob(messages.msg_45));
+                }
+                isIconMarker = !isIconMarker;
+                trayMonoIcon.checked = isIconMarker;
+            },
+        });
+
+        return trayMonoIcon;
+    }
+
+    function checkTrayMonoIconFile() {
+        const tempDir = process.env.temp || process.env.TEMP;
+        const monoIconFilePath = path.join(tempDir, 'alertserver_icon.tmp');
+        return fs.existsSync(monoIconFilePath);
+    }
+
     // Підпункт меню 'Налаштування' => 'Звук попередження'
     function createAlertSoundItem(tray) {
         let isAudioMarker = checkAlertSoundFile();
@@ -208,6 +237,7 @@ function createSettingsMenu(tray) {
     }
 
     settingsMenu.add(createRunOnStartupItem(tray));
+    settingsMenu.add(createTrayMonoIconItem(tray));
     settingsMenu.add(createAlertSoundItem(tray));
     settingsMenu.add(createNotificationRegionsItem(tray));
 

@@ -17,8 +17,13 @@ const {
 const messages = require('../messages.json');
 
 function createTrayIcon() {
-    const imagePath = path.join(__dirname, '..', 'resources', 'images', 'tray.png');
     let isAlertActive = false;
+
+    const isIconMarker = checkTrayMonoIconFile();
+
+    const imagePathStart = !isIconMarker
+        ? path.join(__dirname, '..', 'resources', 'images', 'tray.png')
+        : path.join(__dirname, '..', 'resources', 'images', 'tray_mono.png');
 
     Tray.create(function (tray) {
         const menuTitle = createTitleMenu(tray);
@@ -32,6 +37,18 @@ function createTrayIcon() {
 
         function checkAlertStatus() {
             const tempFilePath = path.join(process.env.TEMP, 'alert_active.tmp');
+
+            const isIconMarker = checkTrayMonoIconFile();
+
+            const imagePath = !isIconMarker
+                ? path.join(__dirname, '..', 'resources', 'images', 'tray.png')
+                : path.join(__dirname, '..', 'resources', 'images', 'tray_mono.png');
+
+            const alertImagePath = !isIconMarker
+                ? path.join(__dirname, '..', 'resources', 'images', 'tray_alert.png')
+                : path.join(__dirname, '..', 'resources', 'images', 'tray_alert_mono.png');
+
+            tray.setIcon(fs.readFileSync(imagePath));
 
             fs.readFile(tempFilePath, 'utf8', (err, data) => {
                 if (err && err.code === 'ENOENT') {
@@ -48,7 +65,6 @@ function createTrayIcon() {
                     }
                 } else if (!err && parseInt(data) !== 0) {
                     isAlertActive = true;
-                    const alertImagePath = path.join(__dirname, '..', 'resources', 'images', 'tray_alert.png');
                     tray.setTitle(`${Buffer.from(messages.msg_24, 'base64').toString('utf8')} ${parseInt(data)}`);
                     tray.setIcon(fs.readFileSync(alertImagePath));
                 }
@@ -57,15 +73,21 @@ function createTrayIcon() {
 
         setInterval(() => {
             checkAlertStatus();
-        }, 10000);
+        }, 5000);
 
         tray.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
+        tray.setIcon(fs.readFileSync(imagePathStart));
         tray.notify(
             Buffer.from(messages.msg_22, 'base64').toString('utf8'),
             Buffer.from(messages.msg_25, 'base64').toString('utf8')
         );
-        tray.setIcon(fs.readFileSync(imagePath));
     });
+
+    function checkTrayMonoIconFile() {
+        const tempDir = process.env.temp || process.env.TEMP;
+        const monoIconFilePath = path.join(tempDir, 'alertserver_icon.tmp');
+        return fs.existsSync(monoIconFilePath);
+    }
 }
 
 module.exports = { createTrayIcon };
