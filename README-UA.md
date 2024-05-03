@@ -39,9 +39,14 @@
 
 Всі дії записуються в лог-файл, розмір якого автоматично обмежується 256 КБ, перегляд доступний через меню tray icon.
 
-| Зовнішній вигляд:  | |
-| --- | --- | 
-| ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/967cfb51-a668-4bfb-8028-f0d4067d4469) | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/fb611b23-b354-48e3-8de4-5911edd2481f) | 
+| Зовнішній вигляд сповіщень:  |||
+| --- | --- | --- |
+| ![info1](https://github.com/sergeiown/Alert_Server/assets/112722061/9e0bdb50-229f-4616-8425-9e7c390c104a) | ![info2](https://github.com/sergeiown/Alert_Server/assets/112722061/4ef3c9a4-9b1a-4023-89d0-267e4b5afc48) | ![info3](https://github.com/sergeiown/Alert_Server/assets/112722061/1ab1e93c-bb93-4d1c-be27-9918a6252ad4) |
+| Запуск сервера                  | Активна тривога                      | Скасування тривоги |
+
+| Зовнішній вигляд налаштувань:  ||
+| --- | --- |
+| ![1](https://github.com/sergeiown/Alert_Server/assets/112722061/bac9304e-e0ed-458e-a39a-4e7a321da76b) | ![111](https://github.com/sergeiown/Alert_Server/assets/112722061/b4cf4c28-d45b-47ae-af6f-a4f84befa665) | 
 ## Видалення
 
 | Рекомендація: |  |
