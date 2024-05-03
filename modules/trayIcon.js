@@ -31,10 +31,7 @@ function createTrayIcon() {
 
         function checkAlertStatus() {
             const tempFilePath = path.join(process.env.TEMP, 'alert_active.tmp');
-
             const { imagePath, alertImagePath } = getImagePaths();
-
-            tray.setIcon(fs.readFileSync(imagePath));
 
             fs.readFile(tempFilePath, 'utf8', (err, data) => {
                 if (err && err.code === 'ENOENT') {
@@ -43,16 +40,21 @@ function createTrayIcon() {
                         tray.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
                         tray.setIcon(fs.readFileSync(imagePath));
                     }
-                } else if (!err && parseInt(data) === 0) {
-                    if (isAlertActive) {
-                        isAlertActive = false;
-                        tray.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
-                        tray.setIcon(fs.readFileSync(imagePath));
+                } else if (!err) {
+                    const newData = parseInt(data);
+                    const isAlertChanged = newData !== 0 && !isAlertActive;
+                    const isAlertCleared = newData === 0 && isAlertActive;
+
+                    if (isAlertChanged || isAlertCleared) {
+                        isAlertActive = newData !== 0;
+                        if (isAlertActive) {
+                            tray.setTitle(`${Buffer.from(messages.msg_24, 'base64').toString('utf8')} ${newData}`);
+                            tray.setIcon(fs.readFileSync(alertImagePath));
+                        } else {
+                            tray.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
+                            tray.setIcon(fs.readFileSync(imagePath));
+                        }
                     }
-                } else if (!err && parseInt(data) !== 0) {
-                    isAlertActive = true;
-                    tray.setTitle(`${Buffer.from(messages.msg_24, 'base64').toString('utf8')} ${parseInt(data)}`);
-                    tray.setIcon(fs.readFileSync(alertImagePath));
                 }
             });
         }
