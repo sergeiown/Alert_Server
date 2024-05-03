@@ -19,12 +19,6 @@ const messages = require('../messages.json');
 function createTrayIcon() {
     let isAlertActive = false;
 
-    const isIconMarker = checkTrayMonoIconFile();
-
-    const imagePathStart = !isIconMarker
-        ? path.join(__dirname, '..', 'resources', 'images', 'tray.png')
-        : path.join(__dirname, '..', 'resources', 'images', 'tray_mono.png');
-
     Tray.create(function (tray) {
         const menuTitle = createTitleMenu(tray);
         const alertsItem = createAlertsMenu(tray);
@@ -38,15 +32,7 @@ function createTrayIcon() {
         function checkAlertStatus() {
             const tempFilePath = path.join(process.env.TEMP, 'alert_active.tmp');
 
-            const isIconMarker = checkTrayMonoIconFile();
-
-            const imagePath = !isIconMarker
-                ? path.join(__dirname, '..', 'resources', 'images', 'tray.png')
-                : path.join(__dirname, '..', 'resources', 'images', 'tray_mono.png');
-
-            const alertImagePath = !isIconMarker
-                ? path.join(__dirname, '..', 'resources', 'images', 'tray_alert.png')
-                : path.join(__dirname, '..', 'resources', 'images', 'tray_alert_mono.png');
+            const { imagePath, alertImagePath } = getImagePaths();
 
             tray.setIcon(fs.readFileSync(imagePath));
 
@@ -76,12 +62,26 @@ function createTrayIcon() {
         }, 5000);
 
         tray.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
-        tray.setIcon(fs.readFileSync(imagePathStart));
+        const { imagePath } = getImagePaths();
+        tray.setIcon(fs.readFileSync(imagePath));
         tray.notify(
             Buffer.from(messages.msg_22, 'base64').toString('utf8'),
             Buffer.from(messages.msg_25, 'base64').toString('utf8')
         );
     });
+
+    function getImagePaths() {
+        const isIconMarker = checkTrayMonoIconFile();
+        const imagePath = !isIconMarker
+            ? path.join(__dirname, '..', 'resources', 'images', 'tray.png')
+            : path.join(__dirname, '..', 'resources', 'images', 'tray_mono.png');
+
+        const alertImagePath = !isIconMarker
+            ? path.join(__dirname, '..', 'resources', 'images', 'tray_alert.png')
+            : path.join(__dirname, '..', 'resources', 'images', 'tray_alert_mono.png');
+
+        return { imagePath, alertImagePath };
+    }
 
     function checkTrayMonoIconFile() {
         const tempDir = process.env.temp || process.env.TEMP;
