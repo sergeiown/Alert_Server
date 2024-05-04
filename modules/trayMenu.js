@@ -19,19 +19,40 @@ function createTitleMenu(tray) {
     return menuTitle;
 }
 
+// Пункти меню 'Перегляд мап'
+function openAppWithFallback(url) {
+    const openCommand = (browser, callback) => {
+        exec(`start ${browser} --app=${url}`, (error) => {
+            if (!error) {
+                logEvent(`${atob(messages.msg_49)} with ${browser}`);
+                callback(true);
+            } else {
+                logEvent(`${browser} ${atob(messages.msg_10)}`);
+                callback(false);
+            }
+        });
+    };
+
+    openCommand('msedge', (opened) => {
+        if (!opened) {
+            openCommand('chrome', (opened) => {
+                if (!opened) {
+                    exec(`start ${url}`, (fallbackError) => {
+                        logEvent(`${atob(messages.msg_49)}`);
+                        if (fallbackError) {
+                            logEvent(atob(messages.msg_10));
+                        }
+                    });
+                }
+            });
+        }
+    });
+}
+
 // Пункт меню 'Перегляд мапи поточних тривог'
 function createAlertsMenu(tray) {
     const alertsItem = tray.item(Buffer.from(messages.msg_27, 'base64').toString('utf8'), () => {
-        exec('start msedge --app=https://alerts.in.ua/?pwa', (error) => {
-            if (error) {
-                logEvent(atob(messages.msg_10));
-                exec('start chrome --app=https://alerts.in.ua/?pwa', (edgeError) => {
-                    if (edgeError) {
-                        logEvent(atob(messages.msg_10));
-                    }
-                });
-            }
-        });
+        openAppWithFallback(atob(messages.msg_47));
     });
 
     return alertsItem;
@@ -39,20 +60,11 @@ function createAlertsMenu(tray) {
 
 // Пункт меню 'Перегляд мапи військових дій'
 function createFrontMenu(tray) {
-    const alertsItem = tray.item(Buffer.from(messages.msg_43, 'base64').toString('utf8'), () => {
-        exec('start msedge --app=https://deepstatemap.live/#6/49.1/31.2', (error) => {
-            if (error) {
-                logEvent(atob(messages.msg_10));
-                exec('start chrome --app=https://deepstatemap.live/#6/49.1/31.2', (edgeError) => {
-                    if (edgeError) {
-                        logEvent(atob(messages.msg_10));
-                    }
-                });
-            }
-        });
+    const frontItem = tray.item(Buffer.from(messages.msg_43, 'base64').toString('utf8'), () => {
+        openAppWithFallback(atob(messages.msg_48));
     });
 
-    return alertsItem;
+    return frontItem;
 }
 
 // Пункт меню 'Інформація'
