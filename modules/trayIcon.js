@@ -17,6 +17,7 @@ const {
 const messages = require('../messages.json');
 
 function createTrayIcon() {
+    const checkInterval = 5000;
     let isAlertActive = false;
 
     Tray.create(function (tray) {
@@ -29,61 +30,69 @@ function createTrayIcon() {
 
         tray.setMenu(menuTitle, tray.separator(), alertsItem, frontItem, settings, logView, tray.separator(), quit);
 
-        function checkAlertStatus() {
-            const tempFilePath = path.join(process.env.TEMP, 'alert_active.tmp');
+        function updateAlertStatus() {
+            const alertFilePath = path.join(process.env.TEMP, 'alert_active.tmp');
 
-            const { imagePath, alertImagePath } = checkTrayMonoIconFile();
-
-            tray.setIcon(fs.readFileSync(imagePath));
-
-            fs.readFile(tempFilePath, 'utf8', (err, data) => {
+            fs.readFile(alertFilePath, 'utf8', (err, data) => {
                 if (err && err.code === 'ENOENT') {
                     if (isAlertActive) {
                         isAlertActive = false;
-                        tray.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
-                        tray.setIcon(fs.readFileSync(imagePath));
+                        updateTrayIcon('normal');
+                    } else {
+                        updateTrayIcon('normal');
                     }
                 } else if (!err && parseInt(data) === 0) {
                     if (isAlertActive) {
                         isAlertActive = false;
-                        tray.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
-                        tray.setIcon(fs.readFileSync(imagePath));
+                        updateTrayIcon('normal');
+                    } else {
+                        updateTrayIcon('normal');
                     }
                 } else if (!err && parseInt(data) !== 0) {
                     isAlertActive = true;
-                    tray.setTitle(`${Buffer.from(messages.msg_24, 'base64').toString('utf8')} ${parseInt(data)}`);
-                    tray.setIcon(fs.readFileSync(alertImagePath));
+                    updateTrayIcon('alert', data);
                 }
             });
         }
 
-        function checkTrayMonoIconFile() {
+        function updateIconImagePath() {
             const tempDir = process.env.temp || process.env.TEMP;
-            const monoIconFilePath = path.join(tempDir, 'alertserver_icon.tmp');
-            const monoIcon = fs.existsSync(monoIconFilePath);
+            const monoIconMarkerPath = path.join(tempDir, 'alertserver_icon.tmp');
+            const isMonoIconMarkerExists = fs.existsSync(monoIconMarkerPath);
 
-            const imagePath = !monoIcon
+            const imagePath = !isMonoIconMarkerExists
                 ? path.join(__dirname, '..', 'resources', 'images', 'tray.png')
                 : path.join(__dirname, '..', 'resources', 'images', 'tray_mono.png');
 
-            const alertImagePath = !monoIcon
+            const alertImagePath = !isMonoIconMarkerExists
                 ? path.join(__dirname, '..', 'resources', 'images', 'tray_alert.png')
                 : path.join(__dirname, '..', 'resources', 'images', 'tray_alert_mono.png');
 
             return { imagePath, alertImagePath };
         }
 
-        setInterval(() => {
-            checkAlertStatus();
-        }, 5000);
+        function updateTrayIcon(state, data) {
+            const { imagePath, alertImagePath } = updateIconImagePath();
 
-        const { imagePath } = checkTrayMonoIconFile();
-        tray.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
-        tray.setIcon(fs.readFileSync(imagePath));
-        tray.notify(
-            Buffer.from(messages.msg_22, 'base64').toString('utf8'),
-            Buffer.from(messages.msg_25, 'base64').toString('utf8')
-        );
+            if (state === 'start') {
+                tray.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
+                tray.setIcon(fs.readFileSync(imagePath));
+                tray.notify(
+                    Buffer.from(messages.msg_22, 'base64').toString('utf8'),
+                    Buffer.from(messages.msg_25, 'base64').toString('utf8')
+                );
+            } else if (state === 'normal') {
+                tray.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
+                tray.setIcon(fs.readFileSync(imagePath));
+            } else if (state === 'alert') {
+                tray.setTitle(`${Buffer.from(messages.msg_24, 'base64').toString('utf8')} ${parseInt(data)}`);
+                tray.setIcon(fs.readFileSync(alertImagePath));
+            }
+        }
+
+        updateTrayIcon('start');
+
+        setInterval(updateAlertStatus, checkInterval);
     });
 }
 
