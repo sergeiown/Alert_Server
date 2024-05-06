@@ -215,7 +215,9 @@ function createSettingsMenu(tray) {
 
     // Підпункт меню 'Налаштування' => 'Вибір регіонів'
     function createNotificationRegionsItem(tray) {
-        const notificationRegionsItem = tray.item(Buffer.from(messages.msg_34, 'base64').toString('utf8'));
+        const notificationRegionsItem = tray.item(Buffer.from(messages.msg_34, 'base64').toString('utf8'), {
+            bold: true,
+        });
 
         function updateLocationJson(locations) {
             const jsonPath = path.join(__dirname, '..', 'location.json');
