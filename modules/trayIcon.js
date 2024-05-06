@@ -21,15 +21,6 @@ function createTrayIcon() {
     let isAlertActive = false;
 
     Tray.create(function (tray) {
-        const menuTitle = createTitleMenu(tray);
-        const alertsItem = createAlertsMenu(tray);
-        const frontItem = createFrontMenu(tray);
-        const settings = createSettingsMenu(tray);
-        const logView = createInfoMenu(tray);
-        const quit = createExitMenu(tray);
-
-        tray.setMenu(menuTitle, tray.separator(), alertsItem, frontItem, settings, logView, tray.separator(), quit);
-
         function updateAlertStatus() {
             const alertFilePath = path.join(process.env.TEMP, 'alert_active.tmp');
 
@@ -73,8 +64,24 @@ function createTrayIcon() {
 
         function updateTrayIcon(state, data) {
             const { imagePath, alertImagePath } = updateIconImagePath();
+            const menuTitle = createTitleMenu(tray);
+            const alertsItem = createAlertsMenu(tray);
+            const frontItem = createFrontMenu(tray);
+            const settings = createSettingsMenu(tray);
+            const logView = createInfoMenu(tray);
+            const quit = createExitMenu(tray);
 
             if (state === 'start') {
+                tray.setMenu(
+                    menuTitle,
+                    tray.separator(),
+                    alertsItem,
+                    frontItem,
+                    settings,
+                    logView,
+                    tray.separator(),
+                    quit
+                );
                 tray.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
                 tray.setIcon(fs.readFileSync(imagePath));
                 tray.notify(
