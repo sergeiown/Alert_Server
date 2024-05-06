@@ -19,12 +19,6 @@ const messages = require('../messages.json');
 function createTrayIcon() {
     let isAlertActive = false;
 
-    const isIconMarker = checkTrayMonoIconFile();
-
-    const imagePathStart = !isIconMarker
-        ? path.join(__dirname, '..', 'resources', 'images', 'tray.png')
-        : path.join(__dirname, '..', 'resources', 'images', 'tray_mono.png');
-
     Tray.create(function (tray) {
         const menuTitle = createTitleMenu(tray);
         const alertsItem = createAlertsMenu(tray);
@@ -38,15 +32,7 @@ function createTrayIcon() {
         function checkAlertStatus() {
             const tempFilePath = path.join(process.env.TEMP, 'alert_active.tmp');
 
-            const isIconMarker = checkTrayMonoIconFile();
-
-            const imagePath = !isIconMarker
-                ? path.join(__dirname, '..', 'resources', 'images', 'tray.png')
-                : path.join(__dirname, '..', 'resources', 'images', 'tray_mono.png');
-
-            const alertImagePath = !isIconMarker
-                ? path.join(__dirname, '..', 'resources', 'images', 'tray_alert.png')
-                : path.join(__dirname, '..', 'resources', 'images', 'tray_alert_mono.png');
+            const { imagePath, alertImagePath } = checkTrayMonoIconFile();
 
             tray.setIcon(fs.readFileSync(imagePath));
 
@@ -71,23 +57,34 @@ function createTrayIcon() {
             });
         }
 
+        function checkTrayMonoIconFile() {
+            const tempDir = process.env.temp || process.env.TEMP;
+            const monoIconFilePath = path.join(tempDir, 'alertserver_icon.tmp');
+            const monoIcon = fs.existsSync(monoIconFilePath);
+
+            const imagePath = !monoIcon
+                ? path.join(__dirname, '..', 'resources', 'images', 'tray.png')
+                : path.join(__dirname, '..', 'resources', 'images', 'tray_mono.png');
+
+            const alertImagePath = !monoIcon
+                ? path.join(__dirname, '..', 'resources', 'images', 'tray_alert.png')
+                : path.join(__dirname, '..', 'resources', 'images', 'tray_alert_mono.png');
+
+            return { imagePath, alertImagePath };
+        }
+
         setInterval(() => {
             checkAlertStatus();
         }, 5000);
 
+        const { imagePath } = checkTrayMonoIconFile();
         tray.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
-        tray.setIcon(fs.readFileSync(imagePathStart));
+        tray.setIcon(fs.readFileSync(imagePath));
         tray.notify(
             Buffer.from(messages.msg_22, 'base64').toString('utf8'),
             Buffer.from(messages.msg_25, 'base64').toString('utf8')
         );
     });
-
-    function checkTrayMonoIconFile() {
-        const tempDir = process.env.temp || process.env.TEMP;
-        const monoIconFilePath = path.join(tempDir, 'alertserver_icon.tmp');
-        return fs.existsSync(monoIconFilePath);
-    }
 }
 
 module.exports = { createTrayIcon };
