@@ -1,8 +1,8 @@
 # ⚠ Local alert update server
 
-**[EN](https://github.com/sergeiown/Alert_Server/blob/main/README.md) | [UA](https://github.com/sergeiown/Alert_Server/blob/main/README-UA.md)**
+**[EN](https://github.com/sergeiown/Alert_Server/blob/main/README.md)** | [UA](https://github.com/sergeiown/Alert_Server/blob/main/README-UA.md)
 
-A Node.js server adapted for 64-bit versions of Windows that receives alarm data provided by [alerts.in.ua](https://alerts.in.ua/) at a specified frequency with subsequent processing and displaying notifications about the start and end of the alert for the specified region of Ukraine.
+A Node.js server adapted for 64-bit versions of Windows that receives data on alerts provided by [alerts.in.ua](https://alerts.in.ua/) at a specified frequency with subsequent processing and display of notifications about the start and end of alerts in the regions of Ukraine selected for monitoring.
 
 
 | Structure: |  |
@@ -35,9 +35,9 @@ The code is open source, no compiled files are used.
 
 Using the local alert update server is surprisingly easy and intuitive. The first run is performed automatically after the installation process is complete.
 
-The status and settings are displayed and managed via the tray icon menu. You can start the server at system startup, select the regions for which alarms will be monitored and so on.
+The status and settings are displayed and managed through the tray icon menu. The settings include starting the server at system startup, activating audio notifications, and selecting regions for which alerts will be monitored. The tray icon can be displayed in monochrome or color. 
 
-Notifications about the current alert and alert cancellation, as well as saving the alarm history, are provided through the Windows Notification Center using [Snoretoast](https://github.com/KDE/snoretoast). Additionally, alert indication through the tray icon and sound alerts are used. The tray icon menu also allows you to view a map of current alerts [alerts.in.ua](https://alerts.in.ua/).
+Notifications about the current alert and alert cancellation, as well as saving the alert history, are provided through the Windows Notification Center using [Snoretoast] (https://github.com/KDE/snoretoast). Additionally, alarm indication through the tray icon and audio alerts are used. The tray icon menu also allows you to view a map of current alerts [alerts.in.ua] (https://alerts.in.ua/) and a map of the current state of the front line [DeepState] (https://deepstatemap.live).
 
 All actions are recorded in a log file, the size of which is automatically limited to 256 KB, and can be viewed through the tray icon menu.
 
@@ -48,7 +48,7 @@ All actions are recorded in a log file, the size of which is automatically limit
 
 | Appearance of the settings:  ||
 | --- | --- |
-| ![1](https://github.com/sergeiown/Alert_Server/assets/112722061/bac9304e-e0ed-458e-a39a-4e7a321da76b) | ![111](https://github.com/sergeiown/Alert_Server/assets/112722061/b4cf4c28-d45b-47ae-af6f-a4f84befa665) | 
+| ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/509d25bc-8f07-4e8d-9f7d-4795b7830238) | ![111](https://github.com/sergeiown/Alert_Server/assets/112722061/b4cf4c28-d45b-47ae-af6f-a4f84befa665) | 
 ## Removal
 
 | Recommendation: |  |
