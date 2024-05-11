@@ -224,25 +224,48 @@ function createSettingsMenu(tray) {
             fs.writeFileSync(jsonPath, JSON.stringify(locations, null, 2), 'utf-8');
         }
 
-        function createCheckboxItem(tray, location) {
-            const checkboxItem = tray.item(location.Location, {
-                type: 'checkbox',
-                checked: location.Usage === '1',
-                bold: true,
-                action: () => {
-                    location.Usage = location.Usage === '1' ? '0' : '1';
-                    updateLocationJson(locations);
-                },
+        function createRegionMenu(tray, region) {
+            const regionItem = tray.item(region.Location, {
+                type: 'submenu',
             });
 
-            return checkboxItem;
+            for (const location of region.locations) {
+                const checkboxItem = tray.item(location.Location, {
+                    type: 'checkbox',
+                    bold: true,
+                    checked: location.Usage === '1',
+                    action: () => {
+                        location.Usage = location.Usage === '1' ? '0' : '1';
+                        updateLocationJson(locations);
+                    },
+                });
+
+                regionItem.add(checkboxItem);
+            }
+
+            return regionItem;
         }
 
         const jsonPath = path.join(__dirname, '..', 'location.json');
         const locations = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
 
+        const regions = {};
         for (const location of locations) {
-            notificationRegionsItem.add(createCheckboxItem(tray, location));
+            if (!regions[location.Region]) {
+                regions[location.Region] = {
+                    Location: location.Region,
+                    locations: [],
+                };
+            }
+
+            regions[location.Region].locations.push(location);
+        }
+
+        for (const regionKey in regions) {
+            if (regions.hasOwnProperty(regionKey)) {
+                const region = regions[regionKey];
+                notificationRegionsItem.add(createRegionMenu(tray, region));
+            }
         }
 
         return notificationRegionsItem;
@@ -251,6 +274,7 @@ function createSettingsMenu(tray) {
     settingsMenu.add(createRunOnStartupItem(tray));
     settingsMenu.add(createTrayMonoIconItem(tray));
     settingsMenu.add(createAlertSoundItem(tray));
+    settingsMenu.add(tray.separator());
     settingsMenu.add(createNotificationRegionsItem(tray));
 
     return settingsMenu;
