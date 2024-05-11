@@ -37,7 +37,7 @@ Using the local alert update server is surprisingly easy and intuitive. The firs
 
 The status and settings are displayed and managed through the tray icon menu. The settings include starting the server at system startup, activating audio notifications, and selecting regions for which alerts will be monitored. The tray icon can be displayed in monochrome or color. 
 
-Notifications about the current alert and alert cancellation, as well as saving the alert history, are provided through the Windows Notification Center using [Snoretoast] (https://github.com/KDE/snoretoast). Additionally, alarm indication through the tray icon and audio alerts are used. The tray icon menu also allows you to view a map of current alerts [alerts.in.ua] (https://alerts.in.ua/) and a map of the current state of the front line [DeepState] (https://deepstatemap.live).
+Notifications about the current alert and alert cancellation, as well as saving the alert history, are provided through the Windows Notification Center using [Snoretoast](https://github.com/KDE/snoretoast). Additionally, alarm indication through the tray icon and audio alerts are used. The tray icon menu also allows you to view a map of current alerts [alerts.in.ua](https://alerts.in.ua/) and a map of the current state of the front line [DeepState](https://deepstatemap.live).
 
 All actions are recorded in a log file, the size of which is automatically limited to 256 KB, and can be viewed through the tray icon menu.
 
