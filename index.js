@@ -9,10 +9,18 @@ const { showNotification } = require('./modules/notification');
 const { createTrayIcon } = require('./modules/trayIcon');
 const messages = require('./messages.json');
 
-logEvent(atob(messages.msg_01));
+process.on('uncaughtException', (err) => {
+    logEvent(err.message);
+});
 
-fetchDataAndSaveToFile();
+try {
+    logEvent(atob(messages.msg_01));
 
-showNotification();
+    fetchDataAndSaveToFile();
 
-createTrayIcon();
+    showNotification();
+
+    createTrayIcon();
+} catch (err) {
+    logEvent(err.message);
+}
