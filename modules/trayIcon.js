@@ -53,12 +53,12 @@ function createTrayIcon() {
         const isMonoIconMarkerExists = fs.existsSync(monoIconMarkerPath);
 
         const imagePath = !isMonoIconMarkerExists
-            ? path.join(__dirname, '..', 'resources', 'images', 'tray.png')
-            : path.join(__dirname, '..', 'resources', 'images', 'tray_mono.png');
+            ? path.join(__dirname, '..', 'resources', 'images', 'tray.ico')
+            : path.join(__dirname, '..', 'resources', 'images', 'tray_mono.ico');
 
         const alertImagePath = !isMonoIconMarkerExists
-            ? path.join(__dirname, '..', 'resources', 'images', 'tray_alert.png')
-            : path.join(__dirname, '..', 'resources', 'images', 'tray_alert_mono.png');
+            ? path.join(__dirname, '..', 'resources', 'images', 'tray_alert.ico')
+            : path.join(__dirname, '..', 'resources', 'images', 'tray_alert_mono.ico');
 
         return { imagePath, alertImagePath };
     }

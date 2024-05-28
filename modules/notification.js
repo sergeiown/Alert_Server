@@ -36,7 +36,7 @@ const showNotification = async () => {
                 const message = `${Buffer.from(messages.msg_41, 'base64').toString('utf8')} ${
                     alert.location_title
                 }. ${Buffer.from(messages.msg_42, 'base64').toString('utf8')} ${alertCount}`;
-                const image = path.join(__dirname, '..', 'resources', 'images', 'tray_alert.png');
+                const image = path.join(__dirname, '..', 'resources', 'images', 'alert.png');
 
                 createNotification(title, message, image);
 
@@ -56,7 +56,7 @@ const showNotification = async () => {
 
         displayedAlerts.forEach((value, displayedAlert) => {
             if (!alerts.some((alert) => alert.id === displayedAlert)) {
-                const image = path.join(__dirname, '..', 'resources', 'images', 'tray.png');
+                const image = path.join(__dirname, '..', 'resources', 'images', 'cancel.png');
                 const title = 'Тривога скасована';
                 const message = `${Buffer.from(messages.msg_41, 'base64').toString('utf8')} ${
                     value.locationTitle
