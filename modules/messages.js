@@ -6,8 +6,22 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 const fs = require('fs');
 const path = require('path');
 
-const messagesPath = path.join(__dirname, '../messagesUkr.json');
+const languageFilePath = path.join(process.env.TEMP, 'alertserver_language.tmp');
+
+const getCurrentLanguage = () => {
+    if (fs.existsSync(languageFilePath)) {
+        return fs.readFileSync(languageFilePath, 'utf-8').trim();
+    }
+    fs.writeFileSync(languageFilePath, 'English', 'utf-8');
+    return 'English';
+};
+
 let messages;
+
+const messagesPath =
+    getCurrentLanguage() === 'English'
+        ? path.join(__dirname, '../messagesEng.json')
+        : path.join(__dirname, '../messagesUkr.json');
 
 try {
     const fileContent = fs.readFileSync(messagesPath, 'utf8');
