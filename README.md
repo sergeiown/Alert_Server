@@ -7,7 +7,7 @@ A Node.js server adapted for 64-bit versions of Windows that receives data on al
 
 | Structure: |  |
 | --- | --- |
-| Dependencies | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/00b6e92c-2bad-459b-ac07-1b8bfc5adba5) |
+| Dependencies | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/012ceebd-32f7-43bc-894e-e2ff28bfd493) |
 
 ## Installation
 
@@ -29,7 +29,7 @@ The code is open source, no compiled files are used.
 *Testing and adaptation of the functionality was carried out on 64-bit versions of Windows 10 22H2 and 11 22H2.*  
 *Features may be limited or unavailable on other platforms or versions of Windows.*  
 *We recommend using Windows 10 version 22H2 or Windows 11 for the best experience.*  
-*Please note that only the Ukrainian version is available.*
+*Please note that Ukrainian and English versions are currently available.*
 
 ## Usage
 
