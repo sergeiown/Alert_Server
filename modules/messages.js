@@ -34,11 +34,12 @@ try {
             second: '2-digit',
         })
         .replace(/,\s*/g, ',');
-    const logMessage = `${currentDateTime},An error occurred while reading or parsing a messages file`;
+    const logMessage = `${currentDateTime},An error occurred while reading or parsing ${messagesPath}`;
     const logFilePath = path.join(process.env.TEMP, 'alertserver_log.csv');
     fs.appendFileSync(logFilePath, '\n' + logMessage, 'utf-8');
     console.error(logMessage);
     messages = {};
+    process.exit();
 }
 
 module.exports = messages;
