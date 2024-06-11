@@ -9,6 +9,16 @@ const { exec } = require('child_process');
 const { logEvent } = require('./logger');
 const messages = require('./messages');
 const batFilePath = path.join(__dirname, '..', 'start_alertserver_hidden.bat');
+const languageFilePath = path.join(process.env.TEMP, 'alertserver_language.tmp');
+
+// Визначення мови
+function getCurrentLanguage() {
+    if (fs.existsSync(languageFilePath)) {
+        return fs.readFileSync(languageFilePath, 'utf-8').trim();
+    }
+    fs.writeFileSync(languageFilePath, 'English', 'utf-8');
+    return 'English';
+}
 
 // Пункт меню 'Назва'
 function createTitleMenu(tray) {
@@ -122,16 +132,6 @@ function createSettingsMenu(tray) {
 
     // Підпункт 'Налаштування' => 'Мова' з підпунктами 'Англійська' та 'Українська'
     function createLanguageMenu(tray) {
-        const languageFilePath = path.join(process.env.TEMP, 'alertserver_language.tmp');
-
-        const getCurrentLanguage = () => {
-            if (fs.existsSync(languageFilePath)) {
-                return fs.readFileSync(languageFilePath, 'utf-8').trim();
-            }
-            fs.writeFileSync(languageFilePath, 'English', 'utf-8');
-            return 'English';
-        };
-
         let currentLanguage = getCurrentLanguage();
 
         const languageMenu = tray.item(messages.msg_51, {
@@ -291,13 +291,14 @@ function createSettingsMenu(tray) {
             fs.writeFileSync(jsonPath, JSON.stringify(locations, null, 2), 'utf-8');
         }
 
-        function createRegionMenu(tray, region) {
-            const regionItem = tray.item(region.Location, {
+        function createRegionMenu(tray, region, language) {
+            const regionItem = tray.item(language === 'Ukrainian' ? region.Location : region.LocationLat, {
                 type: 'submenu',
             });
 
             for (const location of region.locations) {
-                const checkboxItem = tray.item(location.Location, {
+                const field = language === 'Ukrainian' ? 'Location' : 'LocationLat';
+                const checkboxItem = tray.item(location[field], {
                     type: 'checkbox',
                     checked: location.Usage === '1',
                     action: () => {
@@ -320,6 +321,7 @@ function createSettingsMenu(tray) {
             if (!regions[location.Region]) {
                 regions[location.Region] = {
                     Location: location.Region,
+                    LocationLat: location.RegionLat,
                     locations: [],
                 };
             }
@@ -327,10 +329,12 @@ function createSettingsMenu(tray) {
             regions[location.Region].locations.push(location);
         }
 
+        const language = getCurrentLanguage();
+
         for (const regionKey in regions) {
             if (regions.hasOwnProperty(regionKey)) {
                 const region = regions[regionKey];
-                notificationRegionsItem.add(createRegionMenu(tray, region));
+                notificationRegionsItem.add(createRegionMenu(tray, region, language));
             }
         }
 
