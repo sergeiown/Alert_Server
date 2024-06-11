@@ -8,6 +8,7 @@ const fs = require('fs');
 const { exec } = require('child_process');
 const { logEvent } = require('./logger');
 const messages = require('./messages');
+const batFilePath = path.join(__dirname, '..', 'start_alertserver_hidden.bat');
 
 // Пункт меню 'Назва'
 function createTitleMenu(tray) {
@@ -147,6 +148,13 @@ function createSettingsMenu(tray) {
                     englishItem.checked = true;
                     ukrainianItem.checked = false;
                     currentLanguage = 'English';
+
+                    exec(`cmd /c "${batFilePath}"`, (error) => {
+                        if (error) {
+                            logEvent(messages.msg_56);
+                            return;
+                        }
+                    });
                 }
             },
         });
@@ -161,6 +169,13 @@ function createSettingsMenu(tray) {
                     englishItem.checked = false;
                     ukrainianItem.checked = true;
                     currentLanguage = 'Ukrainian';
+
+                    exec(`cmd /c "${batFilePath}"`, (error) => {
+                        if (error) {
+                            logEvent(messages.msg_56);
+                            return;
+                        }
+                    });
                 }
             },
         });

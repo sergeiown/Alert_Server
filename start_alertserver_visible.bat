@@ -16,18 +16,10 @@ if not exist "node_modules" (
     call start_dependencies_installer.bat
 )
 
-set "SessionFile=%temp%\alertserver_session.tmp"
-
-for /f %%i in ('type %SessionFile% 2^>nul') do set "NodePID=%%i"
-
-taskkill /f /pid %NodePID% >nul 2>nul
+taskkill /f /im node.exe >nul 2>nul
 
 start /b "" powershell -WindowStyle Hidden -Command "node index.js"
 
 echo Alert update server is successfully started.
 echo Date,Time,Event
 timeout /t 1 /nobreak >nul
-
-for /f "tokens=2 delims=," %%i in ('tasklist /nh /fi "imagename eq node.exe" /fo csv ^| findstr /i "node.exe"') do (
-    echo %%i > %SessionFile%
-)
