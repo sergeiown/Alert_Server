@@ -119,6 +119,58 @@ function createInfoMenu(tray) {
 function createSettingsMenu(tray) {
     const settingsMenu = tray.item(messages.msg_32);
 
+    // Підпункт 'Налаштування' => 'Мова' з підпунктами 'Англійська' та 'Українська'
+    function createLanguageMenu(tray) {
+        const languageFilePath = path.join(process.env.TEMP, 'alertserver_language.tmp');
+
+        const getCurrentLanguage = () => {
+            if (fs.existsSync(languageFilePath)) {
+                return fs.readFileSync(languageFilePath, 'utf-8').trim();
+            }
+            fs.writeFileSync(languageFilePath, 'English', 'utf-8');
+            return 'English';
+        };
+
+        let currentLanguage = getCurrentLanguage();
+
+        const languageMenu = tray.item(messages.msg_51, {
+            type: 'submenu',
+        });
+
+        const englishItem = tray.item(messages.msg_52, {
+            type: 'checkbox',
+            checked: currentLanguage === 'English',
+            action: () => {
+                if (currentLanguage !== 'English') {
+                    fs.writeFileSync(languageFilePath, 'English', 'utf-8');
+                    logEvent(messages.msg_53);
+                    englishItem.checked = true;
+                    ukrainianItem.checked = false;
+                    currentLanguage = 'English';
+                }
+            },
+        });
+
+        const ukrainianItem = tray.item(messages.msg_54, {
+            type: 'checkbox',
+            checked: currentLanguage === 'Ukrainian',
+            action: () => {
+                if (currentLanguage !== 'Ukrainian') {
+                    fs.writeFileSync(languageFilePath, 'Ukrainian', 'utf-8');
+                    logEvent(messages.msg_55);
+                    englishItem.checked = false;
+                    ukrainianItem.checked = true;
+                    currentLanguage = 'Ukrainian';
+                }
+            },
+        });
+
+        languageMenu.add(englishItem);
+        languageMenu.add(ukrainianItem);
+
+        return languageMenu;
+    }
+
     // Підпункт меню 'Налаштування' => 'Запускати разом з системою'
     function createRunOnStartupItem(tray) {
         const isAudioMarker = checkStartupFile();
@@ -270,6 +322,7 @@ function createSettingsMenu(tray) {
         return notificationRegionsItem;
     }
 
+    settingsMenu.add(createLanguageMenu(tray));
     settingsMenu.add(createRunOnStartupItem(tray));
     settingsMenu.add(createTrayMonoIconItem(tray));
     settingsMenu.add(createAlertSoundItem(tray));
