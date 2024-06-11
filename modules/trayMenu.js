@@ -9,7 +9,6 @@ const { exec } = require('child_process');
 const { logEvent } = require('./logger');
 const { getCurrentLanguage } = require('./checkLanguage');
 const messages = require('./messages');
-const batFilePath = path.join(__dirname, '..', 'start_alertserver_hidden.bat');
 
 // Пункт меню 'Назва'
 function createTitleMenu(tray) {
@@ -123,6 +122,8 @@ function createSettingsMenu(tray) {
 
     // Підпункт 'Налаштування' => 'Мова' з підпунктами 'Англійська' та 'Українська'
     function createLanguageMenu(tray) {
+        const batFilePath = path.join(__dirname, '..', 'start_alertserver_hidden.bat');
+        const languageFilePath = path.join(process.env.TEMP, 'alertserver_language.tmp');
         let currentLanguage = getCurrentLanguage();
 
         const languageMenu = tray.item(messages.msg_51, {

@@ -105,8 +105,8 @@ function createTrayIcon() {
 
     startTrayIcon();
 
-    process.on('uncaughtException', () => {
-        logEvent(messages.msg_50);
+    process.on('uncaughtException', (error) => {
+        logEvent(`${messages.msg_50}: ${error.message}`);
         startTrayIcon();
     });
 }
