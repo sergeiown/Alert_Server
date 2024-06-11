@@ -9,7 +9,7 @@ const { exec } = require('child_process');
 const { checkLocations } = require('./checkLocations');
 const { playAlertSound, playAlertCancellationSound } = require('./audioPlayer');
 const alertTypes = require('../alert.json');
-const messages = require('../messages.json');
+const messages = require('./messages');
 const { logEvent } = require('./logger');
 
 const displayedAlerts = new Map();
@@ -33,9 +33,7 @@ const showNotification = async () => {
 
             if (!displayedAlerts.has(alert.id)) {
                 const title = `${alertType ? alertType.name : alert.alert_type}`;
-                const message = `${Buffer.from(messages.msg_41, 'base64').toString('utf8')} ${
-                    alert.location_title
-                }. ${Buffer.from(messages.msg_42, 'base64').toString('utf8')} ${alertCount}`;
+                const message = `${messages.msg_41} ${alert.location_title}. ${messages.msg_42} ${alertCount}`;
                 const image = path.join(__dirname, '..', 'resources', 'images', 'alert.png');
 
                 createNotification(title, message, image);
@@ -58,9 +56,7 @@ const showNotification = async () => {
             if (!alerts.some((alert) => alert.id === displayedAlert)) {
                 const image = path.join(__dirname, '..', 'resources', 'images', 'cancel.png');
                 const title = 'Тривога скасована';
-                const message = `${Buffer.from(messages.msg_41, 'base64').toString('utf8')} ${
-                    value.locationTitle
-                }. ${Buffer.from(messages.msg_42, 'base64').toString('utf8')} ${alertCount}`;
+                const message = `${messages.msg_41} ${value.locationTitle}. ${messages.msg_42} ${alertCount}`;
 
                 createNotification(title, message, image);
 
@@ -69,25 +65,23 @@ const showNotification = async () => {
                     setTimeout(playAlertCancellationSound, 6000);
                 }
 
-                logEvent(`${atob(messages.msg_11)} ${value.locationLat}`);
+                logEvent(`${messages.msg_11} ${value.locationLat}`);
 
                 displayedAlerts.delete(displayedAlert);
             }
         });
     } catch (error) {
-        logEvent(atob(messages.msg_12));
+        logEvent(messages.msg_12);
     }
 };
 
 function createNotification(title, message, image) {
     const snoreToastPath = path.join(__dirname, '..', 'resources', 'snoreToast', 'snoretoast.exe');
-    const notificationCommand = `${snoreToastPath} -t "${title}" -m "${message}" -p "${image}" -d long -silent -appID "${atob(
-        messages.msg_22
-    )}"`;
+    const notificationCommand = `${snoreToastPath} -t "${title}" -m "${message}" -p "${image}" -d long -silent -appID "${messages.msg_22}"`;
 
     exec(notificationCommand, (error) => {
         if (error) {
-            logEvent(atob(messages.msg_21));
+            logEvent(messages.msg_21);
 
             return;
         }

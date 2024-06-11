@@ -7,11 +7,11 @@ const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
 const { logEvent } = require('./logger');
-const messages = require('../messages.json');
+const messages = require('./messages');
 
 // Пункт меню 'Назва'
 function createTitleMenu(tray) {
-    const menuTitle = tray.item(Buffer.from(messages.msg_26, 'base64').toString('utf8'), {
+    const menuTitle = tray.item(messages.msg_26, {
         bold: true,
         disabled: true,
     });
@@ -24,10 +24,10 @@ function openAppWithFallback(url) {
     const openCommand = (browser, callback) => {
         exec(`start ${browser} --app=${url}`, (error) => {
             if (!error) {
-                logEvent(`${atob(messages.msg_49)} with ${browser}`);
+                logEvent(`${messages.msg_49} with ${browser}`);
                 callback(true);
             } else {
-                logEvent(`${browser} ${atob(messages.msg_10)}`);
+                logEvent(`${browser} ${messages.msg_10}`);
                 callback(false);
             }
         });
@@ -38,9 +38,9 @@ function openAppWithFallback(url) {
             openCommand('chrome', (opened) => {
                 if (!opened) {
                     exec(`start ${url}`, (fallbackError) => {
-                        logEvent(`${atob(messages.msg_49)}`);
+                        logEvent(`${messages.msg_49}`);
                         if (fallbackError) {
-                            logEvent(atob(messages.msg_10));
+                            logEvent(messages.msg_10);
                         }
                     });
                 }
@@ -51,8 +51,8 @@ function openAppWithFallback(url) {
 
 // Пункт меню 'Перегляд мапи поточних тривог'
 function createAlertsMenu(tray) {
-    const alertsItem = tray.item(Buffer.from(messages.msg_27, 'base64').toString('utf8'), () => {
-        openAppWithFallback(atob(messages.msg_47));
+    const alertsItem = tray.item(messages.msg_27, () => {
+        openAppWithFallback(messages.msg_47);
     });
 
     return alertsItem;
@@ -60,8 +60,8 @@ function createAlertsMenu(tray) {
 
 // Пункт меню 'Перегляд мапи військових дій'
 function createFrontMenu(tray) {
-    const frontItem = tray.item(Buffer.from(messages.msg_43, 'base64').toString('utf8'), () => {
-        openAppWithFallback(atob(messages.msg_48));
+    const frontItem = tray.item(messages.msg_43, () => {
+        openAppWithFallback(messages.msg_48);
     });
 
     return frontItem;
@@ -69,16 +69,16 @@ function createFrontMenu(tray) {
 
 // Пункт меню 'Інформація'
 function createInfoMenu(tray) {
-    const logView = tray.item(Buffer.from(messages.msg_29, 'base64').toString('utf8'));
+    const logView = tray.item(messages.msg_29);
 
     // Підпункт меню 'Інформація' => 'Перегляд журналу'`
     function createLogItem(tray) {
-        const logItem = tray.item(Buffer.from(messages.msg_30, 'base64').toString('utf8'), () => {
+        const logItem = tray.item(messages.msg_30, () => {
             const logFilePath = path.join(process.env.TEMP, 'alertserver_log.csv');
 
             exec(`notepad ${logFilePath}`, (error) => {
                 if (error) {
-                    logEvent(atob(messages.msg_13));
+                    logEvent(messages.msg_13);
                     return;
                 }
             });
@@ -89,16 +89,16 @@ function createInfoMenu(tray) {
 
     // Підпункт меню 'Інформація' => 'Про програму'
     function createAboutItem(tray) {
-        const aboutMessage = Buffer.from(messages.msg_20, 'base64').toString('utf8');
-        const titleMessage = Buffer.from(messages.msg_31, 'base64').toString('utf8');
+        const aboutMessage = messages.msg_20;
+        const titleMessage = messages.msg_31;
         const vbsPath = path.join(process.env.TEMP, 'msgbox.vbs');
 
-        const aboutItem = tray.item(Buffer.from(messages.msg_31, 'base64').toString('utf8'), () => {
+        const aboutItem = tray.item(messages.msg_31, () => {
             fs.writeFileSync(vbsPath, `MsgBox "${aboutMessage}", 64, "${titleMessage}"`, 'utf-16le');
 
             exec(`start wscript.exe "${vbsPath}"`, (error) => {
                 if (error) {
-                    logEvent(atob(messages.msg_14));
+                    logEvent(messages.msg_14);
                     return;
                 }
 
@@ -117,22 +117,22 @@ function createInfoMenu(tray) {
 
 // Пункт меню 'Налаштування'
 function createSettingsMenu(tray) {
-    const settingsMenu = tray.item(Buffer.from(messages.msg_32, 'base64').toString('utf8'));
+    const settingsMenu = tray.item(messages.msg_32);
 
     // Підпункт меню 'Налаштування' => 'Запускати разом з системою'
     function createRunOnStartupItem(tray) {
         const isAudioMarker = checkStartupFile();
-        const runOnStartupItem = tray.item(Buffer.from(messages.msg_33, 'base64').toString('utf8'), {
+        const runOnStartupItem = tray.item(messages.msg_33, {
             checked: isAudioMarker,
             action: () => {
                 exec(`"${path.join(__dirname, '..', 'startup_activator.bat')}"`, (error) => {
                     if (error) {
-                        logEvent(atob(messages.msg_15));
+                        logEvent(messages.msg_15);
 
                         return;
                     }
                 });
-                checkStartupFile() ? logEvent(atob(messages.msg_16)) : logEvent(atob(messages.msg_17));
+                checkStartupFile() ? logEvent(messages.msg_16) : logEvent(messages.msg_17);
             },
         });
 
@@ -158,17 +158,17 @@ function createSettingsMenu(tray) {
     // Підпункт меню 'Налаштування' => 'Монохромний значок'
     function createTrayMonoIconItem(tray) {
         let isIconMarker = checkTrayMonoIconFile();
-        const trayMonoIcon = tray.item(Buffer.from(messages.msg_44, 'base64').toString('utf8'), {
+        const trayMonoIcon = tray.item(messages.msg_44, {
             checked: isIconMarker,
             action: () => {
                 const tempDir = process.env.temp || process.env.TEMP;
                 const monoIconFilePath = path.join(tempDir, 'alertserver_icon.tmp');
                 if (isIconMarker) {
                     fs.unlinkSync(monoIconFilePath);
-                    logEvent(atob(messages.msg_46));
+                    logEvent(messages.msg_46);
                 } else {
                     fs.writeFileSync(monoIconFilePath, '');
-                    logEvent(atob(messages.msg_45));
+                    logEvent(messages.msg_45);
                 }
                 isIconMarker = !isIconMarker;
                 trayMonoIcon.checked = isIconMarker;
@@ -187,17 +187,17 @@ function createSettingsMenu(tray) {
     // Підпункт меню 'Налаштування' => 'Звук попередження'
     function createAlertSoundItem(tray) {
         let isAudioMarker = checkAlertSoundFile();
-        const alertSoundItem = tray.item(Buffer.from(messages.msg_28, 'base64').toString('utf8'), {
+        const alertSoundItem = tray.item(messages.msg_28, {
             checked: isAudioMarker,
             action: () => {
                 const tempDir = process.env.temp || process.env.TEMP;
                 const alertSoundFilePath = path.join(tempDir, 'alertserver_audio.tmp');
                 if (isAudioMarker) {
                     fs.unlinkSync(alertSoundFilePath);
-                    logEvent(atob(messages.msg_39));
+                    logEvent(messages.msg_39);
                 } else {
                     fs.writeFileSync(alertSoundFilePath, '');
-                    logEvent(atob(messages.msg_40));
+                    logEvent(messages.msg_40);
                 }
                 isAudioMarker = !isAudioMarker;
                 alertSoundItem.checked = isAudioMarker;
@@ -215,12 +215,12 @@ function createSettingsMenu(tray) {
 
     // Підпункт меню 'Налаштування' => 'Вибір регіонів'
     function createNotificationRegionsItem(tray) {
-        const notificationRegionsItem = tray.item(Buffer.from(messages.msg_34, 'base64').toString('utf8'));
+        const notificationRegionsItem = tray.item(messages.msg_34);
 
         function updateLocationJson(locations) {
             const jsonPath = path.join(__dirname, '..', 'location.json');
 
-            logEvent(atob(messages.msg_18));
+            logEvent(messages.msg_18);
             fs.writeFileSync(jsonPath, JSON.stringify(locations, null, 2), 'utf-8');
         }
 
@@ -281,10 +281,10 @@ function createSettingsMenu(tray) {
 
 // Пункт меню 'Вихід'
 function createExitMenu(tray) {
-    const quit = tray.item(Buffer.from(messages.msg_35, 'base64').toString('utf8'), {
+    const quit = tray.item(messages.msg_35, {
         bold: true,
         action: () => {
-            logEvent(atob(messages.msg_19));
+            logEvent(messages.msg_19);
             tray.kill();
             process.exit();
         },

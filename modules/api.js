@@ -4,7 +4,7 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 'use strict';
 
 const { logEvent } = require('./logger');
-const messages = require('../messages.json');
+const messages = require('./messages');
 const { exec } = require('child_process');
 const path = require('path');
 
@@ -24,11 +24,11 @@ const fetchDataAndSaveToFile = async () => {
 
         child.on('close', (code) => {
             if (code !== 0) {
-                logEvent(atob(messages.msg_04));
+                logEvent(messages.msg_04);
             }
         });
     } catch (error) {
-        logEvent(atob(messages.msg_03));
+        logEvent(messages.msg_03);
     }
 };
 

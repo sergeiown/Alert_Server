@@ -7,9 +7,9 @@ const { logEvent } = require('./modules/logger');
 const { fetchDataAndSaveToFile } = require('./modules/api');
 const { showNotification } = require('./modules/notification');
 const { createTrayIcon } = require('./modules/trayIcon');
-const messages = require('./messages.json');
+const messages = require('./modules/messages');
 
-logEvent(atob(messages.msg_01));
+logEvent(messages.msg_01);
 
 fetchDataAndSaveToFile();
 
