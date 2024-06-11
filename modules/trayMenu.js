@@ -7,18 +7,9 @@ const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
 const { logEvent } = require('./logger');
+const { getCurrentLanguage } = require('./checkLanguage');
 const messages = require('./messages');
 const batFilePath = path.join(__dirname, '..', 'start_alertserver_hidden.bat');
-const languageFilePath = path.join(process.env.TEMP, 'alertserver_language.tmp');
-
-// Визначення мови
-function getCurrentLanguage() {
-    if (fs.existsSync(languageFilePath)) {
-        return fs.readFileSync(languageFilePath, 'utf-8').trim();
-    }
-    fs.writeFileSync(languageFilePath, 'English', 'utf-8');
-    return 'English';
-}
 
 // Пункт меню 'Назва'
 function createTitleMenu(tray) {
