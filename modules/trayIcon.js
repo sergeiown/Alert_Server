@@ -14,7 +14,7 @@ const {
     createSettingsMenu,
     createExitMenu,
 } = require('./trayMenu');
-const messages = require('../messages.json');
+const messages = require('./messages');
 const { logEvent } = require('./logger');
 
 function createTrayIcon() {
@@ -83,17 +83,14 @@ function createTrayIcon() {
                 trayInstance.separator(),
                 quit
             );
-            trayInstance.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
+            trayInstance.setTitle(messages.msg_23);
             trayInstance.setIcon(fs.readFileSync(imagePath));
-            trayInstance.notify(
-                Buffer.from(messages.msg_22, 'base64').toString('utf8'),
-                Buffer.from(messages.msg_25, 'base64').toString('utf8')
-            );
+            trayInstance.notify(messages.msg_22, messages.msg_25);
         } else if (state === 'normal') {
-            trayInstance.setTitle(Buffer.from(messages.msg_23, 'base64').toString('utf8'));
+            trayInstance.setTitle(messages.msg_23);
             trayInstance.setIcon(fs.readFileSync(imagePath));
         } else if (state === 'alert') {
-            trayInstance.setTitle(`${Buffer.from(messages.msg_24, 'base64').toString('utf8')} ${parseInt(data)}`);
+            trayInstance.setTitle(`${messages.msg_24} ${parseInt(data)}`);
             trayInstance.setIcon(fs.readFileSync(alertImagePath));
         }
     }
@@ -109,7 +106,7 @@ function createTrayIcon() {
     startTrayIcon();
 
     process.on('uncaughtException', () => {
-        logEvent(atob(messages.msg_50));
+        logEvent(messages.msg_50);
         startTrayIcon();
     });
 }

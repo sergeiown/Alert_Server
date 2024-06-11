@@ -6,7 +6,7 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 const { exec } = require('child_process');
 const path = require('path');
 const { logEvent } = require('./logger');
-const messages = require('../messages.json');
+const messages = require('./messages');
 
 const alertSound = path.join(__dirname, '..', 'resources', 'audio', 'alert.wav');
 const alertCancellationSound = path.join(__dirname, '..', 'resources', 'audio', 'alert_cancellation.wav');
@@ -14,7 +14,7 @@ const alertCancellationSound = path.join(__dirname, '..', 'resources', 'audio', 
 const playAlertSound = () => {
     exec(`powershell -c (New-Object System.Media.SoundPlayer '${alertSound}').PlaySync()`, (err) => {
         if (err) {
-            logEvent(atob(messages.msg_06));
+            logEvent(messages.msg_06);
         }
     });
 };
@@ -22,7 +22,7 @@ const playAlertSound = () => {
 const playAlertCancellationSound = () => {
     exec(`powershell -c (New-Object System.Media.SoundPlayer '${alertCancellationSound}').PlaySync()`, (err) => {
         if (err) {
-            logEvent(atob(messages.msg_06));
+            logEvent(messages.msg_06);
         }
     });
 };

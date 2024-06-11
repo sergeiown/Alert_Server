@@ -6,7 +6,7 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 const path = require('path');
 const fs = require('fs').promises;
 const { logEvent } = require('./logger');
-const messages = require('../messages.json');
+const messages = require('./messages');
 
 const checkLocations = async () => {
     try {
@@ -33,13 +33,13 @@ const checkLocations = async () => {
         });
 
         if (alertsWithLocationLat.length > 0) {
-            logEvent(`${atob(messages.msg_02)} ${alertsWithLocationLat.length}`);
+            logEvent(`${messages.msg_02} ${alertsWithLocationLat.length}`);
             return { alerts: alertsWithLocationLat };
         } else {
             return { alerts: [] };
         }
     } catch (error) {
-        logEvent(atob(messages.msg_07));
+        logEvent(messages.msg_07);
 
         return { alerts: [] };
     }
