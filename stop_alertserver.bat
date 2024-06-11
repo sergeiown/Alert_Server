@@ -3,10 +3,7 @@
 
 @echo off
 
-set "SessionFile=%temp%\alertserver_session.tmp"
+taskkill /f /im node.exe >nul 2>nul
 
-for /f %%i in ('type %SessionFile% 2^>nul') do set "NodePID=%%i"
-
-taskkill /f /pid %NodePID%  >nul 2>nul
 echo Alert update server is stopped.
 pause
