@@ -22,16 +22,6 @@ function createTrayIcon() {
     let isAlertActive = false;
     let trayInstance = null;
 
-    function watchLanguageFile() {
-        const languageFilePath = path.join(process.env.TEMP, 'alertserver_language.tmp');
-
-        fs.watch(languageFilePath, (eventType) => {
-            if (eventType === 'change') {
-                updateTrayIcon('changeLanguage');
-            }
-        });
-    }
-
     function updateAlertStatus() {
         const alertFilePath = path.join(process.env.TEMP, 'alert_active.tmp');
 
@@ -99,18 +89,6 @@ function createTrayIcon() {
         } else if (state === 'normal') {
             trayInstance.setTitle(messages.msg_23);
             trayInstance.setIcon(fs.readFileSync(imagePath));
-        } else if (state === 'changeLanguage') {
-            trayInstance.setMenu(
-                menuTitle,
-                trayInstance.separator(),
-                alertsItem,
-                frontItem,
-                settings,
-                logView,
-                trayInstance.separator(),
-                quit
-            );
-            trayInstance.setTitle(messages.msg_23);
         } else if (state === 'alert') {
             trayInstance.setTitle(`${messages.msg_24} ${parseInt(data)}`);
             trayInstance.setIcon(fs.readFileSync(alertImagePath));
@@ -122,7 +100,6 @@ function createTrayIcon() {
             trayInstance = tray;
             updateTrayIcon('start');
             setInterval(updateAlertStatus, checkInterval);
-            watchLanguageFile();
         });
     }
 
