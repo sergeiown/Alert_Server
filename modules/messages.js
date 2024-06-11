@@ -24,9 +24,17 @@ try {
         }
     }
 } catch (error) {
-    const currentDate = new Date().toLocaleDateString();
-    const currentTime = new Date().toLocaleTimeString();
-    const logMessage = `${currentDate},${currentTime},An error occurred while reading or parsing a file: ${error.message}`;
+    const currentDateTime = new Date()
+        .toLocaleString('UA', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+        })
+        .replace(/,\s*/g, ',');
+    const logMessage = `${currentDateTime},An error occurred while reading or parsing a file: ${error.message}`;
     const logFilePath = path.join(process.env.TEMP, 'alertserver_log.csv');
     fs.appendFileSync(logFilePath, '\n' + logMessage, 'utf-8');
     console.error(logMessage);
