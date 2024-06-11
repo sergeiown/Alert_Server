@@ -29,7 +29,7 @@ The code is open source, no compiled files are used.
 *Testing and adaptation of the functionality was carried out on 64-bit versions of Windows 10 22H2 and 11 22H2.*  
 *Features may be limited or unavailable on other platforms or versions of Windows.*  
 *We recommend using Windows 10 version 22H2 or Windows 11 for the best experience.*  
-*Please note that Ukrainian and English versions are currently available.*
+*Please note that the interface is currently available in Ukrainian and English.*
 
 ## Usage
 
