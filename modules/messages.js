@@ -5,16 +5,7 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 const fs = require('fs');
 const path = require('path');
-
-const languageFilePath = path.join(process.env.TEMP, 'alertserver_language.tmp');
-
-const getCurrentLanguage = () => {
-    if (fs.existsSync(languageFilePath)) {
-        return fs.readFileSync(languageFilePath, 'utf-8').trim();
-    }
-    fs.writeFileSync(languageFilePath, 'English', 'utf-8');
-    return 'English';
-};
+const { getCurrentLanguage } = require('./checkLanguage');
 
 let messages;
 
