@@ -11,6 +11,7 @@ const { playAlertSound, playAlertCancellationSound } = require('./audioPlayer');
 const alertTypes = require('../alert.json');
 const messages = require('./messages');
 const { logEvent } = require('./logger');
+const { getCurrentLanguage } = require('./checkLanguage');
 
 const displayedAlerts = new Map();
 const tempFilePath = path.join(process.env.TEMP, 'alert_active.tmp');
@@ -32,8 +33,16 @@ const showNotification = async () => {
             const alertType = alertTypes.find((type) => type.id === alert.alert_type);
 
             if (!displayedAlerts.has(alert.id)) {
-                const title = `${alertType ? alertType.name : alert.alert_type}`;
-                const message = `${messages.msg_41} ${alert.location_title}. ${messages.msg_42} ${alertCount}`;
+                const title =
+                    getCurrentLanguage() === 'English'
+                        ? `${messages.msg_58}: ${alertType ? alertType.id : alert.alert_type}`
+                        : `${messages.msg_58}: ${alertType ? alertType.name : alert.alert_type}`;
+
+                const message =
+                    getCurrentLanguage() === 'English'
+                        ? `${messages.msg_41} ${alert.location_lat}. ${messages.msg_42} ${alertCount}`
+                        : `${messages.msg_41} ${alert.location_title}. ${messages.msg_42} ${alertCount}`;
+
                 const image = path.join(__dirname, '..', 'resources', 'images', 'alert.png');
 
                 createNotification(title, message, image);
@@ -55,8 +64,13 @@ const showNotification = async () => {
         displayedAlerts.forEach((value, displayedAlert) => {
             if (!alerts.some((alert) => alert.id === displayedAlert)) {
                 const image = path.join(__dirname, '..', 'resources', 'images', 'cancel.png');
-                const title = 'Тривога скасована';
-                const message = `${messages.msg_41} ${value.locationTitle}. ${messages.msg_42} ${alertCount}`;
+
+                const title = messages.msg_57;
+
+                const message =
+                    getCurrentLanguage() === 'English'
+                        ? `${messages.msg_41} ${value.locationLat}. ${messages.msg_42} ${alertCount}`
+                        : `${messages.msg_41} ${value.locationTitle}. ${messages.msg_42} ${alertCount}`;
 
                 createNotification(title, message, image);
 
