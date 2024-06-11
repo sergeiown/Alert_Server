@@ -7,12 +7,30 @@ const fs = require('fs');
 const path = require('path');
 
 const messagesPath = path.join(__dirname, '../messagesUkr.json');
-const messages = JSON.parse(fs.readFileSync(messagesPath, 'utf8'));
+let messages;
 
-for (let key in messages) {
-    if (messages.hasOwnProperty(key)) {
-        messages[key] = Buffer.from(messages[key], 'base64').toString('utf8');
+try {
+    const fileContent = fs.readFileSync(messagesPath, 'utf8');
+
+    messages = JSON.parse(fileContent);
+
+    for (let key in messages) {
+        if (messages.hasOwnProperty(key)) {
+            try {
+                messages[key] = Buffer.from(messages[key], 'base64').toString('utf8');
+            } catch (decodeError) {
+                console.error(`Decoding error for a key ${key}:`, decodeError.message);
+            }
+        }
     }
+} catch (error) {
+    const currentDate = new Date().toLocaleDateString();
+    const currentTime = new Date().toLocaleTimeString();
+    const logMessage = `${currentDate},${currentTime},An error occurred while reading or parsing a file: ${error.message}`;
+    const logFilePath = path.join(process.env.TEMP, 'alertserver_log.csv');
+    fs.appendFileSync(logFilePath, '\n' + logMessage, 'utf-8');
+    console.error(logMessage);
+    messages = {};
 }
 
 module.exports = messages;
