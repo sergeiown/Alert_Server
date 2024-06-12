@@ -15,7 +15,6 @@ const {
     createExitMenu,
 } = require('./trayMenu');
 const messages = require('./messages');
-const { logEvent } = require('./logger');
 
 function createTrayIcon() {
     const checkInterval = 2000;
@@ -86,19 +85,6 @@ function createTrayIcon() {
             trayInstance.setTitle(messages.msg_23);
             trayInstance.setIcon(fs.readFileSync(imagePath));
             trayInstance.notify(messages.msg_22, messages.msg_25);
-        } else if (state === 'restart') {
-            trayInstance.setMenu(
-                menuTitle,
-                trayInstance.separator(),
-                alertsItem,
-                frontItem,
-                settings,
-                logView,
-                trayInstance.separator(),
-                quit
-            );
-            trayInstance.setTitle(messages.msg_23);
-            trayInstance.setIcon(fs.readFileSync(imagePath));
         } else if (state === 'normal') {
             trayInstance.setTitle(messages.msg_23);
             trayInstance.setIcon(fs.readFileSync(imagePath));
@@ -117,11 +103,6 @@ function createTrayIcon() {
     }
 
     startTrayIcon('start');
-
-    process.on('uncaughtException', (error) => {
-        logEvent(`${messages.msg_50} ${error.message}`);
-        startTrayIcon('restart');
-    });
 }
 
 module.exports = { createTrayIcon };
