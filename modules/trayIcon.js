@@ -86,6 +86,19 @@ function createTrayIcon() {
             trayInstance.setTitle(messages.msg_23);
             trayInstance.setIcon(fs.readFileSync(imagePath));
             trayInstance.notify(messages.msg_22, messages.msg_25);
+        } else if (state === 'restart') {
+            trayInstance.setMenu(
+                menuTitle,
+                trayInstance.separator(),
+                alertsItem,
+                frontItem,
+                settings,
+                logView,
+                trayInstance.separator(),
+                quit
+            );
+            trayInstance.setTitle(messages.msg_23);
+            trayInstance.setIcon(fs.readFileSync(imagePath));
         } else if (state === 'normal') {
             trayInstance.setTitle(messages.msg_23);
             trayInstance.setIcon(fs.readFileSync(imagePath));
@@ -95,19 +108,19 @@ function createTrayIcon() {
         }
     }
 
-    function startTrayIcon() {
+    function startTrayIcon(option) {
         Tray.create(function (tray) {
             trayInstance = tray;
-            updateTrayIcon('start');
+            updateTrayIcon(option);
             setInterval(updateAlertStatus, checkInterval);
         });
     }
 
-    startTrayIcon();
+    startTrayIcon('start');
 
     process.on('uncaughtException', (error) => {
-        logEvent(`${messages.msg_50}: ${error.message}`);
-        startTrayIcon();
+        logEvent(`${messages.msg_50} ${error.message}`);
+        startTrayIcon('restart');
     });
 }
 
