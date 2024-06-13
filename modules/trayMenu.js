@@ -276,10 +276,11 @@ function createSettingsMenu(tray) {
     function createNotificationRegionsItem(tray) {
         const notificationRegionsItem = tray.item(messages.msg_34);
 
-        function updateLocationJson(locations) {
+        function updateLocationJson(locations, location, usage) {
             const jsonPath = path.join(__dirname, '..', 'location.json');
+            const action = usage === '1' ? 'added' : 'removed';
 
-            logEvent(messages.msg_18);
+            logEvent(`${messages.msg_18}: ${action} ${location}`);
             fs.writeFileSync(jsonPath, JSON.stringify(locations, null, 2), 'utf-8');
         }
 
@@ -295,7 +296,7 @@ function createSettingsMenu(tray) {
                     checked: location.Usage === '1',
                     action: () => {
                         location.Usage = location.Usage === '1' ? '0' : '1';
-                        updateLocationJson(locations);
+                        updateLocationJson(locations, location.LocationLat, location.Usage);
                     },
                 });
 
