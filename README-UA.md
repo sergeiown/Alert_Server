@@ -42,12 +42,12 @@
 
 | Зовнішній вигляд сповіщень:  |||
 | --- | --- | --- |
-| ![info1](https://github.com/sergeiown/Alert_Server/assets/112722061/9e0bdb50-229f-4616-8425-9e7c390c104a) | ![info2](https://github.com/sergeiown/Alert_Server/assets/112722061/4ef3c9a4-9b1a-4023-89d0-267e4b5afc48) | ![info3](https://github.com/sergeiown/Alert_Server/assets/112722061/1ab1e93c-bb93-4d1c-be27-9918a6252ad4) |
+| ![1](https://github.com/sergeiown/Alert_Server/assets/112722061/770e12e4-4d63-44d9-a0e8-728fcd46aee7) | ![2](https://github.com/sergeiown/Alert_Server/assets/112722061/49c8a502-a766-4a18-870a-64cbad870988) | ![3](https://github.com/sergeiown/Alert_Server/assets/112722061/80295078-98db-48e1-88f8-136bc7ad1421) |
 | Запуск сервера                  | Активна тривога                      | Скасування тривоги |
 
 | Зовнішній вигляд налаштувань:  ||
 | --- | --- |
-| ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/509d25bc-8f07-4e8d-9f7d-4795b7830238) | ![111](https://github.com/sergeiown/Alert_Server/assets/112722061/b4cf4c28-d45b-47ae-af6f-a4f84befa665) | 
+| Вибір мови | ![4](https://github.com/sergeiown/Alert_Server/assets/112722061/160b8d7a-d849-4924-9af8-2852721a1ffd) | 
 ## Видалення
 
 | Рекомендація: |  |
