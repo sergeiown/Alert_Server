@@ -97,10 +97,9 @@ function createNotification(title, message, image) {
 
     exec(notificationCommand, (error) => {
         if (error) {
-            const errorCode = error.code;
-            if (errorCode === 3) {
+            if (error.code === 3) {
                 logEvent(messages.msg_60);
-            } else if (errorCode === 2) {
+            } else if (error.code === 2) {
                 logEvent(messages.msg_59);
             } else {
                 logEvent(error.message);
