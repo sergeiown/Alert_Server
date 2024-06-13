@@ -43,17 +43,18 @@ All actions are recorded in a log file, the size of which is automatically limit
 
 | Appearance of notifications:  |||
 | --- | --- | --- |
-| ![info1](https://github.com/sergeiown/Alert_Server/assets/112722061/9e0bdb50-229f-4616-8425-9e7c390c104a) | ![info2](https://github.com/sergeiown/Alert_Server/assets/112722061/4ef3c9a4-9b1a-4023-89d0-267e4b5afc48) | ![info3](https://github.com/sergeiown/Alert_Server/assets/112722061/1ab1e93c-bb93-4d1c-be27-9918a6252ad4) |
+| ![1](https://github.com/sergeiown/Alert_Server/assets/112722061/90697f7c-e2d4-44dd-a4ee-d4974439cabc) | ![2](https://github.com/sergeiown/Alert_Server/assets/112722061/c954dfd2-673e-4a0d-9784-d4f2b37fe845) | ![3](https://github.com/sergeiown/Alert_Server/assets/112722061/4b487a03-ccc7-463f-986a-102198e844a9) |
 | Server start                  | Active alert                      | Cancel the alert |
 
 | Appearance of the settings:  ||
 | --- | --- |
-| ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/509d25bc-8f07-4e8d-9f7d-4795b7830238) | ![111](https://github.com/sergeiown/Alert_Server/assets/112722061/b4cf4c28-d45b-47ae-af6f-a4f84befa665) | 
+| Region selection | ![info4](https://github.com/sergeiown/Alert_Server/assets/112722061/eabb38f7-6900-404d-83f3-0e8ee38f9172)
+ | 
 ## Removal
 
 | Recommendation: |  |
 | --- | --- |
-| If you need to uninstall the local alert update server use the `Uninstall` shortcut in the Start => Alert server menu. | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/139ee2ee-e07c-44b7-b2a2-4e42c8542dea) |
+| If you need to uninstall the local alert update server use the `Uninstall` shortcut in the Start => Alert server menu. | ![info5](https://github.com/sergeiown/Alert_Server/assets/112722061/139ee2ee-e07c-44b7-b2a2-4e42c8542dea) |
 
 ## Contribution
 
