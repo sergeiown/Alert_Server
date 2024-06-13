@@ -48,8 +48,8 @@ All actions are recorded in a log file, the size of which is automatically limit
 
 | Appearance of the settings:  ||
 | --- | --- |
-| Region selection | ![info4](https://github.com/sergeiown/Alert_Server/assets/112722061/eabb38f7-6900-404d-83f3-0e8ee38f9172)
- | 
+| Region selection | ![info4](https://github.com/sergeiown/Alert_Server/assets/112722061/eabb38f7-6900-404d-83f3-0e8ee38f9172) | 
+
 ## Removal
 
 | Recommendation: |  |
