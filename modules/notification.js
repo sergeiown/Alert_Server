@@ -93,11 +93,18 @@ function createNotification(title, message, image) {
     const snoreToastPath = path.join(__dirname, '..', 'resources', 'snoreToast', 'snoretoast.exe');
     const notificationCommand = `${snoreToastPath} -t "${title}" -m "${message}" -p "${image}" -d long -silent -appID "${messages.msg_22}"`;
 
+    logEvent(messages.msg_21);
+
     exec(notificationCommand, (error) => {
         if (error) {
-            logEvent(messages.msg_21);
-
-            return;
+            const errorCode = error.code;
+            if (errorCode === 3) {
+                logEvent(messages.msg_60);
+            } else if (errorCode === 2) {
+                logEvent(messages.msg_59);
+            } else {
+                logEvent(error.message);
+            }
         }
     });
 }
