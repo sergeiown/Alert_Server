@@ -7,8 +7,14 @@ taskkill /f /im "node.exe" >nul 2>nul
 
 timeout /t 1 /nobreak >nul
 
-del /q "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Alert server.lnk"
+del /q "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Alert Server.lnk"
 
-rmdir /s /q "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Alert server\"
+del /q "%temp%\alertserver*.*"
 
-rmdir /s /q "%USERPROFILE%\Documents\Alert server"
+del /q "%temp%\alert_*.*"
+
+del /q "%temp%\*_alert.*"
+
+rmdir /s /q "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Alert Server\"
+
+rmdir /s /q "%USERPROFILE%\Documents\Alert_Server"
