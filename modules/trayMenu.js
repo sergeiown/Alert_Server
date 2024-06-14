@@ -349,7 +349,6 @@ function createExitMenu(tray) {
     const quit = tray.item(messages.msg_35, {
         bold: true,
         action: () => {
-            logEvent(messages.msg_19);
             tray.kill();
             process.exit();
         },

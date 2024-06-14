@@ -25,4 +25,23 @@ function restartOnException() {
     });
 }
 
-module.exports = { restartOnException };
+function logOnExit() {
+    let terminationMessage = messages.msg_61;
+
+    process.on('SIGINT', () => {
+        terminationMessage = messages.msg_62;
+        process.exit(0);
+    });
+
+    process.on('SIGTERM', () => {
+        terminationMessage = messages.msg_63;
+        process.exit(0);
+    });
+
+    process.on('exit', (code) => {
+        logEvent(terminationMessage);
+        logEvent(`${messages.msg_19} Code: ${code}`);
+    });
+}
+
+module.exports = { restartOnException, logOnExit };
