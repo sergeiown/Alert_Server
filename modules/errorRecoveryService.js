@@ -5,6 +5,7 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 const { exec } = require('child_process');
 const path = require('path');
+const readline = require('readline');
 const { logEvent } = require('./logger');
 const messages = require('./messages');
 
@@ -28,14 +29,19 @@ function restartOnException() {
 function logOnExit() {
     let terminationMessage = messages.msg_61;
 
-    process.on('SIGINT', () => {
-        terminationMessage = messages.msg_62;
-        process.exit(0);
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
     });
 
-    process.on('SIGTERM', () => {
+    rl.on('SIGINT', () => {
+        terminationMessage = messages.msg_62;
+        process.emit('SIGINT');
+    });
+
+    rl.on('SIGTERM', () => {
         terminationMessage = messages.msg_63;
-        process.exit(0);
+        process.emit('SIGTERM');
     });
 
     process.on('exit', (code) => {
