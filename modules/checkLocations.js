@@ -33,7 +33,6 @@ const checkLocations = async () => {
         });
 
         if (alertsWithLocationLat.length > 0) {
-            logEvent(`${messages.msg_02} ${alertsWithLocationLat.length}`);
             return { alerts: alertsWithLocationLat };
         } else {
             return { alerts: [] };

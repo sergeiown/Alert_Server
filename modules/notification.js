@@ -53,6 +53,7 @@ const showNotification = async () => {
                 }
 
                 logEvent(`Alert ${alert.alert_type}: ${alert.location_lat}`);
+                logEvent(`${messages.msg_02} ${alerts.length}`);
 
                 displayedAlerts.set(alert.id, {
                     locationTitle: alert.location_title,
@@ -80,6 +81,7 @@ const showNotification = async () => {
                 }
 
                 logEvent(`${messages.msg_11} ${value.locationLat}`);
+                logEvent(`${messages.msg_02} ${alerts.length}`);
 
                 displayedAlerts.delete(displayedAlert);
             }
