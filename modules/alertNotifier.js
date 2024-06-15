@@ -49,7 +49,7 @@ const showNotification = async () => {
 
                 if (isAudioMarker) {
                     playAlertSound();
-                    setTimeout(playAlertSound, 14000);
+                    setTimeout(playAlertSound, 8000);
                 }
 
                 logEvent(`Alert ${alert.alert_type}: ${alert.location_lat}`);

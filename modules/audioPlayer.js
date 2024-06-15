@@ -7,9 +7,17 @@ const { exec } = require('child_process');
 const path = require('path');
 const { logEvent } = require('./logger');
 const messages = require('./messageLoader');
+const { getCurrentLanguage } = require('./languageChecker');
 
-const alertSound = path.join(__dirname, '..', 'resources', 'audio', 'alert.wav');
-const alertCancellationSound = path.join(__dirname, '..', 'resources', 'audio', 'alert_cancellation.wav');
+const alertSound =
+    getCurrentLanguage() === 'English'
+        ? path.join(__dirname, '..', 'resources', 'audio', 'alert_eng.wav')
+        : path.join(__dirname, '..', 'resources', 'audio', 'alert_ukr.wav');
+
+const alertCancellationSound =
+    getCurrentLanguage() === 'English'
+        ? path.join(__dirname, '..', 'resources', 'audio', 'alert_cancellation_eng.wav')
+        : path.join(__dirname, '..', 'resources', 'audio', 'alert_cancellation_ukr.wav');
 
 const playAlertSound = () => {
     exec(`powershell -c (New-Object System.Media.SoundPlayer '${alertSound}').PlaySync()`, (err) => {
