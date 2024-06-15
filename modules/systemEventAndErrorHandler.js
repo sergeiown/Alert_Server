@@ -3,7 +3,6 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 'use strict';
 
-const process = require('node:process');
 const { exec } = require('child_process');
 const path = require('path');
 const { logEvent } = require('./logger');
