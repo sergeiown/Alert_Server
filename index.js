@@ -6,7 +6,7 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 const { fetchDataAndSaveToFile } = require('./modules/api');
 const { showNotification } = require('./modules/notification');
 const { createTrayIcon } = require('./modules/trayIcon');
-const { restartOnException, logOnExit } = require('./modules/errorRecoveryService');
+const { handleExceptionAndRestart, logSystemEvents } = require('./modules/systemEventAndErrorHandler');
 
 fetchDataAndSaveToFile();
 
@@ -14,6 +14,6 @@ showNotification();
 
 createTrayIcon();
 
-restartOnException();
+handleExceptionAndRestart();
 
-logOnExit();
+logSystemEvents();
