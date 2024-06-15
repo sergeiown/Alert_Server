@@ -6,12 +6,12 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
-const { checkLocations } = require('./checkLocations');
+const { checkLocations } = require('./locationChecker');
+const { getCurrentLanguage } = require('./languageChecker');
 const { playAlertSound, playAlertCancellationSound } = require('./audioPlayer');
 const alertTypes = require('../alert.json');
-const messages = require('./messages');
+const messages = require('./messageLoader');
 const { logEvent } = require('./logger');
-const { getCurrentLanguage } = require('./checkLanguage');
 
 const displayedAlerts = new Map();
 const tempFilePath = path.join(process.env.TEMP, 'alert_active.tmp');

@@ -4,7 +4,7 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 'use strict';
 
 const { logEvent } = require('./logger');
-const messages = require('./messages');
+const messages = require('./messageLoader');
 const { exec } = require('child_process');
 const path = require('path');
 
