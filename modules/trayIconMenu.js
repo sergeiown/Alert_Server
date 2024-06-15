@@ -8,10 +8,10 @@ const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
 const { logEvent } = require('./logger');
-const { getCurrentLanguage } = require('./checkLanguage');
-const messages = require('./messages');
+const { getCurrentLanguage } = require('./languageChecker');
+const messages = require('./messageLoader');
 
-// Пункт меню 'Назва'
+// Menu item 'Alert Server'
 function createTitleMenu(tray) {
     const menuTitle = tray.item(messages.msg_26, {
         bold: true,
@@ -21,7 +21,7 @@ function createTitleMenu(tray) {
     return menuTitle;
 }
 
-// Пункти меню 'Перегляд мап'
+// Items in the 'maps' menu
 function openAppWithFallback(url) {
     const openCommand = (browser, callback) => {
         exec(`start ${browser} --app=${url}`, (error) => {
@@ -51,7 +51,7 @@ function openAppWithFallback(url) {
     });
 }
 
-// Пункт меню 'Перегляд мапи поточних тривог'
+// Menu item 'Map of current alerts'
 function createAlertsMenu(tray) {
     const alertsItem = tray.item(messages.msg_27, () => {
         openAppWithFallback(messages.msg_47);
@@ -60,7 +60,7 @@ function createAlertsMenu(tray) {
     return alertsItem;
 }
 
-// Пункт меню 'Перегляд мапи військових дій'
+// Menu item 'Map of military operations'
 function createFrontMenu(tray) {
     const frontItem = tray.item(messages.msg_43, () => {
         openAppWithFallback(messages.msg_48);
@@ -69,11 +69,11 @@ function createFrontMenu(tray) {
     return frontItem;
 }
 
-// Пункт меню 'Інформація'
+// The menu item "Information
 function createInfoMenu(tray) {
     const logView = tray.item(messages.msg_29);
 
-    // Підпункт меню 'Інформація' => 'Перегляд журналу'`
+    // Menu item 'Information' => 'Event log'
     function createLogItem(tray) {
         const logItem = tray.item(messages.msg_30, () => {
             const logFilePath = path.join(process.env.TEMP, 'alertserver_log.csv');
@@ -89,7 +89,7 @@ function createInfoMenu(tray) {
         return logItem;
     }
 
-    // Підпункт меню 'Інформація' => 'Про програму'
+    // Menu item 'Information' => 'About'
     function createAboutItem(tray) {
         const aboutMessage = messages.msg_20;
         const titleMessage = messages.msg_31;
@@ -117,11 +117,11 @@ function createInfoMenu(tray) {
     return logView;
 }
 
-// Пункт меню 'Налаштування'
+// Menu item 'Settings'
 function createSettingsMenu(tray) {
     const settingsMenu = tray.item(messages.msg_32);
 
-    // Підпункт 'Налаштування' => 'Мова' з підпунктами 'Англійська' та 'Українська'
+    // Sub-item "Settings" => "Language" with sub-items "English" and "Ukrainian
     function createLanguageMenu(tray) {
         const batFilePath = path.join(__dirname, '..', 'start_alertserver_hidden.bat');
         const languageFilePath = path.join(process.env.TEMP, 'alertserver_language.tmp');
@@ -179,7 +179,7 @@ function createSettingsMenu(tray) {
         return languageMenu;
     }
 
-    // Підпункт меню 'Налаштування' => 'Запускати разом з системою'
+    // Menu item 'Settings' => 'Run at system startup'
     function createRunOnStartupItem(tray) {
         const isAudioMarker = checkStartupFile();
         const runOnStartupItem = tray.item(messages.msg_33, {
@@ -215,7 +215,7 @@ function createSettingsMenu(tray) {
         return isAudioMarker;
     }
 
-    // Підпункт меню 'Налаштування' => 'Монохромний значок'
+    // Menu item 'Settings' => 'Monochrome icon'
     function createTrayMonoIconItem(tray) {
         let isIconMarker = checkTrayMonoIconFile();
         const trayMonoIcon = tray.item(messages.msg_44, {
@@ -244,7 +244,7 @@ function createSettingsMenu(tray) {
         return fs.existsSync(monoIconFilePath);
     }
 
-    // Підпункт меню 'Налаштування' => 'Звук попередження'
+    // Menu item 'Settings' => 'Alert sound'
     function createAlertSoundItem(tray) {
         let isAudioMarker = checkAlertSoundFile();
         const alertSoundItem = tray.item(messages.msg_28, {
@@ -273,7 +273,7 @@ function createSettingsMenu(tray) {
         return fs.existsSync(alertSoundFilePath);
     }
 
-    // Підпункт меню 'Налаштування' => 'Вибір регіонів'
+    // Menu item 'Settings' => 'Region selection'
     function createNotificationRegionsItem(tray) {
         const notificationRegionsItem = tray.item(messages.msg_34);
 
@@ -345,7 +345,7 @@ function createSettingsMenu(tray) {
     return settingsMenu;
 }
 
-// Пункт меню 'Вихід'
+// Menu item "Exit
 function createExitMenu(tray) {
     const quit = tray.item(messages.msg_35, {
         bold: true,

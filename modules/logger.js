@@ -6,7 +6,7 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 const { log } = require('console');
 const fs = require('fs');
 const path = require('path');
-const messages = require('./messages');
+const messages = require('./messageLoader');
 const logFilePath = path.join(process.env.TEMP, 'alertserver_log.csv');
 
 const initializeLogFile = () => {

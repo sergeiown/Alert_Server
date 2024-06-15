@@ -13,8 +13,8 @@ const {
     createInfoMenu,
     createSettingsMenu,
     createExitMenu,
-} = require('./trayMenu');
-const messages = require('./messages');
+} = require('./trayIconMenu');
+const messages = require('./messageLoader');
 
 function createTrayIcon() {
     const checkInterval = 2000;

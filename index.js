@@ -3,9 +3,9 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 'use strict';
 
-const { fetchDataAndSaveToFile } = require('./modules/api');
-const { showNotification } = require('./modules/notification');
-const { createTrayIcon } = require('./modules/trayIcon');
+const { fetchDataAndSaveToFile } = require('./modules/apiRequestHandler');
+const { showNotification } = require('./modules/alertNotifier');
+const { createTrayIcon } = require('./modules/trayIconManager');
 const { handleExceptionAndRestart, logSystemEvents } = require('./modules/systemEventAndErrorHandler');
 
 fetchDataAndSaveToFile();

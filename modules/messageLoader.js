@@ -5,7 +5,7 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 const fs = require('fs');
 const path = require('path');
-const { getCurrentLanguage } = require('./checkLanguage');
+const { getCurrentLanguage } = require('./languageChecker');
 
 let messages;
 

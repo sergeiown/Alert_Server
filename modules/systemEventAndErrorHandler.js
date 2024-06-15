@@ -7,7 +7,7 @@ const process = require('node:process');
 const { exec } = require('child_process');
 const path = require('path');
 const { logEvent } = require('./logger');
-const messages = require('./messages');
+const messages = require('./messageLoader');
 
 logEvent(messages.msg_01);
 
