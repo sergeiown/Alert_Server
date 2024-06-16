@@ -6,7 +6,7 @@
 
 | Структура: |  |
 | --- | --- |
-| Залежності | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/dfe29f0c-8583-4d40-a165-026d0397a475) |
+| Залежності | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/4843f1d8-9936-42ad-8e1b-b33315dcafaf) |
 
 ## Встановлення
 
