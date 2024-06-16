@@ -5,16 +5,43 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 const { exec } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 const { logEvent } = require('./logger');
 const messages = require('./messageLoader');
 
 logEvent(messages.msg_01);
+
+const restartFilePath = path.join(process.env.TEMP, 'alertserver_restart.tmp');
+
+function writeRestartTimestamp() {
+    const timestamp = Date.now().toString();
+    fs.writeFileSync(restartFilePath, timestamp, 'utf8');
+}
+
+function checkRestartFrequency() {
+    try {
+        const fileContent = fs.readFileSync(restartFilePath, 'utf8');
+        const lastTimestamp = parseInt(fileContent, 10);
+        const currentTime = Date.now();
+        const timeDifference = currentTime - lastTimestamp;
+
+        if (timeDifference < 5000) {
+            process.exit(3);
+        }
+    } catch (err) {
+        return;
+    }
+}
 
 function handleExceptionAndRestart() {
     const batFilePath = path.join(__dirname, '..', 'start_alertserver_hidden.bat');
 
     process.on('uncaughtException', (error) => {
         logEvent(`${messages.msg_50} ${error.message}`);
+
+        checkRestartFrequency();
+
+        writeRestartTimestamp();
 
         exec(`cmd /c "${batFilePath}"`, (error) => {
             if (error) {
@@ -57,6 +84,9 @@ function logSystemEvents() {
             case 2:
                 logEvent(messages.msg_63);
                 break;
+            case 3:
+                logEvent(messages.msg_64);
+                break;
             default:
                 logEvent(`${messages.msg_19} ${code}`);
                 break;
@@ -64,4 +94,4 @@ function logSystemEvents() {
     });
 }
 
-module.exports = { handleExceptionAndRestart, logSystemEvents };
+module.exports = { writeRestartTimestamp, handleExceptionAndRestart, logSystemEvents };
