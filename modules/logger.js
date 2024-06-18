@@ -3,7 +3,7 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 'use strict';
 
-const { log } = require('console');
+const { log, error, warn } = console;
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -16,8 +16,8 @@ const initializeLogFile = () => {
             const header = messages.msg_36;
             fs.writeFileSync(logFilePath, header + os.EOL, 'utf-8');
         }
-    } catch (error) {
-        log.error(messages.msg_08);
+    } catch (err) {
+        error(messages.msg_08);
     }
 };
 
@@ -34,8 +34,8 @@ const getCurrentDateTime = () => {
             })
             .replace(/,\s*/g, ',')
             .trim();
-    } catch (error) {
-        log.error(messages.msg_09 + ': Error getting date-time - ' + error.message);
+    } catch (err) {
+        error(messages.msg_09 + err.message);
         return null;
     }
 };
@@ -45,15 +45,7 @@ const logEvent = (eventMessage) => {
 
     const maxFileSize = 256 * 1024;
 
-    let currentDateTime = getCurrentDateTime();
-
-    if (!currentDateTime) {
-        currentDateTime = getCurrentDateTime();
-    }
-
-    if (!currentDateTime) {
-        currentDateTime = '00.00.0000,00:00:00';
-    }
+    let currentDateTime = getCurrentDateTime() || '00.00.0000,00:00:00';
 
     try {
         const stats = fs.statSync(logFilePath);
@@ -66,8 +58,8 @@ const logEvent = (eventMessage) => {
             fs.writeFileSync(logFilePath, newContent + os.EOL + fileSize + os.EOL + fileReduction + os.EOL, 'utf-8');
             log(fileSize + os.EOL + fileReduction);
         }
-    } catch (error) {
-        log.error(messages.msg_09 + error.message);
+    } catch (err) {
+        error(messages.msg_09 + err.message);
     }
 
     const logMessage = `${currentDateTime},${eventMessage.trim()}`;
@@ -75,13 +67,13 @@ const logEvent = (eventMessage) => {
     try {
         if (logMessage.includes('00.00.0000,00:00:00')) {
             fs.appendFileSync(logFilePath, logMessage + messages.msg_65 + os.EOL, 'utf-8');
-            log.error(messages.msg_09 + messages.msg_65);
+            warn(messages.msg_09 + messages.msg_65);
         } else {
             fs.appendFileSync(logFilePath, logMessage + os.EOL, 'utf-8');
             log(logMessage);
         }
-    } catch (error) {
-        log.error(messages.msg_09 + error.message);
+    } catch (err) {
+        error(messages.msg_09 + err.message);
     }
 };
 
