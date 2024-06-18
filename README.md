@@ -7,7 +7,7 @@ A Node.js server adapted for 64-bit versions of Windows that receives data on al
 
 | Structure: |  |
 | --- | --- |
-| Dependencies | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/c348e027-ab84-4798-a564-29578f60e65d) |
+| Dependencies | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/c4154e2b-95e4-46f1-a74b-e7b1f98464db) |
 
 ## Installation
 
