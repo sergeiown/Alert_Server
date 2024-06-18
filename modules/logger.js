@@ -61,21 +61,21 @@ const logEvent = (eventMessage) => {
             const fileContent = fs.readFileSync(logFilePath, 'utf-8').split(os.EOL);
             const newContent = messages.msg_36 + os.EOL + fileContent.slice(25).join(os.EOL);
             const fileSize = `${currentDateTime},${messages.msg_37}: ${(stats.size / 1024).toFixed(2)} Kb`;
-            const fileReduction = `${currentDateTime},${messages.msg_38}`;
+            const fileReduction = currentDateTime + messages.msg_38;
 
             fs.writeFileSync(logFilePath, newContent + os.EOL + fileSize + os.EOL + fileReduction + os.EOL, 'utf-8');
             log(fileSize + os.EOL + fileReduction);
         }
     } catch (error) {
-        log.error(messages.msg_09 + ': Error during log reduction - ' + error.message);
+        log.error(messages.msg_09 + error.message);
     }
 
     const logMessage = `${currentDateTime},${eventMessage.trim()}`;
 
     try {
         if (logMessage.includes('00.00.0000,00:00:00')) {
-            fs.appendFileSync(logFilePath, logMessage + ': Invalid logMessage format' + os.EOL, 'utf-8');
-            log.error(messages.msg_09 + ': Invalid logMessage format');
+            fs.appendFileSync(logFilePath, logMessage + messages.msg_65 + os.EOL, 'utf-8');
+            log.error(messages.msg_09 + messages.msg_65);
         } else {
             fs.appendFileSync(logFilePath, logMessage + os.EOL, 'utf-8');
             log(logMessage);
