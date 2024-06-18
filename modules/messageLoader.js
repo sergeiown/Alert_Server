@@ -5,6 +5,7 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { getCurrentLanguage } = require('./languageChecker');
 
 let messages;
@@ -41,7 +42,7 @@ try {
         .replace(/,\s*/g, ',');
     const logMessage = `${currentDateTime},An error occurred while reading or parsing ${messagesPath}`;
     const logFilePath = path.join(process.env.TEMP, 'alertserver_log.csv');
-    fs.appendFileSync(logFilePath, '\n' + logMessage, 'utf-8');
+    fs.appendFileSync(logFilePath, logMessage + os.EOL, 'utf-8');
     console.error(logMessage);
     messages = {};
     process.exit();
