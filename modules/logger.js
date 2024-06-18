@@ -67,7 +67,7 @@ const logEvent = (eventMessage) => {
             log(fileSize + os.EOL + fileReduction);
         }
     } catch (error) {
-        log.error(messages.msg_09 + ': Error during log rotation - ' + error.message);
+        log.error(messages.msg_09 + ': Error during log reduction - ' + error.message);
     }
 
     const logMessage = `${currentDateTime},${eventMessage.trim()}`;
@@ -81,7 +81,7 @@ const logEvent = (eventMessage) => {
             log(logMessage);
         }
     } catch (error) {
-        log.error(messages.msg_09 + ': Error writing to log file - ' + error.message);
+        log.error(messages.msg_09 + error.message);
     }
 };
 
