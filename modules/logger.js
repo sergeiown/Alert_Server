@@ -3,7 +3,7 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 'use strict';
 
-const { log, error, warn } = console;
+const { log, error, warn } = require('console');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
