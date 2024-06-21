@@ -18,7 +18,4 @@ if not exist "node_modules" (
 
 taskkill /f /im node.exe >nul 2>nul
 
-start /min "" powershell -WindowStyle Hidden -Command "node index.js"
-
-echo Alert update server is successfully started.
-timeout /t 1 /nobreak >nul
+start /min "" powershell -WindowStyle Hidden -Command "& { $timestamp = Get-Date -Format 'dd.MM.yyyy HH:mm:ss'; Write-Output \"[$timestamp]\" | Out-File -FilePath 'error.log' -Append -Encoding utf8; node index.js 2>> error.log }"
