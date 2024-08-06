@@ -51,11 +51,11 @@ const logEvent = (eventMessage) => {
         const stats = fs.statSync(logFilePath);
         if (stats.size > maxFileSize) {
             const fileContent = fs.readFileSync(logFilePath, 'utf-8').split(os.EOL);
-            const newContent = messages.msg_36 + os.EOL + fileContent.slice(25).join(os.EOL);
+            const newContent = `${messages.msg_36}${os.EOL}${fileContent.slice(25).join(os.EOL)}`;
             const fileSize = `${currentDateTime},${messages.msg_37}: ${(stats.size / 1024).toFixed(2)} Kb`;
-            const fileReduction = currentDateTime + messages.msg_38;
+            const fileReduction = `${currentDateTime},${messages.msg_38}`;
 
-            fs.writeFileSync(logFilePath, newContent + os.EOL + fileSize + os.EOL + fileReduction + os.EOL, 'utf-8');
+            fs.writeFileSync(logFilePath, newContent + fileSize + os.EOL + fileReduction + os.EOL, 'utf-8');
             log(fileSize + os.EOL + fileReduction);
         }
     } catch (err) {
