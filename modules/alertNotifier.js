@@ -15,9 +15,20 @@ const { logEvent } = require('./logger');
 
 const displayedAlerts = new Map();
 const tempFilePath = path.join(process.env.TEMP, 'alert_active.tmp');
+const displayedAlertsFilePath = path.join(process.env.TEMP, 'alerts_displayed.json');
 
 if (fs.existsSync(tempFilePath)) {
     fs.unlinkSync(tempFilePath);
+}
+
+if (fs.existsSync(displayedAlertsFilePath)) {
+    const savedAlerts = JSON.parse(fs.readFileSync(displayedAlertsFilePath, 'utf8'));
+    savedAlerts.forEach((alert) => displayedAlerts.set(alert.id, alert));
+}
+
+function saveDisplayedAlerts() {
+    const alertsArray = Array.from(displayedAlerts.entries()).map(([id, value]) => ({ id, ...value }));
+    fs.writeFileSync(displayedAlertsFilePath, JSON.stringify(alertsArray, null, 2));
 }
 
 const showNotification = async () => {
@@ -59,6 +70,8 @@ const showNotification = async () => {
                     locationTitle: alert.location_title,
                     locationLat: alert.location_lat,
                 });
+
+                saveDisplayedAlerts();
             }
         });
 
@@ -84,6 +97,8 @@ const showNotification = async () => {
                 logEvent(`${messages.msg_02} ${alerts.length}`);
 
                 displayedAlerts.delete(displayedAlert);
+
+                saveDisplayedAlerts();
             }
         });
     } catch (error) {
