@@ -24,23 +24,20 @@ function loadSettings() {
     }
 
     try {
-        // Read and parse settings from the file
         const data = fs.readFileSync(settingsFilePath, 'utf-8');
         const parsedSettings = JSON.parse(data);
 
-        // Merge loaded settings with default settings to ensure all keys exist
         return { ...defaultSettings, ...parsedSettings };
     } catch (err) {
         console.error('Error reading or parsing settings file:', err);
-        // If there is an error, reset to default settings
         saveSettings(defaultSettings);
+
         return defaultSettings;
     }
 }
 
 // Function to save settings to the file
 function saveSettings(settings) {
-    // Ensure all default keys are present before saving
     const completeSettings = { ...defaultSettings, ...settings };
 
     try {
@@ -61,7 +58,6 @@ function getSettings() {
 // Function to update a specific setting and save the changes
 function updateSetting(key, value) {
     if (defaultSettings.hasOwnProperty(key)) {
-        // Update the value only if the key exists in the default settings
         settings[key] = value;
         saveSettings(settings);
     } else {
