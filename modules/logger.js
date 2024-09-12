@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const messages = require('./messageLoader');
-const logFilePath = path.join(process.env.TEMP, 'alertserver_log.csv');
+const logFilePath = path.join(process.cwd(), 'event.log');
 
 const initializeLogFile = () => {
     try {

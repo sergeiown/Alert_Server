@@ -1,0 +1,7 @@
+{
+    "language": "English",
+    "runOnStartup": true,
+    "trayMonoIcon": false,
+    "alertSound": true,
+    "alertActive": 0
+}

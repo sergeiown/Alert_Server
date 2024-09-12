@@ -6,6 +6,7 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
+const { getSettings, updateSetting } = require('./settings');
 const { logEvent } = require('./logger');
 const { getCurrentLanguage } = require('./languageChecker');
 const messages = require('./messageLoader');
@@ -123,7 +124,6 @@ function createSettingsMenu(tray) {
     // Sub-item "Settings" => "Language" with sub-items "English" and "Ukrainian
     function createLanguageMenu(tray) {
         const batFilePath = path.join(__dirname, '..', 'start_alertserver_hidden.bat');
-        const languageFilePath = path.join(process.env.TEMP, 'alertserver_language.tmp');
         let currentLanguage = getCurrentLanguage();
 
         const languageMenu = tray.item(messages.msg_51, {
@@ -135,7 +135,7 @@ function createSettingsMenu(tray) {
             checked: currentLanguage === 'English',
             action: () => {
                 if (currentLanguage !== 'English') {
-                    fs.writeFileSync(languageFilePath, 'English', 'utf-8');
+                    updateSetting('language', 'English');
                     logEvent(messages.msg_53);
                     englishItem.checked = true;
                     ukrainianItem.checked = false;
@@ -144,7 +144,6 @@ function createSettingsMenu(tray) {
                     exec(`cmd /c "${batFilePath}"`, (error) => {
                         if (error) {
                             logEvent(messages.msg_56);
-                            return;
                         }
                     });
                 }
@@ -156,7 +155,7 @@ function createSettingsMenu(tray) {
             checked: currentLanguage === 'Ukrainian',
             action: () => {
                 if (currentLanguage !== 'Ukrainian') {
-                    fs.writeFileSync(languageFilePath, 'Ukrainian', 'utf-8');
+                    updateSetting('language', 'Ukrainian');
                     logEvent(messages.msg_55);
                     englishItem.checked = false;
                     ukrainianItem.checked = true;
@@ -165,7 +164,6 @@ function createSettingsMenu(tray) {
                     exec(`cmd /c "${batFilePath}"`, (error) => {
                         if (error) {
                             logEvent(messages.msg_56);
-                            return;
                         }
                     });
                 }
