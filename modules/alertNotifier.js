@@ -7,6 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
 const { checkLocations } = require('./locationChecker');
+const { updateSetting } = require('./settings');
 const { getCurrentLanguage } = require('./languageChecker');
 const { playAlertSound, playAlertCancellationSound } = require('./audioPlayer');
 const alertTypes = require('../alert.json');
@@ -14,12 +15,7 @@ const messages = require('./messageLoader');
 const { logEvent } = require('./logger');
 
 const displayedAlerts = new Map();
-const tempFilePath = path.join(process.env.TEMP, 'alert_active.tmp');
 const displayedAlertsFilePath = path.join(process.cwd(), 'alert_displayed.json');
-
-if (fs.existsSync(tempFilePath)) {
-    fs.unlinkSync(tempFilePath);
-}
 
 if (fs.existsSync(displayedAlertsFilePath)) {
     const savedAlerts = JSON.parse(fs.readFileSync(displayedAlertsFilePath, 'utf8'));
@@ -38,7 +34,7 @@ const showNotification = async () => {
 
         let alertCount = alerts.length;
 
-        fs.writeFileSync(tempFilePath, alertCount.toString());
+        updateSetting('alertActive', alertCount);
 
         alerts.forEach((alert) => {
             const alertType = alertTypes.find((type) => type.id === alert.alert_type);
