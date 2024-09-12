@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
 const { checkLocations } = require('./locationChecker');
-const { updateSetting } = require('./settings');
+const { getSettings, updateSetting } = require('./settings');
 const { getCurrentLanguage } = require('./languageChecker');
 const { playAlertSound, playAlertCancellationSound } = require('./audioPlayer');
 const alertTypes = require('../alert.json');
@@ -30,7 +30,8 @@ function saveDisplayedAlerts() {
 const showNotification = async () => {
     try {
         const { alerts } = await checkLocations();
-        const isAudioMarker = checkAlertSoundFile();
+        const settings = getSettings();
+        const isAudioMarker = settings.alertSound;
 
         let alertCount = alerts.length;
 
@@ -119,12 +120,6 @@ function createNotification(title, message, image) {
             }
         }
     });
-}
-
-function checkAlertSoundFile() {
-    const tempDir = process.env.temp || process.env.TEMP;
-    const alertSoundFilePath = path.join(tempDir, 'alertserver_audio.tmp');
-    return fs.existsSync(alertSoundFilePath);
 }
 
 setInterval(showNotification, 5000);
