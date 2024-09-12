@@ -15,7 +15,7 @@ const { logEvent } = require('./logger');
 
 const displayedAlerts = new Map();
 const tempFilePath = path.join(process.env.TEMP, 'alert_active.tmp');
-const displayedAlertsFilePath = path.join(process.env.TEMP, 'alert_displayed.json');
+const displayedAlertsFilePath = path.join(process.cwd(), 'alert_displayed.json');
 
 if (fs.existsSync(tempFilePath)) {
     fs.unlinkSync(tempFilePath);

@@ -3,16 +3,18 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const languageFilePath = path.join(process.env.TEMP, 'alertserver_language.tmp');
+const { getSettings, updateSetting } = require('./settings');
 
 function getCurrentLanguage() {
-    if (fs.existsSync(languageFilePath)) {
-        return fs.readFileSync(languageFilePath, 'utf-8').trim();
+    const settings = getSettings();
+    const currentLanguage = settings.language;
+
+    if (!currentLanguage) {
+        updateSetting('language', 'English');
+        return 'English';
     }
-    fs.writeFileSync(languageFilePath, 'English', 'utf-8');
-    return 'English';
+
+    return currentLanguage;
 }
 
 module.exports = { getCurrentLanguage };

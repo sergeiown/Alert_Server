@@ -37,7 +37,7 @@ function handleExceptionAndRestart() {
     const batFilePath = path.join(__dirname, '..', 'start_alertserver_hidden.bat');
 
     process.on('uncaughtException', (error) => {
-        logEvent(`${messages.msg_50} ${error.message}`);
+        logEvent(`${messages.msg_50} ${error.message} ${error}`);
 
         checkRestartFrequency();
 
