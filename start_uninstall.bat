@@ -11,8 +11,6 @@ del /q "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Alert Server.lnk
 
 del /q "%temp%\alertserver*.*"
 
-del /q "%temp%\alert_*.*"
-
 del /q "%temp%\*_alert.*"
 
 rmdir /s /q "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Alert Server\"
