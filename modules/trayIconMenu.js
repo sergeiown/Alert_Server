@@ -214,7 +214,8 @@ function createSettingsMenu(tray) {
 
     // Menu item 'Settings' => 'Monochrome icon'
     function createTrayMonoIconItem(tray) {
-        let isIconMarker = checkTrayMonoIconFile();
+        const settings = getSettings();
+        let isIconMarker = settings.trayMonoIcon;
 
         const trayMonoIcon = tray.item(messages.msg_44, {
             checked: isIconMarker,
@@ -234,24 +235,19 @@ function createSettingsMenu(tray) {
         return trayMonoIcon;
     }
 
-    function checkTrayMonoIconFile() {
-        const settings = getSettings();
-        return settings.trayMonoIcon;
-    }
-
     // Menu item 'Settings' => 'Alert sound'
     function createAlertSoundItem(tray) {
-        let isAudioMarker = checkAlertSoundFile();
+        const settings = getSettings();
+        let isAudioMarker = settings.alertSound;
+
         const alertSoundItem = tray.item(messages.msg_28, {
             checked: isAudioMarker,
             action: () => {
-                const tempDir = process.env.temp || process.env.TEMP;
-                const alertSoundFilePath = path.join(tempDir, 'alertserver_audio.tmp');
                 if (isAudioMarker) {
-                    fs.unlinkSync(alertSoundFilePath);
+                    updateSetting('alertSound', false);
                     logEvent(messages.msg_39);
                 } else {
-                    fs.writeFileSync(alertSoundFilePath, '');
+                    updateSetting('alertSound', true);
                     logEvent(messages.msg_40);
                 }
                 isAudioMarker = !isAudioMarker;
@@ -260,12 +256,6 @@ function createSettingsMenu(tray) {
         });
 
         return alertSoundItem;
-    }
-
-    function checkAlertSoundFile() {
-        const tempDir = process.env.temp || process.env.TEMP;
-        const alertSoundFilePath = path.join(tempDir, 'alertserver_audio.tmp');
-        return fs.existsSync(alertSoundFilePath);
     }
 
     // Menu item 'Settings' => 'Region selection'
