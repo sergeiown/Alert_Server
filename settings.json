@@ -1,6 +1,6 @@
 {
-    "language": "English",
-    "trayMonoIcon": false,
-    "alertSound": true,
-    "alertActive": 0
+  "language": "English",
+  "trayMonoIcon": false,
+  "alertSound": true,
+  "alertActive": 0
 }

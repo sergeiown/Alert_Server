@@ -17,8 +17,8 @@ if exist "%folderPath%" (
 
 mkdir "%folderPath%"
 
-powershell -Command "$WScript=New-Object -ComObject WScript.Shell; $Shortcut=$WScript.CreateShortcut('%folderPath%\%shortcutName%.lnk'); $Shortcut.TargetPath='%targetPath%'; $Shortcut.IconLocation='%iconPath%'; $Shortcut.WorkingDirectory='%workingDirectory%'; $Shortcut.Description='%shortcutTargetDescription%'; $Shortcut.WindowStyle=7; $Shortcut.Save()"
+powershell -Command "$WScript=New-Object -ComObject WScript.Shell; $Shortcut=$WScript.CreateShortcut('%folderPath%\%shortcutName%.lnk'); $Shortcut.TargetPath='%targetPath%'; $Shortcut.IconLocation='%iconPath%'; $Shortcut.WorkingDirectory='%workingDirectory%'; $Shortcut.Description='%shortcutTargetDescription%'; $Shortcut.WindowStyle=2; $Shortcut.Save()"
 
-powershell -Command "$WScript=New-Object -ComObject WScript.Shell; $Shortcut=$WScript.CreateShortcut('%folderPath%\Uninstall.lnk'); $Shortcut.TargetPath='%uninstallPath%'; $Shortcut.IconLocation='%iconPath%'; $Shortcut.WorkingDirectory='%workingDirectory%'; $Shortcut.Save(); $Shortcut = $WScript.CreateShortcut('%folderPath%\Uninstall.lnk'); $Shortcut.TargetPath='%uninstallPath%'; $Shortcut.WorkingDirectory='%workingDirectory%'; $Shortcut.Arguments = '-Verb RunAs'; $Shortcut.Description='%shortcutUninstallDescription%'; $Shortcut.WindowStyle=7; $Shortcut.Save()"
+powershell -Command "$WScript=New-Object -ComObject WScript.Shell; $Shortcut=$WScript.CreateShortcut('%folderPath%\Uninstall.lnk'); $Shortcut.TargetPath='%uninstallPath%'; $Shortcut.IconLocation='%iconPath%'; $Shortcut.WorkingDirectory='%workingDirectory%'; $Shortcut.Save(); $Shortcut = $WScript.CreateShortcut('%folderPath%\Uninstall.lnk'); $Shortcut.TargetPath='%uninstallPath%'; $Shortcut.WorkingDirectory='%workingDirectory%'; $Shortcut.Arguments = '-Verb RunAs'; $Shortcut.Description='%shortcutUninstallDescription%'; $Shortcut.WindowStyle=2; $Shortcut.Save()"
 
 
