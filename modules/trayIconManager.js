@@ -24,38 +24,38 @@ function createTrayIcon() {
 
     function updateAlertStatus() {
         const settings = getSettings();
-
         const alertActive = settings.alertActive;
+        const trayMonoIcon = settings.trayMonoIcon;
 
         if (alertActive === 0) {
-            if (isAlertActive) {
+            if (!isAlertActive) {
                 isAlertActive = false;
-                updateTrayIcon('normal');
+                updateTrayIcon('normal', alertActive, trayMonoIcon);
             }
         } else {
-            isAlertActive = true;
-            updateTrayIcon('alert', alertActive);
+            if (isAlertActive) {
+                isAlertActive = true;
+                updateTrayIcon('alert', alertActive, trayMonoIcon);
+            } else {
+                updateTrayIcon('alert', alertActive, trayMonoIcon);
+            }
         }
     }
 
-    function updateIconImagePath() {
-        const tempDir = process.env.temp || process.env.TEMP;
-        const monoIconMarkerPath = path.join(tempDir, 'alertserver_icon.tmp');
-        const isMonoIconMarkerExists = fs.existsSync(monoIconMarkerPath);
-
-        const imagePath = !isMonoIconMarkerExists
+    function updateIconImagePath(trayMonoIcon) {
+        const imagePath = !trayMonoIcon
             ? path.join(__dirname, '..', 'resources', 'images', 'tray.ico')
             : path.join(__dirname, '..', 'resources', 'images', 'tray_mono.ico');
 
-        const alertImagePath = !isMonoIconMarkerExists
+        const alertImagePath = !trayMonoIcon
             ? path.join(__dirname, '..', 'resources', 'images', 'tray_alert.ico')
             : path.join(__dirname, '..', 'resources', 'images', 'tray_alert_mono.ico');
 
         return { imagePath, alertImagePath };
     }
 
-    function updateTrayIcon(state, data) {
-        const { imagePath, alertImagePath } = updateIconImagePath();
+    function updateTrayIcon(state, alertActive, trayMonoIcon) {
+        const { imagePath, alertImagePath } = updateIconImagePath(trayMonoIcon);
         const menuTitle = createTitleMenu(trayInstance);
         const alertsItem = createAlertsMenu(trayInstance);
         const frontItem = createFrontMenu(trayInstance);
@@ -81,7 +81,7 @@ function createTrayIcon() {
             trayInstance.setTitle(messages.msg_23);
             trayInstance.setIcon(fs.readFileSync(imagePath));
         } else if (state === 'alert') {
-            trayInstance.setTitle(`${messages.msg_24} ${parseInt(data)}`);
+            trayInstance.setTitle(`${messages.msg_24} ${parseInt(alertActive)}`);
             trayInstance.setIcon(fs.readFileSync(alertImagePath));
         }
     }
