@@ -15,6 +15,7 @@ const {
     createExitMenu,
 } = require('./trayIconMenu');
 const messages = require('./messageLoader');
+const { getSettings } = require('./settings');
 
 function createTrayIcon() {
     const checkInterval = 2000;
@@ -22,28 +23,19 @@ function createTrayIcon() {
     let trayInstance = null;
 
     function updateAlertStatus() {
-        const alertFilePath = path.join(process.env.TEMP, 'alert_active.tmp');
+        const settings = getSettings();
 
-        fs.readFile(alertFilePath, 'utf8', (err, data) => {
-            if (err && err.code === 'ENOENT') {
-                if (isAlertActive) {
-                    isAlertActive = false;
-                    updateTrayIcon('normal');
-                } else {
-                    updateTrayIcon('normal');
-                }
-            } else if (!err && parseInt(data) === 0) {
-                if (isAlertActive) {
-                    isAlertActive = false;
-                    updateTrayIcon('normal');
-                } else {
-                    updateTrayIcon('normal');
-                }
-            } else if (!err && parseInt(data) !== 0) {
-                isAlertActive = true;
-                updateTrayIcon('alert', data);
+        const alertActive = settings.alertActive;
+
+        if (alertActive === 0) {
+            if (isAlertActive) {
+                isAlertActive = false;
+                updateTrayIcon('normal');
             }
-        });
+        } else {
+            isAlertActive = true;
+            updateTrayIcon('alert', alertActive);
+        }
     }
 
     function updateIconImagePath() {
