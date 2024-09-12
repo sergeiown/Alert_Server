@@ -215,16 +215,15 @@ function createSettingsMenu(tray) {
     // Menu item 'Settings' => 'Monochrome icon'
     function createTrayMonoIconItem(tray) {
         let isIconMarker = checkTrayMonoIconFile();
+
         const trayMonoIcon = tray.item(messages.msg_44, {
             checked: isIconMarker,
             action: () => {
-                const tempDir = process.env.temp || process.env.TEMP;
-                const monoIconFilePath = path.join(tempDir, 'alertserver_icon.tmp');
                 if (isIconMarker) {
-                    fs.unlinkSync(monoIconFilePath);
+                    updateSetting('trayMonoIcon', false);
                     logEvent(messages.msg_46);
                 } else {
-                    fs.writeFileSync(monoIconFilePath, '');
+                    updateSetting('trayMonoIcon', true);
                     logEvent(messages.msg_45);
                 }
                 isIconMarker = !isIconMarker;
@@ -236,9 +235,8 @@ function createSettingsMenu(tray) {
     }
 
     function checkTrayMonoIconFile() {
-        const tempDir = process.env.temp || process.env.TEMP;
-        const monoIconFilePath = path.join(tempDir, 'alertserver_icon.tmp');
-        return fs.existsSync(monoIconFilePath);
+        const settings = getSettings();
+        return settings.trayMonoIcon;
     }
 
     // Menu item 'Settings' => 'Alert sound'

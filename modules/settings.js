@@ -11,7 +11,6 @@ const settingsFilePath = path.join(process.cwd(), 'settings.json');
 // Default settings
 const defaultSettings = {
     language: 'English',
-    runOnStartup: true,
     trayMonoIcon: false,
     alertSound: true,
     alertActive: 0,
