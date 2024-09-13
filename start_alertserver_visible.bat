@@ -2,6 +2,7 @@
 :: https://github.com/sergeiown/Alert_Server/blob/main/LICENSE
 
 @echo off
+title Alert Server
 
 where node > nul 2>nul
 if %ERRORLEVEL% neq 0 (
