@@ -73,15 +73,27 @@ function createFrontMenu(tray) {
 function createInfoMenu(tray) {
     const logView = tray.item(messages.msg_29);
 
-    // Menu item 'Information' => 'Event log'
     function createLogItem(tray) {
         const logItem = tray.item(messages.msg_30, () => {
-            const logFilePath = path.join(process.env.TEMP, 'alertserver_log.csv');
+            const logFilePath = path.join(process.cwd(), 'event.log');
 
-            exec(`notepad ${logFilePath}`, (error) => {
+            exec('where notepad', (error) => {
                 if (error) {
-                    logEvent(messages.msg_13);
-                    return;
+                    exec(`start ${logFilePath}`, (startError) => {
+                        if (startError) {
+                            logEvent(messages.msg_13);
+
+                            return;
+                        }
+                    });
+                } else {
+                    exec(`notepad ${logFilePath}`, (notepadError) => {
+                        if (notepadError) {
+                            logEvent(messages.msg_13);
+
+                            return;
+                        }
+                    });
                 }
             });
         });
