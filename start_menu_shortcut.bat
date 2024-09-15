@@ -2,9 +2,9 @@
 :: https://github.com/sergeiown/Alert_Server/blob/main/LICENSE
 
 @echo off
-set shortcutName=Alert Server
+set shortcutName=Alert Server tray
 set shortcutTargetDescription=Run Alert Server in background
-set shortcutAltName=Alert server with console
+set shortcutAltName=Alert Server tray and console
 set shortcutAltTargetDescription=Run Alert Server with console
 set shortcutUninstallDescription=Uninstall Alert Server
 set targetPath=%CD%\start_alertserver_hidden.bat
