@@ -190,9 +190,9 @@ function createSettingsMenu(tray) {
 
     // Menu item 'Settings' => 'Run at system startup'
     function createRunOnStartupItem(tray) {
-        const isAudioMarker = checkStartupFile();
+        const isStartupMarker = checkStartupFile();
         const runOnStartupItem = tray.item(messages.msg_33, {
-            checked: isAudioMarker,
+            checked: isStartupMarker,
             action: () => {
                 exec(`"${path.join(__dirname, '..', 'startup_activator.bat')}"`, (error) => {
                     if (error) {
@@ -219,9 +219,9 @@ function createSettingsMenu(tray) {
             'Alert server.lnk'
         );
 
-        const isAudioMarker = fs.existsSync(startupFilePath);
+        const isStartupMarker = fs.existsSync(startupFilePath);
 
-        return isAudioMarker;
+        return isStartupMarker;
     }
 
     // Menu item 'Settings' => 'Monochrome icon'
