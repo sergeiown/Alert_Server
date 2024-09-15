@@ -43,8 +43,8 @@ if errorlevel 1 (
     exit /b 1
 )
 
-powershell -Command "$WScript=New-Object -ComObject WScript.Shell; $Shortcut=$WScript.CreateShortcut('%folderPath%\%shortcutUninstallName%.lnk'); $Shortcut.TargetPath='%uninstallPath%'; $Shortcut.IconLocation='%iconPath%'; $Shortcut.WorkingDirectory='%workingDirectory%'; $Shortcut.Save(); $Shortcut = $WScript.CreateShortcut('%folderPath%\Uninstall.lnk'); $Shortcut.TargetPath='%uninstallPath%'; $Shortcut.WorkingDirectory='%workingDirectory%'; $Shortcut.Arguments = '-Verb RunAs'; $Shortcut.Description='%shortcutUninstallDescription%'; $Shortcut.WindowStyle=7; $Shortcut.Save()"
+powershell -Command "$WScript=New-Object -ComObject WScript.Shell; $Shortcut=$WScript.CreateShortcut('%folderPath%\%shortcutUninstallName%.lnk'); $Shortcut.TargetPath='%uninstallPath%'; $Shortcut.IconLocation='%iconPath%'; $Shortcut.WorkingDirectory='%workingDirectory%'; $Shortcut.Arguments='-Verb RunAs'; $Shortcut.Description='%shortcutUninstallDescription%'; $Shortcut.WindowStyle=7; $Shortcut.Save()"
 if errorlevel 1 (
-    echo Failed to create shortcut "%folderPath%\Uninstall.lnk"
+    echo Failed to create shortcut "%folderPath%\%shortcutUninstallName%.lnk"
     exit /b 1
 )
