@@ -4,7 +4,14 @@
 @echo off
 
 if not exist "node_modules" (
-    echo node_modules folder not found. Installing dependencies...
+    echo Installing Node.js dependencies...
     npm install
-    echo. & timeout /nobreak /t 2 >nul
+
+    if %errorlevel% neq 0 (
+        echo Error: Failed to install dependencies. Please check the npm setup and try again.
+        pause
+        exit /b 1
+    )
+) else (
+    echo Dependencies are already installed.
 )

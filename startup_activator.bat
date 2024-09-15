@@ -12,8 +12,16 @@ set workingDirectory=%CD%
 
 if exist "%shortcutPath%" (
     del "%shortcutPath%"
+
+    if errorlevel 1 (
+        echo Failed to delete existing shortcut.
+        exit /b 1
+    )
 ) else (
     powershell -Command "$WScript=New-Object -ComObject WScript.Shell; $Shortcut=$WScript.CreateShortcut('%shortcutPath%'); $Shortcut.TargetPath='%targetPath%'; $Shortcut.IconLocation='%iconPath%'; $Shortcut.WorkingDirectory='%workingDirectory%'; $Shortcut.WindowStyle=7; $Shortcut.Description='%shortcutDescription%'; $Shortcut.Save()"
+
+    if errorlevel 1 (
+        echo Failed to create shortcut.
+        exit /b 1
+    )
 )
-
-

@@ -16,14 +16,32 @@ set workingDirectory=%CD%
 
 if exist "%folderPath%" (
     rmdir /s /q "%folderPath%"
+    if errorlevel 1 (
+        echo Failed to remove existing folder "%folderPath%"
+        exit /b 1
+    )
 )
 
 mkdir "%folderPath%"
+if errorlevel 1 (
+    echo Failed to create folder "%folderPath%"
+    exit /b 1
+)
 
 powershell -Command "$WScript=New-Object -ComObject WScript.Shell; $Shortcut=$WScript.CreateShortcut('%folderPath%\%shortcutName%.lnk'); $Shortcut.TargetPath='%targetPath%'; $Shortcut.IconLocation='%iconPath%'; $Shortcut.WorkingDirectory='%workingDirectory%'; $Shortcut.Description='%shortcutTargetDescription%'; $Shortcut.WindowStyle=7; $Shortcut.Save()"
+if errorlevel 1 (
+    echo Failed to create shortcut "%folderPath%\%shortcutName%.lnk"
+    exit /b 1
+)
 
 powershell -Command "$WScript=New-Object -ComObject WScript.Shell; $Shortcut=$WScript.CreateShortcut('%folderPath%\%shortcutAltName%.lnk'); $Shortcut.TargetPath='%targetAltPath%'; $Shortcut.IconLocation='%iconPath%'; $Shortcut.WorkingDirectory='%workingDirectory%'; $Shortcut.Description='%shortcutAltTargetDescription%'; $Shortcut.WindowStyle=1; $Shortcut.Save()"
+if errorlevel 1 (
+    echo Failed to create shortcut "%folderPath%\%shortcutAltName%.lnk"
+    exit /b 1
+)
 
 powershell -Command "$WScript=New-Object -ComObject WScript.Shell; $Shortcut=$WScript.CreateShortcut('%folderPath%\Uninstall.lnk'); $Shortcut.TargetPath='%uninstallPath%'; $Shortcut.IconLocation='%iconPath%'; $Shortcut.WorkingDirectory='%workingDirectory%'; $Shortcut.Save(); $Shortcut = $WScript.CreateShortcut('%folderPath%\Uninstall.lnk'); $Shortcut.TargetPath='%uninstallPath%'; $Shortcut.WorkingDirectory='%workingDirectory%'; $Shortcut.Arguments = '-Verb RunAs'; $Shortcut.Description='%shortcutUninstallDescription%'; $Shortcut.WindowStyle=7; $Shortcut.Save()"
-
-
+if errorlevel 1 (
+    echo Failed to create shortcut "%folderPath%\Uninstall.lnk"
+    exit /b 1
+)
