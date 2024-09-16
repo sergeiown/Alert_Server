@@ -40,12 +40,25 @@ function getCurrentDateTime() {
     }
 }
 
+function formatLogMessage(message) {
+    if (typeof message === 'string') {
+        return message.trim();
+    }
+
+    try {
+        return JSON.stringify(message).trim();
+    } catch (err) {
+        return messages.msg_09 + err.message;
+    }
+}
+
 function logEvent(eventMessage) {
     initializeLogFile();
 
     const maxFileSize = 256 * 1024;
-
     let currentDateTime = getCurrentDateTime() || '00.00.0000,00:00:00';
+
+    const logMessage = `${currentDateTime},${formatLogMessage(eventMessage)}`;
 
     try {
         const stats = fs.statSync(logFilePath);
@@ -61,8 +74,6 @@ function logEvent(eventMessage) {
     } catch (err) {
         error(messages.msg_09 + err.message);
     }
-
-    const logMessage = `${currentDateTime},${eventMessage.trim()}`;
 
     try {
         if (logMessage.includes('00.00.0000,00:00:00')) {
