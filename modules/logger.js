@@ -10,7 +10,7 @@ const os = require('os');
 const messages = require('./messageLoader');
 const logFilePath = path.join(process.cwd(), 'event.log');
 
-const initializeLogFile = () => {
+function initializeLogFile() {
     try {
         if (!fs.existsSync(logFilePath)) {
             const header = messages.msg_36;
@@ -19,9 +19,9 @@ const initializeLogFile = () => {
     } catch (err) {
         error(messages.msg_08);
     }
-};
+}
 
-const getCurrentDateTime = () => {
+function getCurrentDateTime() {
     try {
         return new Date()
             .toLocaleString('UA', {
@@ -38,9 +38,9 @@ const getCurrentDateTime = () => {
         error(messages.msg_09 + err.message);
         return null;
     }
-};
+}
 
-const logEvent = (eventMessage) => {
+function logEvent(eventMessage) {
     initializeLogFile();
 
     const maxFileSize = 256 * 1024;
@@ -75,6 +75,6 @@ const logEvent = (eventMessage) => {
     } catch (err) {
         error(messages.msg_09 + err.message);
     }
-};
+}
 
 module.exports = { logEvent };
