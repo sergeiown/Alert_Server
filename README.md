@@ -18,7 +18,7 @@ The procedure is as follows:
 - extract the installer from the archive to the selected location;
 - run the `Alert_server_setup.bat` installer.
 
-The installation will be performed in the location `%userprofile%\Documents\Alert_Server`, during the installation the availability of [Git](https://git-scm.com/) and [Node.js](https://nodejs.org/en) will be checked and installed if necessary.
+The installation will be performed in the location `%userprofile%\Documents\Alert_Server`, during the installation the availability of [Git](https://git-scm.com/), [Node.js](https://nodejs.org/en) and [Microsoft .NET Framework 3.5](https://www.microsoft.com/en-us/download/details.aspx?id=21) will be checked and installed or update if necessary.
 
 Actually installation of the local alarm update server consists of importing the project from the [GitHub](https://github.com/sergeiown/Alert_Server) repository and installing the necessary dependencies and shortcuts in the Start menu.
 
@@ -54,7 +54,7 @@ All actions are recorded in a log file, the size of which is automatically limit
 
 | Recommendation: |  |
 | --- | --- |
-| If you need to uninstall the local alert update server use the `Uninstall` shortcut in the Start => Alert server menu. | ![info5](https://github.com/sergeiown/Alert_Server/assets/112722061/139ee2ee-e07c-44b7-b2a2-4e42c8542dea) |
+| If you need to uninstall the local alert update server use the `Uninstall Alert server` shortcut in the `Start` => `Alert server` menu. | ![image](https://github.com/user-attachments/assets/f0bb8bac-cac3-4a71-b43e-eb4d61a86123) |
 
 ## Contribution
 
