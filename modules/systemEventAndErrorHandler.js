@@ -38,7 +38,8 @@ function handleExceptionAndRestart() {
 
     process.on('uncaughtException', (error) => {
         logEvent(messages.msg_50);
-        logEvent(error);
+        logEvent(error.message);
+        logEvent(error.stack);
 
         checkRestartFrequency();
 
@@ -59,7 +60,8 @@ function logSystemEvents() {
     };
 
     process.on('warning', (warning) => {
-        logEvent(warning);
+        logEvent(warning.message);
+        logEvent(warning.stack);
     });
 
     process.on('SIGINT', () => {
