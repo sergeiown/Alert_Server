@@ -28,7 +28,7 @@ function checkRestartFrequency() {
         if (timeDifference < 5000) {
             process.exit(3);
         }
-    } catch (err) {
+    } catch (error) {
         return;
     }
 }
@@ -37,9 +37,8 @@ function handleExceptionAndRestart() {
     const batFilePath = path.join(__dirname, '..', 'start_alertserver_hidden.bat');
 
     process.on('uncaughtException', (error) => {
-        logEvent(`${messages.msg_50}`);
-        logEvent(`${error.name}`);
-        logEvent(`${error.message}`);
+        logEvent(messages.msg_50);
+        logEvent(error);
 
         checkRestartFrequency();
 
@@ -60,8 +59,7 @@ function logSystemEvents() {
     };
 
     process.on('warning', (warning) => {
-        logEvent(`${warning.name}`);
-        logEvent(`${warning.message}`);
+        logEvent(warning);
     });
 
     process.on('SIGINT', () => {
@@ -79,16 +77,16 @@ function logSystemEvents() {
     process.on('exit', (code) => {
         switch (code) {
             case 0:
-                logEvent(messages.msg_61);
+                logEvent(`${messages.msg_61} ${code}`);
                 break;
             case 1:
-                logEvent(messages.msg_62);
+                logEvent(`${messages.msg_62} ${code}`);
                 break;
             case 2:
-                logEvent(messages.msg_63);
+                logEvent(`${messages.msg_63} ${code}`);
                 break;
             case 3:
-                logEvent(messages.msg_64);
+                logEvent(`${messages.msg_64} ${code}`);
                 break;
             default:
                 logEvent(`${messages.msg_19} ${code}`);
