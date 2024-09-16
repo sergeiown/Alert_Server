@@ -17,7 +17,7 @@
 - видобути інсталятор з архіву у вибраному розташуванні;
 - запустити інсталятор `Alert_server_setup.bat`.
 
-Інсталяція буде виконана в розташуванні `%userprofile%\Documents\Alert_Server`, під час встановлення буде перевірено наявність [Git](https://git-scm.com/) та [Node.js](https://nodejs.org/en) та їх інсталяція за необхідності.
+Інсталяція буде виконана в розташуванні `%userprofile%\Documents\Alert_Server`, під час встановлення буде перевірено наявність [Git](https://git-scm.com/), [Node.js](https://nodejs.org/en) та [Microsoft .NET Framework 3.5](https://www.microsoft.com/en-us/download/details.aspx?id=21) та їх інсталяція або оновлення за необхідності.
 
 Безпосередньо інсталяція локального сервера оновлення тривог складається з імпорту проєкту з репозиторію [GitHub](https://github.com/sergeiown/Alert_Server), встановлення необхідних залежностей та ярликів в меню "Пуск".
 
@@ -53,7 +53,7 @@
 
 | Рекомендація: |  |
 | --- | --- |
-| В разі необхідності деінсталяції локального сервера оновлення тривог потрібно використати ярлик `Uninstall` в меню "Пуск => Alert server". | ![image](https://github.com/sergeiown/Alert_Server/assets/112722061/139ee2ee-e07c-44b7-b2a2-4e42c8542dea) |
+| В разі необхідності деінсталяції локального сервера оновлення тривог потрібно використати ярлик `Uninstall Alert server` в меню `Пуск` => `Alert server`. | ![image](https://github.com/user-attachments/assets/f0bb8bac-cac3-4a71-b43e-eb4d61a86123) |
 
 ## Внесок
 
