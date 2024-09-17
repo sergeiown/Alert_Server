@@ -13,12 +13,12 @@ logEvent(messages.msg_01);
 
 const restartFilePath = path.join(process.env.TEMP, 'alertserver_restart.tmp');
 
-function writeRestartTimestamp() {
+const writeRestartTimestamp = () => {
     const timestamp = Date.now().toString();
     fs.writeFileSync(restartFilePath, timestamp, 'utf8');
-}
+};
 
-function checkRestartFrequency() {
+const checkRestartFrequency = () => {
     try {
         const fileContent = fs.readFileSync(restartFilePath, 'utf8');
         const lastTimestamp = parseInt(fileContent, 10);
@@ -31,18 +31,24 @@ function checkRestartFrequency() {
     } catch (error) {
         return;
     }
-}
+};
 
-function handleExceptionAndRestart() {
+const formatStackTrace = (stack) => {
+    return stack
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+};
+
+const handleExceptionAndRestart = () => {
     const batFilePath = path.join(__dirname, '..', 'start_alertserver_hidden.bat');
 
     process.on('uncaughtException', (error) => {
         logEvent(messages.msg_50);
         logEvent(error.message);
-        logEvent(error.stack);
+        formatStackTrace(error.stack).forEach((line) => logEvent(line));
 
         checkRestartFrequency();
-
         writeRestartTimestamp();
 
         exec(`cmd /c "${batFilePath}"`, (error) => {
@@ -52,49 +58,54 @@ function handleExceptionAndRestart() {
             }
         });
     });
-}
+};
 
-function logSystemEvents() {
-    const exitHandler = (code) => {
-        process.exit(code);
-    };
+const logSystemEvents = () => {
+    const exitHandler = (code) => process.exit(code);
 
     process.on('warning', (warning) => {
         logEvent(warning.message);
-        logEvent(warning.stack);
+        formatStackTrace(warning.stack).forEach((line) => logEvent(line));
     });
 
     process.on('SIGINT', () => {
         process.exitCode = 0;
         exitHandler(0);
     });
+
     process.on('SIGHUP', () => {
         process.exitCode = 1;
         exitHandler(1);
     });
+
     process.on('SIGBREAK', () => {
         process.exitCode = 2;
         exitHandler(2);
     });
+
     process.on('exit', (code) => {
+        let message;
         switch (code) {
             case 0:
-                logEvent(`${messages.msg_61} ${code}`);
+                message = `${messages.msg_61} ${code}`;
                 break;
             case 1:
-                logEvent(`${messages.msg_62} ${code}`);
+                message = `${messages.msg_62} ${code}`;
                 break;
             case 2:
-                logEvent(`${messages.msg_63} ${code}`);
+                message = `${messages.msg_63} ${code}`;
                 break;
             case 3:
-                logEvent(`${messages.msg_64} ${code}`);
+                message = `${messages.msg_64} ${code}`;
                 break;
             default:
-                logEvent(`${messages.msg_19} ${code}`);
+                message = `${messages.msg_19} ${code}`;
                 break;
         }
+        logEvent(message);
     });
-}
+};
 
-module.exports = { writeRestartTimestamp, handleExceptionAndRestart, logSystemEvents };
+writeRestartTimestamp();
+
+module.exports = { handleExceptionAndRestart, logSystemEvents };
