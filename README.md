@@ -31,6 +31,10 @@ The code is open source, no compiled files are used.
 *We recommend using Windows 10 version 22H2 or Windows 11 for the best experience.*  
 *Please note that the interface is currently available in Ukrainian and English.*
 
+<a href="https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions">
+    <img src="https://github.com/user-attachments/assets/db2b5487-b5bf-45d9-8948-48bb88162f17" alt="windows_compatibility" style="width:20%;"/>
+</a>
+
 ## Usage
 
 Using the local alert update server is surprisingly easy and intuitive. The first run is performed automatically after the installation process is complete.
