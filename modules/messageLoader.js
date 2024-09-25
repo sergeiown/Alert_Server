@@ -3,6 +3,7 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 'use strict';
 
+const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -40,12 +41,18 @@ try {
             second: '2-digit',
         })
         .replace(/,\s*/g, ',');
-    const logMessage = `${currentDateTime},An error occurred while reading or parsing ${messagesPath}`;
-    const logFilePath = path.join(process.env.TEMP, 'alertserver_log.csv');
+    const logMessage = `${currentDateTime},File not found: ${messagesPath}. Starting the recovery process.`;
+    const logFilePath = path.join(process.cwd(), 'event.log');
+    const recoveryBatPath = path.join(process.cwd(), 'start_recovery.bat');
     fs.appendFileSync(logFilePath, logMessage + os.EOL, 'utf-8');
     console.error(logMessage);
-    messages = {};
-    process.exit();
+
+    exec(`start cmd /c "${recoveryBatPath}"`, (execError) => {
+        if (execError) {
+            console.error(execError.message);
+            return;
+        }
+    });
 }
 
 module.exports = messages;

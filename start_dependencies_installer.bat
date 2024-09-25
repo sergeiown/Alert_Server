@@ -2,6 +2,7 @@
 :: https://github.com/sergeiown/Alert_Server/blob/main/LICENSE
 
 @echo off
+title Dependencies installation
 
 for /f "delims=" %%i in ('where npm') do set "npmPath=%%i"
 
