@@ -1,6 +1,6 @@
 {
     "name": "alert_server",
-    "version": "1.0.1",
+    "version": "1.2.0",
     "description": "Server that receives alert data from the alerts.in.ua at a specified frequency and displays it through the Windows notification centre",
     "author": "Serhii I. Myshko",
     "main": "index.js",
