@@ -16,7 +16,6 @@ const defaultSettings = {
     alertActive: 0,
 };
 
-// Function to load settings from the file or create a new one with default settings
 function loadSettings() {
     if (!fs.existsSync(settingsFilePath)) {
         saveSettings(defaultSettings);
@@ -36,7 +35,6 @@ function loadSettings() {
     }
 }
 
-// Function to save settings to the file
 function saveSettings(settings) {
     const completeSettings = { ...defaultSettings, ...settings };
 
@@ -47,15 +45,12 @@ function saveSettings(settings) {
     }
 }
 
-// Object that stores the current settings
 let settings = loadSettings();
 
-// Function to get the current settings
 function getSettings() {
     return settings;
 }
 
-// Function to update a specific setting and save the changes
 function updateSetting(key, value) {
     if (defaultSettings.hasOwnProperty(key)) {
         settings[key] = value;
