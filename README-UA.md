@@ -23,16 +23,8 @@
 
 Код відкритий, скомпільовані файли не використовуються.
 
----
-***Disclamer:***  
-*Тестування та адаптація функціоналу проводились на 64-розрядних версіях Windows 10 та 11 версії 22H2.*
-*На інших платформах або версіях Windows можливості можуть бути обмежені або недоступні.*
-*Рекомендується використовувати Windows 10 версії 22H2 або Windows 11 для кращого досвіду.*
-*Зверніть увагу, що наразі доступні українська та англійська мови інтерфейсу.*
-
-<a href="https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions">
-    <img src="https://github.com/user-attachments/assets/db2b5487-b5bf-45d9-8948-48bb88162f17" alt="windows_compatibility" style="width:20%;"/>
-</a>
+| Disclaimer: *testing and adaptation of the functionality was carried out on 64-bit versions of Windows 10 22H2 and 11 22H2. Features may be limited or unavailable on other platforms or versions of Windows. We recommend using Windows 10 version 22H2 or Windows 11 for the best experience. Please note that the interface is currently available in Ukrainian and English.* |                       [![windows_compatibility](https://github.com/user-attachments/assets/db2b5487-b5bf-45d9-8948-48bb88162f17)](https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions)                       |
+| :--- | :---: |
 
 ## Використання
 
