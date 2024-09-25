@@ -19,8 +19,14 @@ const alertCancellationSound =
         ? path.join(__dirname, '..', 'resources', 'audio', 'alert_cancellation_eng.wav')
         : path.join(__dirname, '..', 'resources', 'audio', 'alert_cancellation_ukr.wav');
 
+let isPlaying = false;
+
 const playAlertSound = () => {
+    if (isPlaying) return;
+
+    isPlaying = true;
     exec(`powershell -c (New-Object System.Media.SoundPlayer '${alertSound}').PlaySync()`, (err) => {
+        isPlaying = false;
         if (err) {
             logEvent(messages.msg_06);
         }
@@ -28,7 +34,11 @@ const playAlertSound = () => {
 };
 
 const playAlertCancellationSound = () => {
+    if (isPlaying) return;
+
+    isPlaying = true;
     exec(`powershell -c (New-Object System.Media.SoundPlayer '${alertCancellationSound}').PlaySync()`, (err) => {
+        isPlaying = false;
         if (err) {
             logEvent(messages.msg_06);
         }
