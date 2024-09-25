@@ -56,23 +56,17 @@ function createTrayIcon() {
 
     function updateTrayIcon(state, alertActive, trayMonoIcon) {
         const { imagePath, alertImagePath } = updateIconImagePath(trayMonoIcon);
-        const menuTitle = createTitleMenu(trayInstance);
-        const alertsItem = createAlertsMenu(trayInstance);
-        const frontItem = createFrontMenu(trayInstance);
-        const settings = createSettingsMenu(trayInstance);
-        const logView = createInfoMenu(trayInstance);
-        const quit = createExitMenu(trayInstance);
 
         if (state === 'start') {
             trayInstance.setMenu(
-                menuTitle,
+                createTitleMenu(trayInstance),
                 trayInstance.separator(),
-                alertsItem,
-                frontItem,
-                settings,
-                logView,
+                createAlertsMenu(trayInstance),
+                createFrontMenu(trayInstance),
+                createSettingsMenu(trayInstance),
+                createInfoMenu(trayInstance),
                 trayInstance.separator(),
-                quit
+                createExitMenu(trayInstance)
             );
             trayInstance.setTitle(messages.msg_23);
             trayInstance.setIcon(fs.readFileSync(imagePath));
