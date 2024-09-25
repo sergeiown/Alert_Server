@@ -19,27 +19,43 @@ const checkLocations = async () => {
         currentAlertData = JSON.parse(await fs.readFile(currentAlertFilePath, 'utf-8'));
         const locationsData = JSON.parse(await fs.readFile(locationFilePath, 'utf-8'));
 
-        const locationsWithUsageOne = locationsData.filter((location) => location.Usage === '1');
+        const locationsWithUsageOne = [];
+
+        locationsData.states.forEach((state) => {
+            if (state.usage === 1) {
+                locationsWithUsageOne.push({ ...state, type: 'state' });
+            }
+            state.districts.forEach((district) => {
+                if (district.usage === 1) {
+                    locationsWithUsageOne.push({ ...district, type: 'district' });
+                }
+                district.communities.forEach((community) => {
+                    if (community.usage === 1) {
+                        locationsWithUsageOne.push({ ...community, type: 'community' });
+                    }
+                });
+            });
+        });
+
         const locationsInCurrentAlert = currentAlertData.alerts.filter((alert) =>
-            locationsWithUsageOne.some((location) => location.UID === alert.location_uid)
+            locationsWithUsageOne.some((location) => String(location.uid) === String(alert.location_uid))
         );
 
         const alertsWithLocationLat = locationsInCurrentAlert.map((alert) => {
-            const locationData = locationsData.find((location) => location.UID === alert.location_uid);
+            const locationData = locationsWithUsageOne.find(
+                (location) => String(location.uid) === String(alert.location_uid)
+            );
             return {
                 ...alert,
-                location_lat: locationData ? locationData.LocationLat : null,
+                location_lat: locationData
+                    ? locationData.communityNameLat || locationData.districtNameLat || locationData.stateNameLat
+                    : null,
             };
         });
 
-        if (alertsWithLocationLat.length > 0) {
-            return { alerts: alertsWithLocationLat };
-        } else {
-            return { alerts: [] };
-        }
+        return { alerts: alertsWithLocationLat.length > 0 ? alertsWithLocationLat : [] };
     } catch (error) {
         logEvent(messages.msg_07);
-
         return { alerts: [] };
     }
 };

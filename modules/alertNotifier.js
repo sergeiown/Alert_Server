@@ -66,6 +66,7 @@ const showNotification = async () => {
                 displayedAlerts.set(alert.id, {
                     locationTitle: alert.location_title,
                     locationLat: alert.location_lat,
+                    alertType: alert.alert_type,
                 });
 
                 saveDisplayedAlerts();
@@ -76,7 +77,12 @@ const showNotification = async () => {
             if (!alerts.some((alert) => alert.id === displayedAlert)) {
                 const image = path.join(__dirname, '..', 'resources', 'images', 'cancel.png');
 
-                const title = messages.msg_57;
+                const alertType = alertTypes.find((type) => type.id === value.alertType);
+
+                const title =
+                    getCurrentLanguage() === 'English'
+                        ? `${messages.msg_57}: ${alertType ? alertType.id : 'type is not defined'}`
+                        : `${messages.msg_57}: ${alertType ? alertType.name : 'тип не визначено'}`;
 
                 const message =
                     getCurrentLanguage() === 'English'
@@ -94,12 +100,11 @@ const showNotification = async () => {
                 logEvent(`${messages.msg_02} ${alerts.length}`);
 
                 displayedAlerts.delete(displayedAlert);
-
                 saveDisplayedAlerts();
             }
         });
     } catch (error) {
-        logEvent(messages.msg_12);
+        logEvent(messages.msg_12 + error.message);
     }
 };
 

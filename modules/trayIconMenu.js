@@ -274,60 +274,97 @@ function createSettingsMenu(tray) {
     function createNotificationRegionsItem(tray) {
         const notificationRegionsItem = tray.item(messages.msg_34);
 
-        function updateLocationJson(locations, location, usage) {
+        function updateLocationJson(locations, locationNameLat, action) {
             const jsonPath = path.join(__dirname, '..', 'location.json');
-            const action = usage === '1' ? 'added' : 'removed';
-
-            logEvent(`${messages.msg_18}: ${action} ${location}`);
+            logEvent(`${messages.msg_18}: ${locationNameLat} has been ${action}`);
             fs.writeFileSync(jsonPath, JSON.stringify(locations, null, 2), 'utf-8');
         }
 
-        function createRegionMenu(tray, region, language) {
-            const regionItem = tray.item(language === 'Ukrainian' ? region.Location : region.LocationLat, {
-                type: 'submenu',
-            });
-
-            for (const location of region.locations) {
-                const field = language === 'Ukrainian' ? 'Location' : 'LocationLat';
-                const checkboxItem = tray.item(location[field], {
+        // communities
+        function createCommunityMenu(tray, community, language) {
+            const communityItem = tray.item(
+                language === 'Ukrainian' ? community.communityName : community.communityNameLat,
+                {
                     type: 'checkbox',
-                    checked: location.Usage === '1',
+                    checked: community.usage === 1,
                     action: () => {
-                        location.Usage = location.Usage === '1' ? '0' : '1';
-                        updateLocationJson(locations, location.LocationLat, location.Usage);
+                        community.usage = community.usage === 1 ? 0 : 1;
+                        const action = community.usage === 1 ? 'added' : 'removed';
+                        updateLocationJson(locations, community.communityNameLat, action);
                     },
+                }
+            );
+
+            return communityItem;
+        }
+
+        // districts
+        function createDistrictMenu(tray, district, stateItem, language) {
+            const districtItem = tray.item(
+                language === 'Ukrainian' ? district.districtName : district.districtNameLat,
+                {
+                    type: 'checkbox',
+                    checked: district.usage === 1,
+                    action: () => {
+                        district.usage = district.usage === 1 ? 0 : 1;
+                        const action = district.usage === 1 ? 'added' : 'removed';
+                        updateLocationJson(locations, district.districtNameLat, action);
+                    },
+                }
+            );
+
+            district.communities
+                .sort((a, b) =>
+                    language === 'Ukrainian'
+                        ? a.communityName.localeCompare(b.communityName)
+                        : a.communityNameLat.localeCompare(b.communityNameLat)
+                )
+                .forEach((community) => {
+                    districtItem.add(createCommunityMenu(tray, community, language));
                 });
 
-                regionItem.add(checkboxItem);
-            }
+            return districtItem;
+        }
 
-            return regionItem;
+        // states
+        function createStateMenu(tray, state, language) {
+            const stateItem = tray.item(language === 'Ukrainian' ? state.stateName : state.stateNameLat, {
+                type: 'checkbox',
+                checked: state.usage === 1,
+                action: () => {
+                    state.usage = state.usage === 1 ? 0 : 1;
+                    const action = state.usage === 1 ? 'added' : 'removed';
+                    updateLocationJson(locations, state.stateNameLat, action);
+                },
+            });
+
+            state.districts
+                .sort((a, b) =>
+                    language === 'Ukrainian'
+                        ? a.districtName.localeCompare(b.districtName)
+                        : a.districtNameLat.localeCompare(b.districtNameLat)
+                )
+                .forEach((district) => {
+                    stateItem.add(createDistrictMenu(tray, district, stateItem, language));
+                });
+
+            return stateItem;
         }
 
         const jsonPath = path.join(__dirname, '..', 'location.json');
         const locations = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
 
-        const regions = {};
-        for (const location of locations) {
-            if (!regions[location.Region]) {
-                regions[location.Region] = {
-                    Location: location.Region,
-                    LocationLat: location.RegionLat,
-                    locations: [],
-                };
-            }
-
-            regions[location.Region].locations.push(location);
-        }
-
         const language = getCurrentLanguage();
 
-        for (const regionKey in regions) {
-            if (regions.hasOwnProperty(regionKey)) {
-                const region = regions[regionKey];
-                notificationRegionsItem.add(createRegionMenu(tray, region, language));
-            }
-        }
+        locations.states
+            .sort((a, b) =>
+                language === 'Ukrainian'
+                    ? a.stateName.localeCompare(b.stateName)
+                    : a.stateNameLat.localeCompare(b.stateNameLat)
+            )
+            .forEach((state) => {
+                notificationRegionsItem.add(createStateMenu(tray, state, language));
+            });
 
         return notificationRegionsItem;
     }
