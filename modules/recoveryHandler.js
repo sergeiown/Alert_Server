@@ -8,6 +8,8 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
+const lockFilePath = path.join(process.env.TEMP, 'alertserver_recovery.tmp');
+
 function handleRecovery(error) {
     const currentDateTime = new Date()
         .toLocaleString('UA', {
@@ -19,19 +21,28 @@ function handleRecovery(error) {
             second: '2-digit',
         })
         .replace(/,\s*/g, ',');
+
     const errorMessage = `${currentDateTime},${error.message}`;
     const logMessage = `${currentDateTime},Performing recovery`;
     const logFilePath = path.join(process.cwd(), 'event.log');
     const recoveryBatPath = path.join(process.cwd(), 'start_recovery.bat');
+
+    if (fs.existsSync(lockFilePath)) {
+        return;
+    }
+
     fs.appendFileSync(logFilePath, errorMessage + os.EOL, 'utf-8');
     fs.appendFileSync(logFilePath, logMessage + os.EOL, 'utf-8');
     console.error(errorMessage);
 
+    fs.writeFileSync(lockFilePath, 'Recovery in progress', 'utf-8');
+
     exec(`start cmd /c "${recoveryBatPath}"`, (execError) => {
         if (execError) {
             console.error(execError.message);
-            return;
         }
+
+        fs.unlinkSync(lockFilePath);
     });
 }
 
