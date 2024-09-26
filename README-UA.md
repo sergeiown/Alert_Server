@@ -6,7 +6,7 @@
 
 | Структура: |  |
 | --- | --- |
-| Залежності | ![image](https://github.com/user-attachments/assets/3a6f4c7c-6fc0-40fd-b9bf-811772cdeddb) |
+| Залежності | ![image](https://github.com/user-attachments/assets/2753e04b-f277-47d1-81a2-cef1061861fa) |
 
 ## Встановлення
 
