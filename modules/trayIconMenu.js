@@ -105,7 +105,7 @@ function createInfoMenu(tray) {
     function createAboutItem(tray) {
         const aboutMessage = messages.msg_20;
         const titleMessage = messages.msg_31;
-        const vbsPath = path.join(process.env.TEMP, 'msgbox.vbs');
+        const vbsPath = path.join(process.env.TEMP, 'alertserver_msgbox.vbs');
 
         const aboutItem = tray.item(messages.msg_31, () => {
             fs.writeFileSync(vbsPath, `MsgBox "${aboutMessage}", 64, "${titleMessage}"`, 'utf-16le');
@@ -299,7 +299,7 @@ function createSettingsMenu(tray) {
         }
 
         // districts
-        function createDistrictMenu(tray, district, stateItem, language) {
+        function createDistrictMenu(tray, district) {
             const districtItem = tray.item(
                 language === 'Ukrainian' ? district.districtName : district.districtNameLat,
                 {
@@ -345,7 +345,7 @@ function createSettingsMenu(tray) {
                         : a.districtNameLat.localeCompare(b.districtNameLat)
                 )
                 .forEach((district) => {
-                    stateItem.add(createDistrictMenu(tray, district, stateItem, language));
+                    stateItem.add(createDistrictMenu(tray, district, stateItem));
                 });
 
             return stateItem;
@@ -369,12 +369,88 @@ function createSettingsMenu(tray) {
         return notificationRegionsItem;
     }
 
+    // Menu item 'Settings' => 'View selected regions'
+    function createSelectedMenu(tray) {
+        const jsonPath = path.join(__dirname, '..', 'location.json');
+        const language = getCurrentLanguage();
+
+        const showSelectedItems = () => {
+            const vbsPath = path.join(process.env.TEMP, 'alertserver_selectedItems.vbs');
+
+            if (fs.existsSync(vbsPath)) {
+                fs.unlinkSync(vbsPath);
+            }
+
+            const locations = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+
+            let selectedItems = '';
+
+            locations.states.forEach((state) => {
+                if (state.usage === 1) {
+                    selectedItems += vbNewLine();
+                    selectedItems +=
+                        '' + (language === 'Ukrainian' ? state.stateName : state.stateNameLat) + vbNewLine();
+                }
+
+                state.districts.forEach((district) => {
+                    if (district.usage === 1 && state.usage !== 1) {
+                        selectedItems += vbNewLine();
+                    }
+
+                    if (district.usage === 1) {
+                        selectedItems +=
+                            '  ' +
+                            (language === 'Ukrainian' ? district.districtName : district.districtNameLat) +
+                            vbNewLine();
+                    }
+
+                    district.communities.forEach((community) => {
+                        if (community.usage === 1 && district.usage !== 1 && state.usage !== 1) {
+                            selectedItems += vbNewLine();
+                        }
+
+                        if (community.usage === 1) {
+                            selectedItems +=
+                                '    ' +
+                                (language === 'Ukrainian' ? community.communityName : community.communityNameLat) +
+                                vbNewLine();
+                        }
+                    });
+                });
+            });
+
+            if (!selectedItems) {
+                selectedItems = messages.msg_67;
+            }
+
+            fs.writeFileSync(vbsPath, `MsgBox "${selectedItems}", 64, "${messages.msg_66}"`, 'utf-16le');
+
+            exec(`start wscript.exe "${vbsPath}"`, (error) => {
+                if (error) {
+                    logEvent(messages.msg_14);
+                    return;
+                }
+            });
+        };
+
+        const selectedMenu = tray.item(messages.msg_66, () => {
+            showSelectedItems();
+        });
+
+        return selectedMenu;
+    }
+
+    function vbNewLine() {
+        return '"& vbCrLf &"';
+    }
+
     settingsMenu.add(createLanguageMenu(tray));
     settingsMenu.add(createRunOnStartupItem(tray));
     settingsMenu.add(createTrayMonoIconItem(tray));
     settingsMenu.add(createAlertSoundItem(tray));
     settingsMenu.add(tray.separator());
     settingsMenu.add(createNotificationRegionsItem(tray));
+    settingsMenu.add(createSelectedMenu(tray));
 
     return settingsMenu;
 }
