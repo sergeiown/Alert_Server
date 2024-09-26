@@ -10,9 +10,11 @@ const { checkLocations } = require('./locationChecker');
 const { getSettings, updateSetting } = require('./settings');
 const { getCurrentLanguage } = require('./languageChecker');
 const { playAlertSound, playAlertCancellationSound } = require('./audioPlayer');
-const alertTypes = require('../alert.json');
 const messages = require('./messageLoader');
 const { logEvent } = require('./logger');
+
+const alertTypesFilePath = path.join(process.cwd(), 'alert_types.json');
+const alertTypes = JSON.parse(fs.readFileSync(alertTypesFilePath, 'utf-8'));
 
 const displayedAlerts = new Map();
 const displayedAlertsFilePath = path.join(process.cwd(), 'alert_displayed.json');
