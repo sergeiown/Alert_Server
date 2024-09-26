@@ -13,8 +13,8 @@ let messages;
 
 const messagesPath =
     getCurrentLanguage() === 'English'
-        ? path.join(__dirname, '../messagesEng.json')
-        : path.join(__dirname, '../messagesUkr.json');
+        ? path.join(process.cwd(), 'messagesEng.json')
+        : path.join(process.cwd(), 'messagesUkr.json');
 
 try {
     const fileContent = fs.readFileSync(messagesPath, 'utf8');

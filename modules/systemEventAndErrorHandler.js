@@ -41,8 +41,8 @@ const formatStackTrace = (stack) => {
 };
 
 const handleExceptionAndRestart = () => {
-    const batFilePath = path.join(__dirname, '..', 'start_alertserver_hidden.bat');
-    const recoveryBatPath = path.join(__dirname, '..', 'start_recovery.bat');
+    const batFilePath = path.join(process.cwd(), 'start_alertserver_hidden.bat');
+    const recoveryBatPath = path.join(process.cwd(), 'start_recovery.bat');
 
     process.on('uncaughtException', (error) => {
         logEvent(messages.msg_50);

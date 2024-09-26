@@ -8,7 +8,7 @@ const messages = require('./messageLoader');
 const { exec } = require('child_process');
 const path = require('path');
 
-const exePath = path.join(__dirname, '..', 'resources', 'apiRequest', 'apirequest.exe');
+const exePath = path.join(process.cwd(), 'resources', 'apiRequest', 'apirequest.exe');
 
 const fetchDataAndSaveToFile = async () => {
     try {
