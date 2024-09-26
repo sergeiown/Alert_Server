@@ -41,8 +41,6 @@ function handleRecovery(error) {
         if (execError) {
             console.error(execError.message);
         }
-
-        fs.unlinkSync(lockFilePath);
     });
 }
 

@@ -4,6 +4,7 @@
 @echo off
 title Alert Server Recovery
 
+:: --- Initial Recovery Preparation ---
 cls & echo Starting the recovery process...
 echo. & echo Check the event.log file for details.
 echo. & timeout /t 3 /nobreak > nul
@@ -22,6 +23,7 @@ if not defined gitPath (
     set "gitPath=%ProgramW6432%\Git\bin\git.exe"
 )
 
+:: --- Preparing Temporary Directory and Cloning the Repository ---
 set "githubUrl=https://github.com/sergeiown/Alert_Server"
 
 if exist "%tempDir%" (
@@ -48,8 +50,8 @@ if %errorlevel% neq 0 (
 
 rmdir /s /q "%tempDir%"
 
+:: --- Installing Dependencies and Restoring Icons ---
 echo. & timeout /t 2 /nobreak > nul
-
 call "%installationDir%\start_dependencies_installer.bat"
 
 echo. & timeout /t 2 /nobreak > nul
@@ -61,6 +63,13 @@ if exist "%destFile%" (
     del "%destFile%"
 )
 copy "%sourceFile%" "%destFile%"
+
+:: --- Finalizing the Recovery Process and Restart Alert Server ---
+set tempFilePath=%TEMP%\alertserver_recovery.tmp
+
+if exist "%tempFilePath%" (
+    del "%tempFilePath%"
+)
 
 echo. & echo Recovery is complete.
 timeout /t 2 /nobreak > nul
