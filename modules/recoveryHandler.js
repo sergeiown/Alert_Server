@@ -22,7 +22,7 @@ function handleRecovery(error) {
         })
         .replace(/,\s*/g, ',');
 
-    const errorMessage = `${currentDateTime},${error.message}`;
+    const errorMessage = `${currentDateTime},Missing data ${error.path}`;
     const logMessage = `${currentDateTime},Performing recovery`;
     const logFilePath = path.join(process.cwd(), 'event.log');
     const recoveryBatPath = path.join(process.cwd(), 'start_recovery.bat');
