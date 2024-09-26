@@ -5,7 +5,8 @@
 title Alert Server Recovery
 
 cls & echo Starting the recovery process...
-echo. & timeout /t 2 /nobreak > nul
+echo. & echo Check the event.log file for details.
+echo. & timeout /t 3 /nobreak > nul
 
 taskkill /f /im node.exe >nul 2>nul
 
