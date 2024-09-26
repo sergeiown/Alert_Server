@@ -44,12 +44,12 @@ function createTrayIcon() {
 
     function updateIconImagePath(trayMonoIcon) {
         const imagePath = !trayMonoIcon
-            ? path.join(__dirname, '..', 'resources', 'images', 'tray.ico')
-            : path.join(__dirname, '..', 'resources', 'images', 'tray_mono.ico');
+            ? path.join(process.cwd(), 'resources', 'images', 'tray.ico')
+            : path.join(process.cwd(), 'resources', 'images', 'tray_mono.ico');
 
         const alertImagePath = !trayMonoIcon
-            ? path.join(__dirname, '..', 'resources', 'images', 'tray_alert.ico')
-            : path.join(__dirname, '..', 'resources', 'images', 'tray_alert_mono.ico');
+            ? path.join(process.cwd(), 'resources', 'images', 'tray_alert.ico')
+            : path.join(process.cwd(), 'resources', 'images', 'tray_alert_mono.ico');
 
         return { imagePath, alertImagePath };
     }

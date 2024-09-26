@@ -11,13 +11,13 @@ const { getCurrentLanguage } = require('./languageChecker');
 
 const alertSound =
     getCurrentLanguage() === 'English'
-        ? path.join(__dirname, '..', 'resources', 'audio', 'alert_eng.wav')
-        : path.join(__dirname, '..', 'resources', 'audio', 'alert_ukr.wav');
+        ? path.join(process.cwd(), 'resources', 'audio', 'alert_eng.wav')
+        : path.join(process.cwd(), 'resources', 'audio', 'alert_ukr.wav');
 
 const alertCancellationSound =
     getCurrentLanguage() === 'English'
-        ? path.join(__dirname, '..', 'resources', 'audio', 'alert_cancellation_eng.wav')
-        : path.join(__dirname, '..', 'resources', 'audio', 'alert_cancellation_ukr.wav');
+        ? path.join(process.cwd(), 'resources', 'audio', 'alert_cancellation_eng.wav')
+        : path.join(process.cwd(), 'resources', 'audio', 'alert_cancellation_ukr.wav');
 
 let isPlaying = false;
 

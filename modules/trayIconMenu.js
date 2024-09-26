@@ -135,7 +135,7 @@ function createSettingsMenu(tray) {
 
     // Sub-item "Settings" => "Language" with sub-items "English" and "Ukrainian
     function createLanguageMenu(tray) {
-        const batFilePath = path.join(__dirname, '..', 'start_alertserver_hidden.bat');
+        const batFilePath = path.join(process.cwd(), 'start_alertserver_hidden.bat');
         let currentLanguage = getCurrentLanguage();
 
         const languageMenu = tray.item(messages.msg_51, {
@@ -194,7 +194,7 @@ function createSettingsMenu(tray) {
         const runOnStartupItem = tray.item(messages.msg_33, {
             checked: isStartupMarker,
             action: () => {
-                exec(`"${path.join(__dirname, '..', 'startup_activator.bat')}"`, (error) => {
+                exec(`"${path.join(process.cwd(), 'startup_activator.bat')}"`, (error) => {
                     if (error) {
                         logEvent(messages.msg_15);
 
@@ -275,7 +275,7 @@ function createSettingsMenu(tray) {
         const notificationRegionsItem = tray.item(messages.msg_34);
 
         function updateLocationJson(locations, locationNameLat, action) {
-            const jsonPath = path.join(__dirname, '..', 'location.json');
+            const jsonPath = path.join(process.cwd(), 'location.json');
             logEvent(`${messages.msg_18}: ${locationNameLat} has been ${action}`);
             fs.writeFileSync(jsonPath, JSON.stringify(locations, null, 2), 'utf-8');
         }
@@ -351,7 +351,7 @@ function createSettingsMenu(tray) {
             return stateItem;
         }
 
-        const jsonPath = path.join(__dirname, '..', 'location.json');
+        const jsonPath = path.join(process.cwd(), 'location.json');
         const locations = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
 
         const language = getCurrentLanguage();
@@ -371,7 +371,7 @@ function createSettingsMenu(tray) {
 
     // Menu item 'Settings' => 'View selected regions'
     function createSelectedMenu(tray) {
-        const jsonPath = path.join(__dirname, '..', 'location.json');
+        const jsonPath = path.join(process.cwd(), 'location.json');
         const language = getCurrentLanguage();
 
         const showSelectedItems = () => {
@@ -430,6 +430,8 @@ function createSettingsMenu(tray) {
                     logEvent(messages.msg_14);
                     return;
                 }
+
+                fs.unlinkSync(vbsPath);
             });
         };
 

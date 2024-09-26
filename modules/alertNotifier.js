@@ -51,7 +51,7 @@ const showNotification = async () => {
                         ? `${messages.msg_41} ${alert.location_lat}. ${messages.msg_42} ${alertCount}`
                         : `${messages.msg_41} ${alert.location_title}. ${messages.msg_42} ${alertCount}`;
 
-                const image = path.join(__dirname, '..', 'resources', 'images', 'alert.png');
+                const image = path.join(process.cwd(), 'resources', 'images', 'alert.png');
 
                 createNotification(title, message, image);
 
@@ -75,7 +75,7 @@ const showNotification = async () => {
 
         displayedAlerts.forEach((value, displayedAlert) => {
             if (!alerts.some((alert) => alert.id === displayedAlert)) {
-                const image = path.join(__dirname, '..', 'resources', 'images', 'cancel.png');
+                const image = path.join(process.cwd(), 'resources', 'images', 'cancel.png');
 
                 const alertType = alertTypes.find((type) => type.id === value.alertType);
 
@@ -109,7 +109,7 @@ const showNotification = async () => {
 };
 
 function createNotification(title, message, image) {
-    const snoreToastPath = path.join(__dirname, '..', 'resources', 'snoreToast', 'snoretoast.exe');
+    const snoreToastPath = path.join(process.cwd(), 'resources', 'snoreToast', 'snoretoast.exe');
     const notificationCommand = `${snoreToastPath} -t "${title}" -m "${message}" -p "${image}" -d long -silent -appID "${messages.msg_22}"`;
 
     logEvent(messages.msg_21);
