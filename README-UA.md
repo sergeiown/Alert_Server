@@ -6,7 +6,7 @@
 
 | Структура: |  |
 | --- | --- |
-| Залежності | ![image](https://github.com/user-attachments/assets/7ef2ac6b-ae87-4bc0-950e-c28ac4266f28) |
+| Залежності | ![image](https://github.com/user-attachments/assets/3a6f4c7c-6fc0-40fd-b9bf-811772cdeddb) |
 
 ## Встановлення
 
@@ -20,8 +20,6 @@
 Інсталяція буде виконана в розташуванні `%userprofile%\Documents\Alert_Server`, під час встановлення буде перевірено наявність [Git](https://git-scm.com/), [Node.js](https://nodejs.org/en) та [Microsoft .NET Framework 3.5](https://www.microsoft.com/en-us/download/details.aspx?id=21) та їх інсталяція або оновлення за необхідності.
 
 Безпосередньо інсталяція локального сервера оновлення тривог складається з імпорту проєкту з репозиторію [GitHub](https://github.com/sergeiown/Alert_Server), встановлення необхідних залежностей та ярликів в меню "Пуск".
-
-Код відкритий, скомпільовані файли не використовуються.
 
 | Disclaimer: *testing and adaptation of the functionality was carried out on 64-bit versions of Windows 10 22H2 and 11 22H2. Features may be limited or unavailable on other platforms or versions of Windows. We recommend using Windows 10 version 22H2 or Windows 11 for the best experience. Please note that the interface is currently available in Ukrainian and English.* |                       [![windows_compatibility](https://github.com/user-attachments/assets/db2b5487-b5bf-45d9-8948-48bb88162f17)](https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions)                       |
 | :--- | :---: |
