@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const { logEvent } = require('./logger');
 const messages = require('./messageLoader');
+const { handleRecovery } = require('./recoveryHandler');
 
 logEvent(messages.msg_01);
 
@@ -42,7 +43,6 @@ const formatStackTrace = (stack) => {
 
 const handleExceptionAndRestart = () => {
     const batFilePath = path.join(process.cwd(), 'start_alertserver_hidden.bat');
-    const recoveryBatPath = path.join(process.cwd(), 'start_recovery.bat');
 
     process.on('uncaughtException', (error) => {
         logEvent(messages.msg_50);
@@ -50,13 +50,7 @@ const handleExceptionAndRestart = () => {
         formatStackTrace(error.stack).forEach((line) => logEvent(line));
 
         if (error.code === 'ENOENT') {
-            logEvent(`File not found: ${error.path}. Starting the recovery process.`);
-            exec(`start cmd /c "${recoveryBatPath}"`, (execError) => {
-                if (execError) {
-                    logEvent(execError.message);
-                    return;
-                }
-            });
+            handleRecovery(error);
         } else {
             checkRestartFrequency();
             writeRestartTimestamp();
