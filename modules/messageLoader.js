@@ -10,25 +10,30 @@ const { handleRecovery } = require('./recoveryHandler');
 
 let messages;
 
-const messagesPath =
-    getCurrentLanguage() === 'English'
-        ? path.join(process.cwd(), 'messagesEng.json')
-        : path.join(process.cwd(), 'messagesUkr.json');
+const messagesPath = path.join(process.cwd(), 'messages.json');
 
 try {
     const fileContent = fs.readFileSync(messagesPath, 'utf8');
+    const parsedMessages = JSON.parse(fileContent);
+    const currentLanguage = getCurrentLanguage();
+    const languageMessages = parsedMessages.messages[currentLanguage];
 
-    messages = JSON.parse(fileContent);
+    if (!languageMessages) {
+        console.error(`Language ${currentLanguage} not found in messages.`);
+        return;
+    }
 
-    for (let key in messages) {
-        if (messages.hasOwnProperty(key)) {
+    for (let key in languageMessages) {
+        if (languageMessages.hasOwnProperty(key)) {
             try {
-                messages[key] = Buffer.from(messages[key], 'base64').toString('utf8');
+                languageMessages[key] = Buffer.from(languageMessages[key], 'base64').toString('utf8');
             } catch (decodeError) {
                 console.error(`Decoding error for a key ${key}:`, decodeError.message);
             }
         }
     }
+
+    messages = languageMessages;
 } catch (error) {
     handleRecovery(error);
 }
