@@ -7,6 +7,7 @@ const { fetchDataAndSaveToFile } = require('./modules/apiRequestHandler');
 const { showNotification } = require('./modules/alertNotifier');
 const { createTrayIcon } = require('./modules/trayIconManager');
 const { handleExceptionAndRestart, logSystemEvents } = require('./modules/systemEventAndErrorHandler');
+const { delayedCheckForUpdates } = require('./modules/updateHadler');
 
 fetchDataAndSaveToFile();
 
@@ -17,3 +18,5 @@ createTrayIcon();
 handleExceptionAndRestart();
 
 logSystemEvents();
+
+delayedCheckForUpdates();
