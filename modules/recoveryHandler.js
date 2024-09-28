@@ -7,6 +7,7 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const messages = require('./messageLoader');
 
 const lockFilePath = path.join(process.env.TEMP, 'alertserver_recovery.tmp');
 
@@ -22,8 +23,8 @@ function handleRecovery(error) {
         })
         .replace(/,\s*/g, ',');
 
-    const errorMessage = `${currentDateTime},Missing data: ${error.path}`;
-    const logMessage = `${currentDateTime},Performing recovery`;
+    const errorMessage = `${currentDateTime},${messages.msg_85} ${error.path}`;
+    const logMessage = `${currentDateTime},${messages.msg_86}`;
     const logFilePath = path.join(process.cwd(), 'event.log');
     const recoveryBatPath = path.join(process.cwd(), 'start_recovery.bat');
 
@@ -35,7 +36,8 @@ function handleRecovery(error) {
     fs.appendFileSync(logFilePath, logMessage + os.EOL, 'utf-8');
     console.error(errorMessage);
 
-    fs.writeFileSync(lockFilePath, 'Recovery in progress', 'utf-8');
+    const timestamp = Date.now().toString();
+    fs.writeFileSync(lockFilePath, timestamp, 'utf-8');
 
     exec(`start cmd /c "${recoveryBatPath}"`, (execError) => {
         if (execError) {

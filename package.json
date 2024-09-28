@@ -8,7 +8,8 @@
         "alert_server": "./index.js"
     },
     "dependencies": {
-        "trayicon": "^1.2.2"
+        "trayicon": "^1.2.2",
+        "unzipper": "^0.12.3"
     },
     "scripts": {
         "start": "node index.js"
