@@ -3,20 +3,20 @@
 
 @echo off
 
-where node > nul 2>nul
-if %ERRORLEVEL% neq 0 (
+for /f "delims=" %%i in ('where node') do set "nodePath=%%i"
 
+if not defined nodePath (
     if exist "%ProgramFiles%\nodejs\node.exe" (
-        set PATH=%PATH%;%ProgramFiles%\nodejs
+        set "nodePath=%ProgramFiles%\nodejs\node.exe"
     ) else if exist "%ProgramFiles(x86)%\nodejs\node.exe" (
-        set PATH=%PATH%;%ProgramFiles(x86)%\nodejs
+        set "nodePath=%ProgramFiles(x86)%\nodejs\node.exe"
     ) else (
         echo NodeJS is not detected and needs to be downloaded and installed.
         call start_node_js_installer.bat
     )
-) else (
-    echo NodeJS detected: & node -v
 )
+
+echo NodeJS detected: & "%nodePath%" -v
 
 if not exist "node_modules" (
     call start_dependencies_installer.bat
@@ -24,4 +24,4 @@ if not exist "node_modules" (
 
 taskkill /f /im node.exe >nul 2>nul
 
-start /min "" powershell -WindowStyle Hidden -Command "& { $timestamp = Get-Date -Format 'dd.MM.yyyy HH:mm:ss'; Write-Output \"[$timestamp]\" | Out-File -FilePath 'error.log' -Append -Encoding utf8; node index.js 2>> error.log }"
+start /min "" powershell -WindowStyle Hidden -Command "& { $timestamp = Get-Date -Format 'dd.MM.yyyy HH:mm:ss'; Write-Output \"[$timestamp]\" | Out-File -FilePath 'error.log' -Append -Encoding utf8; '%nodePath%' index.js 2>> error.log }"
