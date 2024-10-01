@@ -24,4 +24,4 @@ if not exist "node_modules" (
 
 taskkill /f /im node.exe >nul 2>nul
 
-start /min "" powershell -WindowStyle Hidden -Command "& { $timestamp = Get-Date -Format 'dd.MM.yyyy HH:mm:ss'; Write-Output \"[$timestamp]\" | Out-File -FilePath 'error.log' -Append -Encoding utf8; '%nodePath%' index.js 2>> error.log }"
+start /min "" powershell -WindowStyle Hidden -Command "& { $timestamp = Get-Date -Format 'dd.MM.yyyy HH:mm:ss'; Write-Output \"[$timestamp]\" | Out-File -FilePath 'error.log' -Append -Encoding utf8; & '%nodePath%' index.js 2>> error.log }"
