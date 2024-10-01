@@ -22,7 +22,7 @@ if not defined npmPath (
 )
 
 if not exist "node_modules" (
-    echo Installing Node.js dependencies... & echo.
+    echo Installing Node.js dependencies...
     "%npmPath%" install
 
     if %errorlevel% neq 0 (
@@ -32,5 +32,5 @@ if not exist "node_modules" (
         pause & exit /b 1
     )
 ) else (
-    echo Dependencies are already installed. & echo.
+    echo Dependencies are already installed.
 )
