@@ -3,6 +3,7 @@
 
 @echo off
 
+:start
 for /f "delims=" %%i in ('where node') do set "nodePath=%%i"
 
 if not defined nodePath (
@@ -11,12 +12,16 @@ if not defined nodePath (
     ) else if exist "%ProgramFiles(x86)%\nodejs\node.exe" (
         set "nodePath=%ProgramFiles(x86)%\nodejs\node.exe"
     ) else (
-        echo NodeJS is not detected and needs to be downloaded and installed.
-        call start_node_js_installer.bat
+        cls & echo NodeJS is not detected and needs to be downloaded and installed.
+        echo. & timeout /nobreak /t 2 >nul
+        
+        powershell -Command "Start-Process 'cmd.exe' -ArgumentList '/c title Installing Node.js & winget install --id=OpenJS.NodeJS -e --source winget --accept-package-agreements --accept-source-agreements --disable-interactivity --silent' -Verb RunAs -Wait"
+        
+        goto start
     )
 )
 
-echo NodeJS detected: & "%nodePath%" -v
+cls & echo NodeJS detected: & "%nodePath%" -v
 
 if not exist "node_modules" (
     call start_dependencies_installer.bat
