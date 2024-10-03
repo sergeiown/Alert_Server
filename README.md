@@ -5,9 +5,9 @@
 A Node.js server adapted for 64-bit versions of Windows that receives data on alerts provided by [alerts.in.ua](https://alerts.in.ua/) at a specified frequency with subsequent processing and display of notifications about the start and end of alerts in the regions of Ukraine selected for monitoring.
 
 
-| Structure: |  |
-| --- | --- |
-| Dependencies | ![image](https://github.com/user-attachments/assets/a5c7ad4a-62c6-43b4-b5a4-ee2836a25562) |
+| Structure: |
+| --- | 
+| ![image](https://github.com/user-attachments/assets/4d380de1-dfee-498a-bd8f-f1a3121f2f25) | 
 
 ## Installation
 
