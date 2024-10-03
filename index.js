@@ -3,20 +3,26 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 'use strict';
 
-const { handleExceptionAndRestart, logSystemEvents } = require('./modules/systemEventAndErrorHandler');
-const { createTrayIcon } = require('./modules/trayIconManager');
-const { fetchDataAndSaveToFile } = require('./modules/apiRequestHandler');
-const { showNotification } = require('./modules/alertNotifier');
-const { delayedCheckForUpdates } = require('./modules/updateHadler');
+const { restoreConfigFiles } = require('./modules/configFilesRestoreHandler');
 
-handleExceptionAndRestart();
+(async () => {
+    try {
+        await restoreConfigFiles();
+    } catch (err) {
+        console.error(`Error restoring configuration files:`, err);
+    } finally {
+        const { handleExceptionAndRestart, logSystemEvents } = require('./modules/systemEventAndErrorHandler');
+        const { createTrayIcon } = require('./modules/trayIconManager');
+        const { fetchDataAndSaveToFile } = require('./modules/apiRequestHandler');
+        const { showNotification } = require('./modules/alertNotifier');
+        const { delayedCheckForUpdates } = require('./modules/updateHadler');
 
-logSystemEvents();
+        handleExceptionAndRestart();
+        logSystemEvents();
+        createTrayIcon();
+        delayedCheckForUpdates();
 
-createTrayIcon();
-
-fetchDataAndSaveToFile();
-
-showNotification();
-
-delayedCheckForUpdates();
+        await fetchDataAndSaveToFile();
+        await showNotification();
+    }
+})();

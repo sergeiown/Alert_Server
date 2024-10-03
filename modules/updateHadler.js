@@ -98,6 +98,23 @@ const downloadAndInstallUpdate = (latestVersion) => {
     downloadFile(downloadUrl);
 };
 
+const backupConfigFiles = () => {
+    const backupDir = path.join(process.env.TEMP, 'backup_configs');
+    if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir);
+    }
+
+    const configFiles = ['location.json', 'settings.json', 'event.log'];
+
+    configFiles.forEach((file) => {
+        const filePath = path.join(process.cwd(), file);
+        if (fs.existsSync(filePath)) {
+            const backupFilePath = path.join(backupDir, file);
+            fs.copyFileSync(filePath, backupFilePath);
+        }
+    });
+};
+
 const checkForUpdates = () => {
     if (hasCheckedForUpdates) return;
     hasCheckedForUpdates = true;
@@ -131,6 +148,9 @@ const checkForUpdates = () => {
                 if (error) {
                     if (error.code === 6) {
                         logEvent(messages.msg_73);
+
+                        backupConfigFiles();
+
                         downloadAndInstallUpdate(latestVersion);
                     } else if (error.code === 7) {
                         logEvent(messages.msg_74);
