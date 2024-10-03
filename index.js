@@ -15,7 +15,7 @@ const { restoreConfigFiles } = require('./modules/configFilesRestoreHandler');
         const { createTrayIcon } = require('./modules/trayIconManager');
         const { fetchDataAndSaveToFile } = require('./modules/apiRequestHandler');
         const { showNotification } = require('./modules/alertNotifier');
-        const { delayedCheckForUpdates } = require('./modules/updateHadler');
+        const { delayedCheckForUpdates } = require('./modules/updateHandler');
 
         handleExceptionAndRestart();
         logSystemEvents();
