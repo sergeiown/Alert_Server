@@ -3,8 +3,8 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 'use strict';
 
-const { restoreConfigFiles } = require('./modules/configFilesRestoreHandler');
-const { checkIntegrity } = require('./modules/integrityChecker');
+const { restoreConfigFiles } = require('./modules/maintenance/configFilesRestoreHandler');
+const { checkIntegrity } = require('./modules/maintenance/integrityChecker');
 
 (async () => {
     try {
@@ -17,7 +17,7 @@ const { checkIntegrity } = require('./modules/integrityChecker');
         const { createTrayIcon } = require('./modules/trayIconManager');
         const { fetchDataAndSaveToFile } = require('./modules/apiRequestHandler');
         const { showNotification } = require('./modules/alertNotifier');
-        const { delayedCheckForUpdates } = require('./modules/updateHandler');
+        const { delayedCheckForUpdates } = require('./modules/maintenance/updateHandler');
 
         handleExceptionAndRestart();
         logSystemEvents();
