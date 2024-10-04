@@ -62,9 +62,7 @@ const restoreConfigFiles = async () => {
             await fs.appendFile(logFilePath, errorMessage);
         }
     } catch (err) {
-        const errorMessage = `${getCurrentDateTime()},Backup directory does not exist. There is nothing to restore${
-            os.EOL
-        }`;
+        const errorMessage = `${getCurrentDateTime()},Restoring from backup is not required${os.EOL}`;
         logMessages += errorMessage;
         await fs.appendFile(logFilePath, errorMessage);
     }
