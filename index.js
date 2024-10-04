@@ -3,13 +3,13 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 'use strict';
 
-const { checkIntegrity } = require('./modules/integrityChecker');
 const { restoreConfigFiles } = require('./modules/configFilesRestoreHandler');
+const { checkIntegrity } = require('./modules/integrityChecker');
 
 (async () => {
     try {
-        await checkIntegrity();
         await restoreConfigFiles();
+        await checkIntegrity();
     } catch (err) {
         console.error(`Error during initialization:`, err);
     } finally {
