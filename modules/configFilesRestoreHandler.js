@@ -62,7 +62,7 @@ const restoreConfigFiles = async () => {
             await fs.appendFile(logFilePath, errorMessage);
         }
     } catch (err) {
-        const errorMessage = `${getCurrentDateTime()},Restoring from backup is not required${os.EOL}`;
+        const errorMessage = `${getCurrentDateTime()},There is no backup for recovery${os.EOL}`;
         logMessages += errorMessage;
         await fs.appendFile(logFilePath, errorMessage);
     }

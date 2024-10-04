@@ -57,8 +57,6 @@ const checkIntegrity = async () => {
         return;
     }
 
-    const logMessage = `${currentDateTime},Performing recovery`;
-
     if (fs.existsSync(lockFilePath)) {
         return;
     }
@@ -66,6 +64,7 @@ const checkIntegrity = async () => {
     const timestamp = Date.now().toString();
     fs.writeFileSync(lockFilePath, timestamp, 'utf-8');
 
+    const logMessage = `${currentDateTime},Performing recovery`;
     fs.appendFileSync(logFilePath, logMessage + os.EOL, 'utf-8');
 
     backupConfigFiles();
