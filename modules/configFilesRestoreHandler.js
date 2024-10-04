@@ -37,7 +37,7 @@ const restoreConfigFiles = async () => {
             try {
                 await fs.copyFile(backupFilePath, targetFilePath);
 
-                const logMessage = `${getCurrentDateTime()},Restored file: ${file}${os.EOL}`;
+                const logMessage = `${getCurrentDateTime()},Restored from backup: ${file}${os.EOL}`;
                 logMessages += logMessage;
             } catch (err) {
                 const errorMessage = `${getCurrentDateTime()},Error restoring file: ${file} - ${err.message}${os.EOL}`;

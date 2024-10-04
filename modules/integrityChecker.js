@@ -27,7 +27,8 @@ const backupConfigFiles = () => {
     });
 };
 
-const handleRecovery = (error) => {
+const checkIntegrity = async () => {
+    const filesToCheck = ['alert_types.json', 'location.json', 'messages.json', 'package.json'];
     const currentDateTime = new Date()
         .toLocaleString('UA', {
             year: 'numeric',
@@ -38,22 +39,34 @@ const handleRecovery = (error) => {
             second: '2-digit',
         })
         .replace(/,\s*/g, ',');
-
-    const errorMessage = `${currentDateTime},Missing data: ${error.path}`;
-    const logMessage = `${currentDateTime},Performing recovery`;
     const logFilePath = path.join(process.cwd(), 'event.log');
     const recoveryBatPath = path.join(process.cwd(), 'start_recovery.bat');
+    let allFilesExist = true;
+
+    for (const file of filesToCheck) {
+        const filePath = path.join(process.cwd(), file);
+        if (!fs.existsSync(filePath)) {
+            const errorMessage = `${currentDateTime},File ${file} not found`;
+            fs.appendFileSync(logFilePath, errorMessage + os.EOL, 'utf-8');
+            allFilesExist = false;
+            break;
+        }
+    }
+
+    if (allFilesExist) {
+        return;
+    }
+
+    const logMessage = `${currentDateTime},Performing recovery`;
 
     if (fs.existsSync(lockFilePath)) {
         return;
     }
 
-    fs.appendFileSync(logFilePath, errorMessage + os.EOL, 'utf-8');
-    fs.appendFileSync(logFilePath, logMessage + os.EOL, 'utf-8');
-    console.error(errorMessage);
-
     const timestamp = Date.now().toString();
     fs.writeFileSync(lockFilePath, timestamp, 'utf-8');
+
+    fs.appendFileSync(logFilePath, logMessage + os.EOL, 'utf-8');
 
     backupConfigFiles();
 
@@ -64,4 +77,4 @@ const handleRecovery = (error) => {
     });
 };
 
-module.exports = { handleRecovery };
+module.exports = { checkIntegrity };

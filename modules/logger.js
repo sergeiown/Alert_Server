@@ -88,4 +88,6 @@ function logEvent(eventMessage) {
     }
 }
 
+logEvent(messages.msg_01);
+
 module.exports = { logEvent };

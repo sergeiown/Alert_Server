@@ -6,17 +6,10 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 const fs = require('fs');
 const path = require('path');
 const { getCurrentLanguage } = require('./languageChecker');
-const { handleRecovery } = require('./recoveryHandler');
 
 let messages;
 
 const messagesPath = path.join(process.cwd(), 'messages.json');
-
-if (!fs.existsSync(messagesPath)) {
-    const error = new Error(`File not found: ${messagesPath}`);
-    handleRecovery(error);
-    return;
-}
 
 try {
     const fileContent = fs.readFileSync(messagesPath, 'utf8');
@@ -41,7 +34,7 @@ try {
 
     messages = languageMessages;
 } catch (error) {
-    handleRecovery(error);
+    console.error(error.message);
 }
 
 module.exports = messages;
