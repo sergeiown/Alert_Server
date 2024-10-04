@@ -8,17 +8,17 @@ const path = require('path');
 
 const restoreConfigFiles = async () => {
     const backupDir = path.join(process.env.TEMP, 'backup_configs');
-    const configFiles = ['location.json', 'settings.json', 'event.log'];
 
     try {
         await fs.access(backupDir);
 
-        for (const file of configFiles) {
+        const files = await fs.readdir(backupDir);
+
+        for (const file of files) {
             const backupFilePath = path.join(backupDir, file);
             const targetFilePath = path.join(process.cwd(), file);
 
             try {
-                await fs.access(backupFilePath);
                 await fs.copyFile(backupFilePath, targetFilePath);
             } catch (err) {
                 console.error(`Backup file not found: ${backupFilePath}`, err);
