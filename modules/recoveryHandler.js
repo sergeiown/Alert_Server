@@ -3,46 +3,68 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 'use strict';
 
-const { exec } = require('child_process');
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
 const os = require('os');
 
-const lockFilePath = path.join(process.env.TEMP, 'alertserver_recovery.tmp');
-
-function handleRecovery(error) {
-    const currentDateTime = new Date()
-        .toLocaleString('UA', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-        })
-        .replace(/,\s*/g, ',');
-
-    const errorMessage = `${currentDateTime},Missing data: ${error.path}`;
-    const logMessage = `${currentDateTime},Performing recovery`;
+const restoreConfigFiles = async () => {
+    const backupDir = path.join(process.env.TEMP, 'backup_configs');
     const logFilePath = path.join(process.cwd(), 'event.log');
-    const recoveryBatPath = path.join(process.cwd(), 'start_recovery.bat');
 
-    if (fs.existsSync(lockFilePath)) {
-        return;
-    }
+    const getCurrentDateTime = () =>
+        new Date()
+            .toLocaleString('UA', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+            })
+            .replace(/,\s*/g, ',');
 
-    fs.appendFileSync(logFilePath, errorMessage + os.EOL, 'utf-8');
-    fs.appendFileSync(logFilePath, logMessage + os.EOL, 'utf-8');
-    console.error(errorMessage);
+    let logMessages = '';
 
-    const timestamp = Date.now().toString();
-    fs.writeFileSync(lockFilePath, timestamp, 'utf-8');
+    try {
+        await fs.access(backupDir);
 
-    exec(`start cmd /c "${recoveryBatPath}"`, (execError) => {
-        if (execError) {
-            console.error(execError.message);
+        const files = await fs.readdir(backupDir);
+
+        for (const file of files) {
+            const backupFilePath = path.join(backupDir, file);
+            const targetFilePath = path.join(process.cwd(), file);
+
+            try {
+                await fs.copyFile(backupFilePath, targetFilePath);
+
+                const logMessage = `${getCurrentDateTime()},Restored file: ${file}${os.EOL}`;
+                logMessages += logMessage;
+            } catch (err) {
+                const errorMessage = `${getCurrentDateTime()},Error restoring file: ${file} - ${err.message}${os.EOL}`;
+                logMessages += errorMessage;
+            }
         }
-    });
-}
 
-module.exports = { handleRecovery };
+        if (logMessages) {
+            await fs.appendFile(logFilePath, logMessages);
+        }
+
+        try {
+            await fs.rm(backupDir, { recursive: true });
+        } catch (err) {
+            const errorMessage = `${getCurrentDateTime()},Failed to remove backup directory: ${backupDir} - ${
+                err.message
+            }${os.EOL}`;
+            logMessages += errorMessage;
+            await fs.appendFile(logFilePath, errorMessage);
+        }
+    } catch (err) {
+        const errorMessage = `${getCurrentDateTime()},Backup catalog ${backupDir} not found. There is nothing to restore${
+            os.EOL
+        }`;
+        logMessages += errorMessage;
+        await fs.appendFile(logFilePath, errorMessage);
+    }
+};
+
+module.exports = { restoreConfigFiles };
