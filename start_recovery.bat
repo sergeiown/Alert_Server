@@ -73,7 +73,7 @@ if exist "%tempFilePath%" (
 
 echo. & echo Recovery is complete.
 timeout /t 2 /nobreak > nul
-echo. & echo The settings are set to the default values.
+echo. & echo Note: If the configuration files are restored after corruption the settings will be restored to their default values.
 echo. & timeout /t 5 /nobreak > nul
 
 start /min "" powershell -WindowStyle Hidden -Command "& { $timestamp = Get-Date -Format 'dd.MM.yyyy HH:mm:ss'; Write-Output \"[$timestamp]\" | Out-File -FilePath 'error.log' -Append -Encoding utf8; node index.js 2>> error.log }"
