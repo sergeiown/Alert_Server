@@ -8,8 +8,9 @@ const path = require('path');
 const { exec } = require('child_process');
 const https = require('https');
 const unzip = require('unzipper');
-const { logEvent } = require('./logger');
-const messages = require('./messageLoader');
+const { logEvent } = require('../logger');
+const messages = require('../messageLoader');
+const { backupConfigFiles } = require('./configFilesBackupHandler');
 
 const packagePath = path.join(process.cwd(), 'package.json');
 
@@ -96,23 +97,6 @@ const downloadAndInstallUpdate = (latestVersion) => {
     };
 
     downloadFile(downloadUrl);
-};
-
-const backupConfigFiles = () => {
-    const backupDir = path.join(process.env.TEMP, 'backup_configs');
-    if (!fs.existsSync(backupDir)) {
-        fs.mkdirSync(backupDir);
-    }
-
-    const configFiles = ['location.json', 'settings.json', 'event.log'];
-
-    configFiles.forEach((file) => {
-        const filePath = path.join(process.cwd(), file);
-        if (fs.existsSync(filePath)) {
-            const backupFilePath = path.join(backupDir, file);
-            fs.copyFileSync(filePath, backupFilePath);
-        }
-    });
 };
 
 const checkForUpdates = () => {

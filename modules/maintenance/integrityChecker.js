@@ -7,25 +7,9 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { backupConfigFiles } = require('./configFilesBackupHandler');
 
 const lockFilePath = path.join(process.env.TEMP, 'alertserver_recovery.tmp');
-
-const backupConfigFiles = () => {
-    const backupDir = path.join(process.env.TEMP, 'backup_configs');
-    if (!fs.existsSync(backupDir)) {
-        fs.mkdirSync(backupDir);
-    }
-
-    const configFiles = ['location.json', 'settings.json', 'event.log'];
-
-    configFiles.forEach((file) => {
-        const filePath = path.join(process.cwd(), file);
-        if (fs.existsSync(filePath)) {
-            const backupFilePath = path.join(backupDir, file);
-            fs.copyFileSync(filePath, backupFilePath);
-        }
-    });
-};
 
 const checkIntegrity = async () => {
     const filesToCheck = ['alert_types.json', 'location.json', 'messages.json', 'package.json'];
