@@ -7,7 +7,7 @@ A Node.js server adapted for 64-bit versions of Windows that receives data on al
 
 | Structure: |
 | --- | 
-| ![image](https://github.com/user-attachments/assets/4d380de1-dfee-498a-bd8f-f1a3121f2f25) | 
+| ![image](https://github.com/user-attachments/assets/25867716-2eab-4d58-b27b-b2c7dbe68702) | 
 
 ## Installation
 
