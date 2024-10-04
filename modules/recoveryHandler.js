@@ -10,7 +10,24 @@ const os = require('os');
 
 const lockFilePath = path.join(process.env.TEMP, 'alertserver_recovery.tmp');
 
-function handleRecovery(error) {
+const backupConfigFiles = () => {
+    const backupDir = path.join(process.env.TEMP, 'backup_configs');
+    if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir);
+    }
+
+    const configFiles = ['location.json', 'settings.json', 'event.log'];
+
+    configFiles.forEach((file) => {
+        const filePath = path.join(process.cwd(), file);
+        if (fs.existsSync(filePath)) {
+            const backupFilePath = path.join(backupDir, file);
+            fs.copyFileSync(filePath, backupFilePath);
+        }
+    });
+};
+
+const handleRecovery = (error) => {
     const currentDateTime = new Date()
         .toLocaleString('UA', {
             year: 'numeric',
@@ -38,11 +55,13 @@ function handleRecovery(error) {
     const timestamp = Date.now().toString();
     fs.writeFileSync(lockFilePath, timestamp, 'utf-8');
 
+    backupConfigFiles();
+
     exec(`start cmd /c "${recoveryBatPath}"`, (execError) => {
         if (execError) {
             console.error(execError.message);
         }
     });
-}
+};
 
 module.exports = { handleRecovery };
