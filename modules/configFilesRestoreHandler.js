@@ -45,7 +45,7 @@ const restoreConfigFiles = async () => {
             }
         }
 
-        const successMessage = `${getCurrentDateTime()},Restoration process completed successfully${os.EOL}`;
+        const successMessage = `${getCurrentDateTime()},The update process is successfully completed${os.EOL}`;
         logMessages += successMessage;
 
         if (logMessages) {
@@ -62,7 +62,7 @@ const restoreConfigFiles = async () => {
             await fs.appendFile(logFilePath, errorMessage);
         }
     } catch (err) {
-        const errorMessage = `${getCurrentDateTime()},Backup directory ${backupDir} not found. There is nothing to restore${
+        const errorMessage = `${getCurrentDateTime()},${backupDir} directory does not exist. There is nothing to restore${
             os.EOL
         }`;
         logMessages += errorMessage;
