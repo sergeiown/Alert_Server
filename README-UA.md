@@ -6,7 +6,7 @@
 
 | Структура: |
 | --- | 
-| ![image](https://github.com/user-attachments/assets/69a606ac-869f-4701-a942-e6c964c2ee57) | 
+| ![image](https://github.com/user-attachments/assets/d50687ab-4f5a-4803-8707-33e111ab42c8) | 
 
 ## Встановлення
 
