@@ -8,9 +8,6 @@ const path = require('path');
 const fs = require('fs');
 const { logEvent } = require('./logger');
 const messages = require('./messageLoader');
-const { handleRecovery } = require('./recoveryHandler');
-
-logEvent(messages.msg_01);
 
 const restartFilePath = path.join(process.env.TEMP, 'alertserver_restart.tmp');
 
@@ -49,19 +46,15 @@ const handleExceptionAndRestart = () => {
         logEvent(error.message);
         formatStackTrace(error.stack).forEach((line) => logEvent(line));
 
-        if (error.code === 'ENOENT') {
-            handleRecovery(error);
-        } else {
-            checkRestartFrequency();
-            writeRestartTimestamp();
+        checkRestartFrequency();
+        writeRestartTimestamp();
 
-            exec(`cmd /c "${batFilePath}"`, (error) => {
-                if (error) {
-                    logEvent(messages.msg_56);
-                    return;
-                }
-            });
-        }
+        exec(`cmd /c "${batFilePath}"`, (error) => {
+            if (error) {
+                logEvent(messages.msg_56);
+                return;
+            }
+        });
     });
 };
 
