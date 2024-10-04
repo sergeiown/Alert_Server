@@ -12,6 +12,12 @@ let messages;
 
 const messagesPath = path.join(process.cwd(), 'messages.json');
 
+if (!fs.existsSync(messagesPath)) {
+    const error = new Error(`File not found: ${messagesPath}`);
+    handleRecovery(error);
+    return;
+}
+
 try {
     const fileContent = fs.readFileSync(messagesPath, 'utf8');
     const parsedMessages = JSON.parse(fileContent);
