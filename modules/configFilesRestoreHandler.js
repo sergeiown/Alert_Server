@@ -45,7 +45,7 @@ const restoreConfigFiles = async () => {
             }
         }
 
-        const successMessage = `${getCurrentDateTime()},The update process is successfully completed${os.EOL}`;
+        const successMessage = `${getCurrentDateTime()},Recovery process successfully completed${os.EOL}`;
         logMessages += successMessage;
 
         if (logMessages) {
