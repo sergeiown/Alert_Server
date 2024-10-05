@@ -39,10 +39,10 @@ const checkIntegrity = async () => {
     const timestamp = Date.now().toString();
     fs.writeFileSync(lockFilePath, timestamp, 'utf-8');
 
-    const logMessage = `Performing recovery`;
-    logEvent(logMessage);
-
     backupConfigFiles();
+
+    const logMessage = `Performing a restore from a repository`;
+    logEvent(logMessage);
 
     exec(`start cmd /c "${recoveryBatPath}"`, (execError) => {
         if (execError) {

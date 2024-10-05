@@ -132,9 +132,8 @@ const checkForUpdates = () => {
                 if (error) {
                     if (error.code === 6) {
                         logEvent(messages.msg_73);
-
                         backupConfigFiles();
-
+                        logEvent(messages.msg_71);
                         downloadAndInstallUpdate(latestVersion);
                     } else if (error.code === 7) {
                         logEvent(messages.msg_74);

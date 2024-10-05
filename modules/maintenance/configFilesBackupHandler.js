@@ -27,7 +27,7 @@ const backupConfigFiles = () => {
 
             if (fileExists) {
                 const backupFilePath = path.join(backupDir, file);
-                const logMessage = `Backup is created for ${file}`;
+                const logMessage = `Saved to backup: ${file}`;
                 logEvent(logMessage);
                 fs.copyFileSync(filePath, backupFilePath);
             }
