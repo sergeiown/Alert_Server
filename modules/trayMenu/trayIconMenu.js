@@ -6,10 +6,10 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
-const { getSettings, updateSetting } = require('./settings');
-const { logEvent } = require('./logger');
-const { getCurrentLanguage } = require('./languageChecker');
-const messages = require('./messageLoader');
+const { getSettings, updateSetting } = require('../settingsManager');
+const { logEvent } = require('../logger');
+const { getCurrentLanguage } = require('../languageChecker');
+const messages = require('../messageLoader');
 
 // Menu item 'Alert Server'
 function createTitleMenu(tray) {

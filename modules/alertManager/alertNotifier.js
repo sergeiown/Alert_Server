@@ -7,11 +7,11 @@ const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
 const { checkLocations } = require('./locationChecker');
-const { getSettings, updateSetting } = require('./settings');
-const { getCurrentLanguage } = require('./languageChecker');
+const { getSettings, updateSetting } = require('../settingsManager');
+const { getCurrentLanguage } = require('../languageChecker');
 const { playAlertSound, playAlertCancellationSound } = require('./audioPlayer');
-const messages = require('./messageLoader');
-const { logEvent } = require('./logger');
+const messages = require('../messageLoader');
+const { logEvent } = require('../logger');
 
 let alertTypes;
 

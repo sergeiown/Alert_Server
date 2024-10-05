@@ -3,7 +3,7 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 'use strict';
 
-const { getSettings, updateSetting } = require('./settings');
+const { getSettings, updateSetting } = require('./settingsManager');
 
 function getCurrentLanguage() {
     const settings = getSettings();
