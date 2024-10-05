@@ -24,6 +24,8 @@ const displayedAlertsFilePath = path.join(process.cwd(), 'alert_displayed.json')
 if (fs.existsSync(displayedAlertsFilePath)) {
     const savedAlerts = JSON.parse(fs.readFileSync(displayedAlertsFilePath, 'utf8'));
     savedAlerts.forEach((alert) => displayedAlerts.set(alert.id, alert));
+} else {
+    fs.writeFileSync(displayedAlertsFilePath, JSON.stringify([]), 'utf8');
 }
 
 function saveDisplayedAlerts() {
