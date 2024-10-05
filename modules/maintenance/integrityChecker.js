@@ -30,10 +30,10 @@ const checkIntegrity = async () => {
         return;
     }
 
-    backupConfigFiles();
-
-    const logMessage = `Performing a restore from a repository`;
+    const logMessage = `Performing a restore from repository`;
     logEvent(logMessage);
+
+    backupConfigFiles();
 
     exec(`start cmd /c "${recoveryBatPath}"`, (execError) => {
         if (execError) {
