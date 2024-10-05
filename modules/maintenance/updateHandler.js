@@ -72,6 +72,10 @@ const downloadAndInstallUpdate = (latestVersion) => {
                                         fs.unlinkSync(zipPath);
                                         logEvent(messages.msg_81);
 
+                                        logEvent(messages.msg_71);
+
+                                        backupConfigFiles();
+
                                         setTimeout(() => {
                                             exec(`start "" "${setupPath}"`, (err) => {
                                                 if (err) {
@@ -87,7 +91,7 @@ const downloadAndInstallUpdate = (latestVersion) => {
                         });
                     });
                 } else if (response.statusCode === 302 && response.headers.location) {
-                    logEvent(`${messages.msg_77} ${response.headers.location}`);
+                    logEvent(messages.msg_77);
                     downloadFile(response.headers.location);
                 } else {
                     logEvent(`${messages.msg_76} ${response.statusCode}`);
@@ -134,8 +138,6 @@ const checkForUpdates = () => {
                 if (error) {
                     if (error.code === 6) {
                         logEvent(messages.msg_73);
-                        backupConfigFiles();
-                        logEvent(messages.msg_71);
                         downloadAndInstallUpdate(latestVersion);
                     } else if (error.code === 7) {
                         logEvent(messages.msg_74);
