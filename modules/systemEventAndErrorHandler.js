@@ -106,4 +106,6 @@ const logSystemEvents = () => {
 
 writeRestartTimestamp();
 
+logEvent(messages.msg_01);
+
 module.exports = { handleExceptionAndRestart, logSystemEvents };
