@@ -5,25 +5,10 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 const fs = require('fs').promises;
 const path = require('path');
-const os = require('os');
+const { logEvent } = require('../logger');
 
 const restoreConfigFiles = async () => {
     const backupDir = path.join(process.env.TEMP, 'backup_configs');
-    const logFilePath = path.join(process.cwd(), 'event.log');
-
-    const getCurrentDateTime = () =>
-        new Date()
-            .toLocaleString('UA', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-            })
-            .replace(/,\s*/g, ',');
-
-    let logMessages = '';
 
     try {
         await fs.access(backupDir);
@@ -37,34 +22,24 @@ const restoreConfigFiles = async () => {
             try {
                 await fs.copyFile(backupFilePath, targetFilePath);
 
-                const logMessage = `${getCurrentDateTime()},Restored from backup: ${file}${os.EOL}`;
-                logMessages += logMessage;
+                const logMessage = `Restored from backup: ${file}`;
+                logEvent(logMessage);
             } catch (err) {
-                const errorMessage = `${getCurrentDateTime()},Error restoring file: ${file} - ${err.message}${os.EOL}`;
-                logMessages += errorMessage;
+                logEvent(err.message);
             }
         }
 
-        const successMessage = `${getCurrentDateTime()},Recovery process successfully completed${os.EOL}`;
-        logMessages += successMessage;
-
-        if (logMessages) {
-            await fs.appendFile(logFilePath, logMessages);
-        }
+        const successMessage = `Recovery process is successfully completed`;
+        logEvent(successMessage);
 
         try {
             await fs.rm(backupDir, { recursive: true });
         } catch (err) {
-            const errorMessage = `${getCurrentDateTime()},Failed to remove backup directory: ${backupDir} - ${
-                err.message
-            }${os.EOL}`;
-            logMessages += errorMessage;
-            await fs.appendFile(logFilePath, errorMessage);
+            logEvent(err.message);
         }
     } catch (err) {
-        const errorMessage = `${getCurrentDateTime()},There is no backup for recovery${os.EOL}`;
-        logMessages += errorMessage;
-        await fs.appendFile(logFilePath, errorMessage);
+        const messageAboutUselessness = `There is no backup for recovery`;
+        logEvent(messageAboutUselessness);
     }
 };
 

@@ -6,38 +6,29 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const { backupConfigFiles } = require('./configFilesBackupHandler');
+const { logEvent } = require('../logger');
 
 const lockFilePath = path.join(process.env.TEMP, 'alertserver_recovery.tmp');
 
 const checkIntegrity = async () => {
     const filesToCheck = ['alert_types.json', 'location.json', 'messages.json', 'package.json'];
-    const currentDateTime = new Date()
-        .toLocaleString('UA', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-        })
-        .replace(/,\s*/g, ',');
-    const logFilePath = path.join(process.cwd(), 'event.log');
     const recoveryBatPath = path.join(process.cwd(), 'start_recovery.bat');
     let allFilesExist = true;
 
     for (const file of filesToCheck) {
         const filePath = path.join(process.cwd(), file);
         if (!fs.existsSync(filePath)) {
-            const errorMessage = `${currentDateTime},File ${file} not found`;
-            fs.appendFileSync(logFilePath, errorMessage + os.EOL, 'utf-8');
+            const errorMessage = `File ${file} not found`;
+            logEvent(errorMessage);
             allFilesExist = false;
             break;
         }
     }
 
     if (allFilesExist) {
+        const successMessage = `Integrity is checked`;
+        logEvent(successMessage);
         return;
     }
 
@@ -48,14 +39,14 @@ const checkIntegrity = async () => {
     const timestamp = Date.now().toString();
     fs.writeFileSync(lockFilePath, timestamp, 'utf-8');
 
-    const logMessage = `${currentDateTime},Performing recovery`;
-    fs.appendFileSync(logFilePath, logMessage + os.EOL, 'utf-8');
+    const logMessage = `Performing recovery`;
+    logEvent(logMessage);
 
     backupConfigFiles();
 
     exec(`start cmd /c "${recoveryBatPath}"`, (execError) => {
         if (execError) {
-            console.error(execError.message);
+            logEvent(execError.message);
         }
     });
 };
