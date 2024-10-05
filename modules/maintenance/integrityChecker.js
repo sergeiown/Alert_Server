@@ -9,8 +9,6 @@ const path = require('path');
 const { backupConfigFiles } = require('./configFilesBackupHandler');
 const { logEvent } = require('../logger');
 
-const lockFilePath = path.join(process.env.TEMP, 'alertserver_recovery.tmp');
-
 const checkIntegrity = async () => {
     const filesToCheck = ['alert_types.json', 'location.json', 'messages.json', 'package.json'];
     const recoveryBatPath = path.join(process.cwd(), 'start_recovery.bat');
@@ -31,13 +29,6 @@ const checkIntegrity = async () => {
         logEvent(successMessage);
         return;
     }
-
-    if (fs.existsSync(lockFilePath)) {
-        return;
-    }
-
-    const timestamp = Date.now().toString();
-    fs.writeFileSync(lockFilePath, timestamp, 'utf-8');
 
     backupConfigFiles();
 

@@ -72,11 +72,13 @@ const downloadAndInstallUpdate = (latestVersion) => {
                                         fs.unlinkSync(zipPath);
                                         logEvent(messages.msg_81);
 
-                                        exec(`start "" "${setupPath}"`, (err) => {
-                                            if (err) {
-                                                logEvent(`${messages.msg_82} ${err.message}`);
-                                            }
-                                        });
+                                        setTimeout(() => {
+                                            exec(`start "" "${setupPath}"`, (err) => {
+                                                if (err) {
+                                                    logEvent(`${messages.msg_82} ${err.message}`);
+                                                }
+                                            });
+                                        }, 2000);
                                     })
                                     .on('error', (err) => {
                                         logEvent(`${messages.msg_83} ${err.message}`);

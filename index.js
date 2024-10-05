@@ -13,6 +13,9 @@ const { checkIntegrity } = require('./modules/maintenance/integrityChecker');
     } catch (err) {
         console.error(`Error during initialization:`, err);
     } finally {
+        const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+        await delay(2000);
+
         const { handleExceptionAndRestart, logSystemEvents } = require('./modules/systemEventAndErrorHandler');
         const { createTrayIcon } = require('./modules/trayMenu/trayIconManager');
         const { fetchDataAndSaveToFile } = require('./modules/alertManager/apiRequestHandler');

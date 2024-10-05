@@ -5,8 +5,8 @@
 title Alert Server Recovery
 
 :: --- Initial Recovery Preparation ---
-cls & echo Starting the recovery process...
-echo. & echo Check the event.log file for details.
+cls & echo Important files are corrupted.
+echo. & echo Starting the recovery process...
 echo. & timeout /t 3 /nobreak > nul
 
 taskkill /f /im node.exe >nul 2>nul
@@ -65,12 +65,6 @@ if exist "%destFile%" (
 copy "%sourceFile%" "%destFile%"
 
 :: --- Finalizing the Recovery Process and Restart Alert Server ---
-set tempFilePath=%TEMP%\alertserver_recovery.tmp
-
-if exist "%tempFilePath%" (
-    del "%tempFilePath%"
-)
-
 echo. & echo Recovery is complete.
 timeout /t 2 /nobreak > nul
 echo. & echo Note: If the configuration files are restored after corruption the settings will be restored to their default values.
