@@ -5,8 +5,8 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 const path = require('path');
 const fs = require('fs').promises;
-const { logEvent } = require('./logger');
-const messages = require('./messageLoader');
+const { logEvent } = require('../logger');
+const messages = require('../messageLoader');
 
 const checkLocations = async () => {
     try {

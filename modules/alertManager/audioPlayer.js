@@ -5,9 +5,9 @@ https://github.com/sergeiown/Alert_Server/blob/main/LICENSE */
 
 const { exec } = require('child_process');
 const path = require('path');
-const { logEvent } = require('./logger');
-const messages = require('./messageLoader');
-const { getCurrentLanguage } = require('./languageChecker');
+const { logEvent } = require('../logger');
+const messages = require('../messageLoader');
+const { getCurrentLanguage } = require('../languageChecker');
 
 const alertSound =
     getCurrentLanguage() === 'English'

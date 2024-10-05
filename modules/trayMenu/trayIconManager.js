@@ -14,8 +14,8 @@ const {
     createSettingsMenu,
     createExitMenu,
 } = require('./trayIconMenu');
-const messages = require('./messageLoader');
-const { getSettings } = require('./settings');
+const messages = require('../messageLoader');
+const { getSettings } = require('../settingsManager');
 
 function createTrayIcon() {
     const checkInterval = 2000;

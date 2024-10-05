@@ -14,9 +14,9 @@ const { checkIntegrity } = require('./modules/maintenance/integrityChecker');
         console.error(`Error during initialization:`, err);
     } finally {
         const { handleExceptionAndRestart, logSystemEvents } = require('./modules/systemEventAndErrorHandler');
-        const { createTrayIcon } = require('./modules/trayIconManager');
-        const { fetchDataAndSaveToFile } = require('./modules/apiRequestHandler');
-        const { showNotification } = require('./modules/alertNotifier');
+        const { createTrayIcon } = require('./modules/trayMenu/trayIconManager');
+        const { fetchDataAndSaveToFile } = require('./modules/alertManager/apiRequestHandler');
+        const { showNotification } = require('./modules/alertManager/alertNotifier');
         const { delayedCheckForUpdates } = require('./modules/maintenance/updateHandler');
 
         handleExceptionAndRestart();
