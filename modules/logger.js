@@ -24,7 +24,7 @@ function initializeLogFile() {
 function getCurrentDateTime() {
     try {
         return new Date()
-            .toLocaleString('UA', {
+            .toLocaleString('uk-UA', {
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit',
