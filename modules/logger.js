@@ -64,7 +64,7 @@ function logEvent(eventMessage) {
         const stats = fs.statSync(logFilePath);
         if (stats.size > maxFileSize) {
             const fileContent = fs.readFileSync(logFilePath, 'utf-8').split(os.EOL);
-            const newContent = `${header}${os.EOL}${fileContent.slice(25).join(os.EOL)}`;
+            const newContent = `${header}${os.EOL}${fileContent.slice(100).join(os.EOL)}`;
             const fileSize = `${currentDateTime},Log file size: ${(stats.size / 1024).toFixed(2)} Kb`;
             const fileReduction = `${currentDateTime},Log file size reduced`;
 
