@@ -1,54 +1,42 @@
-# ⚠ Local alert update server
+# Alert Server
 
 **[EN](https://github.com/sergeiown/Alert_Server/blob/main/README.md)** | [UA](https://github.com/sergeiown/Alert_Server/blob/main/README-UA.md)
 
-A Node.js server adapted for 64-bit versions of Windows that receives data on alerts provided by [alerts.in.ua](https://alerts.in.ua/) at a specified frequency with subsequent processing and display of notifications about the start and end of alerts in the regions of Ukraine selected for monitoring.
+A Windows tray application built with Electron that receives alert data from [alerts.in.ua](https://alerts.in.ua/) at a specified frequency and displays it through the Windows Notification Center for the regions of Ukraine you choose to monitor.
 
+The app talks to alerts.in.ua through a small Cloudflare Worker proxy ([`alert-proxy/`](alert-proxy/)) that hides the API token and caches responses at the edge, so any number of installs share one token safely.
 
-| Structure: |
-| --- | 
-| ![image](https://github.com/user-attachments/assets/29058e84-b42e-44ac-8a70-7881bed0f538) | 
+## Architecture
+
+![architecture](docs/images/architecture-en.svg)
 
 ## Installation
 
-The possibility of fully automated installation has been implemented at the moment. The installer is made in a minimalist version using Batch scripts and PowerShell.
+Download the latest installer (`Alert Server Setup x.x.x.exe`) from [Releases](https://github.com/sergeiown/Alert_Server/releases) and run it. It's a standard NSIS installer: no administrator rights required, per-user install, with a Start Menu shortcut and uninstaller created automatically.
 
-The procedure is as follows:
-- download the installer archive `Alert_server_setup.zip` available here: [Alert server releases](https://github.com/sergeiown/Alert_Server/releases);
-- extract the installer from the archive to the selected location;
-- run the `Alert_server_setup.bat` installer.
-
-The installation will be performed in the location `%userprofile%\Documents\Alert_Server`, during the installation the availability of [Git](https://git-scm.com/), [Node.js](https://nodejs.org/en) and [Microsoft .NET Framework 3.5](https://www.microsoft.com/en-us/download/details.aspx?id=21) will be checked and installed or update if necessary.
-
-Actually installation of the local alarm update server consists of importing the project from the [GitHub](https://github.com/sergeiown/Alert_Server) repository and installing the necessary dependencies and shortcuts in the Start menu.
-
-| Disclaimer: *testing and adaptation of the functionality was carried out on 64-bit versions of Windows 10 22H2 and 11 22H2. Features may be limited or unavailable on other platforms or versions of Windows. We recommend using Windows 10 version 22H2 or Windows 11 for the best experience. Please note that the interface is currently available in Ukrainian and English.* |                       [![windows_compatibility](https://github.com/user-attachments/assets/db2b5487-b5bf-45d9-8948-48bb88162f17)](https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions)                       |
-| :--- | :---: |
+Future updates are detected and installed automatically from GitHub Releases; you'll only need to run the installer manually once.
 
 ## Usage
 
-Using the local alert update server is surprisingly easy and intuitive. The first run is performed automatically after the installation process is complete.
+On first launch the app appears as a tray icon only, no window. Everything is controlled from the tray icon's context menu:
 
-The status and settings are displayed and managed through the tray icon menu. The settings include starting the server at system startup, activating audio notifications, and selecting regions for which alerts will be monitored. The tray icon can be displayed in monochrome or color. 
+![tray menu](docs/images/tray-menu-uk.png)
 
-Notifications about the current alert and alert cancellation, as well as saving the alert history, are provided through the Windows Notification Center using [Snoretoast](https://github.com/KDE/snoretoast). Additionally, alarm indication through the tray icon and audio alerts are used. The tray icon menu also allows you to view a map of current alerts [alerts.in.ua](https://alerts.in.ua/) and a map of the current state of the front line [DeepState](https://deepstatemap.live).
+*(menu shown in Ukrainian - the interface is fully available in both Ukrainian and English)*
 
-All actions are recorded in a log file, the size of which is automatically limited to 256 KB, and can be viewed through the tray icon menu.
+- **Alert map** / **Front line map** open [alerts.in.ua](https://alerts.in.ua/) and [DeepState](https://deepstatemap.live) in a dedicated app window.
+- **Settings…** opens the settings window, where you pick which regions to monitor (searchable tree, from oblast down to individual community), choose the interface language, toggle monochrome tray icon, sound notifications and their repeat count, and enable launching at Windows startup.
+- **Information → Log** opens the event log; **About** shows the current version and license.
 
-| Appearance of notifications:  |||
-| --- | --- | --- |
-| ![1](https://github.com/sergeiown/Alert_Server/assets/112722061/90697f7c-e2d4-44dd-a4ee-d4974439cabc) | ![2](https://github.com/sergeiown/Alert_Server/assets/112722061/c954dfd2-673e-4a0d-9784-d4f2b37fe845) | ![3](https://github.com/sergeiown/Alert_Server/assets/112722061/4b487a03-ccc7-463f-986a-102198e844a9) |
-| Server start                  | Active alert                      | Cancel the alert |
+![settings window](docs/images/settings-window-en.png)
 
-| Appearance of the settings:  ||
-| --- | --- |
-| Region selection | ![info4](https://github.com/sergeiown/Alert_Server/assets/112722061/eabb38f7-6900-404d-83f3-0e8ee38f9172) | 
+Notifications for the start and end of an alert appear through the Windows Notification Center; clicking a notification shows the alert's location and start time. An audio cue can be enabled alongside the visual notification and tray icon color change.
+
+The event log is capped at 256 KB and automatically trimmed once it grows past that.
 
 ## Removal
 
-| Recommendation: |  |
-| --- | --- |
-| If you need to uninstall the local alert update server use the `Uninstall Alert server` shortcut in the `Start` => `Alert server` menu. | ![image](https://github.com/user-attachments/assets/f0bb8bac-cac3-4a71-b43e-eb4d61a86123) |
+Use the `Alert Server` entry in Windows Settings → Apps, or the uninstaller shortcut created alongside the Start Menu shortcut.
 
 ## Contribution
 
@@ -56,4 +44,4 @@ If you have suggestions or want to propose improvements to the project, please o
 
 ## License
 
-[Copyright (c) 2024 Serhii I. Myshko](https://github.com/sergeiown/Current_Alert/blob/main/LICENSE)
+[Copyright (c) 2024 Serhii I. Myshko](https://github.com/sergeiown/Alert_Server/blob/main/LICENSE) - MIT License

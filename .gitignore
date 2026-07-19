@@ -1,0 +1,8 @@
+node_modules/
+Alert_Server/
+UID/
+*.log
+.wrangler/
+.dev.vars
+config.local.json
+electron-app/dist/
