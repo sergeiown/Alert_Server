@@ -2,6 +2,8 @@ const { autoUpdater } = require('electron-updater');
 const { dialog } = require('electron');
 const { logEvent } = require('./logger');
 
+autoUpdater.autoDownload = false;
+
 function checkForUpdates() {
     autoUpdater.on('update-available', (info) => {
         dialog
