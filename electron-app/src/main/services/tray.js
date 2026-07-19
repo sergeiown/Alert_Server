@@ -4,6 +4,7 @@ const { openSettingsWindow } = require('../windows/settingsWindow');
 const { openMapWindow } = require('../windows/mapWindow');
 const { openForecastWindow } = require('../windows/forecastWindow');
 const settingsStore = require('./settingsStore');
+const { logEvent } = require('./logger');
 const { t } = require('../../i18n/i18n');
 
 const ALERTS_MAP_URL = 'https://alerts.in.ua/';
@@ -53,7 +54,13 @@ function buildMenu(language) {
             ],
         },
         { type: 'separator' },
-        { label: t('menuExit', language), click: () => app.quit() },
+        {
+            label: t('menuExit', language),
+            click: () => {
+                logEvent('Exit requested from tray menu');
+                app.quit();
+            },
+        },
     ]);
 }
 

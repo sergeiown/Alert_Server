@@ -5,7 +5,17 @@ const { logEvent } = require('./logger');
 autoUpdater.autoDownload = false;
 
 function checkForUpdates() {
+    autoUpdater.on('checking-for-update', () => {
+        logEvent('Checking for updates');
+    });
+
+    autoUpdater.on('update-not-available', () => {
+        logEvent('No update available');
+    });
+
     autoUpdater.on('update-available', (info) => {
+        logEvent(`Update available: ${info.version}`);
+
         dialog
             .showMessageBox({
                 type: 'question',
@@ -16,12 +26,16 @@ function checkForUpdates() {
             })
             .then((result) => {
                 if (result.response === 0) {
+                    logEvent(`Update ${info.version} confirmed, downloading`);
                     autoUpdater.downloadUpdate();
+                } else {
+                    logEvent(`Update ${info.version} declined by user`);
                 }
             });
     });
 
-    autoUpdater.on('update-downloaded', () => {
+    autoUpdater.on('update-downloaded', (info) => {
+        logEvent(`Update ${info.version} downloaded, installing`);
         autoUpdater.quitAndInstall();
     });
 

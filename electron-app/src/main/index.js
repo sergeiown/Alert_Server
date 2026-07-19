@@ -14,6 +14,7 @@ const { processAlerts, getActiveCount } = require('./services/notifier');
 const { createTray, updateTrayState } = require('./services/tray');
 const { installHandlers } = require('./services/crashRestart');
 const { delayedCheckForUpdates } = require('./services/updater');
+const { destroySettingsWindow } = require('./windows/settingsWindow');
 
 const LEGACY_APP_DIR = 'd:\\Projects\\Current_Alert';
 
@@ -25,6 +26,7 @@ app.setAppUserModelId('com.sergeiown.alertserver');
 
 app.whenReady().then(() => {
     installHandlers();
+    logEvent(`Application started (v${app.getVersion()})`);
 
     const result = importLegacyConfig(LEGACY_APP_DIR, { settingsStore, regionsStore });
     logEvent(`Legacy config import: ${JSON.stringify(result)}`);
@@ -51,3 +53,7 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {});
+
+app.on('before-quit', () => {
+    destroySettingsWindow();
+});
