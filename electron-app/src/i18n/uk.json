@@ -18,7 +18,7 @@
     "menuExit": "Вихід",
     "aboutBody": "Отримує дані про тривоги з alerts.in.ua і показує Windows-сповіщення для обраних вами регіонів.",
     "aboutLicense": "Ліцензія: MIT",
-    "aboutCopyright": "© 2024 Serhii I. Myshko",
+    "aboutCopyright": "© 2024-2026 Serhii I. Myshko",
     "windowTitle": "Alert Server - Налаштування",
     "runAtStartupLabel": "Запускати при старті Windows",
     "trayMonoIconLabel": "Монохромна іконка трею",

@@ -4,8 +4,6 @@
 
 A Windows tray application built with Electron that receives alert data from [alerts.in.ua](https://alerts.in.ua/) at a specified frequency and displays it through the Windows Notification Center for the regions of Ukraine you choose to monitor.
 
-The app talks to alerts.in.ua through a small Cloudflare Worker proxy ([`alert-proxy/`](alert-proxy/)) that hides the API token and caches responses at the edge, so any number of installs share one token safely.
-
 ## Architecture
 
 ![architecture](docs/images/architecture-en.svg)
@@ -44,4 +42,4 @@ If you have suggestions or want to propose improvements to the project, please o
 
 ## License
 
-[Copyright (c) 2024 Serhii I. Myshko](https://github.com/sergeiown/Alert_Server/blob/main/LICENSE) - MIT License
+[Copyright (c) 2024-2026 Serhii I. Myshko](https://github.com/sergeiown/Alert_Server/blob/main/LICENSE) - MIT License

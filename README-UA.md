@@ -4,8 +4,6 @@
 
 Трей-застосунок для Windows на базі Electron, який з заданою періодичністю отримує дані про тривоги з [alerts.in.ua](https://alerts.in.ua/) і показує їх через Центр сповіщень Windows для обраних вами регіонів України.
 
-Застосунок звертається до alerts.in.ua через невеликий проксі на Cloudflare Worker ([`alert-proxy/`](alert-proxy/)), який ховає токен API і кешує відповіді на межі мережі, тож будь-яка кількість встановлених копій безпечно ділиться одним токеном.
-
 ## Архітектура
 
 ![архітектура](docs/images/architecture-uk.svg)
@@ -42,4 +40,4 @@
 
 ## Ліцензія
 
-[Copyright (c) 2024 Serhii I. Myshko](https://github.com/sergeiown/Alert_Server/blob/main/LICENSE) - Ліцензія MIT
+[Copyright (c) 2024-2026 Serhii I. Myshko](https://github.com/sergeiown/Alert_Server/blob/main/LICENSE) - Ліцензія MIT
