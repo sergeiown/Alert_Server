@@ -4,6 +4,7 @@
     "location": "Локація",
     "activeInMonitored": "Активних тривог у ваших регіонах",
     "alertStartedAt": "Розпочалась",
+    "trayPopupNoAlerts": "Немає активних тривог у ваших регіонах",
     "appName": "Alert Server",
     "trayDefaultTooltip": "Alert Server",
     "trayActiveTooltip": "Активних тривог",

@@ -3,6 +3,7 @@ const { getResourcePath, getUserDataFile } = require('./appPaths');
 const { openSettingsWindow } = require('../windows/settingsWindow');
 const { openMapWindow } = require('../windows/mapWindow');
 const { openForecastWindow } = require('../windows/forecastWindow');
+const { toggleTrayPopup } = require('../windows/trayPopupWindow');
 const settingsStore = require('./settingsStore');
 const { logEvent } = require('./logger');
 const { t } = require('../../i18n/i18n');
@@ -70,6 +71,7 @@ function createTray() {
     trayInstance = new Tray(iconPath(0, trayMonoIcon));
     trayInstance.setToolTip(t('trayDefaultTooltip', language));
     trayInstance.setContextMenu(buildMenu(language));
+    trayInstance.on('click', (event, bounds) => toggleTrayPopup(bounds));
 
     new Notification({
         title: t('notificationStartTitle', language),

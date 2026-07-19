@@ -4,6 +4,7 @@
     "location": "Location",
     "activeInMonitored": "Active alerts in monitored regions",
     "alertStartedAt": "Started at",
+    "trayPopupNoAlerts": "No active alerts in your regions",
     "appName": "Alert Server",
     "trayDefaultTooltip": "Alert Server",
     "trayActiveTooltip": "Active alerts",

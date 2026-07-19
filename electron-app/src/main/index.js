@@ -3,6 +3,7 @@ const { registerSettingsIpc } = require('./ipc/settingsIpc');
 const { registerRegionsIpc } = require('./ipc/regionsIpc');
 const { registerSystemIpc } = require('./ipc/systemIpc');
 const { registerForecastIpc } = require('./ipc/forecastIpc');
+const { registerTrayPopupIpc } = require('./ipc/trayPopupIpc');
 const { importLegacyConfig } = require('./migration/importLegacyConfig');
 const settingsStore = require('./services/settingsStore');
 const regionsStore = require('./services/regionsStore');
@@ -11,6 +12,7 @@ const { startPolling } = require('./services/alertPoller');
 const { filterAlerts } = require('./services/locationFilter');
 const { loadLocalConfig } = require('./services/localConfig');
 const { processAlerts, getActiveCount } = require('./services/notifier');
+const { setLatestMatchedAlerts } = require('./services/alertState');
 const { createTray, updateTrayState } = require('./services/tray');
 const { installHandlers } = require('./services/crashRestart');
 const { delayedCheckForUpdates } = require('./services/updater');
@@ -35,6 +37,7 @@ app.whenReady().then(() => {
     registerRegionsIpc();
     registerSystemIpc();
     registerForecastIpc();
+    registerTrayPopupIpc();
 
     createTray();
     delayedCheckForUpdates();
@@ -44,6 +47,7 @@ app.whenReady().then(() => {
         startPolling(alertProxyClientKey, (alertData) => {
             const matched = filterAlerts(alertData);
             logEvent(`Poll: ${alertData.alerts.length} active alerts, ${matched.length} in monitored regions`);
+            setLatestMatchedAlerts(matched);
             processAlerts(matched);
             updateTrayState(getActiveCount());
         });
