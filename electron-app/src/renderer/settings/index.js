@@ -5,7 +5,7 @@ const searchInput = document.getElementById('search');
 const summary = document.getElementById('summary');
 const runAtStartupInput = document.getElementById('runAtStartup');
 const trayMonoIconInput = document.getElementById('trayMonoIcon');
-const alertSoundInput = document.getElementById('alertSound');
+const alertSoundModeInput = document.getElementById('alertSoundMode');
 const alertSoundCountInput = document.getElementById('alertSoundCount');
 const languageInput = document.getElementById('language');
 
@@ -14,6 +14,9 @@ function applyStrings(strings) {
     document.getElementById('runAtStartupLabel').textContent = strings.runAtStartupLabel;
     document.getElementById('trayMonoIconLabel').textContent = strings.trayMonoIconLabel;
     document.getElementById('alertSoundLabel').textContent = strings.alertSoundLabel;
+    document.getElementById('alertSoundModeNoneOption').textContent = strings.alertSoundModeNone;
+    document.getElementById('alertSoundModeSirenOption').textContent = strings.alertSoundModeSiren;
+    document.getElementById('alertSoundModeVoiceOption').textContent = strings.alertSoundModeVoice;
     document.getElementById('alertSoundCountLabel').textContent = strings.alertSoundCountLabel;
     document.getElementById('languageLabel').textContent = strings.languageLabel;
     document.getElementById('regionsHeader').textContent = strings.regionsHeader;
@@ -27,7 +30,7 @@ function formatSummary(template, selected, total) {
 
 async function initGeneralSettings(settings) {
     trayMonoIconInput.checked = settings.trayMonoIcon;
-    alertSoundInput.checked = settings.alertSound;
+    alertSoundModeInput.value = settings.alertSoundMode;
     alertSoundCountInput.value = settings.alertSoundCount;
     languageInput.value = settings.language;
     runAtStartupInput.checked = await window.alertServer.getLoginItem();
@@ -35,8 +38,8 @@ async function initGeneralSettings(settings) {
     trayMonoIconInput.addEventListener('change', () => {
         window.alertServer.setSetting('trayMonoIcon', trayMonoIconInput.checked);
     });
-    alertSoundInput.addEventListener('change', () => {
-        window.alertServer.setSetting('alertSound', alertSoundInput.checked);
+    alertSoundModeInput.addEventListener('change', () => {
+        window.alertServer.setSetting('alertSoundMode', alertSoundModeInput.value);
     });
     alertSoundCountInput.addEventListener('change', () => {
         const count = Math.max(1, Math.min(10, Number(alertSoundCountInput.value) || 1));

@@ -45,9 +45,9 @@ function formatStartedAt(startedAt, language) {
     return new Date(startedAt).toLocaleString(locale);
 }
 
-function playRepeated(playFn, language, count, intervalMs) {
+function playRepeated(playFn, mode, language, count, intervalMs) {
     for (let i = 0; i < count; i++) {
-        setTimeout(() => playFn(language), i * intervalMs);
+        setTimeout(() => playFn(mode, language), i * intervalMs);
     }
 }
 
@@ -102,8 +102,8 @@ function processAlerts(matchedAlerts) {
             showAlertDetails(title, language, locationName, typeName, alert.started_at)
         );
 
-        if (settings.alertSound) {
-            playRepeated(playAlertSound, language, settings.alertSoundCount, 8000);
+        if (settings.alertSoundMode !== 'none') {
+            playRepeated(playAlertSound, settings.alertSoundMode, language, settings.alertSoundCount, 8000);
         }
 
         logEvent(`Alert ${alert.alert_type}: ${locationName}`);
@@ -129,8 +129,8 @@ function processAlerts(matchedAlerts) {
             showAlertDetails(title, language, locationName, typeName, value.startedAt)
         );
 
-        if (settings.alertSound) {
-            playRepeated(playAlertCancellationSound, language, settings.alertSoundCount, 6000);
+        if (settings.alertSoundMode !== 'none') {
+            playRepeated(playAlertCancellationSound, settings.alertSoundMode, language, settings.alertSoundCount, 6000);
         }
 
         logEvent(`Alert cancelled: ${locationName}`);

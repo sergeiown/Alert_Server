@@ -2,9 +2,9 @@ const fs = require('fs');
 const { getUserDataFile } = require('./appPaths');
 
 const defaultSettings = {
-    language: 'Ukrainian',
+    language: 'English',
     trayMonoIcon: false,
-    alertSound: true,
+    alertSoundMode: 'siren',
     alertSoundCount: 1,
 };
 
@@ -22,6 +22,11 @@ function load() {
     try {
         const parsed = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
         settings = { ...defaultSettings, ...parsed };
+
+        if (!parsed.hasOwnProperty('alertSoundMode') && parsed.hasOwnProperty('alertSound')) {
+            settings.alertSoundMode = parsed.alertSound ? 'siren' : 'none';
+        }
+        delete settings.alertSound;
     } catch (err) {
         settings = { ...defaultSettings };
         save();

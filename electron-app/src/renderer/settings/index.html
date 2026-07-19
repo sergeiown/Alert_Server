@@ -9,7 +9,14 @@
     <section id="general-settings">
         <label><input type="checkbox" id="runAtStartup" /> <span id="runAtStartupLabel"></span></label>
         <label><input type="checkbox" id="trayMonoIcon" /> <span id="trayMonoIconLabel"></span></label>
-        <label><input type="checkbox" id="alertSound" /> <span id="alertSoundLabel"></span></label>
+        <label>
+            <span id="alertSoundLabel"></span>
+            <select id="alertSoundMode">
+                <option value="none" id="alertSoundModeNoneOption"></option>
+                <option value="siren" id="alertSoundModeSirenOption"></option>
+                <option value="voice" id="alertSoundModeVoiceOption"></option>
+            </select>
+        </label>
         <label>
             <span id="alertSoundCountLabel"></span>
             <input type="number" id="alertSoundCount" min="1" max="10" style="width: 3em" />

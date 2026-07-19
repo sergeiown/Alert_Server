@@ -4,10 +4,14 @@ const { logEvent } = require('./logger');
 
 let isPlaying = false;
 
-function soundPath(language, cancelled) {
+function voicePath(language, cancelled) {
     const base = cancelled ? 'alert_cancellation' : 'alert';
     const suffix = language === 'English' ? 'eng' : 'ukr';
     return getResourcePath('audio', `${base}_${suffix}.wav`);
+}
+
+function sirenPath(cancelled) {
+    return getResourcePath('audio', cancelled ? 'siren_cancel.wav' : 'siren_alert.wav');
 }
 
 function play(filePath) {
@@ -19,12 +23,14 @@ function play(filePath) {
     });
 }
 
-function playAlertSound(language) {
-    play(soundPath(language, false));
+function playAlertSound(mode, language) {
+    if (mode === 'none') return;
+    play(mode === 'voice' ? voicePath(language, false) : sirenPath(false));
 }
 
-function playAlertCancellationSound(language) {
-    play(soundPath(language, true));
+function playAlertCancellationSound(mode, language) {
+    if (mode === 'none') return;
+    play(mode === 'voice' ? voicePath(language, true) : sirenPath(true));
 }
 
 module.exports = { playAlertSound, playAlertCancellationSound };
