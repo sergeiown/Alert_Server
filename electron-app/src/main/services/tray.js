@@ -39,7 +39,12 @@ function buildMenu(language) {
                             type: 'info',
                             title: t('appName', language),
                             message: `${t('appName', language)} v${app.getVersion()}`,
-                            detail: t('aboutBody', language),
+                            detail: [
+                                t('aboutBody', language),
+                                '',
+                                t('aboutLicense', language),
+                                t('aboutCopyright', language),
+                            ].join('\n'),
                         }),
                 },
             ],

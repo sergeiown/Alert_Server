@@ -8,8 +8,22 @@ const trayMonoIconInput = document.getElementById('trayMonoIcon');
 const alertSoundInput = document.getElementById('alertSound');
 const languageInput = document.getElementById('language');
 
-async function initGeneralSettings() {
-    const settings = await window.alertServer.getSettings();
+function applyStrings(strings) {
+    document.title = strings.windowTitle;
+    document.getElementById('runAtStartupLabel').textContent = strings.runAtStartupLabel;
+    document.getElementById('trayMonoIconLabel').textContent = strings.trayMonoIconLabel;
+    document.getElementById('alertSoundLabel').textContent = strings.alertSoundLabel;
+    document.getElementById('languageLabel').textContent = strings.languageLabel;
+    document.getElementById('regionsHeader').textContent = strings.regionsHeader;
+    searchInput.placeholder = strings.searchPlaceholder;
+    return strings;
+}
+
+function formatSummary(template, selected, total) {
+    return template.replace('{selected}', selected).replace('{total}', total);
+}
+
+async function initGeneralSettings(settings) {
     trayMonoIconInput.checked = settings.trayMonoIcon;
     alertSoundInput.checked = settings.alertSound;
     languageInput.value = settings.language;
@@ -29,8 +43,6 @@ async function initGeneralSettings() {
     });
 }
 
-initGeneralSettings();
-
 function totalRegionsCount(tree) {
     let count = 0;
     tree.states.forEach((state) => {
@@ -44,17 +56,21 @@ function totalRegionsCount(tree) {
 }
 
 (async () => {
+    const strings = applyStrings(await window.alertServer.getStrings());
+    const settings = await window.alertServer.getSettings();
+    await initGeneralSettings(settings);
+
     const tree = await window.alertServer.getRegionTree();
     const selectedUids = await window.alertServer.getSelectedRegions();
     const total = totalRegionsCount(tree);
 
     function updateSummary(selectedCount) {
-        summary.textContent = `Обрано регіонів: ${selectedCount} з ${total}. Зміни зберігаються автоматично.`;
+        summary.textContent = formatSummary(strings.selectedSummary, selectedCount, total);
     }
 
     let selectedCount = selectedUids.length;
 
-    const regionTree = createRegionTree(treeContainer, tree, selectedUids, async (uid, wasChecked) => {
+    const regionTree = createRegionTree(treeContainer, tree, selectedUids, settings.language, async (uid, wasChecked) => {
         const isSelected = await window.alertServer.toggleRegion(uid);
         selectedCount += isSelected ? 1 : -1;
         updateSummary(selectedCount);

@@ -15,5 +15,15 @@
     "menuLog": "Log",
     "menuAbout": "About",
     "menuExit": "Exit",
-    "aboutBody": "Receives alert data from alerts.in.ua and displays Windows notifications for the regions you monitor."
+    "aboutBody": "Receives alert data from alerts.in.ua and displays Windows notifications for the regions you monitor.",
+    "aboutLicense": "License: MIT",
+    "aboutCopyright": "© 2024 Serhii I. Myshko",
+    "windowTitle": "Alert Server - Settings",
+    "runAtStartupLabel": "Run at Windows startup",
+    "trayMonoIconLabel": "Monochrome tray icon",
+    "alertSoundLabel": "Sound notifications",
+    "languageLabel": "Language:",
+    "regionsHeader": "Regions to monitor",
+    "searchPlaceholder": "Search region...",
+    "selectedSummary": "Selected regions: {selected} of {total}. Changes are saved automatically."
 }

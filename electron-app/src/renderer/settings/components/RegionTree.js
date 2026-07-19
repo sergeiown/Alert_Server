@@ -1,7 +1,8 @@
-function nodeName(node, type) {
-    if (type === 'state') return node.stateName;
-    if (type === 'district') return node.districtName;
-    return node.communityName;
+function nodeName(node, type, language) {
+    const useLatin = language === 'English';
+    if (type === 'state') return useLatin ? node.stateNameLat : node.stateName;
+    if (type === 'district') return useLatin ? node.districtNameLat : node.districtName;
+    return useLatin ? node.communityNameLat : node.communityName;
 }
 
 function nodeChildren(node, type) {
@@ -16,10 +17,10 @@ function childType(type) {
     return null;
 }
 
-function matchesQuery(node, type, query) {
+function matchesQuery(node, type, query, language) {
     if (!query) return true;
-    if (nodeName(node, type).toLowerCase().includes(query)) return true;
-    return nodeChildren(node, type).some((child) => matchesQuery(child, childType(type), query));
+    if (nodeName(node, type, language).toLowerCase().includes(query)) return true;
+    return nodeChildren(node, type).some((child) => matchesQuery(child, childType(type), query, language));
 }
 
 function countSelected(node, type, selectedSet) {
@@ -38,7 +39,7 @@ function countTotal(node, type) {
     return count;
 }
 
-export function createRegionTree(container, tree, initialSelectedUids, onToggle) {
+export function createRegionTree(container, tree, initialSelectedUids, language, onToggle) {
     const selectedSet = new Set(initialSelectedUids);
     const wrapperByUid = new Map();
     const nodeByUid = new Map();
@@ -71,7 +72,7 @@ export function createRegionTree(container, tree, initialSelectedUids, onToggle)
         row.appendChild(checkbox);
 
         const label = document.createElement('span');
-        label.textContent = nodeName(node, type);
+        label.textContent = nodeName(node, type, language);
         row.appendChild(label);
 
         if (hasChildren) {
@@ -94,7 +95,7 @@ export function createRegionTree(container, tree, initialSelectedUids, onToggle)
 
             children.forEach((child) => {
                 const ct = childType(type);
-                if (matchesQuery(child, ct, query)) {
+                if (matchesQuery(child, ct, query, language)) {
                     childrenContainer.appendChild(buildNodeElement(child, ct, query));
                 }
             });
@@ -102,7 +103,7 @@ export function createRegionTree(container, tree, initialSelectedUids, onToggle)
 
         wrapper.appendChild(childrenContainer);
 
-        if (!matchesQuery(node, type, query)) {
+        if (!matchesQuery(node, type, query, language)) {
             wrapper.classList.add('hidden');
         }
 

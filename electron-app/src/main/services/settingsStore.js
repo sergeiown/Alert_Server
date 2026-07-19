@@ -2,7 +2,7 @@ const fs = require('fs');
 const { getUserDataFile } = require('./appPaths');
 
 const defaultSettings = {
-    language: 'English',
+    language: 'Ukrainian',
     trayMonoIcon: false,
     alertSound: true,
 };

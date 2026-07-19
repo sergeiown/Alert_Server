@@ -15,5 +15,15 @@
     "menuLog": "Лог",
     "menuAbout": "Про програму",
     "menuExit": "Вихід",
-    "aboutBody": "Отримує дані про тривоги з alerts.in.ua і показує Windows-сповіщення для обраних вами регіонів."
+    "aboutBody": "Отримує дані про тривоги з alerts.in.ua і показує Windows-сповіщення для обраних вами регіонів.",
+    "aboutLicense": "Ліцензія: MIT",
+    "aboutCopyright": "© 2024 Serhii I. Myshko",
+    "windowTitle": "Alert Server - Налаштування",
+    "runAtStartupLabel": "Запускати при старті Windows",
+    "trayMonoIconLabel": "Монохромна іконка трею",
+    "alertSoundLabel": "Звукові сповіщення",
+    "languageLabel": "Мова:",
+    "regionsHeader": "Регіони моніторингу",
+    "searchPlaceholder": "Пошук регіону...",
+    "selectedSummary": "Обрано регіонів: {selected} з {total}. Зміни зберігаються автоматично."
 }

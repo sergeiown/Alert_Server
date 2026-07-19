@@ -12,6 +12,7 @@ const { loadLocalConfig } = require('./services/localConfig');
 const { processAlerts, getActiveCount } = require('./services/notifier');
 const { createTray, updateTrayState } = require('./services/tray');
 const { installHandlers } = require('./services/crashRestart');
+const { delayedCheckForUpdates } = require('./services/updater');
 
 const LEGACY_APP_DIR = 'd:\\Projects\\Current_Alert';
 
@@ -32,6 +33,7 @@ app.whenReady().then(() => {
     registerSystemIpc();
 
     createTray();
+    delayedCheckForUpdates();
 
     const { alertProxyClientKey } = loadLocalConfig();
     if (alertProxyClientKey) {

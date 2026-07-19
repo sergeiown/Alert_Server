@@ -9,4 +9,5 @@ contextBridge.exposeInMainWorld('alertServer', {
     toggleRegion: (uid) => ipcRenderer.invoke('regions:toggle', uid),
     getLoginItem: () => ipcRenderer.invoke('system:getLoginItem'),
     setLoginItem: (openAtLogin) => ipcRenderer.invoke('system:setLoginItem', openAtLogin),
+    getStrings: () => ipcRenderer.invoke('i18n:getStrings'),
 });

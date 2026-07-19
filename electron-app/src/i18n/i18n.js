@@ -8,4 +8,8 @@ function t(key, language) {
     return dict[key] || key;
 }
 
-module.exports = { t };
+function getDictionary(language) {
+    return dictionaries[language] || dictionaries.English;
+}
+
+module.exports = { t, getDictionary };
