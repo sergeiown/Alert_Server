@@ -18,19 +18,20 @@ Future updates are detected and installed automatically from GitHub Releases; yo
 
 On first launch the app appears as a tray icon only, no window. Everything is controlled from the tray icon's context menu:
 
-![tray menu](docs/images/tray-menu-uk.png)
-
-*(menu shown in Ukrainian - the interface is fully available in both Ukrainian and English)*
+![tray menu](docs/images/tray-menu-en.png)
 
 - **Alert map** / **Front line map** open [alerts.in.ua](https://alerts.in.ua/) and [DeepState](https://deepstatemap.live) in a dedicated app window.
-- **Settings…** opens the settings window, where you pick which regions to monitor (searchable tree, from oblast down to individual community), choose the interface language, toggle monochrome tray icon, sound notifications and their repeat count, and enable launching at Windows startup.
+- **Forecast** opens a window showing, for each monitored region, either a notice that an alert is currently active or historical statistics from the past month (alert count, average interval, most common time and alert type, time since the last alert ended, and a soft trend-based estimate) - clearly labeled as statistics, not a guaranteed prediction. Each region's summary can be copied to the clipboard.
+- **Settings…** opens the settings window, where you pick which regions to monitor (searchable tree, from oblast down to individual community), choose the interface language, toggle monochrome tray icon, sound notification mode (none, siren, or voice) and its repeat count, and enable launching at Windows startup. Follows the Windows light/dark theme automatically.
 - **Information → Log** opens the event log; **About** shows the current version and license.
 
 ![settings window](docs/images/settings-window-en.png)
 
-Notifications for the start and end of an alert appear through the Windows Notification Center; clicking a notification shows the alert's location and start time. An audio cue can be enabled alongside the visual notification and tray icon color change.
+Notifications for the start and end of an alert appear through the Windows Notification Center; clicking one shows the alert's location and start time.
 
-The event log is capped at 256 KB and automatically trimmed once it grows past that.
+![alert notification](docs/images/alert-en.png)
+
+The event log records app activity (start/exit, settings and region changes, alerts, update checks) and is capped at 256 KB, automatically trimmed once it grows past that.
 
 ## Removal
 
