@@ -2,5 +2,18 @@
     "alertStarted": "Alert",
     "alertCancelled": "Alert cancelled",
     "location": "Location",
-    "activeInMonitored": "Active alerts in monitored regions"
+    "activeInMonitored": "Active alerts in monitored regions",
+    "appName": "Alert Server",
+    "trayDefaultTooltip": "Alert Server",
+    "trayActiveTooltip": "Active alerts",
+    "notificationStartTitle": "Alert Server",
+    "notificationStartBody": "The application has started",
+    "menuMapAlerts": "Alert map",
+    "menuMapFront": "Front line map",
+    "menuSettings": "Settings…",
+    "menuInfo": "Information",
+    "menuLog": "Log",
+    "menuAbout": "About",
+    "menuExit": "Exit",
+    "aboutBody": "Receives alert data from alerts.in.ua and displays Windows notifications for the regions you monitor."
 }

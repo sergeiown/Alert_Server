@@ -1,7 +1,6 @@
 const { app } = require('electron');
 const { registerSettingsIpc } = require('./ipc/settingsIpc');
 const { registerRegionsIpc } = require('./ipc/regionsIpc');
-const { openSettingsWindow } = require('./windows/settingsWindow');
 const { importLegacyConfig } = require('./migration/importLegacyConfig');
 const settingsStore = require('./services/settingsStore');
 const regionsStore = require('./services/regionsStore');
@@ -9,7 +8,8 @@ const { logEvent } = require('./services/logger');
 const { startPolling } = require('./services/alertPoller');
 const { filterAlerts } = require('./services/locationFilter');
 const { loadLocalConfig } = require('./services/localConfig');
-const { processAlerts } = require('./services/notifier');
+const { processAlerts, getActiveCount } = require('./services/notifier');
+const { createTray, updateTrayState } = require('./services/tray');
 
 const LEGACY_APP_DIR = 'd:\\Projects\\Current_Alert';
 
@@ -22,7 +22,7 @@ app.whenReady().then(() => {
     registerSettingsIpc();
     registerRegionsIpc();
 
-    openSettingsWindow();
+    createTray();
 
     const { alertProxyClientKey } = loadLocalConfig();
     if (alertProxyClientKey) {
@@ -30,6 +30,7 @@ app.whenReady().then(() => {
             const matched = filterAlerts(alertData);
             logEvent(`Poll: ${alertData.alerts.length} active alerts, ${matched.length} in monitored regions`);
             processAlerts(matched);
+            updateTrayState(getActiveCount());
         });
     } else {
         logEvent('alertProxyClientKey missing from config.local.json, polling disabled');

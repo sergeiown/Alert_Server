@@ -2,5 +2,18 @@
     "alertStarted": "Тривога",
     "alertCancelled": "Відбій тривоги",
     "location": "Локація",
-    "activeInMonitored": "Активних тривог у ваших регіонах"
+    "activeInMonitored": "Активних тривог у ваших регіонах",
+    "appName": "Alert Server",
+    "trayDefaultTooltip": "Alert Server",
+    "trayActiveTooltip": "Активних тривог",
+    "notificationStartTitle": "Alert Server",
+    "notificationStartBody": "Застосунок запущено",
+    "menuMapAlerts": "Мапа тривог",
+    "menuMapFront": "Мапа фронту",
+    "menuSettings": "Налаштування…",
+    "menuInfo": "Інформація",
+    "menuLog": "Лог",
+    "menuAbout": "Про програму",
+    "menuExit": "Вихід",
+    "aboutBody": "Отримує дані про тривоги з alerts.in.ua і показує Windows-сповіщення для обраних вами регіонів."
 }

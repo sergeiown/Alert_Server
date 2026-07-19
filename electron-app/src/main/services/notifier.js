@@ -97,4 +97,9 @@ function processAlerts(matchedAlerts) {
     });
 }
 
-module.exports = { processAlerts };
+function getActiveCount() {
+    ensureDisplayedAlertsLoaded();
+    return displayedAlerts.size;
+}
+
+module.exports = { processAlerts, getActiveCount };
