@@ -48,7 +48,7 @@ app.whenReady().then(() => {
             const matched = filterAlerts(alertData);
             logEvent(`Poll: ${alertData.alerts.length} active alerts, ${matched.length} in monitored regions`);
             setLatestMatchedAlerts(matched);
-            processAlerts(matched);
+            processAlerts(matched, alertData.alerts);
             updateTrayState(getActiveCount());
         });
     } else {

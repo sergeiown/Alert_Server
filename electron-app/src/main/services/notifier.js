@@ -8,12 +8,14 @@ const { alertTypeName } = require('./alertTypes');
 const { t } = require('../../i18n/i18n');
 
 let displayedAlerts = null;
+let isInitialSync = false;
 const activeNotifications = new Set();
 
 function ensureDisplayedAlertsLoaded() {
     if (displayedAlerts) return;
 
     displayedAlerts = new Map();
+    isInitialSync = true;
     const filePath = getUserDataFile('alert_displayed.json');
     if (fs.existsSync(filePath)) {
         const saved = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
@@ -70,8 +72,11 @@ function showAlertDetails(title, language, locationName, typeName, startedAt) {
     });
 }
 
-function processAlerts(matchedAlerts) {
+function processAlerts(matchedAlerts, allAlerts) {
     ensureDisplayedAlertsLoaded();
+
+    const skipCancellationNotice = isInitialSync;
+    isInitialSync = false;
 
     const settings = settingsStore.getSettings();
     const language = settings.language;
@@ -107,6 +112,12 @@ function processAlerts(matchedAlerts) {
     displayedAlerts.forEach((value, id) => {
         if (matchedAlerts.some((alert) => alert.id === id)) return;
 
+        displayedAlerts.delete(id);
+        saveDisplayedAlerts();
+
+        const stillActiveElsewhere = allAlerts.some((alert) => alert.id === id);
+        if (skipCancellationNotice || stillActiveElsewhere) return;
+
         const typeName = alertTypeName(value.alertType, language);
         const locationName = language === 'English' ? value.locationLat : value.locationTitle;
         const title = `${t('alertCancelled', language)}: ${typeName}`;
@@ -121,9 +132,6 @@ function processAlerts(matchedAlerts) {
         }
 
         logEvent(`Alert cancelled: ${locationName}`);
-
-        displayedAlerts.delete(id);
-        saveDisplayedAlerts();
     });
 }
 
