@@ -13,7 +13,7 @@ function openSettingsWindow() {
     settingsWindow = new BrowserWindow({
         width: 720,
         height: 640,
-        title: 'Alert Server — Налаштування',
+        title: 'Alert Server - Налаштування',
         icon: path.join(__dirname, '..', '..', '..', 'resources', 'icons', 'tray.ico'),
         webPreferences: {
             preload: path.join(__dirname, '..', '..', 'preload', 'settingsPreload.js'),

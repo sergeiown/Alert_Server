@@ -3,6 +3,33 @@ import { createRegionTree } from './components/RegionTree.js';
 const treeContainer = document.getElementById('tree');
 const searchInput = document.getElementById('search');
 const summary = document.getElementById('summary');
+const runAtStartupInput = document.getElementById('runAtStartup');
+const trayMonoIconInput = document.getElementById('trayMonoIcon');
+const alertSoundInput = document.getElementById('alertSound');
+const languageInput = document.getElementById('language');
+
+async function initGeneralSettings() {
+    const settings = await window.alertServer.getSettings();
+    trayMonoIconInput.checked = settings.trayMonoIcon;
+    alertSoundInput.checked = settings.alertSound;
+    languageInput.value = settings.language;
+    runAtStartupInput.checked = await window.alertServer.getLoginItem();
+
+    trayMonoIconInput.addEventListener('change', () => {
+        window.alertServer.setSetting('trayMonoIcon', trayMonoIconInput.checked);
+    });
+    alertSoundInput.addEventListener('change', () => {
+        window.alertServer.setSetting('alertSound', alertSoundInput.checked);
+    });
+    languageInput.addEventListener('change', () => {
+        window.alertServer.setSetting('language', languageInput.value);
+    });
+    runAtStartupInput.addEventListener('change', async () => {
+        runAtStartupInput.checked = await window.alertServer.setLoginItem(runAtStartupInput.checked);
+    });
+}
+
+initGeneralSettings();
 
 function totalRegionsCount(tree) {
     let count = 0;

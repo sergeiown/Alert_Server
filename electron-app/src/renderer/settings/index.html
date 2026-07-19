@@ -2,10 +2,22 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8" />
-    <title>Alert Server — Налаштування</title>
+    <title>Alert Server - Налаштування</title>
     <link rel="stylesheet" href="index.css" />
 </head>
 <body>
+    <section id="general-settings">
+        <label><input type="checkbox" id="runAtStartup" /> Запускати при старті Windows</label>
+        <label><input type="checkbox" id="trayMonoIcon" /> Монохромна іконка трею</label>
+        <label><input type="checkbox" id="alertSound" /> Звукові сповіщення</label>
+        <label>
+            Мова:
+            <select id="language">
+                <option value="Ukrainian">Українська</option>
+                <option value="English">English</option>
+            </select>
+        </label>
+    </section>
     <header>
         <h1>Регіони моніторингу</h1>
         <input id="search" type="text" placeholder="Пошук регіону..." autocomplete="off" />
