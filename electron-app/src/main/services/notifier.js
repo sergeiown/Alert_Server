@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { Notification } = require('electron');
+const { Notification, dialog } = require('electron');
 const { getUserDataFile, getResourcePath } = require('./appPaths');
 const { logEvent } = require('./logger');
 const settingsStore = require('./settingsStore');
@@ -8,6 +8,7 @@ const { t } = require('../../i18n/i18n');
 
 let alertTypes = null;
 let displayedAlerts = null;
+const activeNotifications = new Set();
 
 function getAlertTypes() {
     if (!alertTypes) {
@@ -38,9 +39,48 @@ function alertTypeName(alertTypeId, language) {
     return language === 'English' ? type.id : type.name;
 }
 
-function createNotification(title, body, iconName) {
+function formatStartedAt(startedAt, language) {
+    if (!startedAt) return null;
+    const locale = language === 'English' ? 'en-US' : 'uk-UA';
+    return new Date(startedAt).toLocaleString(locale);
+}
+
+function playRepeated(playFn, language, count, intervalMs) {
+    for (let i = 0; i < count; i++) {
+        setTimeout(() => playFn(language), i * intervalMs);
+    }
+}
+
+function createNotification(title, body, iconName, onClick) {
     const icon = getResourcePath('icons', iconName);
-    new Notification({ title, body, icon }).show();
+    const notification = new Notification({ title, body, icon });
+
+    activeNotifications.add(notification);
+    const release = () => activeNotifications.delete(notification);
+
+    notification.on('click', () => {
+        if (onClick) onClick();
+        release();
+    });
+    notification.on('close', release);
+    notification.on('failed', release);
+
+    notification.show();
+}
+
+function showAlertDetails(title, language, locationName, typeName, startedAt) {
+    const startedAtText = formatStartedAt(startedAt, language);
+    dialog.showMessageBox({
+        type: 'info',
+        title,
+        message: `${t('alertStarted', language)}: ${typeName}`,
+        detail: [
+            `${t('location', language)}: ${locationName}`,
+            startedAtText ? `${t('alertStartedAt', language)}: ${startedAtText}` : null,
+        ]
+            .filter(Boolean)
+            .join('\n'),
+    });
 }
 
 function processAlerts(matchedAlerts) {
@@ -58,11 +98,12 @@ function processAlerts(matchedAlerts) {
         const title = `${t('alertStarted', language)}: ${typeName}`;
         const body = `${t('location', language)}: ${locationName}. ${t('activeInMonitored', language)}: ${alertCount}`;
 
-        createNotification(title, body, 'alert.png');
+        createNotification(title, body, 'alert.png', () =>
+            showAlertDetails(title, language, locationName, typeName, alert.started_at)
+        );
 
         if (settings.alertSound) {
-            playAlertSound(language);
-            setTimeout(() => playAlertSound(language), 8000);
+            playRepeated(playAlertSound, language, settings.alertSoundCount, 8000);
         }
 
         logEvent(`Alert ${alert.alert_type}: ${locationName}`);
@@ -71,6 +112,7 @@ function processAlerts(matchedAlerts) {
             locationTitle: alert.location_title,
             locationLat: alert.location_lat,
             alertType: alert.alert_type,
+            startedAt: alert.started_at,
         });
         saveDisplayedAlerts();
     });
@@ -83,11 +125,12 @@ function processAlerts(matchedAlerts) {
         const title = `${t('alertCancelled', language)}: ${typeName}`;
         const body = `${t('location', language)}: ${locationName}. ${t('activeInMonitored', language)}: ${alertCount}`;
 
-        createNotification(title, body, 'cancel.png');
+        createNotification(title, body, 'cancel.png', () =>
+            showAlertDetails(title, language, locationName, typeName, value.startedAt)
+        );
 
         if (settings.alertSound) {
-            playAlertCancellationSound(language);
-            setTimeout(() => playAlertCancellationSound(language), 6000);
+            playRepeated(playAlertCancellationSound, language, settings.alertSoundCount, 6000);
         }
 
         logEvent(`Alert cancelled: ${locationName}`);

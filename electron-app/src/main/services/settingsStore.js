@@ -5,6 +5,7 @@ const defaultSettings = {
     language: 'Ukrainian',
     trayMonoIcon: false,
     alertSound: true,
+    alertSoundCount: 1,
 };
 
 let settings = null;

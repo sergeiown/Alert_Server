@@ -6,6 +6,7 @@ const summary = document.getElementById('summary');
 const runAtStartupInput = document.getElementById('runAtStartup');
 const trayMonoIconInput = document.getElementById('trayMonoIcon');
 const alertSoundInput = document.getElementById('alertSound');
+const alertSoundCountInput = document.getElementById('alertSoundCount');
 const languageInput = document.getElementById('language');
 
 function applyStrings(strings) {
@@ -13,6 +14,7 @@ function applyStrings(strings) {
     document.getElementById('runAtStartupLabel').textContent = strings.runAtStartupLabel;
     document.getElementById('trayMonoIconLabel').textContent = strings.trayMonoIconLabel;
     document.getElementById('alertSoundLabel').textContent = strings.alertSoundLabel;
+    document.getElementById('alertSoundCountLabel').textContent = strings.alertSoundCountLabel;
     document.getElementById('languageLabel').textContent = strings.languageLabel;
     document.getElementById('regionsHeader').textContent = strings.regionsHeader;
     searchInput.placeholder = strings.searchPlaceholder;
@@ -26,6 +28,7 @@ function formatSummary(template, selected, total) {
 async function initGeneralSettings(settings) {
     trayMonoIconInput.checked = settings.trayMonoIcon;
     alertSoundInput.checked = settings.alertSound;
+    alertSoundCountInput.value = settings.alertSoundCount;
     languageInput.value = settings.language;
     runAtStartupInput.checked = await window.alertServer.getLoginItem();
 
@@ -34,6 +37,11 @@ async function initGeneralSettings(settings) {
     });
     alertSoundInput.addEventListener('change', () => {
         window.alertServer.setSetting('alertSound', alertSoundInput.checked);
+    });
+    alertSoundCountInput.addEventListener('change', () => {
+        const count = Math.max(1, Math.min(10, Number(alertSoundCountInput.value) || 1));
+        alertSoundCountInput.value = count;
+        window.alertServer.setSetting('alertSoundCount', count);
     });
     languageInput.addEventListener('change', () => {
         window.alertServer.setSetting('language', languageInput.value);
