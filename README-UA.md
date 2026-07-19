@@ -1,6 +1,12 @@
+<p align="center">
+  <img src="docs/images/icon.png" alt="Іконка Alert Server" width="96" />
+</p>
+
 # Alert Server
 
 [EN](https://github.com/sergeiown/Alert_Server/blob/main/README.md) | **[UA](https://github.com/sergeiown/Alert_Server/blob/main/README-UA.md)**
+
+> **Дисклеймер.** Повномасштабна війна країни-агресора проти України триває, починаючи з лютого 2014 року та ескалації 24 лютого 2022 року. Вся територія України залишається зоною бойових дій та потенційної ракетної загрози. Зберігайте пильність, не ігноруйте сигнали повітряної тривоги та дотримуйтесь правил безпеки.
 
 Трей-застосунок для Windows на базі Electron, який з заданою періодичністю отримує дані про тривоги з [alerts.in.ua](https://alerts.in.ua/) і показує їх через Центр сповіщень Windows для обраних вами регіонів України.
 

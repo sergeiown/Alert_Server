@@ -1,4 +1,4 @@
-const { Tray, Menu, shell, dialog, app, Notification } = require('electron');
+const { Tray, Menu, shell, dialog, app, Notification, nativeImage } = require('electron');
 const { getResourcePath, getUserDataFile } = require('./appPaths');
 const { openSettingsWindow } = require('../windows/settingsWindow');
 const { openMapWindow } = require('../windows/mapWindow');
@@ -12,6 +12,16 @@ const ALERTS_MAP_URL = 'https://alerts.in.ua/';
 const FRONT_MAP_URL = 'https://deepstatemap.live/';
 
 let trayInstance = null;
+let menuIcon = null;
+
+function getMenuIcon() {
+    if (!menuIcon) {
+        menuIcon = nativeImage
+            .createFromPath(getResourcePath('icons', 'app-icon-256.png'))
+            .resize({ width: 16, height: 16 });
+    }
+    return menuIcon;
+}
 
 function iconPath(activeCount, trayMonoIcon) {
     const name =
@@ -27,7 +37,7 @@ function iconPath(activeCount, trayMonoIcon) {
 
 function buildMenu(language) {
     return Menu.buildFromTemplate([
-        { label: t('appName', language), enabled: false },
+        { label: t('appName', language), icon: getMenuIcon(), enabled: false },
         { type: 'separator' },
         { label: t('menuMapAlerts', language), click: () => openMapWindow(ALERTS_MAP_URL, t('menuMapAlerts', language)) },
         { label: t('menuMapFront', language), click: () => openMapWindow(FRONT_MAP_URL, t('menuMapFront', language)) },
