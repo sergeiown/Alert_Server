@@ -1,0 +1,15 @@
+{
+    "name": "alert-proxy",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Minimal Cloudflare Worker proxy that hides the alerts.in.ua API token from the client app",
+    "scripts": {
+        "dev": "wrangler dev",
+        "deploy": "wrangler deploy",
+        "secret:token": "wrangler secret put ALERTS_TOKEN",
+        "secret:key": "wrangler secret put CLIENT_KEY"
+    },
+    "devDependencies": {
+        "wrangler": "^4.0.0"
+    }
+}
