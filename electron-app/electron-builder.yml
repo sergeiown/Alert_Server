@@ -1,0 +1,22 @@
+appId: com.sergeiown.alertserver
+productName: Alert Server
+directories:
+    output: dist
+files:
+    - src
+    - package.json
+extraResources:
+    - from: resources
+      to: .
+win:
+    target: nsis
+    icon: resources/icons/app-icon-256.png
+nsis:
+    oneClick: false
+    perMachine: false
+    allowToChangeInstallationDirectory: true
+    createStartMenuShortcut: true
+publish:
+    provider: github
+    owner: sergeiown
+    repo: Alert_Server

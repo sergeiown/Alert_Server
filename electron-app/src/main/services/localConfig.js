@@ -1,8 +1,8 @@
 const fs = require('fs');
-const path = require('path');
+const { getResourcePath } = require('./appPaths');
 
 function loadLocalConfig() {
-    const filePath = path.join(__dirname, '..', '..', '..', 'config.local.json');
+    const filePath = getResourcePath('config.local.json');
     if (!fs.existsSync(filePath)) return {};
     return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
 }
