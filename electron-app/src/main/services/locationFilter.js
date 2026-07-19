@@ -9,13 +9,21 @@ function buildLookup() {
     const lookup = new Map();
 
     tree.states.forEach((state) => {
-        lookup.set(String(state.uid), { type: 'state', lat: state.stateNameLat });
+        lookup.set(String(state.uid), { type: 'state', name: state.stateName, lat: state.stateNameLat });
 
         state.districts.forEach((district) => {
-            lookup.set(String(district.uid), { type: 'district', lat: district.districtNameLat });
+            lookup.set(String(district.uid), {
+                type: 'district',
+                name: district.districtName,
+                lat: district.districtNameLat,
+            });
 
             district.communities.forEach((community) => {
-                lookup.set(String(community.uid), { type: 'community', lat: community.communityNameLat });
+                lookup.set(String(community.uid), {
+                    type: 'community',
+                    name: community.communityName,
+                    lat: community.communityNameLat,
+                });
             });
         });
     });
@@ -40,4 +48,4 @@ function filterAlerts(alertData) {
         });
 }
 
-module.exports = { filterAlerts };
+module.exports = { filterAlerts, getLocationLookup };

@@ -47,4 +47,8 @@ function startPolling(clientKey, onUpdate) {
     return setInterval(tick, POLL_INTERVAL_MS);
 }
 
-module.exports = { startPolling };
+function getLatestAlertData() {
+    return latestAlertData;
+}
+
+module.exports = { startPolling, getLatestAlertData };

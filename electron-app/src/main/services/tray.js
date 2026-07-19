@@ -2,6 +2,7 @@ const { Tray, Menu, shell, dialog, app, Notification } = require('electron');
 const { getResourcePath, getUserDataFile } = require('./appPaths');
 const { openSettingsWindow } = require('../windows/settingsWindow');
 const { openMapWindow } = require('../windows/mapWindow');
+const { openForecastWindow } = require('../windows/forecastWindow');
 const settingsStore = require('./settingsStore');
 const { t } = require('../../i18n/i18n');
 
@@ -28,6 +29,7 @@ function buildMenu(language) {
         { type: 'separator' },
         { label: t('menuMapAlerts', language), click: () => openMapWindow(ALERTS_MAP_URL, t('menuMapAlerts', language)) },
         { label: t('menuMapFront', language), click: () => openMapWindow(FRONT_MAP_URL, t('menuMapFront', language)) },
+        { label: t('menuForecast', language), click: () => openForecastWindow() },
         { label: t('menuSettings', language), click: () => openSettingsWindow() },
         {
             label: t('menuInfo', language),
