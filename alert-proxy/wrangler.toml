@@ -4,3 +4,11 @@ compatibility_date = "2026-07-19"
 
 [observability]
 enabled = true
+
+[[durable_objects.bindings]]
+name = "ALERTS_GATEWAY"
+class_name = "AlertsGateway"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["AlertsGateway"]
