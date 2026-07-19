@@ -1,0 +1,6 @@
+{
+    "alertStarted": "Alert",
+    "alertCancelled": "Alert cancelled",
+    "location": "Location",
+    "activeInMonitored": "Active alerts in monitored regions"
+}

@@ -9,8 +9,11 @@ const { logEvent } = require('./services/logger');
 const { startPolling } = require('./services/alertPoller');
 const { filterAlerts } = require('./services/locationFilter');
 const { loadLocalConfig } = require('./services/localConfig');
+const { processAlerts } = require('./services/notifier');
 
 const LEGACY_APP_DIR = 'd:\\Projects\\Current_Alert';
+
+app.setAppUserModelId('com.sergeiown.alertserver');
 
 app.whenReady().then(() => {
     const result = importLegacyConfig(LEGACY_APP_DIR, { settingsStore, regionsStore });
@@ -26,6 +29,7 @@ app.whenReady().then(() => {
         startPolling(alertProxyClientKey, (alertData) => {
             const matched = filterAlerts(alertData);
             logEvent(`Poll: ${alertData.alerts.length} active alerts, ${matched.length} in monitored regions`);
+            processAlerts(matched);
         });
     } else {
         logEvent('alertProxyClientKey missing from config.local.json, polling disabled');

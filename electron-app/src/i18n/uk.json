@@ -1,0 +1,6 @@
+{
+    "alertStarted": "Тривога",
+    "alertCancelled": "Відбій тривоги",
+    "location": "Локація",
+    "activeInMonitored": "Активних тривог у ваших регіонах"
+}
