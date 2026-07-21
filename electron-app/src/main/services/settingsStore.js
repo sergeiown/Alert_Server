@@ -6,6 +6,7 @@ const defaultSettings = {
     trayMonoIcon: false,
     alertSoundMode: 'siren',
     alertSoundCount: 1,
+    forecastNotifyEnabled: true,
 };
 
 let settings = null;

@@ -6,6 +6,8 @@ const { openForecastWindow } = require('../windows/forecastWindow');
 const { toggleTrayPopup } = require('../windows/trayPopupWindow');
 const settingsStore = require('./settingsStore');
 const { logEvent } = require('./logger');
+const { formatDuration } = require('./forecast');
+const { getUpcomingPredictions } = require('./forecastWatcher');
 const { t } = require('../../i18n/i18n');
 
 const ALERTS_MAP_URL = 'https://alerts.in.ua/';
@@ -96,9 +98,20 @@ function updateTrayState(activeCount) {
 
     const { language, trayMonoIcon } = settingsStore.getSettings();
     trayInstance.setImage(iconPath(activeCount, trayMonoIcon));
-    trayInstance.setToolTip(
-        activeCount > 0 ? `${t('trayActiveTooltip', language)}: ${activeCount}` : t('trayDefaultTooltip', language)
-    );
+
+    if (activeCount > 0) {
+        trayInstance.setToolTip(`${t('trayActiveTooltip', language)}: ${activeCount}`);
+        return;
+    }
+
+    const [upcoming] = getUpcomingPredictions(language, 1);
+    if (upcoming) {
+        const etaText = formatDuration(Math.max(0, upcoming.predictedAt - Date.now()), language);
+        trayInstance.setToolTip(`${t('forecastUpcoming', language)}: ${upcoming.name} ~${etaText}`);
+        return;
+    }
+
+    trayInstance.setToolTip(t('trayDefaultTooltip', language));
 }
 
 module.exports = { createTray, updateTrayState };

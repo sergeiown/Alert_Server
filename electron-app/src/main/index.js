@@ -14,6 +14,7 @@ const { loadLocalConfig } = require('./services/localConfig');
 const { processAlerts, getActiveCount } = require('./services/notifier');
 const { setLatestMatchedAlerts } = require('./services/alertState');
 const { createTray, updateTrayState } = require('./services/tray');
+const { startForecastWatcher } = require('./services/forecastWatcher');
 const { installHandlers } = require('./services/crashRestart');
 const { delayedCheckForUpdates } = require('./services/updater');
 const { destroySettingsWindow } = require('./windows/settingsWindow');
@@ -40,6 +41,7 @@ app.whenReady().then(() => {
     registerTrayPopupIpc();
 
     createTray();
+    startForecastWatcher();
     delayedCheckForUpdates();
 
     const { alertProxyClientKey } = loadLocalConfig();

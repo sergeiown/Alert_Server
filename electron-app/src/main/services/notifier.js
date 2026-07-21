@@ -140,4 +140,4 @@ function getActiveCount() {
     return displayedAlerts.size;
 }
 
-module.exports = { processAlerts, getActiveCount };
+module.exports = { processAlerts, getActiveCount, createNotification };
