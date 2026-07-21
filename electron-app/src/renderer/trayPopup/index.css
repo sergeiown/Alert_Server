@@ -77,3 +77,26 @@ main {
     color: var(--muted);
     padding: 4px 0;
 }
+
+#forecast-section {
+    flex: 0 0 auto;
+    border-top: 1px solid var(--border);
+    padding: 6px 10px;
+}
+
+#forecast-section.hidden {
+    display: none;
+}
+
+#forecast-header {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.forecast-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    color: var(--muted);
+    padding: 2px 0;
+}

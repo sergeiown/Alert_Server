@@ -5,6 +5,7 @@ const searchInput = document.getElementById('search');
 const summary = document.getElementById('summary');
 const runAtStartupInput = document.getElementById('runAtStartup');
 const trayMonoIconInput = document.getElementById('trayMonoIcon');
+const forecastNotifyEnabledInput = document.getElementById('forecastNotifyEnabled');
 const alertSoundModeInput = document.getElementById('alertSoundMode');
 const alertSoundCountInput = document.getElementById('alertSoundCount');
 const languageInput = document.getElementById('language');
@@ -13,6 +14,7 @@ function applyStrings(strings) {
     document.title = strings.windowTitle;
     document.getElementById('runAtStartupLabel').textContent = strings.runAtStartupLabel;
     document.getElementById('trayMonoIconLabel').textContent = strings.trayMonoIconLabel;
+    document.getElementById('settingsForecastNotifyLabel').textContent = strings.settingsForecastNotifyLabel;
     document.getElementById('alertSoundLabel').textContent = strings.alertSoundLabel;
     document.getElementById('alertSoundModeNoneOption').textContent = strings.alertSoundModeNone;
     document.getElementById('alertSoundModeSirenOption').textContent = strings.alertSoundModeSiren;
@@ -30,6 +32,7 @@ function formatSummary(template, selected, total) {
 
 async function initGeneralSettings(settings) {
     trayMonoIconInput.checked = settings.trayMonoIcon;
+    forecastNotifyEnabledInput.checked = settings.forecastNotifyEnabled;
     alertSoundModeInput.value = settings.alertSoundMode;
     alertSoundCountInput.value = settings.alertSoundCount;
     languageInput.value = settings.language;
@@ -37,6 +40,9 @@ async function initGeneralSettings(settings) {
 
     trayMonoIconInput.addEventListener('change', () => {
         window.alertServer.setSetting('trayMonoIcon', trayMonoIconInput.checked);
+    });
+    forecastNotifyEnabledInput.addEventListener('change', () => {
+        window.alertServer.setSetting('forecastNotifyEnabled', forecastNotifyEnabledInput.checked);
     });
     alertSoundModeInput.addEventListener('change', () => {
         window.alertServer.setSetting('alertSoundMode', alertSoundModeInput.value);

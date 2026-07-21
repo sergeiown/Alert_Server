@@ -3,6 +3,9 @@ const settingsStore = require('../services/settingsStore');
 const { getLatestMatchedAlerts } = require('../services/alertState');
 const { alertTypeName } = require('../services/alertTypes');
 const { getResourcePath } = require('../services/appPaths');
+const { getUpcomingPredictions } = require('../services/forecastWatcher');
+
+const POPUP_FORECAST_LIMIT = 3;
 
 function registerTrayPopupIpc() {
     ipcMain.handle('trayPopup:getIcon', () =>
@@ -16,6 +19,14 @@ function registerTrayPopupIpc() {
             location: language === 'English' ? alert.location_lat : alert.location_title,
             type: alertTypeName(alert.alert_type, language),
             startedAt: alert.started_at,
+        }));
+    });
+
+    ipcMain.handle('trayPopup:getForecast', () => {
+        const language = settingsStore.getSettings().language;
+        return getUpcomingPredictions(language, POPUP_FORECAST_LIMIT).map((prediction) => ({
+            name: prediction.name,
+            predictedAt: prediction.predictedAt,
         }));
     });
 }
