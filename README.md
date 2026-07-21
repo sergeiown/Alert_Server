@@ -23,8 +23,8 @@ On first launch the app appears as a tray icon only, no window. Everything is co
 ![tray menu](docs/images/tray-menu-en.png)
 
 - **Alert map** / **Front line map** open [alerts.in.ua](https://alerts.in.ua/) and [DeepState](https://deepstatemap.live) in a dedicated app window.
-- **Forecast** opens a window showing, for each monitored region, either a notice that an alert is currently active or historical statistics from the past month (alert count, average interval, most common time and alert type, time since the last alert ended, and a soft trend-based estimate) - clearly labeled as statistics, not a guaranteed prediction. Each region's summary can be copied to the clipboard.
-- **Settings…** opens the settings window, where you pick which regions to monitor (searchable tree, from oblast down to individual community), choose the interface language, toggle monochrome tray icon, sound notification mode (none, siren, or voice) and its repeat count, and enable launching at Windows startup. Follows the Windows light/dark theme automatically.
+- **Forecast** opens a window showing, for each monitored region, either a notice that an alert is currently active or historical statistics from the past month (alert count, average interval, most common time and day of week, time since the last alert ended) plus, for each alert type, a probability and an ETA. Both numbers now come from one underlying statistical model, so they no longer contradict each other: recent alerts count more than older ones, and alert types with little history get a cautious estimate instead of an overconfident one - still clearly labeled as statistics, not a guaranteed prediction. Each region's summary can be copied to the clipboard. The nearest upcoming forecast across your monitored regions is also visible at a glance, without opening this window - see below.
+- **Settings…** opens the settings window, where you pick which regions to monitor (searchable tree, from oblast down to individual community), choose the interface language, toggle monochrome tray icon, sound notification mode (none, siren, or voice) and its repeat count, forecast approach notifications, and launching at Windows startup. Follows the Windows light/dark theme automatically.
 - **Information → Log** opens the event log; **About** shows the current version and license.
 
 ![settings window](docs/images/settings-window-en.png)
@@ -32,6 +32,8 @@ On first launch the app appears as a tray icon only, no window. Everything is co
 Notifications for the start and end of an alert appear through the Windows Notification Center; clicking one shows the alert's location and start time.
 
 ![alert notification](docs/images/alert-en.png)
+
+Left-clicking the tray icon opens a small popup with any active alerts and, below them, the nearest upcoming forecast for your monitored regions - handy when you just want a quick glance without opening the Forecast window. Hovering the tray icon shows the same nearest forecast as a tooltip when there's no active alert. If enabled in Settings (on by default), the app also sends a quiet notification - no sound - when a forecasted alert time is approaching, separate from the loud alert/cancellation notifications above.
 
 The event log records app activity (start/exit, settings and region changes, alerts, update checks) and is capped at 256 KB, automatically trimmed once it grows past that.
 
