@@ -1,0 +1,7 @@
+module.exports = {
+    WINDOW_DAYS: 30,
+    HALF_LIFE_DAYS: 1,
+    PRIOR_BETA_DAYS: 4,
+    NOTIFY_LOOKAHEAD_MINUTES: 60,
+    NOTIFY_COOLDOWN_HOURS: 4,
+};
