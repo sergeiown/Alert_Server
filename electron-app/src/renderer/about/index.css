@@ -1,0 +1,67 @@
+:root {
+    --bg: #ffffff;
+    --fg: #1f1f1f;
+    --muted: #666666;
+    --link: #2563eb;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #1e1e1e;
+        --fg: #e6e6e6;
+        --muted: #aaaaaa;
+        --link: #6ea8fe;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 4px;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: Segoe UI, Tahoma, sans-serif;
+    font-size: 13px;
+}
+
+#icon {
+    width: 96px;
+    height: 96px;
+    margin-bottom: 10px;
+}
+
+#appTitle {
+    font-size: 16px;
+    margin: 0 0 8px;
+}
+
+#body {
+    color: var(--muted);
+    margin: 0 0 12px;
+}
+
+#license,
+#copyright {
+    color: var(--muted);
+    margin: 2px 0;
+}
+
+#githubLink {
+    color: var(--link);
+    margin-top: 12px;
+    text-decoration: none;
+    cursor: pointer;
+    word-break: break-all;
+}
+
+#githubLink:hover {
+    text-decoration: underline;
+}

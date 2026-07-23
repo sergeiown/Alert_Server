@@ -46,4 +46,9 @@ function logEvent(message) {
     console.log(text);
 }
 
-module.exports = { logEvent };
+function clearLog() {
+    const filePath = getUserDataFile('event.log');
+    fs.writeFileSync(filePath, 'Date,Time,Event' + os.EOL, 'utf-8');
+}
+
+module.exports = { logEvent, clearLog };
