@@ -10,8 +10,6 @@ A Windows tray application built with Electron that receives alert data from [al
 
 ![architecture](docs/images/architecture-en.svg)
 
-<sup>Rendered from [docs/diagrams/architecture-en.mmd](docs/diagrams/architecture-en.mmd) - edit the source and re-render if the architecture changes.</sup>
-
 ## Installation
 
 Download the latest installer (`Alert Server Setup x.x.x.exe`) from [Releases](https://github.com/sergeiown/Alert_Server/releases) and run it. It's a standard NSIS installer: no administrator rights required, per-user install, with a Start Menu shortcut and uninstaller created automatically.

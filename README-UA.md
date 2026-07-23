@@ -10,8 +10,6 @@
 
 ![архітектура](docs/images/architecture-uk.svg)
 
-<sup>Згенеровано з [docs/diagrams/architecture-uk.mmd](docs/diagrams/architecture-uk.mmd) - редагуйте джерело і перегенеруйте зображення, якщо архітектура зміниться.</sup>
-
 ## Встановлення
 
 Завантажте останній інсталятор (`Alert Server Setup x.x.x.exe`) зі сторінки [Releases](https://github.com/sergeiown/Alert_Server/releases) і запустіть його. Це стандартний NSIS-інсталятор: не потребує прав адміністратора, встановлення для одного користувача, ярлик у меню Пуск і деінсталятор створюються автоматично.
