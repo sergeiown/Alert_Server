@@ -8,7 +8,7 @@ A Windows tray application built with Electron that receives alert data from [al
 
 ## Architecture
 
-![architecture](docs/images/architecture-en.svg)
+[![architecture](docs/images/architecture-en.svg)](docs/diagrams/architecture-en.mmd)
 
 ## Installation
 

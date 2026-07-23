@@ -8,7 +8,7 @@
 
 ## Архітектура
 
-![архітектура](docs/images/architecture-uk.svg)
+[![архітектура](docs/images/architecture-uk.svg)](docs/diagrams/architecture-uk.mmd)
 
 ## Встановлення
 
