@@ -8,7 +8,54 @@ A Windows tray application built with Electron that receives alert data from [al
 
 ## Architecture
 
-![architecture](docs/images/architecture-en.svg)
+```mermaid
+flowchart LR
+    subgraph ext["External"]
+        api["alerts.in.ua"]
+        proxy["alert-proxy<br/>(Cloudflare Worker)"]
+        gh["GitHub Releases"]
+    end
+
+    subgraph main["Electron main process"]
+        poller["alertPoller"]
+        notifier["notifier"]
+        forecast["forecast /<br/>forecastModel /<br/>forecastHistoryStore"]
+        watcher["forecastWatcher"]
+        tray["tray"]
+        stores["regionsStore /<br/>settingsStore"]
+        updater["updater"]
+    end
+
+    subgraph windows["Renderer windows (via IPC)"]
+        settingsWin["Settings"]
+        forecastWin["Forecast"]
+        popup["Tray popup"]
+        logWin["Log"]
+        aboutWin["About"]
+    end
+
+    api --> proxy
+    proxy -->|active alerts, 30s poll| poller
+    proxy -->|history, on demand| forecast
+
+    poller --> notifier
+    notifier -->|OS notifications| tray
+
+    forecast --> watcher
+    watcher -->|forecast notifications| tray
+    watcher --> popup
+
+    stores <--> settingsWin
+    forecast <--> forecastWin
+
+    tray --> settingsWin
+    tray --> forecastWin
+    tray --> logWin
+    tray --> aboutWin
+    tray --> popup
+
+    updater <--> gh
+```
 
 ## Installation
 
@@ -23,9 +70,9 @@ On first launch the app appears as a tray icon only, no window. Everything is co
 ![tray menu](docs/images/tray-menu-en.png)
 
 - **Alert map** / **Front line map** open [alerts.in.ua](https://alerts.in.ua/) and [DeepState](https://deepstatemap.live) in a dedicated app window.
-- **Forecast** opens a window showing, for each monitored region, either a notice that an alert is currently active or historical statistics from the past month (alert count, average interval, most common time and day of week, time since the last alert ended) plus, for each alert type, a probability and an ETA. Both numbers now come from one underlying statistical model, so they no longer contradict each other: recent alerts count more than older ones, and alert types with little history get a cautious estimate instead of an overconfident one - still clearly labeled as statistics, not a guaranteed prediction. Each region's summary can be copied to the clipboard. The nearest upcoming forecast across your monitored regions is also visible at a glance, without opening this window - see below.
-- **Settings…** opens the settings window, where you pick which regions to monitor (searchable tree, from oblast down to individual community), choose the interface language, toggle monochrome tray icon, sound notification mode (none, siren, or voice) and its repeat count, forecast approach notifications, and launching at Windows startup. Follows the Windows light/dark theme automatically.
-- **Information → Log** opens the event log; **About** shows the current version and license.
+- **Forecast** opens a window showing, for each monitored region, either a notice that an alert is currently active or historical statistics from the past month (alert count, average interval, most common time and day of week, time since the last alert ended) plus, for each alert type, a probability and an ETA. Both numbers now come from one underlying statistical model, so they no longer contradict each other: recent alerts count more than older ones, and alert types with little history get a cautious estimate instead of an overconfident one - still clearly labeled as statistics, not a guaranteed prediction. Each region's summary can be copied to the clipboard. Below the list, a small block shows how much alert history has accumulated locally beyond the API's 30-day window (used to make the rare-type estimates more stable), with a button to clear it if needed. The nearest upcoming forecast across your monitored regions is also visible at a glance, without opening this window - see below.
+- **Settings…** opens a two-column settings window: regions to monitor on the left (searchable tree, from oblast down to individual community), and everything else on the right - interface language, monochrome tray icon, visual notifications (with a separate toggle just for active-alert notifications), forecast-approach notifications and how many minutes ahead to warn, sound notification mode (none, siren, or voice) and its repeat count, and launching at Windows startup. Dependent options grey out automatically (e.g. the sound repeat count when sound is off). Follows the Windows light/dark theme automatically.
+- **Information → Log** opens an in-app, terminal-styled log viewer with a clear-log button; **About** shows the current version, license, and a link to the project's GitHub page.
 
 ![settings window](docs/images/settings-window-en.png)
 
