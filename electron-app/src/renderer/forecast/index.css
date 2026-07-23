@@ -97,3 +97,32 @@ main {
 .copy-button:hover {
     background: var(--active-bg);
 }
+
+#localStats {
+    flex: 0 0 auto;
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+}
+
+#localStats p {
+    margin: 0 0 6px;
+}
+
+#localStatsNote {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+#clearStatsButton {
+    padding: 4px 10px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--fg);
+    cursor: pointer;
+}
+
+#clearStatsButton:hover {
+    background: var(--active-bg);
+}

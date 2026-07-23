@@ -15,10 +15,28 @@ function addCopyButton(card, pre, strings) {
     card.appendChild(button);
 }
 
+async function renderLocalStats(strings) {
+    const stats = await window.alertServerForecast.getLocalStats();
+    const line = strings.forecastLocalStatsLabel
+        .replace('{days}', stats.spanDays)
+        .replace('{regions}', stats.regionCount)
+        .replace('{total}', stats.totalAlerts);
+    document.getElementById('localStatsLine').textContent = line;
+    document.getElementById('localStatsNote').textContent = strings.forecastLocalStatsNote;
+}
+
 async function main() {
     const strings = await window.alertServerForecast.getStrings();
     document.title = strings.forecastWindowTitle;
     document.getElementById('forecastHeader').textContent = strings.forecastHeader;
+
+    const clearStatsButton = document.getElementById('clearStatsButton');
+    clearStatsButton.textContent = strings.forecastClearStatsButton;
+    clearStatsButton.addEventListener('click', async () => {
+        const { cleared } = await window.alertServerForecast.clearLocalStats();
+        if (cleared) await renderLocalStats(strings);
+    });
+    await renderLocalStats(strings);
 
     const regions = await window.alertServerForecast.getRegions();
 

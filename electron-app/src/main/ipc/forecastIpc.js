@@ -1,9 +1,11 @@
-const { ipcMain } = require('electron');
+const { ipcMain, dialog, BrowserWindow } = require('electron');
 const regionsStore = require('../services/regionsStore');
 const settingsStore = require('../services/settingsStore');
 const { getLocationLookup } = require('../services/locationFilter');
 const { getLatestAlertData } = require('../services/alertPoller');
 const { getRegionForecastText } = require('../services/forecast');
+const historyStore = require('../services/forecastHistoryStore');
+const { t } = require('../../i18n/i18n');
 
 function registerForecastIpc() {
     ipcMain.handle('forecast:getRegions', () => {
@@ -30,6 +32,27 @@ function registerForecastIpc() {
         if (!text) return { status: 'empty' };
 
         return { status: 'ok', text };
+    });
+
+    ipcMain.handle('forecast:getLocalStats', () => historyStore.getStats());
+
+    ipcMain.handle('forecast:clearLocalStats', async (event) => {
+        const language = settingsStore.getSettings().language;
+        const window = BrowserWindow.fromWebContents(event.sender);
+
+        const { response } = await dialog.showMessageBox(window, {
+            type: 'warning',
+            buttons: [t('forecastClearStatsConfirmYes', language), t('forecastClearStatsConfirmNo', language)],
+            defaultId: 1,
+            cancelId: 1,
+            title: t('forecastClearStatsTitle', language),
+            message: t('forecastClearStatsWarning', language),
+        });
+
+        if (response !== 0) return { cleared: false };
+
+        historyStore.clearAll();
+        return { cleared: true };
     });
 }
 

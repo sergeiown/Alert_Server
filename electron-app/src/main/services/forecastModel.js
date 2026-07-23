@@ -38,9 +38,12 @@ function estimateTypeLambda(typeAlerts, totalCount, regionLambda, nowMs, config)
 
 function computeStats(alerts, nowMs, config) {
     const { lambda: lambdaRegion, usableAlerts } = estimateRegionLambda(alerts, nowMs, config);
-    if (!usableAlerts.length) return null;
 
-    const sortedDesc = [...usableAlerts].sort((a, b) => new Date(b.started_at) - new Date(a.started_at));
+    const windowStartMs = nowMs - config.WINDOW_DAYS * DAY_MS;
+    const windowAlerts = usableAlerts.filter((a) => new Date(a.started_at).getTime() >= windowStartMs);
+    if (!windowAlerts.length) return null;
+
+    const sortedDesc = [...windowAlerts].sort((a, b) => new Date(b.started_at) - new Date(a.started_at));
     const count = sortedDesc.length;
     const perDay = count / config.WINDOW_DAYS;
 
@@ -61,7 +64,6 @@ function computeStats(alerts, nowMs, config) {
     });
     const mostCommonBucket = Object.entries(hourBuckets).sort((a, b) => b[1] - a[1])[0][0];
 
-    const windowStartMs = nowMs - config.WINDOW_DAYS * DAY_MS;
     const weekdayOccurrences = [0, 0, 0, 0, 0, 0, 0];
     for (let d = 0; d < config.WINDOW_DAYS; d++) {
         const day = new Date(windowStartMs + d * DAY_MS).getDay();
@@ -89,10 +91,17 @@ function computeStats(alerts, nowMs, config) {
         byType.get(a.alert_type).push(a);
     });
 
+    const byTypeFull = new Map();
+    usableAlerts.forEach((a) => {
+        if (!byTypeFull.has(a.alert_type)) byTypeFull.set(a.alert_type, []);
+        byTypeFull.get(a.alert_type).push(a);
+    });
+
     const typeBreakdown = Array.from(byType.entries())
-        .map(([type, typeAlerts]) => {
-            const typeCount = typeAlerts.length;
-            const lambdaType = estimateTypeLambda(typeAlerts, count, lambdaRegion, nowMs, config);
+        .map(([type, typeAlertsWindow]) => {
+            const typeCount = typeAlertsWindow.length;
+            const typeAlertsFull = byTypeFull.get(type) || typeAlertsWindow;
+            const lambdaType = estimateTypeLambda(typeAlertsFull, usableAlerts.length, lambdaRegion, nowMs, config);
 
             const percent = Math.round((typeCount / count) * 100);
             const probabilityToday = Math.round((1 - Math.exp(-lambdaType)) * 100);
