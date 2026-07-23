@@ -4,6 +4,7 @@ const { alertTypeName } = require('./alertTypes');
 const { t } = require('../../i18n/i18n');
 const forecastConfig = require('./forecastConfig');
 const { computeStats, estimateRegionLambda } = require('./forecastModel');
+const historyStore = require('./forecastHistoryStore');
 
 function weekdayName(weekdayIndex, language) {
     const locale = language === 'English' ? 'en-US' : 'uk-UA';
@@ -64,6 +65,7 @@ async function fetchHistoryAlerts(uid) {
         const data = await response.json();
         const alerts = data.alerts || [];
         logDataHygiene(alerts);
+        historyStore.mergeAlerts(uid, alerts);
         historyCache.set(uid, { fetchedAt: Date.now(), alerts });
         return alerts;
     };
@@ -130,15 +132,20 @@ function buildForecastText(stats, language) {
     return lines.join('\n');
 }
 
+async function getAccumulatedAlerts(uid) {
+    await fetchHistoryAlerts(uid);
+    return historyStore.getAllAlertsForRegion(uid);
+}
+
 async function getRegionForecastText(uid, language) {
-    const alerts = await fetchHistoryAlerts(uid);
+    const alerts = await getAccumulatedAlerts(uid);
     const stats = computeStats(alerts, Date.now(), forecastConfig);
     if (!stats) return null;
     return buildForecastText(stats, language);
 }
 
 async function getRegionLambda(uid) {
-    const alerts = await fetchHistoryAlerts(uid);
+    const alerts = await getAccumulatedAlerts(uid);
     if (!alerts.length) return null;
     const { lambda } = estimateRegionLambda(alerts, Date.now(), forecastConfig);
     return lambda;
