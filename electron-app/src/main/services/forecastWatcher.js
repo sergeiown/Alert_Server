@@ -51,9 +51,10 @@ async function checkRegion(uid, language) {
     const state = { predictedAt, lastNotifiedAt: previous ? previous.lastNotifiedAt : null };
     predictions.set(uid, state);
 
-    if (!settingsStore.getSettings().forecastNotifyEnabled) return;
+    const settings = settingsStore.getSettings();
+    if (!settings.visualNotificationsEnabled || !settings.forecastNotifyEnabled) return;
 
-    const lookaheadMinutes = forecastConfig.NOTIFY_LOOKAHEAD_MINUTES;
+    const lookaheadMinutes = settings.forecastNotifyLookaheadMinutes || forecastConfig.NOTIFY_LOOKAHEAD_MINUTES;
     const probability = 1 - Math.exp(-lambda * (lookaheadMinutes / (60 * 24)));
     if (probability < forecastConfig.NOTIFY_PROBABILITY_THRESHOLD) return;
 

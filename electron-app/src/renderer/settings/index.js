@@ -5,7 +5,10 @@ const searchInput = document.getElementById('search');
 const summary = document.getElementById('summary');
 const runAtStartupInput = document.getElementById('runAtStartup');
 const trayMonoIconInput = document.getElementById('trayMonoIcon');
+const visualNotificationsEnabledInput = document.getElementById('visualNotificationsEnabled');
+const activeAlertNotifyEnabledInput = document.getElementById('activeAlertNotifyEnabled');
 const forecastNotifyEnabledInput = document.getElementById('forecastNotifyEnabled');
+const forecastNotifyLookaheadMinutesInput = document.getElementById('forecastNotifyLookaheadMinutes');
 const alertSoundModeInput = document.getElementById('alertSoundMode');
 const alertSoundCountInput = document.getElementById('alertSoundCount');
 const languageInput = document.getElementById('language');
@@ -14,7 +17,10 @@ function applyStrings(strings) {
     document.title = strings.windowTitle;
     document.getElementById('runAtStartupLabel').textContent = strings.runAtStartupLabel;
     document.getElementById('trayMonoIconLabel').textContent = strings.trayMonoIconLabel;
+    document.getElementById('visualNotificationsLabel').textContent = strings.visualNotificationsLabel;
+    document.getElementById('activeAlertNotifyLabel').textContent = strings.activeAlertNotifyLabel;
     document.getElementById('settingsForecastNotifyLabel').textContent = strings.settingsForecastNotifyLabel;
+    document.getElementById('forecastNotifyLookaheadLabel').textContent = strings.forecastNotifyLookaheadLabel;
     document.getElementById('alertSoundLabel').textContent = strings.alertSoundLabel;
     document.getElementById('alertSoundModeNoneOption').textContent = strings.alertSoundModeNone;
     document.getElementById('alertSoundModeSirenOption').textContent = strings.alertSoundModeSiren;
@@ -30,22 +36,53 @@ function formatSummary(template, selected, total) {
     return template.replace('{selected}', selected).replace('{total}', total);
 }
 
+function updateNotifyDisabledState() {
+    const visualOn = visualNotificationsEnabledInput.checked;
+    activeAlertNotifyEnabledInput.disabled = !visualOn;
+    forecastNotifyEnabledInput.disabled = !visualOn;
+    forecastNotifyLookaheadMinutesInput.disabled = !visualOn || !forecastNotifyEnabledInput.checked;
+}
+
+function updateSoundCountDisabledState() {
+    alertSoundCountInput.disabled = alertSoundModeInput.value === 'none';
+}
+
 async function initGeneralSettings(settings) {
     trayMonoIconInput.checked = settings.trayMonoIcon;
+    visualNotificationsEnabledInput.checked = settings.visualNotificationsEnabled;
+    activeAlertNotifyEnabledInput.checked = settings.activeAlertNotifyEnabled;
     forecastNotifyEnabledInput.checked = settings.forecastNotifyEnabled;
+    forecastNotifyLookaheadMinutesInput.value = settings.forecastNotifyLookaheadMinutes;
     alertSoundModeInput.value = settings.alertSoundMode;
     alertSoundCountInput.value = settings.alertSoundCount;
     languageInput.value = settings.language;
     runAtStartupInput.checked = await window.alertServer.getLoginItem();
 
+    updateNotifyDisabledState();
+    updateSoundCountDisabledState();
+
     trayMonoIconInput.addEventListener('change', () => {
         window.alertServer.setSetting('trayMonoIcon', trayMonoIconInput.checked);
     });
+    visualNotificationsEnabledInput.addEventListener('change', () => {
+        window.alertServer.setSetting('visualNotificationsEnabled', visualNotificationsEnabledInput.checked);
+        updateNotifyDisabledState();
+    });
+    activeAlertNotifyEnabledInput.addEventListener('change', () => {
+        window.alertServer.setSetting('activeAlertNotifyEnabled', activeAlertNotifyEnabledInput.checked);
+    });
     forecastNotifyEnabledInput.addEventListener('change', () => {
         window.alertServer.setSetting('forecastNotifyEnabled', forecastNotifyEnabledInput.checked);
+        updateNotifyDisabledState();
+    });
+    forecastNotifyLookaheadMinutesInput.addEventListener('change', () => {
+        const minutes = Math.max(1, Math.min(300, Number(forecastNotifyLookaheadMinutesInput.value) || 60));
+        forecastNotifyLookaheadMinutesInput.value = minutes;
+        window.alertServer.setSetting('forecastNotifyLookaheadMinutes', minutes);
     });
     alertSoundModeInput.addEventListener('change', () => {
         window.alertServer.setSetting('alertSoundMode', alertSoundModeInput.value);
+        updateSoundCountDisabledState();
     });
     alertSoundCountInput.addEventListener('change', () => {
         const count = Math.max(1, Math.min(10, Number(alertSoundCountInput.value) || 1));
