@@ -1,6 +1,10 @@
 import { createRegionTree } from './components/RegionTree.js';
+import { createUkraineMap } from './components/UkraineMap.js';
+
+let mapInstance = null;
 
 const treeContainer = document.getElementById('tree');
+const mapContainer = document.getElementById('map-container');
 const searchInput = document.getElementById('search');
 const summary = document.getElementById('summary');
 const runAtStartupInput = document.getElementById('runAtStartup');
@@ -91,6 +95,7 @@ async function initGeneralSettings(settings) {
     });
     languageInput.addEventListener('change', () => {
         window.alertServer.setSetting('language', languageInput.value);
+        if (mapInstance) mapInstance.setLanguage(languageInput.value);
     });
     runAtStartupInput.addEventListener('change', async () => {
         runAtStartupInput.checked = await window.alertServer.setLoginItem(runAtStartupInput.checked);
@@ -124,10 +129,23 @@ function totalRegionsCount(tree) {
 
     let selectedCount = selectedUids.length;
 
-    const regionTree = createRegionTree(treeContainer, tree, selectedUids, settings.language, async (uid, wasChecked) => {
+    async function applyToggle(uid) {
         const isSelected = await window.alertServer.toggleRegion(uid);
         selectedCount += isSelected ? 1 : -1;
         updateSummary(selectedCount);
+        return isSelected;
+    }
+
+    const regionTree = createRegionTree(treeContainer, tree, selectedUids, settings.language, async (uid) => {
+        const isSelected = await applyToggle(uid);
+        if (mapInstance) mapInstance.setSelected(uid, isSelected);
+        return isSelected;
+    });
+
+    const mapSvg = await window.alertServer.getMapSvg();
+    mapInstance = createUkraineMap(mapContainer, mapSvg, tree, selectedUids, settings.language, async (uid) => {
+        const isSelected = await applyToggle(uid);
+        regionTree.setUidChecked(uid, isSelected);
         return isSelected;
     });
 

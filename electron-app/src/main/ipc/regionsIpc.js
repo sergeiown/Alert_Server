@@ -5,6 +5,7 @@ const regionsStore = require('../services/regionsStore');
 const { logEvent } = require('../services/logger');
 
 let cachedTree = null;
+let cachedMapSvg = null;
 
 function getTree() {
     if (!cachedTree) {
@@ -13,8 +14,16 @@ function getTree() {
     return cachedTree;
 }
 
+function getMapSvg() {
+    if (!cachedMapSvg) {
+        cachedMapSvg = fs.readFileSync(getResourcePath('icons', 'ukraine_default.svg'), 'utf-8');
+    }
+    return cachedMapSvg;
+}
+
 function registerRegionsIpc() {
     ipcMain.handle('regions:getTree', () => getTree());
+    ipcMain.handle('regions:getMapSvg', () => getMapSvg());
     ipcMain.handle('regions:getSelected', () => regionsStore.getSelectedUids());
     ipcMain.handle('regions:setSelected', (event, uids) => {
         regionsStore.setSelectedUids(uids);
