@@ -3,7 +3,7 @@ const { loadLocalConfig } = require('./localConfig');
 const { alertTypeName } = require('./alertTypes');
 const { t } = require('../../i18n/i18n');
 const forecastConfig = require('./forecastConfig');
-const { computeStats, estimateRegionLambda } = require('./forecastModel');
+const { computeStats, estimateRegionLambda, estimateTypeLambda } = require('./forecastModel');
 const historyStore = require('./forecastHistoryStore');
 
 function weekdayName(weekdayIndex, language) {
@@ -151,4 +151,30 @@ async function getRegionLambda(uid) {
     return lambda;
 }
 
-module.exports = { getRegionForecastText, getRegionLambda, fetchHistoryAlerts, formatDuration };
+async function getRegionTypeLambdas(uid) {
+    const alerts = await getAccumulatedAlerts(uid);
+    if (!alerts.length) return [];
+
+    const nowMs = Date.now();
+    const { lambda: lambdaRegion, usableAlerts } = estimateRegionLambda(alerts, nowMs, forecastConfig);
+    if (!usableAlerts.length) return [];
+
+    const byType = new Map();
+    usableAlerts.forEach((alert) => {
+        if (!byType.has(alert.alert_type)) byType.set(alert.alert_type, []);
+        byType.get(alert.alert_type).push(alert);
+    });
+
+    return Array.from(byType.entries()).map(([type, typeAlerts]) => ({
+        type,
+        lambda: estimateTypeLambda(typeAlerts, usableAlerts.length, lambdaRegion, nowMs, forecastConfig),
+    }));
+}
+
+module.exports = {
+    getRegionForecastText,
+    getRegionLambda,
+    getRegionTypeLambdas,
+    fetchHistoryAlerts,
+    formatDuration,
+};

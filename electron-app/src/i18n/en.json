@@ -65,7 +65,6 @@
     "forecastClearStatsConfirmYes": "Clear",
     "forecastClearStatsConfirmNo": "Cancel",
     "forecastNotifyTitle": "Forecast",
-    "forecastNotifyBody": "an alert may occur soon, based on historical statistics",
     "forecastUpcoming": "Forecast",
     "forecastUpcomingHeader": "Forecast",
     "settingsForecastNotifyLabel": "Notify when a forecasted alert time is approaching",
