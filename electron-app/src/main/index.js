@@ -4,6 +4,7 @@ const { registerRegionsIpc } = require('./ipc/regionsIpc');
 const { registerSystemIpc } = require('./ipc/systemIpc');
 const { registerForecastIpc } = require('./ipc/forecastIpc');
 const { registerTrayPopupIpc } = require('./ipc/trayPopupIpc');
+const { registerLogIpc } = require('./ipc/logIpc');
 const { importLegacyConfig } = require('./migration/importLegacyConfig');
 const settingsStore = require('./services/settingsStore');
 const regionsStore = require('./services/regionsStore');
@@ -39,6 +40,7 @@ app.whenReady().then(() => {
     registerSystemIpc();
     registerForecastIpc();
     registerTrayPopupIpc();
+    registerLogIpc();
 
     createTray();
     startForecastWatcher();

@@ -1,8 +1,10 @@
-const { Tray, Menu, shell, dialog, app, Notification, nativeImage } = require('electron');
-const { getResourcePath, getUserDataFile } = require('./appPaths');
+const { Tray, Menu, app, Notification, nativeImage } = require('electron');
+const { getResourcePath } = require('./appPaths');
 const { openSettingsWindow } = require('../windows/settingsWindow');
 const { openMapWindow } = require('../windows/mapWindow');
 const { openForecastWindow } = require('../windows/forecastWindow');
+const { openLogWindow } = require('../windows/logWindow');
+const { openAboutWindow } = require('../windows/aboutWindow');
 const { toggleTrayPopup } = require('../windows/trayPopupWindow');
 const settingsStore = require('./settingsStore');
 const { logEvent } = require('./logger');
@@ -48,22 +50,8 @@ function buildMenu(language) {
         {
             label: t('menuInfo', language),
             submenu: [
-                { label: t('menuLog', language), click: () => shell.openPath(getUserDataFile('event.log')) },
-                {
-                    label: t('menuAbout', language),
-                    click: () =>
-                        dialog.showMessageBox({
-                            type: 'info',
-                            title: t('appName', language),
-                            message: `${t('appName', language)} v${app.getVersion()}`,
-                            detail: [
-                                t('aboutBody', language),
-                                '',
-                                t('aboutLicense', language),
-                                t('aboutCopyright', language),
-                            ].join('\n'),
-                        }),
-                },
+                { label: t('menuLog', language), click: () => openLogWindow() },
+                { label: t('menuAbout', language), click: () => openAboutWindow() },
             ],
         },
         { type: 'separator' },
