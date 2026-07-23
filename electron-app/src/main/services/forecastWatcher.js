@@ -3,9 +3,10 @@ const regionsStore = require('./regionsStore');
 const settingsStore = require('./settingsStore');
 const forecastConfig = require('./forecastConfig');
 const { DAY_MS, MIN_MEANINGFUL_LAMBDA } = require('./forecastModel');
-const { getRegionLambda } = require('./forecast');
+const { getRegionLambda, getRegionTypeLambdas, formatDuration } = require('./forecast');
 const { getLatestAlertData } = require('./alertPoller');
 const { getLocationLookup } = require('./locationFilter');
+const { alertTypeName } = require('./alertTypes');
 const { createNotification } = require('./notifier');
 const { openForecastWindow } = require('../windows/forecastWindow');
 const { t } = require('../../i18n/i18n');
@@ -24,13 +25,15 @@ function regionName(uid, language) {
     return info ? (language === 'English' ? info.lat : info.name) : String(uid);
 }
 
-function notifyApproaching(uid, language) {
+function notifyApproaching(uid, alertType, etaMs, language) {
     const name = regionName(uid, language);
-    const title = t('forecastNotifyTitle', language);
-    createNotification(title, `${name}: ${t('forecastNotifyBody', language)}`, 'app-icon-256.png', () =>
-        openForecastWindow()
-    );
-    logEvent(`Forecast notify: ${name} (uid ${uid})`);
+    const typeName = alertTypeName(alertType, language);
+    const title = `${t('forecastNotifyTitle', language)}: ${typeName}`;
+    const etaText = etaMs !== null ? `. ${t('forecastEtaLabel', language)} ~${formatDuration(etaMs, language)}` : '';
+    const body = `${t('location', language)}: ${name}${etaText}`;
+
+    createNotification(title, body, 'app-icon-256.png', () => openForecastWindow());
+    logEvent(`Forecast notify: ${name} - ${typeName} (uid ${uid})`);
 }
 
 async function checkRegion(uid, language) {
@@ -55,13 +58,22 @@ async function checkRegion(uid, language) {
     if (!settings.visualNotificationsEnabled || !settings.forecastNotifyEnabled) return;
 
     const lookaheadMinutes = settings.forecastNotifyLookaheadMinutes || forecastConfig.NOTIFY_LOOKAHEAD_MINUTES;
-    const probability = 1 - Math.exp(-lambda * (lookaheadMinutes / (60 * 24)));
-    if (probability < forecastConfig.NOTIFY_PROBABILITY_THRESHOLD) return;
+    const lookaheadDays = lookaheadMinutes / (60 * 24);
+
+    const typeLambdas = await getRegionTypeLambdas(uid);
+    if (!typeLambdas.length) return;
+
+    const [likeliest] = typeLambdas
+        .map((entry) => ({ ...entry, probability: 1 - Math.exp(-entry.lambda * lookaheadDays) }))
+        .sort((a, b) => b.probability - a.probability);
+
+    if (!likeliest || likeliest.probability < forecastConfig.NOTIFY_PROBABILITY_THRESHOLD) return;
 
     const cooldownMs = forecastConfig.NOTIFY_COOLDOWN_HOURS * 60 * 60 * 1000;
     if (state.lastNotifiedAt && now - state.lastNotifiedAt < cooldownMs) return;
 
-    notifyApproaching(uid, language);
+    const etaMs = likeliest.lambda > MIN_MEANINGFUL_LAMBDA ? (1 / likeliest.lambda) * DAY_MS : null;
+    notifyApproaching(uid, likeliest.type, etaMs, language);
     predictions.set(uid, { ...state, lastNotifiedAt: now });
 }
 
