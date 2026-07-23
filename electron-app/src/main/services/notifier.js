@@ -90,9 +90,11 @@ function processAlerts(matchedAlerts, allAlerts) {
         const title = `${t('alertStarted', language)}: ${typeName}`;
         const body = `${t('location', language)}: ${locationName}. ${t('activeInMonitored', language)}: ${alertCount}`;
 
-        createNotification(title, body, 'alert.png', () =>
-            showAlertDetails(title, language, locationName, typeName, alert.started_at)
-        );
+        if (settings.visualNotificationsEnabled && settings.activeAlertNotifyEnabled) {
+            createNotification(title, body, 'alert.png', () =>
+                showAlertDetails(title, language, locationName, typeName, alert.started_at)
+            );
+        }
 
         if (settings.alertSoundMode !== 'none') {
             playRepeated(playAlertSound, settings.alertSoundMode, language, settings.alertSoundCount, 8000);
@@ -123,9 +125,11 @@ function processAlerts(matchedAlerts, allAlerts) {
         const title = `${t('alertCancelled', language)}: ${typeName}`;
         const body = `${t('location', language)}: ${locationName}. ${t('activeInMonitored', language)}: ${alertCount}`;
 
-        createNotification(title, body, 'cancel.png', () =>
-            showAlertDetails(title, language, locationName, typeName, value.startedAt)
-        );
+        if (settings.visualNotificationsEnabled && settings.activeAlertNotifyEnabled) {
+            createNotification(title, body, 'cancel.png', () =>
+                showAlertDetails(title, language, locationName, typeName, value.startedAt)
+            );
+        }
 
         if (settings.alertSoundMode !== 'none') {
             playRepeated(playAlertCancellationSound, settings.alertSoundMode, language, settings.alertSoundCount, 6000);

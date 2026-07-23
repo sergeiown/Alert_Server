@@ -4,9 +4,12 @@ const { getUserDataFile } = require('./appPaths');
 const defaultSettings = {
     language: 'English',
     trayMonoIcon: false,
+    visualNotificationsEnabled: true,
+    activeAlertNotifyEnabled: true,
     alertSoundMode: 'siren',
     alertSoundCount: 1,
     forecastNotifyEnabled: true,
+    forecastNotifyLookaheadMinutes: 60,
 };
 
 let settings = null;

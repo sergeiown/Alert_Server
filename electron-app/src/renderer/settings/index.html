@@ -6,38 +6,49 @@
     <link rel="stylesheet" href="index.css" />
 </head>
 <body>
-    <section id="general-settings">
-        <label><input type="checkbox" id="runAtStartup" /> <span id="runAtStartupLabel"></span></label>
-        <label><input type="checkbox" id="trayMonoIcon" /> <span id="trayMonoIconLabel"></span></label>
-        <label><input type="checkbox" id="forecastNotifyEnabled" /> <span id="settingsForecastNotifyLabel"></span></label>
-        <label>
-            <span id="alertSoundLabel"></span>
-            <select id="alertSoundMode">
-                <option value="none" id="alertSoundModeNoneOption"></option>
-                <option value="siren" id="alertSoundModeSirenOption"></option>
-                <option value="voice" id="alertSoundModeVoiceOption"></option>
-            </select>
-        </label>
-        <label>
-            <span id="alertSoundCountLabel"></span>
-            <input type="number" id="alertSoundCount" min="1" max="10" style="width: 3em" />
-        </label>
-        <label>
-            <span id="languageLabel"></span>
-            <select id="language">
-                <option value="Ukrainian">Українська</option>
-                <option value="English">English</option>
-            </select>
-        </label>
-    </section>
-    <header>
-        <h1 id="regionsHeader"></h1>
-        <input id="search" type="text" autocomplete="off" />
-    </header>
-    <main id="tree"></main>
-    <footer>
-        <span id="summary"></span>
-    </footer>
+    <div id="layout">
+        <section id="regions-column">
+            <div id="map-container"></div>
+            <header>
+                <h1 id="regionsHeader"></h1>
+                <input id="search" type="text" autocomplete="off" />
+            </header>
+            <main id="tree"></main>
+            <footer>
+                <span id="summary"></span>
+            </footer>
+        </section>
+        <section id="general-settings">
+            <label><input type="checkbox" id="runAtStartup" /> <span id="runAtStartupLabel"></span></label>
+            <label><input type="checkbox" id="trayMonoIcon" /> <span id="trayMonoIconLabel"></span></label>
+            <label><input type="checkbox" id="visualNotificationsEnabled" /> <span id="visualNotificationsLabel"></span></label>
+            <label><input type="checkbox" id="activeAlertNotifyEnabled" /> <span id="activeAlertNotifyLabel"></span></label>
+            <label><input type="checkbox" id="forecastNotifyEnabled" /> <span id="settingsForecastNotifyLabel"></span></label>
+            <label>
+                <span id="forecastNotifyLookaheadLabel"></span>
+                <input type="number" id="forecastNotifyLookaheadMinutes" min="1" max="300" style="width: 4em" />
+            </label>
+            <label>
+                <span id="alertSoundLabel"></span>
+                <select id="alertSoundMode">
+                    <option value="none" id="alertSoundModeNoneOption"></option>
+                    <option value="siren" id="alertSoundModeSirenOption"></option>
+                    <option value="voice" id="alertSoundModeVoiceOption"></option>
+                </select>
+            </label>
+            <label>
+                <span id="alertSoundCountLabel"></span>
+                <input type="number" id="alertSoundCount" min="1" max="10" style="width: 3em" />
+            </label>
+            <label>
+                <span id="languageLabel"></span>
+                <select id="language">
+                    <option value="Ukrainian">Українська</option>
+                    <option value="English">English</option>
+                </select>
+            </label>
+        </section>
+    </div>
     <script type="module" src="index.js"></script>
 </body>
 </html>
