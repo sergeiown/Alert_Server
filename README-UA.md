@@ -8,54 +8,9 @@
 
 ## Архітектура
 
-```mermaid
-flowchart LR
-    subgraph Зовнішні сервіси
-        api[alerts.in.ua]
-        proxy[alert-proxy Worker]
-        gh[GitHub Releases]
-    end
+![архітектура](docs/images/architecture-uk.svg)
 
-    subgraph Основний процес Electron
-        poller[alertPoller]
-        notifier[notifier]
-        forecast[forecast-сервіси]
-        watcher[forecastWatcher]
-        tray[tray]
-        stores[regionsStore, settingsStore]
-        updater[updater]
-    end
-
-    subgraph Вікна рендерера
-        settingsWin[Налаштування]
-        forecastWin[Прогноз]
-        popup[Попап трею]
-        logWin[Лог]
-        aboutWin[Про програму]
-    end
-
-    api --> proxy
-    proxy --> poller
-    proxy --> forecast
-
-    poller --> notifier
-    notifier --> tray
-
-    forecast --> watcher
-    watcher --> tray
-    watcher --> popup
-
-    stores --> settingsWin
-    forecast --> forecastWin
-
-    tray --> settingsWin
-    tray --> forecastWin
-    tray --> logWin
-    tray --> aboutWin
-    tray --> popup
-
-    updater --> gh
-```
+<sup>Згенеровано з [docs/diagrams/architecture-uk.mmd](docs/diagrams/architecture-uk.mmd) - редагуйте джерело і перегенеруйте зображення, якщо архітектура зміниться.</sup>
 
 ## Встановлення
 

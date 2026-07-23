@@ -8,54 +8,9 @@ A Windows tray application built with Electron that receives alert data from [al
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    subgraph External services
-        api[alerts.in.ua]
-        proxy[alert-proxy Worker]
-        gh[GitHub Releases]
-    end
+![architecture](docs/images/architecture-en.svg)
 
-    subgraph Electron main process
-        poller[alertPoller]
-        notifier[notifier]
-        forecast[forecast services]
-        watcher[forecastWatcher]
-        tray[tray]
-        stores[regionsStore, settingsStore]
-        updater[updater]
-    end
-
-    subgraph Renderer windows
-        settingsWin[Settings]
-        forecastWin[Forecast]
-        popup[Tray popup]
-        logWin[Log]
-        aboutWin[About]
-    end
-
-    api --> proxy
-    proxy --> poller
-    proxy --> forecast
-
-    poller --> notifier
-    notifier --> tray
-
-    forecast --> watcher
-    watcher --> tray
-    watcher --> popup
-
-    stores --> settingsWin
-    forecast --> forecastWin
-
-    tray --> settingsWin
-    tray --> forecastWin
-    tray --> logWin
-    tray --> aboutWin
-    tray --> popup
-
-    updater --> gh
-```
+<sup>Rendered from [docs/diagrams/architecture-en.mmd](docs/diagrams/architecture-en.mmd) - edit the source and re-render if the architecture changes.</sup>
 
 ## Installation
 
