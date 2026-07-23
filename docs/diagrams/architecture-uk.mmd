@@ -1,11 +1,11 @@
 flowchart LR
-    subgraph Зовнішні сервіси
+    subgraph ext[Зовнішні сервіси]
         api[alerts.in.ua]
         proxy[alert-proxy Worker]
         gh[GitHub Releases]
     end
 
-    subgraph Основний процес Electron
+    subgraph main[Основний процес Electron]
         poller[alertPoller]
         notifier[notifier]
         forecast[forecast-сервіси]
@@ -15,7 +15,7 @@ flowchart LR
         updater[updater]
     end
 
-    subgraph Вікна рендерера
+    subgraph win[Вікна рендерера]
         settingsWin[Налаштування]
         forecastWin[Прогноз]
         popup[Попап трею]
@@ -44,3 +44,15 @@ flowchart LR
     tray --> popup
 
     updater --> gh
+
+    classDef extNode fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+    classDef mainNode fill:#dcfce7,stroke:#16a34a,color:#14532d
+    classDef winNode fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
+
+    class api,proxy,gh extNode
+    class poller,notifier,forecast,watcher,tray,stores,updater mainNode
+    class settingsWin,forecastWin,popup,logWin,aboutWin winNode
+
+    style ext fill:#eff6ff,stroke:#93c5fd
+    style main fill:#f0fdf4,stroke:#86efac
+    style win fill:#f5f3ff,stroke:#c4b5fd
