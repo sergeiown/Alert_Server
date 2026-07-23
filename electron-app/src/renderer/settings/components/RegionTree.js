@@ -138,6 +138,18 @@ export function createRegionTree(container, tree, initialSelectedUids, language,
         });
     }
 
+    function setUidChecked(uid, checked) {
+        const wrapper = wrapperByUid.get(uid);
+        if (!wrapper) return;
+
+        const checkbox = wrapper.querySelector(':scope > .node-row > input[type="checkbox"]');
+        if (checkbox) checkbox.checked = checked;
+
+        if (checked) selectedSet.add(uid);
+        else selectedSet.delete(uid);
+        updateAncestorCounts(uid);
+    }
+
     function redrawWithQuery(query) {
         wrapperByUid.clear();
         nodeByUid.clear();
@@ -151,5 +163,5 @@ export function createRegionTree(container, tree, initialSelectedUids, language,
 
     redrawWithQuery('');
 
-    return { setQuery: redrawWithQuery, getSelectedCount: () => selectedSet.size };
+    return { setQuery: redrawWithQuery, getSelectedCount: () => selectedSet.size, setUidChecked };
 }

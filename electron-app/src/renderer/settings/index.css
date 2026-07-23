@@ -70,6 +70,38 @@ body {
     opacity: 0.5;
 }
 
+#map-container {
+    flex: 0 0 auto;
+    padding: 10px 14px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+#map-container svg {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+#map-container path {
+    fill: rgba(120, 120, 120, 0.25);
+    stroke: var(--bg);
+    stroke-width: 0.5;
+    cursor: pointer;
+    transition: fill 0.15s ease;
+}
+
+#map-container path:hover {
+    fill: #4a90d9;
+}
+
+#map-container path.selected {
+    fill: #2f7d32;
+}
+
+#map-container path.selected:hover {
+    fill: #245f26;
+}
+
 header {
     padding: 10px 14px;
     border-bottom: 1px solid var(--border);
