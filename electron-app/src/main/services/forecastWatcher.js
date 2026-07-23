@@ -53,10 +53,11 @@ async function checkRegion(uid, language) {
 
     if (!settingsStore.getSettings().forecastNotifyEnabled) return;
 
-    const lookaheadMs = forecastConfig.NOTIFY_LOOKAHEAD_MINUTES * 60 * 1000;
-    const cooldownMs = forecastConfig.NOTIFY_COOLDOWN_HOURS * 60 * 60 * 1000;
+    const lookaheadMinutes = forecastConfig.NOTIFY_LOOKAHEAD_MINUTES;
+    const probability = 1 - Math.exp(-lambda * (lookaheadMinutes / (60 * 24)));
+    if (probability < forecastConfig.NOTIFY_PROBABILITY_THRESHOLD) return;
 
-    if (predictedAt < now || predictedAt > now + lookaheadMs) return;
+    const cooldownMs = forecastConfig.NOTIFY_COOLDOWN_HOURS * 60 * 60 * 1000;
     if (state.lastNotifiedAt && now - state.lastNotifiedAt < cooldownMs) return;
 
     notifyApproaching(uid, language);
