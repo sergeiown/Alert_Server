@@ -10,43 +10,43 @@ A Windows tray application built with Electron that receives alert data from [al
 
 ```mermaid
 flowchart LR
-    subgraph ext["External"]
-        api["alerts.in.ua"]
-        proxy["alert-proxy<br/>(Cloudflare Worker)"]
-        gh["GitHub Releases"]
+    subgraph External services
+        api[alerts.in.ua]
+        proxy[alert-proxy Worker]
+        gh[GitHub Releases]
     end
 
-    subgraph main["Electron main process"]
-        poller["alertPoller"]
-        notifier["notifier"]
-        forecast["forecast /<br/>forecastModel /<br/>forecastHistoryStore"]
-        watcher["forecastWatcher"]
-        tray["tray"]
-        stores["regionsStore /<br/>settingsStore"]
-        updater["updater"]
+    subgraph Electron main process
+        poller[alertPoller]
+        notifier[notifier]
+        forecast[forecast services]
+        watcher[forecastWatcher]
+        tray[tray]
+        stores[regionsStore, settingsStore]
+        updater[updater]
     end
 
-    subgraph windows["Renderer windows (via IPC)"]
-        settingsWin["Settings"]
-        forecastWin["Forecast"]
-        popup["Tray popup"]
-        logWin["Log"]
-        aboutWin["About"]
+    subgraph Renderer windows
+        settingsWin[Settings]
+        forecastWin[Forecast]
+        popup[Tray popup]
+        logWin[Log]
+        aboutWin[About]
     end
 
     api --> proxy
-    proxy -->|active alerts, 30s poll| poller
-    proxy -->|history, on demand| forecast
+    proxy --> poller
+    proxy --> forecast
 
     poller --> notifier
-    notifier -->|OS notifications| tray
+    notifier --> tray
 
     forecast --> watcher
-    watcher -->|forecast notifications| tray
+    watcher --> tray
     watcher --> popup
 
-    stores <--> settingsWin
-    forecast <--> forecastWin
+    stores --> settingsWin
+    forecast --> forecastWin
 
     tray --> settingsWin
     tray --> forecastWin
@@ -54,7 +54,7 @@ flowchart LR
     tray --> aboutWin
     tray --> popup
 
-    updater <--> gh
+    updater --> gh
 ```
 
 ## Installation

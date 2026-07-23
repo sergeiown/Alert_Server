@@ -10,43 +10,43 @@
 
 ```mermaid
 flowchart LR
-    subgraph ext["Зовнішні сервіси"]
-        api["alerts.in.ua"]
-        proxy["alert-proxy<br/>(Cloudflare Worker)"]
-        gh["GitHub Releases"]
+    subgraph Зовнішні сервіси
+        api[alerts.in.ua]
+        proxy[alert-proxy Worker]
+        gh[GitHub Releases]
     end
 
-    subgraph main["Основний процес Electron"]
-        poller["alertPoller"]
-        notifier["notifier"]
-        forecast["forecast /<br/>forecastModel /<br/>forecastHistoryStore"]
-        watcher["forecastWatcher"]
-        tray["tray"]
-        stores["regionsStore /<br/>settingsStore"]
-        updater["updater"]
+    subgraph Основний процес Electron
+        poller[alertPoller]
+        notifier[notifier]
+        forecast[forecast-сервіси]
+        watcher[forecastWatcher]
+        tray[tray]
+        stores[regionsStore, settingsStore]
+        updater[updater]
     end
 
-    subgraph windows["Вікна рендерера (через IPC)"]
-        settingsWin["Налаштування"]
-        forecastWin["Прогноз"]
-        popup["Попап трею"]
-        logWin["Лог"]
-        aboutWin["Про програму"]
+    subgraph Вікна рендерера
+        settingsWin[Налаштування]
+        forecastWin[Прогноз]
+        popup[Попап трею]
+        logWin[Лог]
+        aboutWin[Про програму]
     end
 
     api --> proxy
-    proxy -->|активні тривоги, опитування кожні 30с| poller
-    proxy -->|історія, за запитом| forecast
+    proxy --> poller
+    proxy --> forecast
 
     poller --> notifier
-    notifier -->|OS-сповіщення| tray
+    notifier --> tray
 
     forecast --> watcher
-    watcher -->|сповіщення прогнозу| tray
+    watcher --> tray
     watcher --> popup
 
-    stores <--> settingsWin
-    forecast <--> forecastWin
+    stores --> settingsWin
+    forecast --> forecastWin
 
     tray --> settingsWin
     tray --> forecastWin
@@ -54,7 +54,7 @@ flowchart LR
     tray --> aboutWin
     tray --> popup
 
-    updater <--> gh
+    updater --> gh
 ```
 
 ## Встановлення
