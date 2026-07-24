@@ -9,7 +9,7 @@ const defaultSettings = {
     alertSoundMode: 'siren',
     alertSoundCount: 1,
     forecastNotifyEnabled: true,
-    forecastNotifyLookaheadMinutes: 60,
+    forecastNotifyLookaheadMinutes: 120,
 };
 
 let settings = null;

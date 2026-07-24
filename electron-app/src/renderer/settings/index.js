@@ -80,7 +80,7 @@ async function initGeneralSettings(settings) {
         updateNotifyDisabledState();
     });
     forecastNotifyLookaheadMinutesInput.addEventListener('change', () => {
-        const minutes = Math.max(1, Math.min(300, Number(forecastNotifyLookaheadMinutesInput.value) || 60));
+        const minutes = Math.max(1, Math.min(600, Number(forecastNotifyLookaheadMinutesInput.value) || 120));
         forecastNotifyLookaheadMinutesInput.value = minutes;
         window.alertServer.setSetting('forecastNotifyLookaheadMinutes', minutes);
     });
