@@ -47,43 +47,54 @@ async function main() {
         return;
     }
 
-    const cards = new Map();
-    regions.forEach((region) => {
+    const loading = document.createElement('p');
+    loading.textContent = strings.forecastLoading;
+    list.appendChild(loading);
+
+    const entries = await Promise.all(
+        regions.map(async (region) => {
+            try {
+                return { region, result: await window.alertServerForecast.getRegionForecast(region.uid) };
+            } catch (err) {
+                return { region, result: { status: 'empty' } };
+            }
+        })
+    );
+
+    function sortRank({ result }) {
+        if (result.status === 'active') return 0;
+        if (result.status === 'ok' && typeof result.etaMs === 'number') return 1 + result.etaMs;
+        return Infinity;
+    }
+
+    entries.sort((a, b) => sortRank(a) - sortRank(b));
+
+    list.removeChild(loading);
+
+    entries.forEach(({ region, result }) => {
         const card = document.createElement('div');
-        card.className = 'region-card loading';
 
         const h2 = document.createElement('h2');
         h2.textContent = region.name;
         card.appendChild(h2);
 
         const pre = document.createElement('pre');
-        pre.textContent = strings.forecastLoading;
         card.appendChild(pre);
 
-        list.appendChild(card);
-        cards.set(region.uid, { card, pre });
-    });
-
-    for (const region of regions) {
-        const { card, pre } = cards.get(region.uid);
-        try {
-            const result = await window.alertServerForecast.getRegionForecast(region.uid);
-            if (result.status === 'active') {
-                card.className = 'region-card active';
-                pre.textContent = strings.forecastActiveAlert;
-            } else if (result.status === 'empty') {
-                card.className = 'region-card empty';
-                pre.textContent = strings.forecastNoHistory;
-            } else {
-                card.className = 'region-card';
-                pre.textContent = result.text;
-                addCopyButton(card, pre, strings);
-            }
-        } catch (err) {
+        if (result.status === 'active') {
+            card.className = 'region-card active';
+            pre.textContent = strings.forecastActiveAlert;
+        } else if (result.status === 'ok') {
+            card.className = 'region-card';
+            pre.textContent = result.text;
+            addCopyButton(card, pre, strings);
+        } else {
             card.className = 'region-card empty';
             pre.textContent = strings.forecastNoHistory;
         }
-    }
+
+        list.appendChild(card);
+    });
 }
 
 main();
