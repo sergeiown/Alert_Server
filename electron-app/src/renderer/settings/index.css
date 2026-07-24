@@ -142,6 +142,37 @@ footer {
     padding: 8px 14px;
     border-top: 1px solid var(--border);
     color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.count-notice {
+    font-weight: 600;
+    color: #b45309;
+}
+
+.count-notice:empty {
+    display: none;
+}
+
+.count-notice.max-reached {
+    color: #dc2626;
+}
+
+.clear-button {
+    padding: 4px 10px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--fg);
+    cursor: pointer;
+}
+
+.clear-button:hover {
+    opacity: 0.8;
 }
 
 .state-node > .node-row {

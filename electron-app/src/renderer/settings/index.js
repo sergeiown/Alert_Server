@@ -1,12 +1,18 @@
 import { createRegionTree } from './components/RegionTree.js';
 import { createUkraineMap } from './components/UkraineMap.js';
 
+const MANY_REGIONS_THRESHOLD = 10;
+const TOO_MANY_REGIONS_THRESHOLD = 20;
+const MAX_REGIONS = 50;
+
 let mapInstance = null;
 
 const treeContainer = document.getElementById('tree');
 const mapContainer = document.getElementById('map-container');
 const searchInput = document.getElementById('search');
 const summary = document.getElementById('summary');
+const regionsCountNotice = document.getElementById('regionsCountNotice');
+const clearRegionsButton = document.getElementById('clearRegionsButton');
 const runAtStartupInput = document.getElementById('runAtStartup');
 const trayMonoIconInput = document.getElementById('trayMonoIcon');
 const visualNotificationsEnabledInput = document.getElementById('visualNotificationsEnabled');
@@ -33,6 +39,7 @@ function applyStrings(strings) {
     document.getElementById('languageLabel').textContent = strings.languageLabel;
     document.getElementById('regionsHeader').textContent = strings.regionsHeader;
     searchInput.placeholder = strings.searchPlaceholder;
+    clearRegionsButton.textContent = strings.clearRegionsButton;
     return strings;
 }
 
@@ -127,12 +134,31 @@ function totalRegionsCount(tree) {
         summary.textContent = formatSummary(strings.selectedSummary, selectedCount, total);
     }
 
+    function updateCountNotice(selectedCount) {
+        regionsCountNotice.classList.toggle('max-reached', selectedCount >= MAX_REGIONS);
+
+        if (selectedCount >= MAX_REGIONS) regionsCountNotice.textContent = strings.regionsMaxReachedNotice;
+        else if (selectedCount > TOO_MANY_REGIONS_THRESHOLD) regionsCountNotice.textContent = strings.regionsTooManyNotice;
+        else if (selectedCount > MANY_REGIONS_THRESHOLD) regionsCountNotice.textContent = strings.regionsManyNotice;
+        else regionsCountNotice.textContent = '';
+    }
+
     let selectedCount = selectedUids.length;
+    const selectedUidSet = new Set(selectedUids.map(String));
 
     async function applyToggle(uid) {
+        const key = String(uid);
+        const isAdding = !selectedUidSet.has(key);
+
+        if (isAdding && selectedCount >= MAX_REGIONS) return false;
+
         const isSelected = await window.alertServer.toggleRegion(uid);
+        if (isSelected) selectedUidSet.add(key);
+        else selectedUidSet.delete(key);
+
         selectedCount += isSelected ? 1 : -1;
         updateSummary(selectedCount);
+        updateCountNotice(selectedCount);
         return isSelected;
     }
 
@@ -150,6 +176,26 @@ function totalRegionsCount(tree) {
     });
 
     updateSummary(selectedCount);
+    updateCountNotice(selectedCount);
+
+    clearRegionsButton.addEventListener('click', async () => {
+        if (!selectedUidSet.size) return;
+        if (!confirm(strings.clearRegionsConfirm)) return;
+
+        const uidsToClear = Array.from(selectedUidSet);
+        await window.alertServer.setSelectedRegions([]);
+
+        uidsToClear.forEach((uid) => {
+            const numericUid = Number(uid);
+            regionTree.setUidChecked(numericUid, false);
+            if (mapInstance) mapInstance.setSelected(numericUid, false);
+        });
+
+        selectedUidSet.clear();
+        selectedCount = 0;
+        updateSummary(selectedCount);
+        updateCountNotice(selectedCount);
+    });
 
     let searchTimer = null;
     searchInput.addEventListener('input', () => {
