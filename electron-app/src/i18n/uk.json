@@ -56,6 +56,7 @@
     "forecastSinceLast": "Минуло з моменту завершення останньої тривоги",
     "forecastProbabilityToday": "Ймовірність тривоги сьогодні, на основі статистики",
     "forecastEtaLabel": "орієнтовно через",
+    "forecastNotifyProbabilityLabel": "Ймовірність протягом",
     "forecastDisclaimer": "Це статистика минулого, а не гарантований прогноз.",
     "forecastCopyButton": "Копіювати",
     "forecastCopied": "Скопійовано",
