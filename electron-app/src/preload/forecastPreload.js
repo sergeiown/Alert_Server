@@ -7,4 +7,5 @@ contextBridge.exposeInMainWorld('alertServerForecast', {
     clearLocalStats: () => ipcRenderer.invoke('forecast:clearLocalStats'),
     getStrings: () => ipcRenderer.invoke('i18n:getStrings'),
     copyToClipboard: (text) => ipcRenderer.invoke('system:copyToClipboard', text),
+    onRegionsChanged: (callback) => ipcRenderer.on('regions:changed', callback),
 });

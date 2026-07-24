@@ -33,4 +33,8 @@ function openForecastWindow() {
     return forecastWindow;
 }
 
-module.exports = { openForecastWindow };
+function notifyRegionsChanged() {
+    if (forecastWindow) forecastWindow.webContents.send('regions:changed');
+}
+
+module.exports = { openForecastWindow, notifyRegionsChanged };

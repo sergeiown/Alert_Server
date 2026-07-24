@@ -6,6 +6,7 @@ const discoveredLocationsStore = require('../services/discoveredLocationsStore')
 const regionAvailability = require('../services/regionAvailability');
 const forecastWatcher = require('../services/forecastWatcher');
 const { fetchHistoryAlerts } = require('../services/forecast');
+const { notifyRegionsChanged } = require('../windows/forecastWindow');
 const { logEvent } = require('../services/logger');
 
 function prefetchForecastHistory(uid) {
@@ -77,6 +78,7 @@ function registerRegionsIpc() {
         forecastWatcher.pruneToSelectedUids(selected);
 
         selected.filter((uid) => !previouslySelected.has(String(uid))).forEach(prefetchForecastHistory);
+        notifyRegionsChanged();
 
         logEvent(`Selected regions replaced: ${uids.length} region(s)`);
         return selected;
@@ -86,6 +88,7 @@ function registerRegionsIpc() {
         forecastWatcher.pruneToSelectedUids(regionsStore.getSelectedUids());
 
         if (isSelected) prefetchForecastHistory(uid);
+        notifyRegionsChanged();
 
         logEvent(`Region ${uid} ${isSelected ? 'added to' : 'removed from'} monitoring`);
         return isSelected;

@@ -1,17 +1,12 @@
 import { createRegionTree } from './components/RegionTree.js';
 import { createUkraineMap } from './components/UkraineMap.js';
 
-const MANY_REGIONS_THRESHOLD = 10;
-const TOO_MANY_REGIONS_THRESHOLD = 20;
-const MAX_REGIONS = 50;
-
 let mapInstance = null;
 
 const treeContainer = document.getElementById('tree');
 const mapContainer = document.getElementById('map-container');
 const searchInput = document.getElementById('search');
 const summary = document.getElementById('summary');
-const regionsCountNotice = document.getElementById('regionsCountNotice');
 const clearRegionsButton = document.getElementById('clearRegionsButton');
 const runAtStartupInput = document.getElementById('runAtStartup');
 const trayMonoIconInput = document.getElementById('trayMonoIcon');
@@ -121,6 +116,25 @@ function totalRegionsCount(tree) {
     return count;
 }
 
+function districtUidsUnder(district) {
+    return [district.uid, ...district.communities.map((c) => c.uid)];
+}
+
+function stateUidsUnder(state) {
+    return [state.uid, ...state.districts.flatMap(districtUidsUnder)];
+}
+
+function collectUidsUnder(uid, tree) {
+    for (const state of tree.states) {
+        if (state.uid === uid) return stateUidsUnder(state);
+        for (const district of state.districts) {
+            if (district.uid === uid) return districtUidsUnder(district);
+            if (district.communities.some((c) => c.uid === uid)) return [uid];
+        }
+    }
+    return [uid];
+}
+
 (async () => {
     const strings = applyStrings(await window.alertServer.getStrings());
     const settings = await window.alertServer.getSettings();
@@ -134,49 +148,50 @@ function totalRegionsCount(tree) {
         summary.textContent = formatSummary(strings.selectedSummary, selectedCount, total);
     }
 
-    function updateCountNotice(selectedCount) {
-        regionsCountNotice.classList.toggle('max-reached', selectedCount >= MAX_REGIONS);
-
-        if (selectedCount >= MAX_REGIONS) regionsCountNotice.textContent = strings.regionsMaxReachedNotice;
-        else if (selectedCount > TOO_MANY_REGIONS_THRESHOLD) regionsCountNotice.textContent = strings.regionsTooManyNotice;
-        else if (selectedCount > MANY_REGIONS_THRESHOLD) regionsCountNotice.textContent = strings.regionsManyNotice;
-        else regionsCountNotice.textContent = '';
-    }
-
     let selectedCount = selectedUids.length;
     const selectedUidSet = new Set(selectedUids.map(String));
+    let regionTree = null;
 
-    async function applyToggle(uid) {
-        const key = String(uid);
-        const isAdding = !selectedUidSet.has(key);
+    async function applyToggle(uid, explicitChecked) {
+        const checked = explicitChecked !== undefined ? explicitChecked : !selectedUidSet.has(String(uid));
+        const uidsInScope = collectUidsUnder(Number(uid), tree);
 
-        if (isAdding && selectedCount >= MAX_REGIONS) return false;
+        const changed = uidsInScope.filter((u) => {
+            const key = String(u);
+            const isCurrentlySelected = selectedUidSet.has(key);
+            return checked ? !isCurrentlySelected : isCurrentlySelected;
+        });
 
-        const isSelected = await window.alertServer.toggleRegion(uid);
-        if (isSelected) selectedUidSet.add(key);
-        else selectedUidSet.delete(key);
+        if (!changed.length) return checked;
 
-        selectedCount += isSelected ? 1 : -1;
+        changed.forEach((u) => {
+            const key = String(u);
+            if (checked) selectedUidSet.add(key);
+            else selectedUidSet.delete(key);
+        });
+
+        await window.alertServer.setSelectedRegions(Array.from(selectedUidSet).map(Number));
+        selectedCount = selectedUidSet.size;
         updateSummary(selectedCount);
-        updateCountNotice(selectedCount);
-        return isSelected;
+
+        changed.forEach((u) => {
+            regionTree.setUidChecked(u, checked);
+            if (mapInstance) mapInstance.setSelected(u, checked);
+        });
+
+        return checked;
     }
 
-    const regionTree = createRegionTree(treeContainer, tree, selectedUids, settings.language, async (uid) => {
-        const isSelected = await applyToggle(uid);
-        if (mapInstance) mapInstance.setSelected(uid, isSelected);
-        return isSelected;
-    });
+    regionTree = createRegionTree(treeContainer, tree, selectedUids, settings.language, (uid, checked) =>
+        applyToggle(uid, checked)
+    );
 
     const mapSvg = await window.alertServer.getMapSvg();
-    mapInstance = createUkraineMap(mapContainer, mapSvg, tree, selectedUids, settings.language, async (uid) => {
-        const isSelected = await applyToggle(uid);
-        regionTree.setUidChecked(uid, isSelected);
-        return isSelected;
-    });
+    mapInstance = createUkraineMap(mapContainer, mapSvg, tree, selectedUids, settings.language, (uid) =>
+        applyToggle(uid)
+    );
 
     updateSummary(selectedCount);
-    updateCountNotice(selectedCount);
 
     clearRegionsButton.addEventListener('click', async () => {
         if (!selectedUidSet.size) return;
@@ -194,7 +209,6 @@ function totalRegionsCount(tree) {
         selectedUidSet.clear();
         selectedCount = 0;
         updateSummary(selectedCount);
-        updateCountNotice(selectedCount);
     });
 
     let searchTimer = null;

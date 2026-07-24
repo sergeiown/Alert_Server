@@ -1,5 +1,8 @@
 const list = document.getElementById('regionsList');
 
+let strings = null;
+let renderToken = 0;
+
 function addCopyButton(card, pre, strings) {
     const button = document.createElement('button');
     button.className = 'copy-button';
@@ -25,20 +28,18 @@ async function renderLocalStats(strings) {
     document.getElementById('localStatsNote').textContent = strings.forecastLocalStatsNote;
 }
 
-async function main() {
-    const strings = await window.alertServerForecast.getStrings();
-    document.title = strings.forecastWindowTitle;
-    document.getElementById('forecastHeader').textContent = strings.forecastHeader;
+function sortRank({ result }) {
+    if (result.status === 'active') return 0;
+    if (result.status === 'ok' && typeof result.etaMs === 'number') return 1 + result.etaMs;
+    return Infinity;
+}
 
-    const clearStatsButton = document.getElementById('clearStatsButton');
-    clearStatsButton.textContent = strings.forecastClearStatsButton;
-    clearStatsButton.addEventListener('click', async () => {
-        const { cleared } = await window.alertServerForecast.clearLocalStats();
-        if (cleared) await renderLocalStats(strings);
-    });
-    await renderLocalStats(strings);
+async function renderRegionsList() {
+    const token = ++renderToken;
+    list.innerHTML = '';
 
     const regions = await window.alertServerForecast.getRegions();
+    if (token !== renderToken) return;
 
     if (!regions.length) {
         const p = document.createElement('p');
@@ -60,12 +61,7 @@ async function main() {
             }
         })
     );
-
-    function sortRank({ result }) {
-        if (result.status === 'active') return 0;
-        if (result.status === 'ok' && typeof result.etaMs === 'number') return 1 + result.etaMs;
-        return Infinity;
-    }
+    if (token !== renderToken) return;
 
     entries.sort((a, b) => sortRank(a) - sortRank(b));
 
@@ -94,6 +90,26 @@ async function main() {
         }
 
         list.appendChild(card);
+    });
+}
+
+async function main() {
+    strings = await window.alertServerForecast.getStrings();
+    document.title = strings.forecastWindowTitle;
+    document.getElementById('forecastHeader').textContent = strings.forecastHeader;
+
+    const clearStatsButton = document.getElementById('clearStatsButton');
+    clearStatsButton.textContent = strings.forecastClearStatsButton;
+    clearStatsButton.addEventListener('click', async () => {
+        const { cleared } = await window.alertServerForecast.clearLocalStats();
+        if (cleared) await renderLocalStats(strings);
+    });
+    await renderLocalStats(strings);
+
+    await renderRegionsList();
+
+    window.alertServerForecast.onRegionsChanged(() => {
+        renderRegionsList();
     });
 }
 
