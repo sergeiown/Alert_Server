@@ -80,6 +80,11 @@ export function createUkraineMap(container, svgText, tree, initialSelectedUids, 
         paths.forEach((path) => applySelectedClass(path, checked));
     }
 
+    function setHovered(uid, isHovered) {
+        const paths = pathsByUid.get(uid) || [];
+        paths.forEach((path) => path.classList.toggle('hovered', isHovered));
+    }
+
     function setLanguage(newLanguage) {
         currentLanguage = newLanguage;
         pathsByUid.forEach((paths, uid) => paths.forEach((path) => applyLabel(path, uid)));
@@ -100,6 +105,8 @@ export function createUkraineMap(container, svgText, tree, initialSelectedUids, 
                 const isSelected = await onToggle(uid);
                 setSelected(uid, isSelected);
             });
+            path.addEventListener('mouseenter', () => setHovered(uid, true));
+            path.addEventListener('mouseleave', () => setHovered(uid, false));
         });
     }
 
