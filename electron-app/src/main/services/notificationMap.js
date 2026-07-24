@@ -58,9 +58,9 @@ function loadSvgTemplate() {
     return svgTemplate;
 }
 
-async function renderNow(stateUid, color) {
-    const isoCodes = REGION_TO_ISO[stateUid];
-    if (!isoCodes) return null;
+async function renderNow(stateUids, color) {
+    const isoCodes = stateUids.flatMap((uid) => REGION_TO_ISO[uid] || []);
+    if (!isoCodes.length) return null;
 
     const svgText = loadSvgTemplate();
     const { width: svgWidth, height: svgHeight } = parseSize(svgText);
@@ -101,10 +101,11 @@ async function renderNow(stateUid, color) {
     }
 }
 
-function renderRegionMapImage(stateUid, color) {
+function renderRegionMapImage(stateUidOrUids, color) {
+    const stateUids = Array.isArray(stateUidOrUids) ? stateUidOrUids : [stateUidOrUids];
     const result = queue.then(
-        () => renderNow(stateUid, color),
-        () => renderNow(stateUid, color)
+        () => renderNow(stateUids, color),
+        () => renderNow(stateUids, color)
     );
     queue = result.catch(() => {});
     return result;

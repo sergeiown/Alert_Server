@@ -12,6 +12,7 @@ const { t } = require('../../i18n/i18n');
 
 const ALERT_COLOR = '#dc2626';
 const CANCEL_COLOR = '#16a34a';
+const MASS_ALERT_THRESHOLD = 5;
 
 let displayedAlerts = null;
 let isInitialSync = false;
@@ -102,13 +103,13 @@ function createRichNotification({ title, bodyLines, heroImagePath, iconName, onC
     notification.show();
 }
 
-async function notifyWithMap({ uid, title, bodyLines, iconName, color, onClick }) {
+async function notifyWithMap({ uid, uids, title, bodyLines, iconName, color, onClick }) {
     let heroImagePath = null;
-    const target = getHistoryFetchTarget(uid);
+    const stateUids = [...new Set((uids || [uid]).map((u) => getHistoryFetchTarget(u)?.stateUid).filter(Boolean))];
 
-    if (target) {
+    if (stateUids.length) {
         try {
-            heroImagePath = await renderRegionMapImage(target.stateUid, color);
+            heroImagePath = await renderRegionMapImage(stateUids, color);
         } catch (err) {
             logEvent(`Notification map render failed: ${err.message}`);
         }
@@ -141,16 +142,28 @@ function processAlerts(matchedAlerts, allAlerts) {
     const settings = settingsStore.getSettings();
     const language = settings.language;
     const alertCount = matchedAlerts.length;
+    const canNotify = settings.visualNotificationsEnabled && settings.activeAlertNotifyEnabled;
 
-    matchedAlerts.forEach((alert) => {
-        if (displayedAlerts.has(alert.id)) return;
+    const newAlerts = matchedAlerts.filter((alert) => !displayedAlerts.has(alert.id));
+    const massStart = newAlerts.length > MASS_ALERT_THRESHOLD;
 
+    if (massStart && canNotify) {
+        notifyWithMap({
+            uids: newAlerts.map((alert) => alert.location_uid),
+            title: t('massAlertStartTitle', language).replace('{count}', newAlerts.length),
+            bodyLines: [`${t('activeInMonitored', language)}: ${alertCount}`],
+            iconName: 'alert.png',
+            color: ALERT_COLOR,
+        });
+    }
+
+    newAlerts.forEach((alert) => {
         const typeName = alertTypeName(alert.alert_type, language);
         const locationName = language === 'English' ? alert.location_lat : alert.location_title;
         const title = `${t('alertStarted', language)}: ${typeName}`;
         const startedAtText = formatStartedAt(alert.started_at, language);
 
-        if (settings.visualNotificationsEnabled && settings.activeAlertNotifyEnabled) {
+        if (!massStart && canNotify) {
             notifyWithMap({
                 uid: alert.location_uid,
                 title,
@@ -182,6 +195,7 @@ function processAlerts(matchedAlerts, allAlerts) {
         saveDisplayedAlerts();
     });
 
+    const newlyCancelled = [];
     displayedAlerts.forEach((value, id) => {
         if (matchedAlerts.some((alert) => alert.id === id)) return;
 
@@ -191,6 +205,22 @@ function processAlerts(matchedAlerts, allAlerts) {
         const stillActiveElsewhere = allAlerts.some((alert) => alert.id === id);
         if (skipCancellationNotice || stillActiveElsewhere) return;
 
+        newlyCancelled.push(value);
+    });
+
+    const massCancel = newlyCancelled.length > MASS_ALERT_THRESHOLD;
+
+    if (massCancel && canNotify) {
+        notifyWithMap({
+            uids: newlyCancelled.map((value) => value.locationUid),
+            title: t('massAlertCancelTitle', language).replace('{count}', newlyCancelled.length),
+            bodyLines: [`${t('activeInMonitored', language)}: ${alertCount}`],
+            iconName: 'cancel.png',
+            color: CANCEL_COLOR,
+        });
+    }
+
+    newlyCancelled.forEach((value) => {
         const typeName = alertTypeName(value.alertType, language);
         const locationName = language === 'English' ? value.locationLat : value.locationTitle;
         const title = `${t('alertCancelled', language)}: ${typeName}`;
@@ -198,7 +228,7 @@ function processAlerts(matchedAlerts, allAlerts) {
             ? formatDuration(Date.now() - new Date(value.startedAt).getTime(), language)
             : null;
 
-        if (settings.visualNotificationsEnabled && settings.activeAlertNotifyEnabled) {
+        if (!massCancel && canNotify) {
             notifyWithMap({
                 uid: value.locationUid,
                 title,

@@ -13,6 +13,7 @@ const { t } = require('../../i18n/i18n');
 
 const CHECK_INTERVAL_MS = 5 * 60 * 1000;
 const FORECAST_COLOR = '#2563eb';
+const MAX_SIMULTANEOUS_FORECAST_NOTIFICATIONS = 3;
 
 const predictions = new Map();
 
@@ -45,16 +46,16 @@ function notifyApproaching(uid, alertType, etaMs, language) {
     logEvent(`Forecast notify: ${name} - ${typeName} (uid ${uid}, eta ~${etaText})`);
 }
 
-async function checkRegion(uid, language) {
+async function evaluateRegion(uid, language) {
     if (isRegionActive(uid)) {
         predictions.delete(uid);
-        return;
+        return null;
     }
 
     const lambda = await getRegionLambda(uid);
     if (!lambda || lambda <= MIN_MEANINGFUL_LAMBDA) {
         predictions.delete(uid);
-        return;
+        return null;
     }
 
     const now = Date.now();
@@ -64,26 +65,25 @@ async function checkRegion(uid, language) {
     predictions.set(uid, state);
 
     const settings = settingsStore.getSettings();
-    if (!settings.visualNotificationsEnabled || !settings.forecastNotifyEnabled) return;
+    if (!settings.visualNotificationsEnabled || !settings.forecastNotifyEnabled) return null;
 
     const lookaheadMinutes = settings.forecastNotifyLookaheadMinutes || forecastConfig.NOTIFY_LOOKAHEAD_MINUTES;
     const lookaheadMs = lookaheadMinutes * 60 * 1000;
 
     const typeLambdas = await getRegionTypeLambdas(uid);
-    if (!typeLambdas.length) return;
+    if (!typeLambdas.length) return null;
 
     const [likeliest] = typeLambdas
         .filter((entry) => entry.lambda > MIN_MEANINGFUL_LAMBDA)
         .map((entry) => ({ ...entry, etaMs: (1 / entry.lambda) * DAY_MS }))
         .sort((a, b) => a.etaMs - b.etaMs);
 
-    if (!likeliest || likeliest.etaMs > lookaheadMs) return;
+    if (!likeliest || likeliest.etaMs > lookaheadMs) return null;
 
     const cooldownMs = likeliest.etaMs / 2;
-    if (state.lastNotifiedAt && now - state.lastNotifiedAt < cooldownMs) return;
+    if (state.lastNotifiedAt && now - state.lastNotifiedAt < cooldownMs) return null;
 
-    notifyApproaching(uid, likeliest.type, likeliest.etaMs, language);
-    predictions.set(uid, { ...state, lastNotifiedAt: now });
+    return { uid, alertType: likeliest.type, etaMs: likeliest.etaMs, state };
 }
 
 function pruneToSelectedUids(selectedUids) {
@@ -98,13 +98,23 @@ async function runCheck() {
     const selectedUids = regionsStore.getSelectedUids();
     pruneToSelectedUids(selectedUids);
 
+    const candidates = [];
     for (const uid of selectedUids) {
         try {
-            await checkRegion(uid, language);
+            const candidate = await evaluateRegion(uid, language);
+            if (candidate) candidates.push(candidate);
         } catch (err) {
             logEvent(`Forecast watcher error for uid ${uid}: ${err.message}`);
         }
     }
+
+    candidates.sort((a, b) => a.etaMs - b.etaMs);
+    const now = Date.now();
+
+    candidates.slice(0, MAX_SIMULTANEOUS_FORECAST_NOTIFICATIONS).forEach(({ uid, alertType, etaMs, state }) => {
+        notifyApproaching(uid, alertType, etaMs, language);
+        predictions.set(uid, { ...state, lastNotifiedAt: now });
+    });
 }
 
 function startForecastWatcher() {
