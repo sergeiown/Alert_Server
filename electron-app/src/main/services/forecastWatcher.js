@@ -5,7 +5,7 @@ const forecastConfig = require('./forecastConfig');
 const { DAY_MS, MIN_MEANINGFUL_LAMBDA } = require('./forecastModel');
 const { getRegionLambda, getRegionTypeLambdas, formatDuration } = require('./forecast');
 const { getLatestAlertData } = require('./alertPoller');
-const { getLocationLookup } = require('./locationFilter');
+const { getLocationLookup, getAlertCoverageUids } = require('./locationFilter');
 const { alertTypeName } = require('./alertTypes');
 const { notifyWithMap } = require('./notifier');
 const { openForecastWindow } = require('../windows/forecastWindow');
@@ -18,7 +18,9 @@ const predictions = new Map();
 
 function isRegionActive(uid) {
     const activeData = getLatestAlertData();
-    return Boolean(activeData && activeData.alerts.some((alert) => String(alert.location_uid) === String(uid)));
+    return Boolean(
+        activeData && activeData.alerts.some((alert) => getAlertCoverageUids(alert).includes(String(uid)))
+    );
 }
 
 function regionName(uid, language) {
