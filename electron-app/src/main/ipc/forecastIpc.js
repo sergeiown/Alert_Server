@@ -1,7 +1,7 @@
 const { ipcMain, dialog, BrowserWindow } = require('electron');
 const regionsStore = require('../services/regionsStore');
 const settingsStore = require('../services/settingsStore');
-const { getLocationLookup, getAlertCoverageUids } = require('../services/locationFilter');
+const { getLocationLookup, getAlertCoverageUids, getAncestorUids } = require('../services/locationFilter');
 const { getLatestAlertData } = require('../services/alertPoller');
 const { getRegionForecastText, getRegionSoonestEtaMs, fetchHistoryAlerts } = require('../services/forecast');
 const historyStore = require('../services/forecastHistoryStore');
@@ -12,12 +12,16 @@ function registerForecastIpc() {
     ipcMain.handle('forecast:getRegions', () => {
         const language = settingsStore.getSettings().language;
         const lookup = getLocationLookup();
+        const selectedUids = regionsStore.getSelectedUids();
+        const selectedSet = new Set(selectedUids.map(String));
 
-        return regionsStore.getSelectedUids().map((uid) => {
-            const info = lookup.get(String(uid));
-            const name = info ? (language === 'English' ? info.lat : info.name) : String(uid);
-            return { uid, name };
-        });
+        return selectedUids
+            .filter((uid) => !getAncestorUids(uid).some((ancestor) => selectedSet.has(String(ancestor))))
+            .map((uid) => {
+                const info = lookup.get(String(uid));
+                const name = info ? (language === 'English' ? info.lat : info.name) : String(uid);
+                return { uid, name };
+            });
     });
 
     ipcMain.handle('forecast:getRegionForecast', async (event, uid) => {

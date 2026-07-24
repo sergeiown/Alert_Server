@@ -35,6 +35,7 @@ function buildStaticLookup() {
                     name: community.communityName,
                     lat: community.communityNameLat,
                     stateUid: state.uid,
+                    districtUid: district.uid,
                 });
             });
         });
@@ -72,6 +73,12 @@ function getHistoryFetchTarget(uid) {
     // Real alerts are tagged at raion/hromada/city granularity, never with an oblast's own uid,
     // so tracking a whole oblast means "everything in it" rather than a (nonexistent) direct match.
     return { stateUid: info.stateUid, matchUid: info.type === 'state' ? null : uid };
+}
+
+function getAncestorUids(uid) {
+    const info = getLocationLookup().get(String(uid));
+    if (!info || info.type === 'state') return [];
+    return [info.districtUid, info.stateUid].filter((ancestor) => ancestor !== undefined);
 }
 
 function getAlertCoverageUids(alert) {
@@ -121,4 +128,5 @@ module.exports = {
     discoverUnknownLocations,
     getHistoryFetchTarget,
     getAlertCoverageUids,
+    getAncestorUids,
 };
