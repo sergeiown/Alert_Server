@@ -43,11 +43,12 @@ app.whenReady().then(() => {
     registerLogIpc();
 
     createTray();
-    startForecastWatcher();
     delayedCheckForUpdates();
 
     const { alertProxyClientKey } = loadLocalConfig();
     if (alertProxyClientKey) {
+        let forecastWatcherStarted = false;
+
         startPolling(alertProxyClientKey, (alertData) => {
             const matched = filterAlerts(alertData);
             discoverUnknownLocations(alertData.alerts);
@@ -55,9 +56,15 @@ app.whenReady().then(() => {
             setLatestMatchedAlerts(matched);
             processAlerts(matched, alertData.alerts);
             updateTrayState(getActiveCount());
+
+            if (!forecastWatcherStarted) {
+                forecastWatcherStarted = true;
+                startForecastWatcher();
+            }
         });
     } else {
         logEvent('alertProxyClientKey missing from config.local.json, polling disabled');
+        startForecastWatcher();
     }
 });
 
