@@ -148,19 +148,6 @@ footer {
     gap: 6px;
 }
 
-.count-notice {
-    font-weight: 600;
-    color: #b45309;
-}
-
-.count-notice:empty {
-    display: none;
-}
-
-.count-notice.max-reached {
-    color: #dc2626;
-}
-
 .clear-button {
     padding: 4px 10px;
     font-size: 12px;

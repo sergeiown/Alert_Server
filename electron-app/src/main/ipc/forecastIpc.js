@@ -3,8 +3,9 @@ const regionsStore = require('../services/regionsStore');
 const settingsStore = require('../services/settingsStore');
 const { getLocationLookup, getAlertCoverageUids } = require('../services/locationFilter');
 const { getLatestAlertData } = require('../services/alertPoller');
-const { getRegionForecastText, getRegionSoonestEtaMs } = require('../services/forecast');
+const { getRegionForecastText, getRegionSoonestEtaMs, fetchHistoryAlerts } = require('../services/forecast');
 const historyStore = require('../services/forecastHistoryStore');
+const { logEvent } = require('../services/logger');
 const { t } = require('../../i18n/i18n');
 
 function registerForecastIpc() {
@@ -29,7 +30,10 @@ function registerForecastIpc() {
         if (isActive) return { status: 'active' };
 
         const text = await getRegionForecastText(uid, language);
-        if (!text) return { status: 'empty' };
+        if (!text) {
+            fetchHistoryAlerts(uid).catch((err) => logEvent(`Forecast prefetch failed for uid ${uid}: ${err.message}`));
+            return { status: 'empty' };
+        }
 
         return { status: 'ok', text, etaMs: getRegionSoonestEtaMs(uid) };
     });
