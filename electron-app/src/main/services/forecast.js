@@ -5,6 +5,7 @@ const { t } = require('../../i18n/i18n');
 const forecastConfig = require('./forecastConfig');
 const { computeStats, estimateRegionLambda, estimateTypeLambda } = require('./forecastModel');
 const historyStore = require('./forecastHistoryStore');
+const { getHistoryFetchTarget } = require('./locationFilter');
 
 function weekdayName(weekdayIndex, language) {
     const locale = language === 'English' ? 'en-US' : 'uk-UA';
@@ -67,8 +68,8 @@ function logDataHygiene(alerts) {
     });
 }
 
-async function fetchHistoryAlerts(uid) {
-    const cached = historyCache.get(uid);
+async function fetchOblastAlerts(stateUid) {
+    const cached = historyCache.get(stateUid);
     if (cached && Date.now() - cached.fetchedAt < HISTORY_CACHE_TTL_MS) {
         return cached.alerts;
     }
@@ -80,37 +81,46 @@ async function fetchHistoryAlerts(uid) {
         const { alertProxyClientKey } = loadLocalConfig();
         lastOriginFetchAt = Date.now();
 
-        const response = await fetch(`${PROXY_URL}/history/${uid}`, {
+        const response = await fetch(`${PROXY_URL}/history/${stateUid}`, {
             headers: { 'X-Client-Key': alertProxyClientKey },
         });
 
         if (response.status === 429) {
-            logHistoryOriginIssue(uid, 429);
+            logHistoryOriginIssue(stateUid, 429);
             lastOriginFetchAt = Date.now() + HISTORY_BACKOFF_MS;
-            return [];
+            return historyCache.get(stateUid)?.alerts || [];
         }
 
         if (!response.ok) {
-            logHistoryOriginIssue(uid, response.status);
-            return [];
+            logHistoryOriginIssue(stateUid, response.status);
+            return historyCache.get(stateUid)?.alerts || [];
         }
 
         const data = await response.json();
         const alerts = data.alerts || [];
 
         const originErrorStatus = response.headers.get('X-Origin-Error-Status');
-        if (originErrorStatus) logHistoryOriginIssue(uid, Number(originErrorStatus));
+        if (originErrorStatus) logHistoryOriginIssue(stateUid, Number(originErrorStatus));
         else noteHistoryOriginHealthy();
 
         logDataHygiene(alerts);
-        historyStore.mergeAlerts(uid, alerts);
-        historyCache.set(uid, { fetchedAt: Date.now(), alerts });
+        historyCache.set(stateUid, { fetchedAt: Date.now(), alerts });
         return alerts;
     };
 
     const result = queue.then(run, run);
-    queue = result.catch(() => {});
+    queue = result.catch(() => historyCache.get(stateUid)?.alerts || []);
     return result;
+}
+
+async function fetchHistoryAlerts(uid) {
+    const target = getHistoryFetchTarget(uid);
+    if (!target) return [];
+
+    const oblastAlerts = await fetchOblastAlerts(target.stateUid);
+    const matched = oblastAlerts.filter((alert) => String(alert.location_uid) === String(target.matchUid));
+    historyStore.mergeAlerts(uid, matched);
+    return matched;
 }
 
 function formatDuration(ms, language) {
@@ -175,8 +185,8 @@ async function getAccumulatedAlerts(uid) {
     return historyStore.getAllAlertsForRegion(uid);
 }
 
-async function getRegionForecastText(uid, language) {
-    const alerts = await getAccumulatedAlerts(uid);
+function getRegionForecastText(uid, language) {
+    const alerts = historyStore.getAllAlertsForRegion(uid);
     const stats = computeStats(alerts, Date.now(), forecastConfig);
     if (!stats) return null;
     return buildForecastText(stats, language);

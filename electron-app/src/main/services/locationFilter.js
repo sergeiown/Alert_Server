@@ -5,19 +5,28 @@ const discoveredLocationsStore = require('./discoveredLocationsStore');
 const { logEvent } = require('./logger');
 
 let staticLookup = null;
+let stateNameToUid = null;
 
 function buildStaticLookup() {
     const tree = JSON.parse(fs.readFileSync(getResourcePath('data', 'locations.json'), 'utf-8'));
     const lookup = new Map();
+    const nameToUid = new Map();
 
     tree.states.forEach((state) => {
-        lookup.set(String(state.uid), { type: 'state', name: state.stateName, lat: state.stateNameLat });
+        nameToUid.set(state.stateName, state.uid);
+        lookup.set(String(state.uid), {
+            type: 'state',
+            name: state.stateName,
+            lat: state.stateNameLat,
+            stateUid: state.uid,
+        });
 
         state.districts.forEach((district) => {
             lookup.set(String(district.uid), {
                 type: 'district',
                 name: district.districtName,
                 lat: district.districtNameLat,
+                stateUid: state.uid,
             });
 
             district.communities.forEach((community) => {
@@ -25,11 +34,13 @@ function buildStaticLookup() {
                     type: 'community',
                     name: community.communityName,
                     lat: community.communityNameLat,
+                    stateUid: state.uid,
                 });
             });
         });
     });
 
+    stateNameToUid = nameToUid;
     return lookup;
 }
 
@@ -44,10 +55,21 @@ function getLocationLookup() {
     discoveredUids.forEach((uid) => {
         if (merged.has(uid)) return;
         const info = discovered[uid];
-        merged.set(uid, { type: info.type || 'city', name: info.title, lat: info.title });
+        merged.set(uid, {
+            type: info.type || 'city',
+            name: info.title,
+            lat: info.title,
+            stateUid: stateNameToUid.get(info.oblast),
+        });
     });
 
     return merged;
+}
+
+function getHistoryFetchTarget(uid) {
+    const info = getLocationLookup().get(String(uid));
+    if (!info || !info.stateUid) return null;
+    return { stateUid: info.stateUid, matchUid: uid };
 }
 
 function discoverUnknownLocations(alerts) {
@@ -83,4 +105,4 @@ function filterAlerts(alertData) {
         });
 }
 
-module.exports = { filterAlerts, getLocationLookup, discoverUnknownLocations };
+module.exports = { filterAlerts, getLocationLookup, discoverUnknownLocations, getHistoryFetchTarget };
