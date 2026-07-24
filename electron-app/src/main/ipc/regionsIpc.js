@@ -5,7 +5,12 @@ const regionsStore = require('../services/regionsStore');
 const discoveredLocationsStore = require('../services/discoveredLocationsStore');
 const regionAvailability = require('../services/regionAvailability');
 const forecastWatcher = require('../services/forecastWatcher');
+const { fetchHistoryAlerts } = require('../services/forecast');
 const { logEvent } = require('../services/logger');
+
+function prefetchForecastHistory(uid) {
+    fetchHistoryAlerts(uid).catch((err) => logEvent(`Forecast prefetch failed for uid ${uid}: ${err.message}`));
+}
 
 let cachedTree = null;
 let cachedMapSvg = null;
@@ -66,14 +71,22 @@ function registerRegionsIpc() {
     ipcMain.handle('regions:getMapSvg', () => getMapSvg());
     ipcMain.handle('regions:getSelected', () => regionsStore.getSelectedUids());
     ipcMain.handle('regions:setSelected', (event, uids) => {
+        const previouslySelected = new Set(regionsStore.getSelectedUids().map(String));
         regionsStore.setSelectedUids(uids);
-        forecastWatcher.pruneToSelectedUids(regionsStore.getSelectedUids());
+        const selected = regionsStore.getSelectedUids();
+        forecastWatcher.pruneToSelectedUids(selected);
+
+        selected.filter((uid) => !previouslySelected.has(String(uid))).forEach(prefetchForecastHistory);
+
         logEvent(`Selected regions replaced: ${uids.length} region(s)`);
-        return regionsStore.getSelectedUids();
+        return selected;
     });
     ipcMain.handle('regions:toggle', (event, uid) => {
         const isSelected = regionsStore.toggleUid(uid);
         forecastWatcher.pruneToSelectedUids(regionsStore.getSelectedUids());
+
+        if (isSelected) prefetchForecastHistory(uid);
+
         logEvent(`Region ${uid} ${isSelected ? 'added to' : 'removed from'} monitoring`);
         return isSelected;
     });
