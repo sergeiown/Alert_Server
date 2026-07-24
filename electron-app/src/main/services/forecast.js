@@ -118,7 +118,10 @@ async function fetchHistoryAlerts(uid) {
     if (!target) return [];
 
     const oblastAlerts = await fetchOblastAlerts(target.stateUid);
-    const matched = oblastAlerts.filter((alert) => String(alert.location_uid) === String(target.matchUid));
+    const matched =
+        target.matchUid === null
+            ? oblastAlerts
+            : oblastAlerts.filter((alert) => String(alert.location_uid) === String(target.matchUid));
     historyStore.mergeAlerts(uid, matched);
     return matched;
 }

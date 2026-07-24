@@ -69,7 +69,17 @@ function getLocationLookup() {
 function getHistoryFetchTarget(uid) {
     const info = getLocationLookup().get(String(uid));
     if (!info || !info.stateUid) return null;
-    return { stateUid: info.stateUid, matchUid: uid };
+    // Real alerts are tagged at raion/hromada/city granularity, never with an oblast's own uid,
+    // so tracking a whole oblast means "everything in it" rather than a (nonexistent) direct match.
+    return { stateUid: info.stateUid, matchUid: info.type === 'state' ? null : uid };
+}
+
+function getAlertCoverageUids(alert) {
+    getLocationLookup();
+    const uids = [String(alert.location_uid)];
+    const oblastUid = stateNameToUid.get(alert.location_oblast);
+    if (oblastUid !== undefined) uids.push(String(oblastUid));
+    return uids;
 }
 
 function discoverUnknownLocations(alerts) {
@@ -98,11 +108,17 @@ function filterAlerts(alertData) {
     const lookup = getLocationLookup();
 
     return alertData.alerts
-        .filter((alert) => selectedUids.has(String(alert.location_uid)))
+        .filter((alert) => getAlertCoverageUids(alert).some((uid) => selectedUids.has(uid)))
         .map((alert) => {
             const info = lookup.get(String(alert.location_uid));
             return { ...alert, location_lat: info ? info.lat : null };
         });
 }
 
-module.exports = { filterAlerts, getLocationLookup, discoverUnknownLocations, getHistoryFetchTarget };
+module.exports = {
+    filterAlerts,
+    getLocationLookup,
+    discoverUnknownLocations,
+    getHistoryFetchTarget,
+    getAlertCoverageUids,
+};
