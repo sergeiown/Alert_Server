@@ -2,6 +2,8 @@ const sizeLabel = document.getElementById('sizeLabel');
 const clearButton = document.getElementById('clearButton');
 const content = document.getElementById('content');
 
+const AUTO_REFRESH_MS = 2000;
+
 let strings = null;
 
 function formatSize(bytes) {
@@ -10,10 +12,14 @@ function formatSize(bytes) {
 }
 
 async function render() {
+    const wasAtBottom = content.scrollTop + content.clientHeight >= content.scrollHeight - 4;
+
     const { content: text, size } = await window.alertServerLog.getContent();
+    if (text === content.textContent) return;
+
     content.textContent = text;
     sizeLabel.textContent = `${strings.logSizeLabel}: ${formatSize(size)}`;
-    content.scrollTop = content.scrollHeight;
+    if (wasAtBottom) content.scrollTop = content.scrollHeight;
 }
 
 async function main() {
@@ -27,6 +33,7 @@ async function main() {
     });
 
     await render();
+    setInterval(render, AUTO_REFRESH_MS);
 }
 
 main();
