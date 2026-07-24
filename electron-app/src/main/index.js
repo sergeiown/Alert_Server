@@ -10,7 +10,7 @@ const settingsStore = require('./services/settingsStore');
 const regionsStore = require('./services/regionsStore');
 const { logEvent } = require('./services/logger');
 const { startPolling } = require('./services/alertPoller');
-const { filterAlerts } = require('./services/locationFilter');
+const { filterAlerts, discoverUnknownLocations } = require('./services/locationFilter');
 const { loadLocalConfig } = require('./services/localConfig');
 const { processAlerts, getActiveCount } = require('./services/notifier');
 const { setLatestMatchedAlerts } = require('./services/alertState');
@@ -50,6 +50,7 @@ app.whenReady().then(() => {
     if (alertProxyClientKey) {
         startPolling(alertProxyClientKey, (alertData) => {
             const matched = filterAlerts(alertData);
+            discoverUnknownLocations(alertData.alerts);
             logEvent(`Poll: ${alertData.alerts.length} active alerts, ${matched.length} in monitored regions`);
             setLatestMatchedAlerts(matched);
             processAlerts(matched, alertData.alerts);
