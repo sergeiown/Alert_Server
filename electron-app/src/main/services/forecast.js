@@ -16,6 +16,9 @@ const PROXY_URL = 'https://alert-proxy.alert-proxy-ua.workers.dev';
 const HISTORY_CACHE_TTL_MS = 15 * 60 * 1000;
 const MIN_ORIGIN_GAP_MS = 32000;
 
+const HISTORY_ORIGIN_ISSUE_LOG_COOLDOWN_MS = 30 * 60 * 1000;
+const HISTORY_BACKOFF_MS = 60000;
+
 const historyCache = new Map();
 let queue = Promise.resolve();
 let lastOriginFetchAt = 0;
@@ -23,8 +26,32 @@ let lastOriginFetchAt = 0;
 const loggedNoteValues = new Set();
 let loggedCalculatedNonNull = false;
 
+let historyLastLoggedStatus = null;
+let historyLastLoggedAt = 0;
+
 function delay(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function describeOriginStatus(status) {
+    if (status === 401) return 'token invalid, revoked, or expired';
+    if (status === 403) return 'IP blocked or country unavailable';
+    if (status === 429) return 'rate limit exceeded';
+    return `unexpected status ${status}`;
+}
+
+function logHistoryOriginIssue(uid, status) {
+    const now = Date.now();
+    if (status === historyLastLoggedStatus && now - historyLastLoggedAt < HISTORY_ORIGIN_ISSUE_LOG_COOLDOWN_MS) return;
+    historyLastLoggedStatus = status;
+    historyLastLoggedAt = now;
+    logEvent(`alert-proxy history origin issue (uid ${uid}): ${status} (${describeOriginStatus(status)})`);
+}
+
+function noteHistoryOriginHealthy() {
+    if (historyLastLoggedStatus === null) return;
+    logEvent('alert-proxy history origin recovered');
+    historyLastLoggedStatus = null;
 }
 
 function logDataHygiene(alerts) {
@@ -57,13 +84,24 @@ async function fetchHistoryAlerts(uid) {
             headers: { 'X-Client-Key': alertProxyClientKey },
         });
 
+        if (response.status === 429) {
+            logHistoryOriginIssue(uid, 429);
+            lastOriginFetchAt = Date.now() + HISTORY_BACKOFF_MS;
+            return [];
+        }
+
         if (!response.ok) {
-            logEvent(`Forecast history request failed for uid ${uid}: ${response.status}`);
+            logHistoryOriginIssue(uid, response.status);
             return [];
         }
 
         const data = await response.json();
         const alerts = data.alerts || [];
+
+        const originErrorStatus = response.headers.get('X-Origin-Error-Status');
+        if (originErrorStatus) logHistoryOriginIssue(uid, Number(originErrorStatus));
+        else noteHistoryOriginHealthy();
+
         logDataHygiene(alerts);
         historyStore.mergeAlerts(uid, alerts);
         historyCache.set(uid, { fetchedAt: Date.now(), alerts });

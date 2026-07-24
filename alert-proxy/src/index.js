@@ -13,7 +13,9 @@ export class AlertsGateway {
     constructor(state, env) {
         this.env = env;
         this.activeCache = null;
+        this.activeOriginError = null;
         this.historyCache = new Map();
+        this.historyOriginErrors = new Map();
         this.lastActiveOriginFetchAt = 0;
         this.lastHistoryOriginFetchAt = 0;
         this.activeQueue = Promise.resolve();
@@ -45,14 +47,27 @@ export class AlertsGateway {
                     headers: { Authorization: `Bearer ${this.env.ALERTS_TOKEN}` },
                 });
                 const body = await upstream.text();
-                const lastModified = upstream.headers.get('Last-Modified');
 
+                if (!upstream.ok) {
+                    this.activeOriginError = { status: upstream.status, body };
+                    return;
+                }
+
+                this.activeOriginError = null;
+                const lastModified = upstream.headers.get('Last-Modified');
                 this.activeCache = { body, lastModified, fetchedAt: Date.now() };
             };
 
             const result = this.activeQueue.then(run, run);
             this.activeQueue = result.catch(() => {});
             await result;
+        }
+
+        if (this.activeOriginError && !this.activeCache) {
+            return new Response(this.activeOriginError.body, {
+                status: this.activeOriginError.status,
+                headers: { 'Content-Type': 'application/json' },
+            });
         }
 
         const { body, lastModified } = this.activeCache;
@@ -63,6 +78,7 @@ export class AlertsGateway {
 
         const headers = new Headers({ 'Content-Type': 'application/json' });
         if (lastModified) headers.set('Last-Modified', lastModified);
+        if (this.activeOriginError) headers.set('X-Origin-Error-Status', String(this.activeOriginError.status));
         return new Response(body, { headers });
     }
 
@@ -81,6 +97,12 @@ export class AlertsGateway {
                 });
                 const body = await upstream.text();
 
+                if (!upstream.ok) {
+                    this.historyOriginErrors.set(uid, { status: upstream.status, body });
+                    return;
+                }
+
+                this.historyOriginErrors.delete(uid);
                 this.historyCache.set(uid, { body, fetchedAt: Date.now() });
             };
 
@@ -89,8 +111,22 @@ export class AlertsGateway {
             await result;
         }
 
+        if (!this.historyCache.has(uid)) {
+            const originError = this.historyOriginErrors.get(uid);
+            if (originError) {
+                return new Response(originError.body, {
+                    status: originError.status,
+                    headers: { 'Content-Type': 'application/json' },
+                });
+            }
+        }
+
         const { body } = this.historyCache.get(uid);
-        return new Response(body, { headers: { 'Content-Type': 'application/json' } });
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.historyOriginErrors.has(uid)) {
+            headers['X-Origin-Error-Status'] = String(this.historyOriginErrors.get(uid).status);
+        }
+        return new Response(body, { headers });
     }
 }
 
