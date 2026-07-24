@@ -2,16 +2,37 @@ const fs = require('fs');
 const { ipcMain } = require('electron');
 const { getResourcePath } = require('../services/appPaths');
 const regionsStore = require('../services/regionsStore');
+const discoveredLocationsStore = require('../services/discoveredLocationsStore');
 const { logEvent } = require('../services/logger');
 
 let cachedTree = null;
 let cachedMapSvg = null;
 
+function mergeDiscoveredLocations(tree) {
+    const discovered = discoveredLocationsStore.getAll();
+    const stateByName = new Map(tree.states.map((state) => [state.stateName, state]));
+
+    Object.entries(discovered).forEach(([uid, info]) => {
+        const state = stateByName.get(info.oblast);
+        if (!state) return;
+        if (state.districts.some((district) => district.uid === Number(uid))) return;
+
+        state.districts.push({
+            districtName: info.title,
+            districtNameLat: info.title,
+            uid: Number(uid),
+            communities: [],
+        });
+    });
+
+    return tree;
+}
+
 function getTree() {
     if (!cachedTree) {
         cachedTree = JSON.parse(fs.readFileSync(getResourcePath('data', 'locations.json'), 'utf-8'));
     }
-    return cachedTree;
+    return mergeDiscoveredLocations(cachedTree);
 }
 
 function getMapSvg() {

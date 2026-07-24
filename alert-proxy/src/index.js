@@ -3,7 +3,7 @@ const ACTIVE_CACHE_TTL_MS = 30 * 1000;
 const ACTIVE_MIN_GAP_MS = 5 * 1000;
 
 const HISTORY_CACHE_TTL_MS = 15 * 60 * 1000;
-const HISTORY_MIN_GAP_MS = 32 * 1000;
+const HISTORY_MIN_GAP_MS = 35 * 1000;
 
 function delay(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));

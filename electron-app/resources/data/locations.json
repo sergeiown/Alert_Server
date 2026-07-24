@@ -1152,6 +1152,18 @@
               "uid": 323
             }
           ]
+        },
+        {
+          "districtName": "м. Нікополь",
+          "districtNameLat": "Nikopol city",
+          "uid": 5351,
+          "communities": []
+        },
+        {
+          "districtName": "м. Марганець",
+          "districtNameLat": "Marhanets city",
+          "uid": 5349,
+          "communities": []
         }
       ]
     },
@@ -3696,6 +3708,12 @@
               "uid": 785
             }
           ]
+        },
+        {
+          "districtName": "м. Світловодськ",
+          "districtNameLat": "Svitlovodsk city",
+          "uid": 5786,
+          "communities": []
         }
       ]
     },
@@ -6720,6 +6738,12 @@
               "uid": 1320
             }
           ]
+        },
+        {
+          "districtName": "м. Харків",
+          "districtNameLat": "Kharkiv city",
+          "uid": 6293,
+          "communities": []
         }
       ]
     },

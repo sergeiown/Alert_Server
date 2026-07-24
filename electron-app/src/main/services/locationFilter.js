@@ -1,10 +1,12 @@
 const fs = require('fs');
 const { getResourcePath } = require('./appPaths');
 const regionsStore = require('./regionsStore');
+const discoveredLocationsStore = require('./discoveredLocationsStore');
+const { logEvent } = require('./logger');
 
-let locationLookup = null;
+let staticLookup = null;
 
-function buildLookup() {
+function buildStaticLookup() {
     const tree = JSON.parse(fs.readFileSync(getResourcePath('data', 'locations.json'), 'utf-8'));
     const lookup = new Map();
 
@@ -32,8 +34,41 @@ function buildLookup() {
 }
 
 function getLocationLookup() {
-    if (!locationLookup) locationLookup = buildLookup();
-    return locationLookup;
+    if (!staticLookup) staticLookup = buildStaticLookup();
+
+    const discovered = discoveredLocationsStore.getAll();
+    const discoveredUids = Object.keys(discovered);
+    if (!discoveredUids.length) return staticLookup;
+
+    const merged = new Map(staticLookup);
+    discoveredUids.forEach((uid) => {
+        if (merged.has(uid)) return;
+        const info = discovered[uid];
+        merged.set(uid, { type: info.type || 'city', name: info.title, lat: info.title });
+    });
+
+    return merged;
+}
+
+function discoverUnknownLocations(alerts) {
+    const lookup = getLocationLookup();
+
+    alerts.forEach((alert) => {
+        const uid = String(alert.location_uid);
+        if (lookup.has(uid)) return;
+
+        const noted = discoveredLocationsStore.noteLocation(uid, {
+            title: alert.location_title,
+            oblast: alert.location_oblast,
+            type: alert.location_type,
+        });
+
+        if (noted) {
+            logEvent(
+                `Discovered a location not in locations.json: uid=${uid} "${alert.location_title}" (${alert.location_type}, ${alert.location_oblast})`
+            );
+        }
+    });
 }
 
 function filterAlerts(alertData) {
@@ -48,4 +83,4 @@ function filterAlerts(alertData) {
         });
 }
 
-module.exports = { filterAlerts, getLocationLookup };
+module.exports = { filterAlerts, getLocationLookup, discoverUnknownLocations };
