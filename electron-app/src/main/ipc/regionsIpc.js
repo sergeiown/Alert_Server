@@ -3,6 +3,7 @@ const { ipcMain } = require('electron');
 const { getResourcePath } = require('../services/appPaths');
 const regionsStore = require('../services/regionsStore');
 const discoveredLocationsStore = require('../services/discoveredLocationsStore');
+const regionAvailability = require('../services/regionAvailability');
 const { logEvent } = require('../services/logger');
 
 let cachedTree = null;
@@ -28,11 +29,28 @@ function mergeDiscoveredLocations(tree) {
     return tree;
 }
 
-function getTree() {
+function filterByAvailability(tree) {
+    const filterCommunities = (communities) => communities.filter((c) => regionAvailability.isUidAssigned(c.uid));
+
+    const filterDistricts = (districts) =>
+        districts
+            .map((d) => ({ ...d, communities: filterCommunities(d.communities) }))
+            .filter((d) => regionAvailability.isUidAssigned(d.uid) || d.communities.length > 0);
+
+    return {
+        states: tree.states
+            .map((s) => ({ ...s, districts: filterDistricts(s.districts) }))
+            .filter((s) => regionAvailability.isUidAssigned(s.uid) || s.districts.length > 0),
+    };
+}
+
+async function getTree() {
     if (!cachedTree) {
         cachedTree = JSON.parse(fs.readFileSync(getResourcePath('data', 'locations.json'), 'utf-8'));
     }
-    return mergeDiscoveredLocations(cachedTree);
+
+    await regionAvailability.ensureLoaded();
+    return filterByAvailability(mergeDiscoveredLocations(cachedTree));
 }
 
 function getMapSvg() {

@@ -5,6 +5,10 @@ const ACTIVE_MIN_GAP_MS = 5 * 1000;
 const HISTORY_CACHE_TTL_MS = 15 * 60 * 1000;
 const HISTORY_MIN_GAP_MS = 35 * 1000;
 
+const REGION_STATUSES_URL = 'https://api.alerts.in.ua/v1/iot/active_air_raid_alerts.json';
+const REGION_STATUSES_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const REGION_STATUSES_MIN_GAP_MS = 5 * 1000;
+
 function delay(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -16,10 +20,14 @@ export class AlertsGateway {
         this.activeOriginError = null;
         this.historyCache = new Map();
         this.historyOriginErrors = new Map();
+        this.regionStatusesCache = null;
+        this.regionStatusesOriginError = null;
         this.lastActiveOriginFetchAt = 0;
         this.lastHistoryOriginFetchAt = 0;
+        this.lastRegionStatusesOriginFetchAt = 0;
         this.activeQueue = Promise.resolve();
         this.historyQueue = Promise.resolve();
+        this.regionStatusesQueue = Promise.resolve();
     }
 
     async fetch(request) {
@@ -29,6 +37,10 @@ export class AlertsGateway {
         const historyMatch = url.pathname.match(/^\/history\/(\d+)$/);
         if (historyMatch) {
             return this.getHistory(historyMatch[1]);
+        }
+
+        if (url.pathname === '/region-statuses') {
+            return this.getRegionStatuses();
         }
 
         return this.getActive(ifModifiedSince);
@@ -127,6 +139,46 @@ export class AlertsGateway {
             headers['X-Origin-Error-Status'] = String(this.historyOriginErrors.get(uid).status);
         }
         return new Response(body, { headers });
+    }
+
+    async getRegionStatuses() {
+        const now = Date.now();
+
+        if (!this.regionStatusesCache || now - this.regionStatusesCache.fetchedAt >= REGION_STATUSES_CACHE_TTL_MS) {
+            const run = async () => {
+                const waitMs = Math.max(0, REGION_STATUSES_MIN_GAP_MS - (Date.now() - this.lastRegionStatusesOriginFetchAt));
+                if (waitMs > 0) await delay(waitMs);
+
+                this.lastRegionStatusesOriginFetchAt = Date.now();
+                const upstream = await fetch(REGION_STATUSES_URL, {
+                    headers: { Authorization: `Bearer ${this.env.ALERTS_TOKEN}` },
+                });
+                const body = await upstream.text();
+
+                if (!upstream.ok) {
+                    this.regionStatusesOriginError = { status: upstream.status, body };
+                    return;
+                }
+
+                this.regionStatusesOriginError = null;
+                this.regionStatusesCache = { body, fetchedAt: Date.now() };
+            };
+
+            const result = this.regionStatusesQueue.then(run, run);
+            this.regionStatusesQueue = result.catch(() => {});
+            await result;
+        }
+
+        if (this.regionStatusesOriginError && !this.regionStatusesCache) {
+            return new Response(this.regionStatusesOriginError.body, {
+                status: this.regionStatusesOriginError.status,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+
+        const headers = { 'Content-Type': 'text/plain' };
+        if (this.regionStatusesOriginError) headers['X-Origin-Error-Status'] = String(this.regionStatusesOriginError.status);
+        return new Response(this.regionStatusesCache.body, { headers });
     }
 }
 
