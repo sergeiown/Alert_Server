@@ -1,6 +1,6 @@
 {
   "name": "alert-server",
-  "version": "2.5.3",
+  "version": "2.6.0",
   "private": true,
   "description": "Server that receives alert data from alerts.in.ua and displays it through the Windows notification centre",
   "author": "Serhii I. Myshko",
