@@ -1,9 +1,9 @@
 const { ipcMain, dialog, BrowserWindow } = require('electron');
 const regionsStore = require('../services/regionsStore');
 const settingsStore = require('../services/settingsStore');
-const { getLocationLookup } = require('../services/locationFilter');
+const { getLocationLookup, getAlertCoverageUids } = require('../services/locationFilter');
 const { getLatestAlertData } = require('../services/alertPoller');
-const { getRegionForecastText } = require('../services/forecast');
+const { getRegionForecastText, getRegionSoonestEtaMs } = require('../services/forecast');
 const historyStore = require('../services/forecastHistoryStore');
 const { t } = require('../../i18n/i18n');
 
@@ -23,7 +23,7 @@ function registerForecastIpc() {
         const language = settingsStore.getSettings().language;
         const activeData = getLatestAlertData();
         const isActive = Boolean(
-            activeData && activeData.alerts.some((alert) => String(alert.location_uid) === String(uid))
+            activeData && activeData.alerts.some((alert) => getAlertCoverageUids(alert).includes(String(uid)))
         );
 
         if (isActive) return { status: 'active' };
@@ -31,7 +31,7 @@ function registerForecastIpc() {
         const text = await getRegionForecastText(uid, language);
         if (!text) return { status: 'empty' };
 
-        return { status: 'ok', text };
+        return { status: 'ok', text, etaMs: getRegionSoonestEtaMs(uid) };
     });
 
     ipcMain.handle('forecast:getLocalStats', () => historyStore.getStats());

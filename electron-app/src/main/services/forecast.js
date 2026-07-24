@@ -195,6 +195,15 @@ function getRegionForecastText(uid, language) {
     return buildForecastText(stats, language);
 }
 
+function getRegionSoonestEtaMs(uid) {
+    const alerts = historyStore.getAllAlertsForRegion(uid);
+    const stats = computeStats(alerts, Date.now(), forecastConfig);
+    if (!stats) return null;
+
+    const etas = stats.typeBreakdown.map((entry) => entry.projectedNextMs).filter((ms) => ms !== null);
+    return etas.length ? Math.min(...etas) : null;
+}
+
 async function getRegionLambda(uid) {
     const alerts = await getAccumulatedAlerts(uid);
     if (!alerts.length) return null;
@@ -224,6 +233,7 @@ async function getRegionTypeLambdas(uid) {
 
 module.exports = {
     getRegionForecastText,
+    getRegionSoonestEtaMs,
     getRegionLambda,
     getRegionTypeLambdas,
     fetchHistoryAlerts,
