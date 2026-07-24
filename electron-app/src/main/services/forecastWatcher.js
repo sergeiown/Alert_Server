@@ -7,11 +7,12 @@ const { getRegionLambda, getRegionTypeLambdas, formatDuration } = require('./for
 const { getLatestAlertData } = require('./alertPoller');
 const { getLocationLookup } = require('./locationFilter');
 const { alertTypeName } = require('./alertTypes');
-const { createNotification } = require('./notifier');
+const { notifyWithMap } = require('./notifier');
 const { openForecastWindow } = require('../windows/forecastWindow');
 const { t } = require('../../i18n/i18n');
 
 const CHECK_INTERVAL_MS = 5 * 60 * 1000;
+const FORECAST_COLOR = '#2563eb';
 
 const predictions = new Map();
 
@@ -29,10 +30,18 @@ function notifyApproaching(uid, alertType, etaMs, language) {
     const name = regionName(uid, language);
     const typeName = alertTypeName(alertType, language);
     const title = `${t('forecastNotifyTitle', language)}: ${typeName}`;
-    const etaText = etaMs !== null ? `. ${t('forecastEtaLabel', language)} ~${formatDuration(etaMs, language)}` : '';
-    const body = `${t('location', language)}: ${name}${etaText}`;
 
-    createNotification(title, body, null, () => openForecastWindow());
+    notifyWithMap({
+        uid,
+        title,
+        bodyLines: [
+            `${t('location', language)}: ${name}`,
+            etaMs !== null ? `${t('forecastEtaLabel', language)} ~${formatDuration(etaMs, language)}` : null,
+        ].filter(Boolean),
+        iconName: null,
+        color: FORECAST_COLOR,
+        onClick: () => openForecastWindow(),
+    });
     logEvent(`Forecast notify: ${name} - ${typeName} (uid ${uid})`);
 }
 
