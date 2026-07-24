@@ -31,7 +31,10 @@ const REGION_TO_ISO = {
     29: ['UA-43', 'UA-40'],
 };
 
-const IMAGE_WIDTH = 480;
+// Windows toast hero images are displayed at ~2.02:1 (364x180) and center-cropped to that
+// ratio, so the canvas itself must already match it - otherwise Windows crops our content.
+const OUTPUT_WIDTH = 480;
+const OUTPUT_HEIGHT = 238;
 
 let svgTemplate = null;
 let renderCounter = 0;
@@ -60,13 +63,16 @@ async function renderNow(stateUid, color) {
     if (!isoCodes) return null;
 
     const svgText = loadSvgTemplate();
-    const { width, height } = parseSize(svgText);
-    const imageHeight = Math.round(IMAGE_WIDTH * (height / width));
+    const { width: svgWidth, height: svgHeight } = parseSize(svgText);
+    const scale = Math.min(OUTPUT_WIDTH / svgWidth, OUTPUT_HEIGHT / svgHeight);
+    const renderedWidth = Math.round(svgWidth * scale);
+    const renderedHeight = Math.round(svgHeight * scale);
     const highlightCss = isoCodes.map((iso) => `#${iso}{fill:${color};}`).join('');
 
     const html = `<!doctype html><html><head><style>
-        html,body{margin:0;padding:0;background:#f4f4f4;}
-        svg{width:${IMAGE_WIDTH}px;height:${imageHeight}px;display:block;}
+        html,body{margin:0;padding:0;width:${OUTPUT_WIDTH}px;height:${OUTPUT_HEIGHT}px;background:#f4f4f4;
+            display:flex;align-items:center;justify-content:center;overflow:hidden;}
+        svg{width:${renderedWidth}px;height:${renderedHeight}px;display:block;}
         path{fill:#c9d0d8;stroke:#f4f4f4;stroke-width:0.5;}
         ${highlightCss}
     </style></head><body>${svgText}</body></html>`;
@@ -76,8 +82,8 @@ async function renderNow(stateUid, color) {
     const outputPath = getUserDataFile(`notification-map-${renderCounter}.png`);
 
     const win = new BrowserWindow({
-        width: IMAGE_WIDTH,
-        height: imageHeight,
+        width: OUTPUT_WIDTH,
+        height: OUTPUT_HEIGHT,
         show: false,
         frame: false,
         webPreferences: { sandbox: true },

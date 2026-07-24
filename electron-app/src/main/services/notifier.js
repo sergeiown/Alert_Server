@@ -7,6 +7,7 @@ const { playAlertSound, playAlertCancellationSound } = require('./audioPlayer');
 const { alertTypeName } = require('./alertTypes');
 const { getHistoryFetchTarget } = require('./locationFilter');
 const { renderRegionMapImage } = require('./notificationMap');
+const { formatDuration } = require('./forecast');
 const { t } = require('../../i18n/i18n');
 
 const ALERT_COLOR = '#dc2626';
@@ -157,6 +158,7 @@ function processAlerts(matchedAlerts, allAlerts) {
                     `${t('location', language)}: ${locationName}`,
                     `${t('activeInMonitored', language)}: ${alertCount}`,
                     startedAtText ? `${t('alertStartedAt', language)}: ${startedAtText}` : null,
+                    alert.notes ? `${t('alertSource', language)}: ${alert.notes}` : null,
                 ].filter(Boolean),
                 iconName: 'alert.png',
                 color: ALERT_COLOR,
@@ -192,7 +194,9 @@ function processAlerts(matchedAlerts, allAlerts) {
         const typeName = alertTypeName(value.alertType, language);
         const locationName = language === 'English' ? value.locationLat : value.locationTitle;
         const title = `${t('alertCancelled', language)}: ${typeName}`;
-        const startedAtText = formatStartedAt(value.startedAt, language);
+        const durationText = value.startedAt
+            ? formatDuration(Date.now() - new Date(value.startedAt).getTime(), language)
+            : null;
 
         if (settings.visualNotificationsEnabled && settings.activeAlertNotifyEnabled) {
             notifyWithMap({
@@ -201,7 +205,7 @@ function processAlerts(matchedAlerts, allAlerts) {
                 bodyLines: [
                     `${t('location', language)}: ${locationName}`,
                     `${t('activeInMonitored', language)}: ${alertCount}`,
-                    startedAtText ? `${t('alertStartedAt', language)}: ${startedAtText}` : null,
+                    durationText ? `${t('alertDuration', language)}: ${durationText}` : null,
                 ].filter(Boolean),
                 iconName: 'cancel.png',
                 color: CANCEL_COLOR,
