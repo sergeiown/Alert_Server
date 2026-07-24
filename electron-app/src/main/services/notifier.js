@@ -41,8 +41,9 @@ function playRepeated(playFn, mode, language, count, intervalMs) {
 }
 
 function createNotification(title, body, iconName, onClick) {
-    const icon = getResourcePath('icons', iconName);
-    const notification = new Notification({ title, body, icon });
+    const options = { title, body };
+    if (iconName) options.icon = getResourcePath('icons', iconName);
+    const notification = new Notification(options);
 
     activeNotifications.add(notification);
     const release = () => activeNotifications.delete(notification);
