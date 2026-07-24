@@ -4,6 +4,7 @@ const { getResourcePath } = require('../services/appPaths');
 const regionsStore = require('../services/regionsStore');
 const discoveredLocationsStore = require('../services/discoveredLocationsStore');
 const regionAvailability = require('../services/regionAvailability');
+const forecastWatcher = require('../services/forecastWatcher');
 const { logEvent } = require('../services/logger');
 
 let cachedTree = null;
@@ -66,11 +67,13 @@ function registerRegionsIpc() {
     ipcMain.handle('regions:getSelected', () => regionsStore.getSelectedUids());
     ipcMain.handle('regions:setSelected', (event, uids) => {
         regionsStore.setSelectedUids(uids);
+        forecastWatcher.pruneToSelectedUids(regionsStore.getSelectedUids());
         logEvent(`Selected regions replaced: ${uids.length} region(s)`);
         return regionsStore.getSelectedUids();
     });
     ipcMain.handle('regions:toggle', (event, uid) => {
         const isSelected = regionsStore.toggleUid(uid);
+        forecastWatcher.pruneToSelectedUids(regionsStore.getSelectedUids());
         logEvent(`Region ${uid} ${isSelected ? 'added to' : 'removed from'} monitoring`);
         return isSelected;
     });

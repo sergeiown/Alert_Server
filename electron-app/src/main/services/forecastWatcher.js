@@ -32,7 +32,7 @@ function notifyApproaching(uid, alertType, etaMs, language) {
     const etaText = etaMs !== null ? `. ${t('forecastEtaLabel', language)} ~${formatDuration(etaMs, language)}` : '';
     const body = `${t('location', language)}: ${name}${etaText}`;
 
-    createNotification(title, body, 'app-icon-256.png', () => openForecastWindow());
+    createNotification(title, body, null, () => openForecastWindow());
     logEvent(`Forecast notify: ${name} - ${typeName} (uid ${uid})`);
 }
 
@@ -77,9 +77,19 @@ async function checkRegion(uid, language) {
     predictions.set(uid, { ...state, lastNotifiedAt: now });
 }
 
+function pruneToSelectedUids(selectedUids) {
+    const selectedSet = new Set(selectedUids.map(String));
+    Array.from(predictions.keys()).forEach((uid) => {
+        if (!selectedSet.has(String(uid))) predictions.delete(uid);
+    });
+}
+
 async function runCheck() {
     const { language } = settingsStore.getSettings();
-    for (const uid of regionsStore.getSelectedUids()) {
+    const selectedUids = regionsStore.getSelectedUids();
+    pruneToSelectedUids(selectedUids);
+
+    for (const uid of selectedUids) {
         try {
             await checkRegion(uid, language);
         } catch (err) {
@@ -101,4 +111,4 @@ function getUpcomingPredictions(language, limit) {
         .slice(0, limit);
 }
 
-module.exports = { startForecastWatcher, getUpcomingPredictions };
+module.exports = { startForecastWatcher, getUpcomingPredictions, pruneToSelectedUids };
