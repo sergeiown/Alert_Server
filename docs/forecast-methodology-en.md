@@ -6,11 +6,11 @@ A description of the forecasting approach: where the data comes from, how the al
 
 ## 1. Data source
 
-Alert history comes from the public [alerts.in.ua](https://alerts.in.ua/) API - the same service that provides current-alert data. A key quirk: the API only actually returns history at the **oblast** level (~30 days), not for an individual district or hromada. So for any monitored region, the app:
+Alert history comes from the public [alerts.in.ua](https://alerts.in.ua/) API - the same service that provides current-alert data. A key quirk: the API only actually returns history at the **region** level (~30 days), not for an individual district or hromada. So for any monitored area, the app:
 
-- determines which oblast it belongs to;
-- requests history for the whole oblast at once (several monitored regions within the same oblast share one request);
-- if the oblast itself is being tracked as a whole, it counts every alert within its borders; if a specific district/hromada/city is tracked, it filters the response down to just that region.
+- determines which region it belongs to;
+- requests history for the whole region at once (several monitored areas within the same region share one request);
+- if the region itself is being tracked as a whole, it counts every alert within its borders; if a specific district/hromada/city is tracked, it filters the response down to just that one.
 
 The API's 30-day limit doesn't mean the app only remembers the last month: it **accumulates history locally**, indefinitely, from whenever the region was first tracked. Updates happen in the background (periodically, and immediately after adding a new region), not only when you happen to look.
 
@@ -34,15 +34,15 @@ The result of this calculation is a number - "alerts per day" - for the region a
 
 The same underlying intensity calculation is used differently in three places in the app - it's important to understand this, because their numbers don't always match each other:
 
-1. **The Forecast window** - an expanded card per region: descriptive statistics from history (alert count, average interval, most common time of day and day of week - shown for information only, without affecting the model itself), a breakdown by alert type, and for each type, a "today" probability plus an approximate interval. Cards are sorted from the soonest expected alert to the furthest, with active alerts always on top. If both an oblast and one of its own regions are tracked, only the oblast is shown in the list (to avoid duplicating the same thing).
+1. **The Forecast window** - an expanded card per region: descriptive statistics from history (alert count, average interval, most common time of day and day of week - shown for information only, without affecting the model itself), a breakdown by alert type, and for each type, a "today" probability plus an approximate interval. Cards are sorted from the soonest expected alert to the furthest, with active alerts always on top. If both a region and one of its own districts are tracked, only the region is shown in the list (to avoid duplicating the same thing).
 2. **"Alert approaching" notifications** - fires when the approximate interval to the most likely alert type falls within the time window the user configured. The closer the expected alert, the more often the reminder repeats. If many regions "fire" at once, only a few of the soonest are shown, to avoid a flood of notifications.
 3. **The tray popup** ("what's expected soon") - a simplified, less precise variant of the same calculation, meant only as a general pointer in the list; this value can shift unpredictably on every refresh and shouldn't be treated as a precise countdown.
 
 ## 4. Known limitations of the approach
 
 - Doesn't account for seasonality (day of week/time of day are shown for reference but don't affect the calculation).
-- Doesn't account for correlation between neighboring regions (a mass strike hitting several oblasts at once is estimated independently for each region).
+- Doesn't account for correlation between neighboring regions (a mass strike hitting several at once is estimated independently for each one).
 - Doesn't use any external signals (intelligence, official warnings, airspace data) - historical frequency only.
 - The short-term component of the model has a short "memory horizon" (roughly a day) - it reacts well to a sudden pickup in activity, but on its own doesn't see longer cycles; the long-horizon baseline partly compensates for this, but it too is a simple exponential decay, not genuine cycle or seasonality detection.
 - Outputs a single number (probability, approximate interval), with no uncertainty range. A more precise estimate based on the actual distribution of intervals between alerts (accounting for how much time has already passed since the last one) is a possible future direction, not yet implemented.
-- Tracking a whole oblast aggregates the statistics of every region within it into one estimate - this can smooth over or distort the pattern of an individual hot/quiet region inside that oblast.
+- Tracking a whole region aggregates the statistics of every district or hromada within it into one estimate - this can smooth over or distort the pattern of an individual hot/quiet spot inside it.
