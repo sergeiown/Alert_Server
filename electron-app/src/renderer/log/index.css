@@ -36,6 +36,11 @@ header {
     color: var(--muted);
 }
 
+#buttonGroup {
+    display: flex;
+    gap: 8px;
+}
+
 button {
     background: var(--btn-bg);
     color: var(--fg);

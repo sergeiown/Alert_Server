@@ -5,6 +5,11 @@ const { getUserDataFile } = require('./appPaths');
 const MAX_SIZE_BYTES = 256 * 1024;
 const LINES_TO_DROP = 100;
 
+function csvField(value) {
+    const str = String(value);
+    return /[",\r\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+}
+
 function initializeLogFile() {
     const filePath = getUserDataFile('event.log');
     if (!fs.existsSync(filePath)) {
@@ -17,18 +22,11 @@ function truncateIfNeeded(filePath) {
     if (size <= MAX_SIZE_BYTES) return;
 
     const content = fs.readFileSync(filePath, 'utf-8');
-    const lines = content.split(os.EOL);
-    const header = lines[0];
-    const remaining = lines.slice(LINES_TO_DROP + 1);
+    const lines = content.split(/\r\n|\n|\r/).filter((line) => line.length > 0);
+    const [header, ...rest] = lines;
+    const remaining = rest.slice(LINES_TO_DROP);
 
-    const rebuilt = [
-        header,
-        ...remaining,
-        `Log file reduced (was ${size} bytes)`,
-        `Dropped the first ${LINES_TO_DROP} lines`,
-    ].join(os.EOL);
-
-    fs.writeFileSync(filePath, rebuilt, 'utf-8');
+    fs.writeFileSync(filePath, [header, ...remaining].join(os.EOL) + os.EOL, 'utf-8');
 }
 
 function logEvent(message) {
@@ -41,7 +39,7 @@ function logEvent(message) {
     const time = now.toLocaleTimeString('uk-UA');
     const text = typeof message === 'string' ? message : JSON.stringify(message);
 
-    fs.appendFileSync(filePath, `${date},${time},${text}${os.EOL}`, 'utf-8');
+    fs.appendFileSync(filePath, `${date},${time},${csvField(text)}${os.EOL}`, 'utf-8');
 
     console.log(text);
 }

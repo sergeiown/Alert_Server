@@ -13,7 +13,7 @@ function openLogWindow() {
     logWindow = new BrowserWindow({
         width: 720,
         height: 560,
-        title: 'Alert Server - Log',
+        title: 'Alert Server - Event log',
         icon: path.join(__dirname, '..', '..', '..', 'resources', 'icons', 'tray.ico'),
         webPreferences: {
             preload: path.join(__dirname, '..', '..', 'preload', 'logPreload.js'),

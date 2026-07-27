@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { spawn } = require('child_process');
 const { ipcMain } = require('electron');
 const { getUserDataFile } = require('../services/appPaths');
 const { clearLog } = require('../services/logger');
@@ -15,6 +16,11 @@ function registerLogIpc() {
 
     ipcMain.handle('log:clear', () => {
         clearLog();
+        return true;
+    });
+
+    ipcMain.handle('log:openInNotepad', () => {
+        spawn('notepad.exe', [getUserDataFile('event.log')], { detached: true, stdio: 'ignore' }).unref();
         return true;
     });
 }

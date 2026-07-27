@@ -1,5 +1,6 @@
 const sizeLabel = document.getElementById('sizeLabel');
 const clearButton = document.getElementById('clearButton');
+const openNotepadButton = document.getElementById('openNotepadButton');
 const content = document.getElementById('content');
 
 const AUTO_REFRESH_MS = 2000;
@@ -26,10 +27,15 @@ async function main() {
     strings = await window.alertServerLog.getStrings();
     document.title = strings.logWindowTitle;
     clearButton.textContent = strings.logClearButton;
+    openNotepadButton.textContent = strings.logOpenInNotepadButton;
 
     clearButton.addEventListener('click', async () => {
         await window.alertServerLog.clear();
         await render();
+    });
+
+    openNotepadButton.addEventListener('click', () => {
+        window.alertServerLog.openInNotepad();
     });
 
     await render();
