@@ -6,7 +6,8 @@
   "author": "Serhii I. Myshko",
   "main": "src/main/index.js",
   "scripts": {
-    "backtest": "node scripts/backtest-forecast.js"
+    "backtest": "node scripts/backtest-forecast.js",
+    "test": "node scripts/test-forecast-model.js"
   },
   "dependencies": {
     "electron-updater": "^6.8.9"

@@ -20,11 +20,26 @@ function weightedCount(alerts, nowMs, halfLifeDays) {
     return alerts.reduce((sum, alert) => sum + freshnessWeight(alert, nowMs, halfLifeDays), 0);
 }
 
+function baselineLambdaOf(alerts, nowMs, config) {
+    const baselineExposure = exposureDays(config.BASELINE_WINDOW_DAYS, config.BASELINE_HALF_LIFE_DAYS);
+    return weightedCount(alerts, nowMs, config.BASELINE_HALF_LIFE_DAYS) / baselineExposure;
+}
+
 function estimateRegionLambda(alerts, nowMs, config) {
     const usableAlerts = filterUsableAlerts(alerts);
     const exposure = exposureDays(config.WINDOW_DAYS, config.HALF_LIFE_DAYS);
-    const lambda = weightedCount(usableAlerts, nowMs, config.HALF_LIFE_DAYS) / exposure;
-    return { lambda, exposure, usableAlerts };
+    const recentLambda = weightedCount(usableAlerts, nowMs, config.HALF_LIFE_DAYS) / exposure;
+    const baselineLambda = baselineLambdaOf(usableAlerts, nowMs, config);
+
+    // max(), not a sum or a smooth blend, on purpose: both terms already estimate the same
+    // quantity over the same alerts (just decaying at different rates), so summing would double
+    // count, and blending with weights that decay together turns out non-monotonic (dips below
+    // the eventual plateau before settling). max() is provably monotonic - as time passes with
+    // no new alerts, recentLambda only shrinks and baselineLambda barely moves, so the max simply
+    // hands over from one to the other without ever dipping - and a fresh alert makes recentLambda
+    // dominate exactly as before the fix.
+    const lambda = Math.max(recentLambda, baselineLambda);
+    return { lambda, recentLambda, baselineLambda, exposure, usableAlerts };
 }
 
 function estimateTypeLambda(typeAlerts, totalCount, regionLambda, nowMs, config) {
@@ -33,7 +48,9 @@ function estimateTypeLambda(typeAlerts, totalCount, regionLambda, nowMs, config)
     const priorLambda = regionLambda * roughShare;
     const alpha = priorLambda * config.PRIOR_BETA_DAYS;
     const observed = weightedCount(typeAlerts, nowMs, config.HALF_LIFE_DAYS);
-    return (alpha + observed) / (config.PRIOR_BETA_DAYS + exposure);
+    const recentLambda = (alpha + observed) / (config.PRIOR_BETA_DAYS + exposure);
+    const baselineLambda = baselineLambdaOf(typeAlerts, nowMs, config);
+    return Math.max(recentLambda, baselineLambda);
 }
 
 function computeStats(alerts, nowMs, config) {
