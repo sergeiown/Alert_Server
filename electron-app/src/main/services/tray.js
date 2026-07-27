@@ -16,15 +16,16 @@ const ALERTS_MAP_URL = 'https://alerts.in.ua/';
 const FRONT_MAP_URL = 'https://deepstatemap.live/';
 
 let trayInstance = null;
-let menuIcon = null;
+const menuIcons = new Map();
 
-function getMenuIcon() {
-    if (!menuIcon) {
-        menuIcon = nativeImage
-            .createFromPath(getResourcePath('icons', 'app-icon-256.png'))
-            .resize({ width: 16, height: 16 });
+function getMenuIcon(fileName) {
+    if (!menuIcons.has(fileName)) {
+        menuIcons.set(
+            fileName,
+            nativeImage.createFromPath(getResourcePath('icons', fileName)).resize({ width: 16, height: 16 })
+        );
     }
-    return menuIcon;
+    return menuIcons.get(fileName);
 }
 
 function iconPath(activeCount, trayMonoIcon) {
@@ -41,22 +42,25 @@ function iconPath(activeCount, trayMonoIcon) {
 
 function buildMenu(language) {
     return Menu.buildFromTemplate([
-        { label: t('appName', language), icon: getMenuIcon(), enabled: false },
+        { label: t('appName', language), icon: getMenuIcon('app-icon-256.png'), click: () => openAboutWindow() },
         { type: 'separator' },
-        { label: t('menuMapAlerts', language), click: () => openMapWindow(ALERTS_MAP_URL, t('menuMapAlerts', language)) },
-        { label: t('menuMapFront', language), click: () => openMapWindow(FRONT_MAP_URL, t('menuMapFront', language)) },
-        { label: t('menuForecast', language), click: () => openForecastWindow() },
-        { label: t('menuSettings', language), click: () => openSettingsWindow() },
         {
-            label: t('menuInfo', language),
-            submenu: [
-                { label: t('menuLog', language), click: () => openLogWindow() },
-                { label: t('menuAbout', language), click: () => openAboutWindow() },
-            ],
+            label: t('menuMapAlerts', language),
+            icon: getMenuIcon('Alert_map.png'),
+            click: () => openMapWindow(ALERTS_MAP_URL, t('menuMapAlerts', language)),
         },
+        {
+            label: t('menuMapFront', language),
+            icon: getMenuIcon('Front_line_map.png'),
+            click: () => openMapWindow(FRONT_MAP_URL, t('menuMapFront', language)),
+        },
+        { label: t('menuForecast', language), icon: getMenuIcon('Forecast.png'), click: () => openForecastWindow() },
+        { label: t('menuSettings', language), icon: getMenuIcon('Settings.png'), click: () => openSettingsWindow() },
+        { label: t('menuLog', language), icon: getMenuIcon('Event_log.png'), click: () => openLogWindow() },
         { type: 'separator' },
         {
             label: t('menuExit', language),
+            icon: getMenuIcon('Exit.png'),
             click: () => {
                 logEvent('Exit requested from tray menu');
                 app.quit();
