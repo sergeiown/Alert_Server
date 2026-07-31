@@ -4,7 +4,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/sergeiown/Alert_Server/blob/main/LICENSE)
 [![Release](https://img.shields.io/github/v/release/sergeiown/Alert_Server)](https://github.com/sergeiown/Alert_Server/releases/latest)
 
-**[EN](https://github.com/sergeiown/Alert_Server/blob/main/README.md)** | [UA](https://github.com/sergeiown/Alert_Server/blob/main/README-UA.md)
+[![English](https://img.shields.io/badge/-English-blue)](https://github.com/sergeiown/Alert_Server/blob/main/README.md)
+[![Українська](https://img.shields.io/badge/-%D0%A3%D0%BA%D1%80%D0%B0%D1%97%D0%BD%D1%81%D1%8C%D0%BA%D0%B0-lightgrey)](https://github.com/sergeiown/Alert_Server/blob/main/README-UA.md)
 
 > **Disclaimer. The aggressor state's full-scale war against Ukraine has been ongoing since February 2014 and escalated into a full invasion on February 24, 2022. The entire territory of Ukraine remains a zone of active hostilities and potential missile threat. Stay vigilant, never ignore air raid alerts, and follow safety guidelines.**
 

@@ -4,7 +4,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/sergeiown/Alert_Server/blob/main/LICENSE)
 [![Release](https://img.shields.io/github/v/release/sergeiown/Alert_Server)](https://github.com/sergeiown/Alert_Server/releases/latest)
 
-[EN](https://github.com/sergeiown/Alert_Server/blob/main/README.md) | **[UA](https://github.com/sergeiown/Alert_Server/blob/main/README-UA.md)**
+[![English](https://img.shields.io/badge/-English-lightgrey)](https://github.com/sergeiown/Alert_Server/blob/main/README.md)
+[![Українська](https://img.shields.io/badge/-%D0%A3%D0%BA%D1%80%D0%B0%D1%97%D0%BD%D1%81%D1%8C%D0%BA%D0%B0-blue)](https://github.com/sergeiown/Alert_Server/blob/main/README-UA.md)
 
 > **Дисклеймер. Повномасштабна війна країни-агресора проти України триває, починаючи з лютого 2014 року та ескалації 24 лютого 2022 року. Вся територія України залишається зоною бойових дій та потенційної ракетної загрози. Зберігайте пильність, не ігноруйте сигнали повітряної тривоги та дотримуйтесь правил безпеки.**
 

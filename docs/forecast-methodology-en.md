@@ -1,6 +1,7 @@
 # Forecast Methodology
 
-**[EN](https://github.com/sergeiown/Alert_Server/blob/main/docs/forecast-methodology-en.md)** | [UA](https://github.com/sergeiown/Alert_Server/blob/main/docs/forecast-methodology-uk.md)
+[![English](https://img.shields.io/badge/-English-blue)](https://github.com/sergeiown/Alert_Server/blob/main/docs/forecast-methodology-en.md)
+[![Українська](https://img.shields.io/badge/-%D0%A3%D0%BA%D1%80%D0%B0%D1%97%D0%BD%D1%81%D1%8C%D0%BA%D0%B0-lightgrey)](https://github.com/sergeiown/Alert_Server/blob/main/docs/forecast-methodology-uk.md)
 
 A description of the forecasting approach: where the data comes from, how the alert-probability estimate is calculated, and how the result is presented to the user. This document is deliberately kept at the concept level rather than exact code - implementation details (constants, formulas) change over time, while the general approach described here stays a reliable reference.
 
