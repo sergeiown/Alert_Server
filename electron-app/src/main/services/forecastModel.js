@@ -25,6 +25,31 @@ function baselineLambdaOf(alerts, nowMs, config) {
     return weightedCount(alerts, nowMs, config.BASELINE_HALF_LIFE_DAYS) / baselineExposure;
 }
 
+// How much busier or quieter today's weekday historically is versus this alert set's own
+// average, shrunk toward 1 (no adjustment) when there isn't much same-weekday history yet, and
+// clamped so a noisy small sample can never swing the estimate too far in either direction.
+function seasonalityMultiplier(alerts, nowMs, config) {
+    if (!alerts.length) return 1;
+
+    const times = alerts.map((alert) => new Date(alert.started_at).getTime());
+    const spanDays = Math.max(1, (nowMs - Math.min(...times)) / DAY_MS);
+    const weekdayOccurrences = spanDays / 7;
+
+    const overallRate = alerts.length / spanDays;
+    if (overallRate <= 0) return 1;
+
+    const todayWeekday = new Date(nowMs).getDay();
+    const todayCount = times.filter((t) => new Date(t).getDay() === todayWeekday).length;
+    const todayRate = todayCount / Math.max(1, weekdayOccurrences);
+
+    const rawMultiplier = todayRate / overallRate;
+    const shrinkageWeight = weekdayOccurrences / (weekdayOccurrences + config.SEASONALITY_PRIOR_OCCURRENCES);
+    const multiplier = 1 + shrinkageWeight * (rawMultiplier - 1);
+
+    const cap = config.SEASONALITY_MAX_MULTIPLIER;
+    return Math.min(cap, Math.max(1 / cap, multiplier));
+}
+
 function estimateRegionLambda(alerts, nowMs, config) {
     const usableAlerts = filterUsableAlerts(alerts);
     const exposure = exposureDays(config.WINDOW_DAYS, config.HALF_LIFE_DAYS);
@@ -38,10 +63,15 @@ function estimateRegionLambda(alerts, nowMs, config) {
     // no new alerts, recentLambda only shrinks and baselineLambda barely moves, so the max simply
     // hands over from one to the other without ever dipping - and a fresh alert makes recentLambda
     // dominate exactly as before the fix.
-    const lambda = Math.max(recentLambda, baselineLambda);
-    return { lambda, recentLambda, baselineLambda, exposure, usableAlerts };
+    const baseLambda = Math.max(recentLambda, baselineLambda);
+    const seasonality = seasonalityMultiplier(usableAlerts, nowMs, config);
+    const lambda = baseLambda * seasonality;
+    return { lambda, baseLambda, recentLambda, baselineLambda, seasonality, exposure, usableAlerts };
 }
 
+// regionLambda should be the region's baseLambda (pre-seasonality), not its seasonally-adjusted
+// lambda - this function applies its own seasonality (from the type's own history) at the end,
+// and applying it twice (once via an already-adjusted prior, once directly) would compound it.
 function estimateTypeLambda(typeAlerts, totalCount, regionLambda, nowMs, config) {
     const exposure = exposureDays(config.WINDOW_DAYS, config.HALF_LIFE_DAYS);
     const roughShare = typeAlerts.length / totalCount;
@@ -50,11 +80,30 @@ function estimateTypeLambda(typeAlerts, totalCount, regionLambda, nowMs, config)
     const observed = weightedCount(typeAlerts, nowMs, config.HALF_LIFE_DAYS);
     const recentLambda = (alpha + observed) / (config.PRIOR_BETA_DAYS + exposure);
     const baselineLambda = baselineLambdaOf(typeAlerts, nowMs, config);
-    return Math.max(recentLambda, baselineLambda);
+    const seasonality = seasonalityMultiplier(typeAlerts, nowMs, config);
+    return Math.max(recentLambda, baselineLambda) * seasonality;
+}
+
+// Historical spread of the gaps between consecutive alerts, as a low/high range instead of a
+// single averaged number - gives an honest sense of how much the real interval varies, since the
+// point ETA elsewhere is just one statistic and can otherwise read as more precise than it is.
+function gapRangeMs(alerts, config) {
+    if (alerts.length < config.MIN_GAP_SAMPLES_FOR_RANGE + 1) return null;
+
+    const sortedAsc = [...alerts].sort((a, b) => new Date(a.started_at) - new Date(b.started_at));
+    const gaps = [];
+    for (let i = 1; i < sortedAsc.length; i++) {
+        gaps.push(new Date(sortedAsc[i].started_at).getTime() - new Date(sortedAsc[i - 1].started_at).getTime());
+    }
+    if (gaps.length < config.MIN_GAP_SAMPLES_FOR_RANGE) return null;
+
+    gaps.sort((a, b) => a - b);
+    const pick = (p) => gaps[Math.min(gaps.length - 1, Math.floor(p * gaps.length))];
+    return { low: pick(0.25), high: pick(0.75) };
 }
 
 function computeStats(alerts, nowMs, config) {
-    const { lambda: lambdaRegion, usableAlerts } = estimateRegionLambda(alerts, nowMs, config);
+    const { lambda: lambdaRegion, baseLambda, usableAlerts } = estimateRegionLambda(alerts, nowMs, config);
 
     const windowStartMs = nowMs - config.WINDOW_DAYS * DAY_MS;
     const windowAlerts = usableAlerts.filter((a) => new Date(a.started_at).getTime() >= windowStartMs);
@@ -118,13 +167,14 @@ function computeStats(alerts, nowMs, config) {
         .map(([type, typeAlertsWindow]) => {
             const typeCount = typeAlertsWindow.length;
             const typeAlertsFull = byTypeFull.get(type) || typeAlertsWindow;
-            const lambdaType = estimateTypeLambda(typeAlertsFull, usableAlerts.length, lambdaRegion, nowMs, config);
+            const lambdaType = estimateTypeLambda(typeAlertsFull, usableAlerts.length, baseLambda, nowMs, config);
 
             const percent = Math.round((typeCount / count) * 100);
             const probabilityToday = Math.round((1 - Math.exp(-lambdaType)) * 100);
             const projectedNextMs = lambdaType > MIN_MEANINGFUL_LAMBDA ? (1 / lambdaType) * DAY_MS : null;
+            const gapRange = gapRangeMs(typeAlertsFull, config);
 
-            return { type, count: typeCount, percent, projectedNextMs, probabilityToday };
+            return { type, count: typeCount, percent, projectedNextMs, probabilityToday, gapRange };
         })
         .sort((a, b) => b.count - a.count);
 
