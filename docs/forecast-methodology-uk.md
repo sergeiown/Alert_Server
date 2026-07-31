@@ -1,6 +1,7 @@
 # Методологія прогнозування тривог
 
-[EN](https://github.com/sergeiown/Alert_Server/blob/main/docs/forecast-methodology-en.md) | **[UA](https://github.com/sergeiown/Alert_Server/blob/main/docs/forecast-methodology-uk.md)**
+[![English](https://img.shields.io/badge/-English-lightgrey)](https://github.com/sergeiown/Alert_Server/blob/main/docs/forecast-methodology-en.md)
+[![Українська](https://img.shields.io/badge/-%D0%A3%D0%BA%D1%80%D0%B0%D1%97%D0%BD%D1%81%D1%8C%D0%BA%D0%B0-blue)](https://github.com/sergeiown/Alert_Server/blob/main/docs/forecast-methodology-uk.md)
 
 Опис підходу до прогнозування: звідки беруться дані, як рахується оцінка ймовірності тривоги, і як результат подається користувачу. Документ навмисно тримається на рівні концепції, а не точного коду, - деталі реалізації (константи, формули) з часом змінюються, а загальний підхід описаний тут лишається орієнтиром.
 
