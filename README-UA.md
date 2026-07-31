@@ -1,5 +1,9 @@
 # <img src="docs/images/icon.png" alt="" width="32" align="center" /> Alert Server
 
+[![Windows](https://img.shields.io/badge/platform-windows-0078D6?logo=windows&logoColor=white)](https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/sergeiown/Alert_Server/blob/main/LICENSE)
+[![Release](https://img.shields.io/github/v/release/sergeiown/Alert_Server)](https://github.com/sergeiown/Alert_Server/releases/latest)
+
 [EN](https://github.com/sergeiown/Alert_Server/blob/main/README.md) | **[UA](https://github.com/sergeiown/Alert_Server/blob/main/README-UA.md)**
 
 > **Дисклеймер. Повномасштабна війна країни-агресора проти України триває, починаючи з лютого 2014 року та ескалації 24 лютого 2022 року. Вся територія України залишається зоною бойових дій та потенційної ракетної загрози. Зберігайте пильність, не ігноруйте сигнали повітряної тривоги та дотримуйтесь правил безпеки.**

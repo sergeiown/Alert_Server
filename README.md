@@ -1,5 +1,9 @@
 # <img src="docs/images/icon.png" alt="" width="32" align="center" /> Alert Server
 
+[![Windows](https://img.shields.io/badge/platform-windows-0078D6?logo=windows&logoColor=white)](https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/sergeiown/Alert_Server/blob/main/LICENSE)
+[![Release](https://img.shields.io/github/v/release/sergeiown/Alert_Server)](https://github.com/sergeiown/Alert_Server/releases/latest)
+
 **[EN](https://github.com/sergeiown/Alert_Server/blob/main/README.md)** | [UA](https://github.com/sergeiown/Alert_Server/blob/main/README-UA.md)
 
 > **Disclaimer. The aggressor state's full-scale war against Ukraine has been ongoing since February 2014 and escalated into a full invasion on February 24, 2022. The entire territory of Ukraine remains a zone of active hostilities and potential missile threat. Stay vigilant, never ignore air raid alerts, and follow safety guidelines.**
