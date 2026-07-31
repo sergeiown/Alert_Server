@@ -174,7 +174,10 @@ function buildForecastText(stats, language) {
             entry.projectedNextMs !== null
                 ? `, ${t('forecastEtaLabel', language)} ~${formatDuration(entry.projectedNextMs, language)}`
                 : '';
-        lines.push(`  - ${typeName}: ${entry.probabilityToday}%${etaText}`);
+        const rangeText = entry.gapRange
+            ? ` (${t('forecastRangeLabel', language)} ${formatDuration(entry.gapRange.low, language)} - ${formatDuration(entry.gapRange.high, language)})`
+            : '';
+        lines.push(`  - ${typeName}: ${entry.probabilityToday}%${etaText}${rangeText}`);
     });
 
     lines.push('');
@@ -216,7 +219,7 @@ async function getRegionTypeLambdas(uid) {
     if (!alerts.length) return [];
 
     const nowMs = Date.now();
-    const { lambda: lambdaRegion, usableAlerts } = estimateRegionLambda(alerts, nowMs, forecastConfig);
+    const { baseLambda, usableAlerts } = estimateRegionLambda(alerts, nowMs, forecastConfig);
     if (!usableAlerts.length) return [];
 
     const byType = new Map();
@@ -227,7 +230,7 @@ async function getRegionTypeLambdas(uid) {
 
     return Array.from(byType.entries()).map(([type, typeAlerts]) => ({
         type,
-        lambda: estimateTypeLambda(typeAlerts, usableAlerts.length, lambdaRegion, nowMs, forecastConfig),
+        lambda: estimateTypeLambda(typeAlerts, usableAlerts.length, baseLambda, nowMs, forecastConfig),
     }));
 }
 

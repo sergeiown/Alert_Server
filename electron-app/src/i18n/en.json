@@ -59,6 +59,7 @@
     "forecastSinceLast": "Time since the last alert ended",
     "forecastProbabilityToday": "Probability of an alert today, based on statistics",
     "forecastEtaLabel": "in about",
+    "forecastRangeLabel": "typically",
     "forecastDisclaimer": "This is historical statistics, not a guaranteed prediction.",
     "forecastCopyButton": "Copy",
     "forecastCopied": "Copied",
