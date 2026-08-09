@@ -14,7 +14,7 @@ function openSettingsWindow() {
         width: 720,
         height: 640,
         title: 'Alert Server - Налаштування',
-        icon: path.join(__dirname, '..', '..', '..', 'resources', 'icons', 'tray.ico'),
+        icon: path.join(__dirname, '..', '..', '..', 'resources', 'icons', 'app-icon-256.png'),
         webPreferences: {
             preload: path.join(__dirname, '..', '..', 'preload', 'settingsPreload.js'),
             contextIsolation: true,
