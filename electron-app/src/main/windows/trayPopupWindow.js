@@ -13,7 +13,7 @@ function createPopupWindow() {
         movable: false,
         skipTaskbar: true,
         alwaysOnTop: true,
-        icon: path.join(__dirname, '..', '..', '..', 'resources', 'icons', 'tray.ico'),
+        icon: path.join(__dirname, '..', '..', '..', 'resources', 'icons', 'app-icon-256.png'),
         webPreferences: {
             preload: path.join(__dirname, '..', '..', 'preload', 'trayPopupPreload.js'),
             contextIsolation: true,

@@ -14,7 +14,7 @@ function openLogWindow() {
         width: 720,
         height: 560,
         title: 'Alert Server - Event log',
-        icon: path.join(__dirname, '..', '..', '..', 'resources', 'icons', 'tray.ico'),
+        icon: path.join(__dirname, '..', '..', '..', 'resources', 'icons', 'app-icon-256.png'),
         webPreferences: {
             preload: path.join(__dirname, '..', '..', 'preload', 'logPreload.js'),
             contextIsolation: true,
