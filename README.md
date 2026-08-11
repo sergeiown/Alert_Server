@@ -23,7 +23,7 @@ Future updates are detected and installed automatically from GitHub Releases; yo
 
 ## Usage
 
-On first launch the app appears as a tray icon only, no window. Everything is controlled from the tray icon's context menu:
+On first launch the app appears as a tray icon only, no window. The icon itself (color or monochrome, per Settings) automatically matches the Windows light/dark taskbar theme, and shows an exclamation mark while an alert is active. Everything is controlled from the tray icon's context menu:
 
 ![tray menu](docs/images/tray-menu-en.png)
 
