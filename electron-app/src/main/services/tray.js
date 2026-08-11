@@ -1,4 +1,4 @@
-const { Tray, Menu, app, Notification, nativeImage } = require('electron');
+const { Tray, Menu, app, Notification, nativeImage, nativeTheme } = require('electron');
 const { getResourcePath } = require('./appPaths');
 const { openSettingsWindow } = require('../windows/settingsWindow');
 const { openMapWindow } = require('../windows/mapWindow');
@@ -16,6 +16,7 @@ const ALERTS_MAP_URL = 'https://alerts.in.ua/';
 const FRONT_MAP_URL = 'https://deepstatemap.live/';
 
 let trayInstance = null;
+let lastActiveCount = 0;
 const menuIcons = new Map();
 
 function getMenuIcon(fileName) {
@@ -29,15 +30,10 @@ function getMenuIcon(fileName) {
 }
 
 function iconPath(activeCount, trayMonoIcon) {
-    const name =
-        activeCount > 0
-            ? trayMonoIcon
-                ? 'tray_alert_mono.ico'
-                : 'tray_alert.ico'
-            : trayMonoIcon
-              ? 'tray_mono.ico'
-              : 'tray.ico';
-    return getResourcePath('icons', name);
+    const alertPart = activeCount > 0 ? '_alert' : '';
+    const stylePart = trayMonoIcon ? '_mono' : '';
+    const theme = nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
+    return getResourcePath('icons', `tray${alertPart}${stylePart}_${theme}.png`);
 }
 
 function buildMenu(language) {
@@ -77,6 +73,8 @@ function createTray() {
     trayInstance.setContextMenu(buildMenu(language));
     trayInstance.on('click', (event, bounds) => toggleTrayPopup(bounds));
 
+    nativeTheme.on('updated', () => updateTrayState(lastActiveCount));
+
     new Notification({
         title: t('notificationStartTitle', language),
         body: t('notificationStartBody', language),
@@ -88,6 +86,7 @@ function createTray() {
 function updateTrayState(activeCount) {
     if (!trayInstance) return;
 
+    lastActiveCount = activeCount;
     const { language, trayMonoIcon } = settingsStore.getSettings();
     trayInstance.setImage(iconPath(activeCount, trayMonoIcon));
 
