@@ -1,4 +1,4 @@
-const { Tray, Menu, app, Notification, nativeImage, nativeTheme } = require('electron');
+const { Tray, Menu, app, Notification, nativeImage, nativeTheme, screen } = require('electron');
 const { getResourcePath } = require('./appPaths');
 const { openSettingsWindow } = require('../windows/settingsWindow');
 const { openMapWindow } = require('../windows/mapWindow');
@@ -15,9 +15,18 @@ const { t } = require('../../i18n/i18n');
 const ALERTS_MAP_URL = 'https://alerts.in.ua/';
 const FRONT_MAP_URL = 'https://deepstatemap.live/';
 
+const ICON_SIZES = [16, 20, 24, 28, 32, 40, 48, 64];
+const PULSE_FRAME_COUNT = 5;
+const PULSE_INTERVAL_MS = 150;
+const SHAKE_FRAME_COUNT = 5;
+const SHAKE_INTERVAL_MS = 300;
+
 let trayInstance = null;
 let lastActiveCount = 0;
+let animationTimer = null;
+let alertLoopActive = false;
 const menuIcons = new Map();
+const iconCache = new Map();
 
 function getMenuIcon(fileName) {
     if (!menuIcons.has(fileName)) {
@@ -29,11 +38,99 @@ function getMenuIcon(fileName) {
     return menuIcons.get(fileName);
 }
 
-function iconPath(activeCount, trayMonoIcon) {
+function getIconSize() {
+    const scaleFactor = screen.getPrimaryDisplay().scaleFactor || 1;
+    const target = Math.round(16 * scaleFactor);
+    return ICON_SIZES.reduce((best, size) => (Math.abs(size - target) < Math.abs(best - target) ? size : best));
+}
+
+function loadIcon(fileName) {
+    const size = getIconSize();
+    const key = `${fileName}@${size}`;
+    if (!iconCache.has(key)) {
+        iconCache.set(
+            key,
+            nativeImage.createFromPath(getResourcePath('icons', fileName)).resize({ width: size, height: size, quality: 'best' })
+        );
+    }
+    return iconCache.get(key);
+}
+
+function currentTheme() {
+    return nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
+}
+
+function staticIconFile(activeCount, trayMonoIcon) {
     const alertPart = activeCount > 0 ? '_alert' : '';
     const stylePart = trayMonoIcon ? '_mono' : '';
-    const theme = nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
-    return getResourcePath('icons', `tray${alertPart}${stylePart}_${theme}.png`);
+    return `tray${alertPart}${stylePart}_${currentTheme()}.png`;
+}
+
+function pulseFrameFile(frameNumber, trayMonoIcon) {
+    return trayMonoIcon
+        ? `tray_mono_pulse_${frameNumber}_${currentTheme()}.png`
+        : `tray_pulse_${frameNumber}_${currentTheme()}.png`;
+}
+
+function shakeFrameFile(frameNumber, trayMonoIcon) {
+    return trayMonoIcon
+        ? `tray_alert_mono_shake_${frameNumber}_${currentTheme()}.png`
+        : `tray_alert_shake_${frameNumber}_${currentTheme()}.png`;
+}
+
+function stopAnimationTimer() {
+    if (animationTimer) {
+        clearInterval(animationTimer);
+        animationTimer = null;
+    }
+}
+
+function playFrames(fileNames, intervalMs, loop, onDone) {
+    stopAnimationTimer();
+    let index = 0;
+    trayInstance.setImage(loadIcon(fileNames[0]));
+    animationTimer = setInterval(() => {
+        if (!trayInstance) return;
+        index++;
+        if (index >= fileNames.length) {
+            if (!loop) {
+                stopAnimationTimer();
+                if (onDone) onDone();
+                return;
+            }
+            index = 0;
+        }
+        trayInstance.setImage(loadIcon(fileNames[index]));
+    }, intervalMs);
+}
+
+function playIdlePulse(trayMonoIcon) {
+    const frames = Array.from({ length: PULSE_FRAME_COUNT }, (_, i) => pulseFrameFile(i + 1, trayMonoIcon));
+    playFrames(frames, PULSE_INTERVAL_MS, false, () => {
+        if (trayInstance) trayInstance.setImage(loadIcon(staticIconFile(0, trayMonoIcon)));
+    });
+}
+
+function startAlertLoop(trayMonoIcon) {
+    alertLoopActive = true;
+    const frames = Array.from({ length: SHAKE_FRAME_COUNT }, (_, i) => shakeFrameFile(i + 1, trayMonoIcon));
+    playFrames(frames, SHAKE_INTERVAL_MS, true);
+}
+
+function stopAlertLoop() {
+    alertLoopActive = false;
+    stopAnimationTimer();
+}
+
+function refreshIconForCurrentState() {
+    if (!trayInstance) return;
+    const { trayMonoIcon } = settingsStore.getSettings();
+    if (alertLoopActive) {
+        startAlertLoop(trayMonoIcon);
+    } else {
+        stopAnimationTimer();
+        trayInstance.setImage(loadIcon(staticIconFile(lastActiveCount, trayMonoIcon)));
+    }
 }
 
 function buildMenu(language) {
@@ -68,12 +165,13 @@ function buildMenu(language) {
 function createTray() {
     const { language, trayMonoIcon } = settingsStore.getSettings();
 
-    trayInstance = new Tray(iconPath(0, trayMonoIcon));
+    trayInstance = new Tray(loadIcon(staticIconFile(0, trayMonoIcon)));
     trayInstance.setToolTip(t('trayDefaultTooltip', language));
     trayInstance.setContextMenu(buildMenu(language));
     trayInstance.on('click', (event, bounds) => toggleTrayPopup(bounds));
 
-    nativeTheme.on('updated', () => updateTrayState(lastActiveCount));
+    nativeTheme.on('updated', refreshIconForCurrentState);
+    screen.on('display-metrics-changed', refreshIconForCurrentState);
 
     new Notification({
         title: t('notificationStartTitle', language),
@@ -86,9 +184,18 @@ function createTray() {
 function updateTrayState(activeCount) {
     if (!trayInstance) return;
 
+    const wasIdle = lastActiveCount === 0;
     lastActiveCount = activeCount;
     const { language, trayMonoIcon } = settingsStore.getSettings();
-    trayInstance.setImage(iconPath(activeCount, trayMonoIcon));
+
+    if (activeCount > 0) {
+        if (!alertLoopActive) startAlertLoop(trayMonoIcon);
+    } else if (alertLoopActive) {
+        stopAlertLoop();
+        trayInstance.setImage(loadIcon(staticIconFile(0, trayMonoIcon)));
+    } else if (wasIdle && !animationTimer) {
+        playIdlePulse(trayMonoIcon);
+    }
 
     if (activeCount > 0) {
         trayInstance.setToolTip(`${t('trayActiveTooltip', language)}: ${activeCount}`);
