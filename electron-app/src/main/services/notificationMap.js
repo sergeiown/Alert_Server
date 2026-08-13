@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { BrowserWindow } = require('electron');
+const { BrowserWindow, nativeTheme } = require('electron');
 const { getResourcePath, getUserDataFile } = require('./appPaths');
 
 const REGION_TO_ISO = {
@@ -68,12 +68,15 @@ async function renderNow(stateUids, color) {
     const renderedWidth = Math.round(svgWidth * scale);
     const renderedHeight = Math.round(svgHeight * scale);
     const highlightCss = isoCodes.map((iso) => `#${iso}{fill:${color};}`).join('');
+    const isDark = nativeTheme.shouldUseDarkColors;
+    const bgColor = isDark ? '#242424' : '#f4f4f4';
+    const regionColor = isDark ? '#3a3f47' : '#c9d0d8';
 
     const html = `<!doctype html><html><head><style>
-        html,body{margin:0;padding:0;width:${OUTPUT_WIDTH}px;height:${OUTPUT_HEIGHT}px;background:#f4f4f4;
+        html,body{margin:0;padding:0;width:${OUTPUT_WIDTH}px;height:${OUTPUT_HEIGHT}px;background:${bgColor};
             display:flex;align-items:center;justify-content:center;overflow:hidden;}
         svg{width:${renderedWidth}px;height:${renderedHeight}px;display:block;}
-        path{fill:#c9d0d8;stroke:#f4f4f4;stroke-width:0.5;}
+        path{fill:${regionColor};stroke:${bgColor};stroke-width:0.5;}
         ${highlightCss}
     </style></head><body>${svgText}</body></html>`;
 

@@ -16,10 +16,10 @@ const ALERTS_MAP_URL = 'https://alerts.in.ua/';
 const FRONT_MAP_URL = 'https://deepstatemap.live/';
 
 const ICON_SIZES = [16, 20, 24, 28, 32, 40, 48, 64];
-const PULSE_FRAME_COUNT = 5;
-const PULSE_INTERVAL_MS = 150;
-const SHAKE_FRAME_COUNT = 5;
-const SHAKE_INTERVAL_MS = 300;
+const PULSE_FRAME_COUNT = 12;
+const PULSE_INTERVAL_MS = 55;
+const SHAKE_FRAME_COUNT = 16;
+const SHAKE_INTERVAL_MS = 90;
 
 let trayInstance = null;
 let lastActiveCount = 0;
