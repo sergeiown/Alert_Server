@@ -8,6 +8,20 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 let store = null;
 let writeTimer = null;
 
+function backfillFirstSeen() {
+    const now = Date.now();
+    let changed = false;
+    Object.values(store).forEach((region) => {
+        Object.values(region).forEach((alert) => {
+            if (alert._localFirstSeenAt === undefined) {
+                alert._localFirstSeenAt = now;
+                changed = true;
+            }
+        });
+    });
+    return changed;
+}
+
 function load() {
     const filePath = getUserDataFile(STORE_FILE);
     if (!fs.existsSync(filePath)) {
@@ -20,6 +34,12 @@ function load() {
     } catch (err) {
         store = {};
     }
+
+    // One-time migration for stores written before _localFirstSeenAt existed - stamps everything
+    // still missing it "now" in a single pass rather than waiting for each region's next re-poll,
+    // so the reported span is immediately consistent instead of trailing whichever region hasn't
+    // refreshed yet.
+    if (backfillFirstSeen()) scheduleWrite();
 
     return store;
 }
@@ -55,11 +75,7 @@ function mergeAlerts(uid, alerts) {
         const incomingStamp = new Date(alert.updated_at || alert.started_at).getTime();
 
         if (incomingStamp >= existingStamp) {
-            const firstSeenAt = existing?._localFirstSeenAt ?? now;
-            region[alert.id] = { ...alert, _localFirstSeenAt: firstSeenAt };
-            changed = true;
-        } else if (existing && existing._localFirstSeenAt === undefined) {
-            existing._localFirstSeenAt = now;
+            region[alert.id] = { ...alert, _localFirstSeenAt: existing?._localFirstSeenAt ?? now };
             changed = true;
         }
     });

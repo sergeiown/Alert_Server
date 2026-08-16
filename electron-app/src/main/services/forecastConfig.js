@@ -4,7 +4,7 @@ module.exports = {
     // Locations/types above HALF_LIFE_HIGH_COUNT usable alerts react faster, down to
     // HALF_LIFE_MIN_DAYS; at or below HALF_LIFE_LOW_COUNT a single recent alert is weak evidence,
     // so they keep the slower HALF_LIFE_DAYS.
-    HALF_LIFE_MIN_DAYS: 0.4,
+    HALF_LIFE_MIN_DAYS: 0.15,
     HALF_LIFE_LOW_COUNT: 5,
     HALF_LIFE_HIGH_COUNT: 40,
     PRIOR_BETA_DAYS: 4,
