@@ -38,8 +38,9 @@ function load() {
     // One-time migration for stores written before _localFirstSeenAt existed - stamps everything
     // still missing it "now" in a single pass rather than waiting for each region's next re-poll,
     // so the reported span is immediately consistent instead of trailing whichever region hasn't
-    // refreshed yet.
-    if (backfillFirstSeen()) scheduleWrite();
+    // refreshed yet. Written synchronously (not debounced) so it survives even if the app quits
+    // moments after startup, instead of silently re-running on every restart.
+    if (backfillFirstSeen()) writeNow();
 
     return store;
 }
