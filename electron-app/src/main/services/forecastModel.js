@@ -20,17 +20,6 @@ function weightedCount(alerts, nowMs, halfLifeDays) {
     return alerts.reduce((sum, alert) => sum + freshnessWeight(alert, nowMs, halfLifeDays), 0);
 }
 
-// Shorter half-life (faster reaction to recent alerts) for a location/type with a lot of usable
-// history, sliding up toward the slower default as the sample thins out - see the comment on
-// HALF_LIFE_MIN_DAYS in forecastConfig.js for the reasoning.
-function adaptiveHalfLifeDays(alertCount, config) {
-    const { HALF_LIFE_DAYS, HALF_LIFE_MIN_DAYS, HALF_LIFE_LOW_COUNT, HALF_LIFE_HIGH_COUNT } = config;
-    if (alertCount <= HALF_LIFE_LOW_COUNT) return HALF_LIFE_DAYS;
-    if (alertCount >= HALF_LIFE_HIGH_COUNT) return HALF_LIFE_MIN_DAYS;
-    const t = (alertCount - HALF_LIFE_LOW_COUNT) / (HALF_LIFE_HIGH_COUNT - HALF_LIFE_LOW_COUNT);
-    return HALF_LIFE_DAYS + t * (HALF_LIFE_MIN_DAYS - HALF_LIFE_DAYS);
-}
-
 function baselineLambdaOf(alerts, nowMs, config) {
     const baselineExposure = exposureDays(config.BASELINE_WINDOW_DAYS, config.BASELINE_HALF_LIFE_DAYS);
     return weightedCount(alerts, nowMs, config.BASELINE_HALF_LIFE_DAYS) / baselineExposure;
@@ -63,9 +52,8 @@ function seasonalityMultiplier(alerts, nowMs, config) {
 
 function estimateRegionLambda(alerts, nowMs, config) {
     const usableAlerts = filterUsableAlerts(alerts);
-    const recentHalfLife = adaptiveHalfLifeDays(usableAlerts.length, config);
-    const exposure = exposureDays(config.WINDOW_DAYS, recentHalfLife);
-    const recentLambda = weightedCount(usableAlerts, nowMs, recentHalfLife) / exposure;
+    const exposure = exposureDays(config.WINDOW_DAYS, config.HALF_LIFE_DAYS);
+    const recentLambda = weightedCount(usableAlerts, nowMs, config.HALF_LIFE_DAYS) / exposure;
     const baselineLambda = baselineLambdaOf(usableAlerts, nowMs, config);
 
     // max(), not a sum or a smooth blend, on purpose: both terms already estimate the same
@@ -85,12 +73,11 @@ function estimateRegionLambda(alerts, nowMs, config) {
 // lambda - this function applies its own seasonality (from the type's own history) at the end,
 // and applying it twice (once via an already-adjusted prior, once directly) would compound it.
 function estimateTypeLambda(typeAlerts, totalCount, regionLambda, nowMs, config) {
-    const recentHalfLife = adaptiveHalfLifeDays(typeAlerts.length, config);
-    const exposure = exposureDays(config.WINDOW_DAYS, recentHalfLife);
+    const exposure = exposureDays(config.WINDOW_DAYS, config.HALF_LIFE_DAYS);
     const roughShare = typeAlerts.length / totalCount;
     const priorLambda = regionLambda * roughShare;
     const alpha = priorLambda * config.PRIOR_BETA_DAYS;
-    const observed = weightedCount(typeAlerts, nowMs, recentHalfLife);
+    const observed = weightedCount(typeAlerts, nowMs, config.HALF_LIFE_DAYS);
     const recentLambda = (alpha + observed) / (config.PRIOR_BETA_DAYS + exposure);
     const baselineLambda = baselineLambdaOf(typeAlerts, nowMs, config);
     const seasonality = seasonalityMultiplier(typeAlerts, nowMs, config);
