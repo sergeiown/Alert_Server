@@ -1,6 +1,12 @@
 module.exports = {
     WINDOW_DAYS: 30,
     HALF_LIFE_DAYS: 1,
+    // Locations/types above HALF_LIFE_HIGH_COUNT usable alerts react faster, down to
+    // HALF_LIFE_MIN_DAYS; at or below HALF_LIFE_LOW_COUNT a single recent alert is weak evidence,
+    // so they keep the slower HALF_LIFE_DAYS.
+    HALF_LIFE_MIN_DAYS: 0.4,
+    HALF_LIFE_LOW_COUNT: 5,
+    HALF_LIFE_HIGH_COUNT: 40,
     PRIOR_BETA_DAYS: 4,
     NOTIFY_LOOKAHEAD_MINUTES: 120,
     // Long-horizon floor so lambda plateaus instead of decaying to zero during a long silence.

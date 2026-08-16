@@ -48,13 +48,18 @@ function mergeAlerts(uid, alerts) {
     const region = store[key];
 
     let changed = false;
+    const now = Date.now();
     alerts.forEach((alert) => {
         const existing = region[alert.id];
         const existingStamp = existing ? new Date(existing.updated_at || existing.started_at).getTime() : -Infinity;
         const incomingStamp = new Date(alert.updated_at || alert.started_at).getTime();
 
         if (incomingStamp >= existingStamp) {
-            region[alert.id] = alert;
+            const firstSeenAt = existing?._localFirstSeenAt ?? now;
+            region[alert.id] = { ...alert, _localFirstSeenAt: firstSeenAt };
+            changed = true;
+        } else if (existing && existing._localFirstSeenAt === undefined) {
+            existing._localFirstSeenAt = now;
             changed = true;
         }
     });
@@ -73,6 +78,7 @@ function getStats() {
     let totalAlerts = 0;
     let oldestMs = null;
     let newestMs = null;
+    let oldestLocalMs = null;
     const regionCount = Object.keys(store).length;
 
     Object.values(store).forEach((region) => {
@@ -81,10 +87,17 @@ function getStats() {
             const startedAtMs = new Date(alert.started_at).getTime();
             if (oldestMs === null || startedAtMs < oldestMs) oldestMs = startedAtMs;
             if (newestMs === null || startedAtMs > newestMs) newestMs = startedAtMs;
+
+            const firstSeenMs = alert._localFirstSeenAt ?? startedAtMs;
+            if (oldestLocalMs === null || firstSeenMs < oldestLocalMs) oldestLocalMs = firstSeenMs;
         });
     });
 
-    const spanDays = oldestMs !== null ? Math.ceil((Date.now() - oldestMs) / DAY_MS) : 0;
+    // spanDays reflects how long this install has actually been accumulating alerts locally
+    // (tracked via _localFirstSeenAt on first merge), not how old the oldest alert event itself
+    // is - the API can return alerts far older than 30 days for some regions, which would
+    // otherwise make a fresh install look like it had years of local history.
+    const spanDays = oldestLocalMs !== null ? Math.ceil((Date.now() - oldestLocalMs) / DAY_MS) : 0;
 
     return {
         regionCount,
