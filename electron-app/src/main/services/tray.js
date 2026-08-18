@@ -25,6 +25,7 @@ let trayInstance = null;
 let lastActiveCount = 0;
 let animationTimer = null;
 let alertLoopActive = false;
+let tooltipOverride = null;
 const menuIcons = new Map();
 const iconCache = new Map();
 
@@ -181,6 +182,15 @@ function createTray() {
     return trayInstance;
 }
 
+function setTemporaryTooltip(text) {
+    tooltipOverride = text;
+    if (trayInstance) trayInstance.setToolTip(text);
+}
+
+function clearTemporaryTooltip() {
+    tooltipOverride = null;
+}
+
 function updateTrayState(activeCount) {
     if (!trayInstance) return;
 
@@ -197,6 +207,8 @@ function updateTrayState(activeCount) {
         playIdlePulse(trayMonoIcon);
     }
 
+    if (tooltipOverride) return;
+
     if (activeCount > 0) {
         trayInstance.setToolTip(`${t('trayActiveTooltip', language)}: ${activeCount}`);
         return;
@@ -212,4 +224,4 @@ function updateTrayState(activeCount) {
     trayInstance.setToolTip(t('trayDefaultTooltip', language));
 }
 
-module.exports = { createTray, updateTrayState };
+module.exports = { createTray, updateTrayState, setTemporaryTooltip, clearTemporaryTooltip };
