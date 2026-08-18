@@ -27,6 +27,8 @@
     "aboutBody": "Отримує дані про тривоги з alerts.in.ua і показує Windows-сповіщення для обраних вами регіонів.",
     "aboutLicense": "Ліцензія: MIT",
     "aboutCopyright": "© 2024-2026 Serhii I. Myshko",
+    "updateProgressTitle": "Завантаження оновлення",
+    "updateProgressReady": "Завантажено, встановлення...",
     "windowTitle": "Alert Server - Налаштування",
     "runAtStartupLabel": "Запускати при старті Windows",
     "trayMonoIconLabel": "Монохромна іконка трею",

@@ -2,6 +2,12 @@ const { autoUpdater } = require('electron-updater');
 const { dialog, Notification } = require('electron');
 const { logEvent } = require('./logger');
 const { setTemporaryTooltip, clearTemporaryTooltip } = require('./tray');
+const {
+    openUpdateProgressWindow,
+    setUpdateProgress,
+    setUpdateStatus,
+    closeUpdateProgressWindow,
+} = require('../windows/updateProgressWindow');
 
 autoUpdater.autoDownload = false;
 
@@ -28,6 +34,7 @@ function checkForUpdates() {
             .then((result) => {
                 if (result.response === 0) {
                     logEvent(`Update ${info.version} confirmed, downloading`);
+                    openUpdateProgressWindow();
                     autoUpdater.downloadUpdate();
                 } else {
                     logEvent(`Update ${info.version} declined by user`);
@@ -36,11 +43,14 @@ function checkForUpdates() {
     });
 
     autoUpdater.on('download-progress', (progress) => {
+        setUpdateProgress(progress.percent);
         setTemporaryTooltip(`Alert Server: завантаження оновлення ${Math.round(progress.percent)}%`);
     });
 
     autoUpdater.on('update-downloaded', (info) => {
         logEvent(`Update ${info.version} downloaded, installing`);
+        setUpdateProgress(100);
+        setUpdateStatus('Завантажено, встановлення...');
         setTemporaryTooltip('Alert Server: оновлення завантажено, встановлення...');
         new Notification({
             title: 'Alert Server',
@@ -52,6 +62,7 @@ function checkForUpdates() {
     autoUpdater.on('error', (err) => {
         logEvent(`Auto-update error: ${err.message}`);
         clearTemporaryTooltip();
+        closeUpdateProgressWindow();
     });
 
     autoUpdater.checkForUpdates();
