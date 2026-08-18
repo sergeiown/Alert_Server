@@ -1,6 +1,7 @@
 const { autoUpdater } = require('electron-updater');
-const { dialog } = require('electron');
+const { dialog, Notification } = require('electron');
 const { logEvent } = require('./logger');
+const { setTemporaryTooltip, clearTemporaryTooltip } = require('./tray');
 
 autoUpdater.autoDownload = false;
 
@@ -34,13 +35,23 @@ function checkForUpdates() {
             });
     });
 
+    autoUpdater.on('download-progress', (progress) => {
+        setTemporaryTooltip(`Alert Server: завантаження оновлення ${Math.round(progress.percent)}%`);
+    });
+
     autoUpdater.on('update-downloaded', (info) => {
         logEvent(`Update ${info.version} downloaded, installing`);
-        autoUpdater.quitAndInstall();
+        setTemporaryTooltip('Alert Server: оновлення завантажено, встановлення...');
+        new Notification({
+            title: 'Alert Server',
+            body: `Оновлення ${info.version} завантажено. Застосунок перезапуститься для встановлення.`,
+        }).show();
+        setTimeout(() => autoUpdater.quitAndInstall(), 2000);
     });
 
     autoUpdater.on('error', (err) => {
         logEvent(`Auto-update error: ${err.message}`);
+        clearTemporaryTooltip();
     });
 
     autoUpdater.checkForUpdates();

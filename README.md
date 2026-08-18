@@ -19,7 +19,7 @@ A Windows tray application built with Electron that receives alert data from [al
 
 Download the latest installer (`Alert Server Setup x.x.x.exe`) from [Releases](https://github.com/sergeiown/Alert_Server/releases) and run it. It's a standard NSIS installer: no administrator rights required, per-user install, with a Start Menu shortcut and uninstaller created automatically.
 
-Future updates are detected and installed automatically from GitHub Releases; you'll only need to run the installer manually once.
+Future updates are detected and installed automatically from GitHub Releases; you'll only need to run the installer manually once. Download progress shows in the tray icon's tooltip, and a notification confirms once it's ready to install.
 
 ## Usage
 
