@@ -4,17 +4,27 @@ const RECONNECT_DELAY_MS = 5000;
 const HEARTBEAT_TIMEOUT_MS = 30000;
 
 const MISSILE_TYPE_ALIASES = ['missile', 'rocket', 'cruise_missile', 'ballistic'];
+const RECON_TITLE_PATTERN = /розвід/i;
 
 // Simple, recognizable silhouettes (nose/front pointing up = 0 deg = north, so rotating the
 // wrapper by `heading` degrees points the icon the right way) rather than abstract dots, one per
 // threat category. "unknown" reuses the same triangle-and-exclamation the tray icon already uses,
 // so an unrecognized type still reads as "alert" rather than looking broken.
+// uav (kamikaze/attack, Shahed-style) is a tailless delta/flying wing; uav_recon (reconnaissance,
+// e.g. Orlan/Zala-style) is a conventional fixed-wing silhouette with a separate tail - the shape
+// difference mirrors the real distinction between the two drone families, not just a color swap.
 const TYPE_ICONS = {
     uav: {
         color: '#f5a623',
         svg:
-            '<polygon points="12,2 20,17 12,13 4,17" />' +
-            '<line x1="12" y1="3" x2="12" y2="13" stroke="#ffffff" stroke-width="0.8" opacity="0.6" />',
+            '<polygon points="12,1 19,17 12,13.5 5,17" />' +
+            '<line x1="12" y1="2" x2="12" y2="13.5" stroke="#ffffff" stroke-width="0.8" opacity="0.6" />',
+    },
+    uav_recon: {
+        color: '#5b8fb0',
+        svg:
+            '<path d="M12 1 L13 11 L22 15 L22 16.5 L13 14 L13.5 20.5 L16.5 22.5 L16.5 23.5 L12 22.3 ' +
+            'L7.5 23.5 L7.5 22.5 L10.5 20.5 L11 14 L2 16.5 L2 15 L11 11 Z" />',
     },
     fpv: {
         color: '#ff6b35',
@@ -44,9 +54,12 @@ const TYPE_ICONS = {
     },
 };
 
-function resolveTypeKey(type) {
-    if (TYPE_ICONS[type]) return type;
-    if (MISSILE_TYPE_ALIASES.includes(type)) return 'missile';
+function resolveTypeKey(threat) {
+    if (threat.type === 'uav' && RECON_TITLE_PATTERN.test(`${threat.title} ${threat.explanationShort}`)) {
+        return 'uav_recon';
+    }
+    if (TYPE_ICONS[threat.type]) return threat.type;
+    if (MISSILE_TYPE_ALIASES.includes(threat.type)) return 'missile';
     return 'unknown';
 }
 
@@ -65,7 +78,7 @@ function iconHtml(typeKey, rotationDeg) {
 }
 
 function threatIcon(threat) {
-    const typeKey = resolveTypeKey(threat.type);
+    const typeKey = resolveTypeKey(threat);
     const rotation = typeof threat.heading === 'number' ? threat.heading : undefined;
 
     return L.divIcon({
@@ -92,7 +105,7 @@ function tooltipContent(threat, strings) {
 }
 
 function buildLegend(strings) {
-    const rows = ['uav', 'fpv', 'kab', 'missile', 'unknown']
+    const rows = ['uav', 'uav_recon', 'fpv', 'kab', 'missile', 'unknown']
         .map((typeKey) => `<div class="legend-row">${iconHtml(typeKey)}<span>${escapeHtml(strings[`liveMapType_${typeKey}`])}</span></div>`)
         .join('');
 
@@ -185,6 +198,8 @@ function startNeptunLayer(map, strings) {
 
     fetchSnapshot();
     connect();
+
+    return layer;
 }
 
 export { startNeptunLayer };

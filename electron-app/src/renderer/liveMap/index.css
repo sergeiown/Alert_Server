@@ -18,34 +18,59 @@ body {
     filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6));
 }
 
+.leaflet-control-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 #neptunAttribution {
     color: inherit;
 }
 
+.river-line {
+    stroke: #3f8fc0;
+}
+
+.region-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #33302a;
+    opacity: 0.65;
+    text-shadow:
+        -1px -1px 2px #d9d3c1,
+        1px -1px 2px #d9d3c1,
+        -1px 1px 2px #d9d3c1,
+        1px 1px 2px #d9d3c1;
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+}
+
 .threat-legend {
     background: #ffffff;
-    border-radius: 6px;
+    border-radius: 8px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-    padding: 8px 10px;
+    padding: 10px 14px;
     font-size: 12px;
     color: #1f1f1f;
-    line-height: 1.6;
 }
 
 .legend-title {
     font-weight: 600;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
 }
 
 .legend-row {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    padding: 3px 0;
 }
 
 .legend-row .threat-icon {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     flex-shrink: 0;
 }
 
@@ -54,7 +79,9 @@ body {
         background: #10151c;
     }
 
-    .leaflet-bar a {
+    .leaflet-bar a,
+    .leaflet-control-layers,
+    .leaflet-control-layers-expanded {
         background-color: #262b33 !important;
         color: #e6e6e6;
         border-color: #3a4048 !important;
@@ -94,5 +121,18 @@ body {
         background: #262b33 !important;
         color: #e6e6e6 !important;
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    }
+
+    .river-line {
+        stroke: #6ea8fe;
+    }
+
+    .region-label {
+        color: #d6dde6;
+        text-shadow:
+            -1px -1px 2px #333a42,
+            1px -1px 2px #333a42,
+            -1px 1px 2px #333a42,
+            1px 1px 2px #333a42;
     }
 }

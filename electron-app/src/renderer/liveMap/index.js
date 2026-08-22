@@ -1,4 +1,6 @@
 import { startNeptunLayer } from './neptun.js';
+import { addRiversLayer } from './rivers.js';
+import { addRegionLabelsLayer } from './regionLabels.js';
 
 // Exact bounding box taken from ukraine_default.svg's own mapsvg:geoViewBox attribute
 // (west north east south), so the background image lines up without distortion.
@@ -26,6 +28,7 @@ const CenterControl = L.Control.extend({
 
 async function main() {
     const strings = await window.alertServerLiveMap.getStrings();
+    const settings = await window.alertServerLiveMap.getSettings();
     const baseMapUrl = await window.alertServerLiveMap.getBaseMapUrl();
     document.title = strings.appName;
 
@@ -46,6 +49,8 @@ async function main() {
         window.alertServerLiveMap.openExternal('https://neptun.in.ua');
     });
 
+    // Map controls (zoom, center, fullscreen) stay on the left; the layer toggle list goes on
+    // the right (Leaflet's control default) so the two groups never compete for the same corner.
     new CenterControl({ title: strings.liveMapCenterButtonTitle, bounds: UKRAINE_BOUNDS }).addTo(map);
 
     L.control
@@ -54,10 +59,31 @@ async function main() {
             enterFullScreenTitle: strings.liveMapEnterFullScreenTitle,
             exitFullScreenTitle: strings.liveMapExitFullScreenTitle,
             showNotification: false,
+            onFullScreenChange: () => {
+                map.invalidateSize();
+                map.fitBounds(UKRAINE_BOUNDS);
+            },
         })
         .addTo(map);
 
-    startNeptunLayer(map, strings);
+    // Resizing the window itself (not just entering/exiting fullscreen) also needs Leaflet to
+    // recompute its container size and rescale to fill it, in both directions.
+    window.addEventListener('resize', () => {
+        map.invalidateSize();
+        map.fitBounds(UKRAINE_BOUNDS);
+    });
+
+    const threatsLayer = startNeptunLayer(map, strings);
+    const riverLayer = addRiversLayer(map);
+    const labelsLayer = addRegionLabelsLayer(map, settings.language);
+
+    L.control
+        .layers(null, {
+            [strings.liveMapLayerThreats]: threatsLayer,
+            [strings.liveMapLayerRiver]: riverLayer,
+            [strings.liveMapLayerLabels]: labelsLayer,
+        })
+        .addTo(map);
 }
 
 main();
