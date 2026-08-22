@@ -6,5 +6,6 @@ contextBridge.exposeInMainWorld('alertServerLiveMap', {
     getBaseMapUrl: () => ipcRenderer.invoke('liveMap:getBaseMapUrl'),
     getActiveAlertCount: () => ipcRenderer.invoke('liveMap:getActiveAlertCount'),
     getAlertedRegions: () => ipcRenderer.invoke('liveMap:getAlertedRegions'),
+    getOccupiedTerritory: () => ipcRenderer.invoke('liveMap:getOccupiedTerritory'),
     openExternal: (url) => ipcRenderer.invoke('system:openExternal', url),
 });
