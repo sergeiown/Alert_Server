@@ -46,7 +46,10 @@ async function main() {
 
     L.imageOverlay(baseMapUrl, UKRAINE_BOUNDS).addTo(map);
     map.fitBounds(UKRAINE_BOUNDS);
+    // Leaflet's own "Leaflet" credit (setPrefix) isn't required by its license, so it's dropped -
+    // this app's own name takes that spot instead, ahead of the actual map data credit.
     map.attributionControl.setPrefix(false);
+    map.attributionControl.addAttribution(strings.appName);
     map.attributionControl.addAttribution(`<a href="#" id="neptunAttribution">${strings.liveMapNeptunAttribution}</a>`);
     document.getElementById('neptunAttribution').addEventListener('click', (event) => {
         event.preventDefault();
