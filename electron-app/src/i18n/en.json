@@ -35,6 +35,7 @@
     "liveMapLayerThreats": "Threat markers",
     "liveMapLayerRiver": "Dnipro river",
     "liveMapLayerLabels": "Map labels",
+    "liveMapActiveAlertsCount": "Active alerts in Ukraine: {count}",
     "menuForecast": "Forecast",
     "menuSettings": "Settings",
     "menuLog": "Event log",

@@ -35,6 +35,7 @@
     "liveMapLayerThreats": "Позначки загроз",
     "liveMapLayerRiver": "Річка Дніпро",
     "liveMapLayerLabels": "Назви на мапі",
+    "liveMapActiveAlertsCount": "Тривог по Україні: {count}",
     "menuForecast": "Прогноз",
     "menuSettings": "Налаштування",
     "menuLog": "Журнал подій",

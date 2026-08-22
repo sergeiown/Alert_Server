@@ -14,7 +14,7 @@ const { startPolling } = require('./services/alertPoller');
 const { filterAlerts, discoverUnknownLocations } = require('./services/locationFilter');
 const { loadLocalConfig } = require('./services/localConfig');
 const { processAlerts, getActiveCount } = require('./services/notifier');
-const { setLatestMatchedAlerts } = require('./services/alertState');
+const { setLatestMatchedAlerts, setLatestTotalAlertCount } = require('./services/alertState');
 const { createTray, updateTrayState } = require('./services/tray');
 const { startForecastWatcher } = require('./services/forecastWatcher');
 const { installHandlers } = require('./services/crashRestart');
@@ -56,6 +56,7 @@ app.whenReady().then(() => {
             discoverUnknownLocations(alertData.alerts);
             logEvent(`Poll: ${alertData.alerts.length} active alerts, ${matched.length} in monitored regions`);
             setLatestMatchedAlerts(matched);
+            setLatestTotalAlertCount(alertData.alerts.length);
             processAlerts(matched, alertData.alerts);
             updateTrayState(getActiveCount());
 
