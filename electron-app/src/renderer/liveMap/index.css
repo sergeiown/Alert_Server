@@ -48,6 +48,14 @@ body {
     background-size: 22px 22px !important;
 }
 
+/* The toggle's white background used to come from its outer wrapper (".leaflet-control-layers"),
+   but that wrapper's own background is now stripped below (see the comment there) - so the toggle
+   needs its own, or it's left showing whatever's behind it instead of white like every other
+   button. */
+.leaflet-control-layers-toggle {
+    background-color: #ffffff !important;
+}
+
 /* The center button's own outer wrapper div (bare ".leaflet-bar.leaflet-control", auto-created by
    Leaflet for any single-button control) picks up a 2px border from somewhere in the platform's
    own default styling, insetting the actual visible button 2px deeper than the fullscreen button
@@ -235,7 +243,8 @@ body {
     margin-top: 68px;
 }
 
-.threat-legend {
+.threat-legend,
+.leaflet-control-layers-expanded {
     background: #ffffff;
     border-radius: 8px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
@@ -332,7 +341,8 @@ body {
         color: #6ea8fe !important;
     }
 
-    .threat-legend {
+    .threat-legend,
+    .leaflet-control-layers-expanded {
         background: #262b33 !important;
         color: #e6e6e6 !important;
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
