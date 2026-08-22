@@ -32,6 +32,11 @@ body {
     stroke: #3f8fc0;
 }
 
+.river-area {
+    stroke: #3f8fc0;
+    fill: #3f8fc0;
+}
+
 .region-label {
     font-size: 11px;
     font-weight: 600;
@@ -125,6 +130,11 @@ body {
 
     .river-line {
         stroke: #6ea8fe;
+    }
+
+    .river-area {
+        stroke: #6ea8fe;
+        fill: #6ea8fe;
     }
 
     .region-label {
