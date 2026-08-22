@@ -1,6 +1,6 @@
 import { startNeptunLayer } from './neptun.js';
 import { addRiversLayer } from './rivers.js';
-import { addRegionLabelsLayer } from './regionLabels.js';
+import { addLabelsLayer } from './labelsLayer.js';
 
 // Exact bounding box taken from ukraine_default.svg's own mapsvg:geoViewBox attribute
 // (west north east south), so the background image lines up without distortion.
@@ -37,6 +37,10 @@ async function main() {
         zoom: 6,
         minZoom: 5,
         maxZoom: 12,
+        // Finer zoom steps (a quarter-level per scroll/pinch tick, half a level per +/- click)
+        // instead of Leaflet's default whole-level jumps, which felt too coarse for this map.
+        zoomSnap: 0.25,
+        zoomDelta: 0.5,
         attributionControl: true,
     });
 
@@ -67,15 +71,18 @@ async function main() {
         .addTo(map);
 
     // Resizing the window itself (not just entering/exiting fullscreen) also needs Leaflet to
-    // recompute its container size and rescale to fill it, in both directions.
-    window.addEventListener('resize', () => {
+    // recompute its container size and rescale to fill it, in both directions. The DOM "resize"
+    // event only fires reliably for viewport/zoom changes, not for every case a BrowserWindow's
+    // content area changes size - a ResizeObserver on the map container itself reacts to any
+    // actual size change regardless of what caused it.
+    new ResizeObserver(() => {
         map.invalidateSize();
         map.fitBounds(UKRAINE_BOUNDS);
-    });
+    }).observe(document.getElementById('map'));
 
     const threatsLayer = startNeptunLayer(map, strings);
     const riverLayer = addRiversLayer(map);
-    const labelsLayer = addRegionLabelsLayer(map, settings.language);
+    const labelsLayer = addLabelsLayer(map, settings.language);
 
     L.control
         .layers(null, {
