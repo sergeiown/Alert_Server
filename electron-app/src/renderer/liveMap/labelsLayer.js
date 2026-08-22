@@ -1,12 +1,14 @@
 import { buildOblastGroup } from './regionLabels.js';
 import { buildRaionGroup } from './raionLabels.js';
 import { buildRaionBordersGroup } from './raionBorders.js';
+import { buildCityGroup } from './cityLabels.js';
 
 // The default/base view (the whole country fit to a typical window, around zoom 6) must always
 // show oblast names, so this floors at the map's own minZoom - there's no lower tier to drop to.
 // At RAION_MIN_ZOOM and above there's enough screen space per oblast that oblast names would just
 // repeat the obvious, so raion (district) names - with their own light border lines, since at that
-// scale the oblast borders alone don't say where one raion ends and the next begins - take over.
+// scale the oblast borders alone don't say where one raion ends and the next begins - take over,
+// alongside markers for major cities as orientation landmarks.
 const OBLAST_MIN_ZOOM = 5;
 const RAION_MIN_ZOOM = 9;
 
@@ -18,7 +20,7 @@ const LabelsLayer = L.LayerGroup.extend({
         L.LayerGroup.prototype.initialize.call(this);
         this._language = language;
         this._oblastGroup = buildOblastGroup(language);
-        this._raionGroup = L.layerGroup([buildRaionBordersGroup(), buildRaionGroup(language)]);
+        this._raionGroup = L.layerGroup([buildRaionBordersGroup(), buildRaionGroup(language), buildCityGroup(language)]);
         this._active = null;
     },
 
