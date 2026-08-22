@@ -18,6 +18,7 @@ const { setLatestMatchedAlerts, setLatestTotalAlertCount, setLatestAlertedRegion
 const { computeAlertedRegions } = require('./services/regionAlertStatus');
 const { createTray, updateTrayState } = require('./services/tray');
 const { startForecastWatcher } = require('./services/forecastWatcher');
+const { startOccupiedTerritoryRefresh } = require('./services/occupiedTerritoryStore');
 const { installHandlers } = require('./services/crashRestart');
 const { delayedCheckForUpdates } = require('./services/updater');
 const { destroySettingsWindow } = require('./windows/settingsWindow');
@@ -49,6 +50,7 @@ app.whenReady().then(() => {
 
     createTray();
     delayedCheckForUpdates();
+    startOccupiedTerritoryRefresh();
 
     const { alertProxyClientKey } = loadLocalConfig();
     if (alertProxyClientKey) {
