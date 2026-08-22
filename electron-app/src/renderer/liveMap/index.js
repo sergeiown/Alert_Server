@@ -2,6 +2,7 @@ import { startNeptunLayer } from './neptun.js';
 import { addRiversLayer } from './rivers.js';
 import { addLabelsLayer } from './labelsLayer.js';
 import { addRegionStatusLayer } from './regionStatus.js';
+import { addOccupiedTerritoryLayer } from './occupiedTerritory.js';
 import { startStatusBar } from './statusBar.js';
 
 // Exact bounding box taken from ukraine_default.svg's own mapsvg:geoViewBox attribute
@@ -48,6 +49,10 @@ async function main() {
         zoomSnap: 0.25,
         zoomDelta: 0.5,
         attributionControl: true,
+        // Forces the SVG root to exist immediately, instead of Leaflet lazily creating it on the
+        // first vector layer - the occupied-territory layer needs to inject a <pattern> into that
+        // SVG's <defs> for its hatching, before it (or anything else) has added any shape to it.
+        renderer: L.svg(),
     });
 
     // Zooming out is never allowed past whatever "fit the whole country" needs at the map's
@@ -76,6 +81,11 @@ async function main() {
     document.getElementById('neptunAttribution').addEventListener('click', (event) => {
         event.preventDefault();
         window.alertServerLiveMap.openExternal('https://neptun.in.ua');
+    });
+    map.attributionControl.addAttribution(`<a href="#" id="deepStateAttribution">${strings.liveMapDeepStateAttribution}</a>`);
+    document.getElementById('deepStateAttribution').addEventListener('click', (event) => {
+        event.preventDefault();
+        window.alertServerLiveMap.openExternal('https://deepstatemap.live/');
     });
 
     // Map controls (zoom, center, fullscreen) stay on the left; the layer toggle list goes on
@@ -124,6 +134,7 @@ async function main() {
     }).observe(document.getElementById('map'));
 
     const regionStatusLayer = addRegionStatusLayer(map, strings, settings.language);
+    const occupiedTerritoryLayer = addOccupiedTerritoryLayer(map);
     const threatsLayer = startNeptunLayer(map, strings);
     const riverLayer = addRiversLayer(map);
     const labelsLayer = addLabelsLayer(map, strings, settings.language);
@@ -131,6 +142,7 @@ async function main() {
     L.control
         .layers(null, {
             [strings.liveMapLayerAlertStatus]: regionStatusLayer,
+            [strings.liveMapLayerOccupiedTerritory]: occupiedTerritoryLayer,
             [strings.liveMapLayerThreats]: threatsLayer,
             [strings.liveMapLayerRiver]: riverLayer,
             [strings.liveMapLayerLabels]: labelsLayer,
