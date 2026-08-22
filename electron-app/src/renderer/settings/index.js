@@ -18,6 +18,7 @@ const forecastNotifyLookaheadMinutesInput = document.getElementById('forecastNot
 const alertSoundModeInput = document.getElementById('alertSoundMode');
 const alertSoundCountInput = document.getElementById('alertSoundCount');
 const languageInput = document.getElementById('language');
+const themeInput = document.getElementById('theme');
 
 function applyStrings(strings) {
     document.title = strings.windowTitle;
@@ -34,6 +35,10 @@ function applyStrings(strings) {
     document.getElementById('alertSoundModeVoiceOption').textContent = strings.alertSoundModeVoice;
     document.getElementById('alertSoundCountLabel').textContent = strings.alertSoundCountLabel;
     document.getElementById('languageLabel').textContent = strings.languageLabel;
+    document.getElementById('themeLabel').textContent = strings.themeLabel;
+    document.getElementById('themeLightOption').textContent = strings.themeLight;
+    document.getElementById('themeDarkOption').textContent = strings.themeDark;
+    document.getElementById('themeSystemOption').textContent = strings.themeSystem;
     document.getElementById('regionsHeader').textContent = strings.regionsHeader;
     searchInput.placeholder = strings.searchPlaceholder;
     clearRegionsButton.textContent = strings.clearRegionsButton;
@@ -66,6 +71,7 @@ async function initGeneralSettings(settings) {
     alertSoundModeInput.value = settings.alertSoundMode;
     alertSoundCountInput.value = settings.alertSoundCount;
     languageInput.value = settings.language;
+    themeInput.value = settings.theme;
     runAtStartupInput.checked = await window.alertServer.getLoginItem();
 
     updateNotifyDisabledState();
@@ -106,6 +112,9 @@ async function initGeneralSettings(settings) {
     languageInput.addEventListener('change', () => {
         window.alertServer.setSetting('language', languageInput.value);
         if (mapInstance) mapInstance.setLanguage(languageInput.value);
+    });
+    themeInput.addEventListener('change', () => {
+        window.alertServer.setSetting('theme', themeInput.value);
     });
     runAtStartupInput.addEventListener('change', async () => {
         runAtStartupInput.checked = await window.alertServer.setLoginItem(runAtStartupInput.checked);

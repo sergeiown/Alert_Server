@@ -1,4 +1,4 @@
-const { app } = require('electron');
+const { app, nativeTheme } = require('electron');
 const { registerSettingsIpc } = require('./ipc/settingsIpc');
 const { registerRegionsIpc } = require('./ipc/regionsIpc');
 const { registerSystemIpc } = require('./ipc/systemIpc');
@@ -36,6 +36,8 @@ app.whenReady().then(() => {
 
     const result = importLegacyConfig(LEGACY_APP_DIR, { settingsStore, regionsStore });
     logEvent(`Legacy config import: ${JSON.stringify(result)}`);
+
+    nativeTheme.themeSource = settingsStore.getSettings().theme;
 
     registerSettingsIpc();
     registerRegionsIpc();

@@ -3,6 +3,7 @@ const { getUserDataFile } = require('./appPaths');
 
 const defaultSettings = {
     language: 'English',
+    theme: 'system',
     trayMonoIcon: false,
     visualNotificationsEnabled: true,
     activeAlertNotifyEnabled: true,
