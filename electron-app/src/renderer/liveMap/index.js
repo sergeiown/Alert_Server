@@ -1,3 +1,5 @@
+import { startNeptunLayer } from './neptun.js';
+
 // Exact bounding box taken from ukraine_default.svg's own mapsvg:geoViewBox attribute
 // (west north east south), so the background image lines up without distortion.
 const UKRAINE_BOUNDS = [
@@ -15,11 +17,17 @@ async function main() {
         zoom: 6,
         minZoom: 5,
         maxZoom: 12,
-        attributionControl: false,
+        attributionControl: true,
     });
 
     L.imageOverlay(baseMapUrl, UKRAINE_BOUNDS).addTo(map);
     map.fitBounds(UKRAINE_BOUNDS);
+    map.attributionControl.setPrefix(false);
+    map.attributionControl.addAttribution(`<a href="#" id="neptunAttribution">${strings.liveMapNeptunAttribution}</a>`);
+    document.getElementById('neptunAttribution').addEventListener('click', (event) => {
+        event.preventDefault();
+        window.alertServerLiveMap.openExternal('https://neptun.in.ua');
+    });
 
     L.control
         .fullScreenButton({
@@ -29,6 +37,8 @@ async function main() {
             showNotification: false,
         })
         .addTo(map);
+
+    startNeptunLayer(map, strings);
 }
 
 main();
