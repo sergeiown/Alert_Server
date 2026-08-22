@@ -74,18 +74,25 @@ async function main() {
     L.imageOverlay(baseMapUrl, UKRAINE_BOUNDS).addTo(map);
     fitAndLockMinZoom();
     // Leaflet's own "Leaflet" credit (setPrefix) isn't required by its license, so it's dropped -
-    // this app's own name takes that spot instead, ahead of the actual map data credit.
+    // this app's own name takes that spot instead, ahead of the actual map data credits.
     map.attributionControl.setPrefix(false);
-    map.attributionControl.addAttribution(strings.appName);
+    map.attributionControl.addAttribution(`<a href="#" id="appAttribution">${strings.appName}</a>`);
     map.attributionControl.addAttribution(`<a href="#" id="neptunAttribution">${strings.liveMapNeptunAttribution}</a>`);
-    document.getElementById('neptunAttribution').addEventListener('click', (event) => {
-        event.preventDefault();
-        window.alertServerLiveMap.openExternal('https://neptun.in.ua');
-    });
     map.attributionControl.addAttribution(`<a href="#" id="deepStateAttribution">${strings.liveMapDeepStateAttribution}</a>`);
-    document.getElementById('deepStateAttribution').addEventListener('click', (event) => {
-        event.preventDefault();
-        window.alertServerLiveMap.openExternal('https://deepstatemap.live/');
+
+    // Each addAttribution call above rebuilds the whole control's innerHTML from scratch (Leaflet's
+    // own _update()), which would tear down and replace any earlier of these anchors - so listeners
+    // are wired up only once, after every addAttribution call is done, not right after each one.
+    const attributionLinks = [
+        ['appAttribution', 'https://github.com/sergeiown/Alert_Server'],
+        ['neptunAttribution', 'https://neptun.in.ua'],
+        ['deepStateAttribution', 'https://deepstatemap.live/'],
+    ];
+    attributionLinks.forEach(([id, url]) => {
+        document.getElementById(id).addEventListener('click', (event) => {
+            event.preventDefault();
+            window.alertServerLiveMap.openExternal(url);
+        });
     });
 
     // Map controls (zoom, center, fullscreen) stay on the left; the layer toggle list goes on
