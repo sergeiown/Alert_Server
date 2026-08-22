@@ -40,6 +40,24 @@ body {
     fill: #3f8fc0;
 }
 
+/* The actual marker icon Leaflet creates and positions (via its own inline "transform" - nothing
+   here should ever set that property, it would silently lose to Leaflet's). Zero-sized, so its
+   top-left corner sits exactly on the label's geographic point; the visible text is the centered
+   inner span below. */
+.map-label-anchor {
+    pointer-events: none;
+}
+
+.region-label,
+.raion-label {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+    pointer-events: none;
+}
+
 .region-label {
     font-size: 11px;
     font-weight: 600;
@@ -50,9 +68,6 @@ body {
         1px -1px 2px #d9d3c1,
         -1px 1px 2px #d9d3c1,
         1px 1px 2px #d9d3c1;
-    white-space: nowrap;
-    pointer-events: none;
-    transform: translate(-50%, -50%);
 }
 
 .region-label.region-label-small {
@@ -77,9 +92,6 @@ body {
         1px -1px 2px #d9d3c1,
         -1px 1px 2px #d9d3c1,
         1px 1px 2px #d9d3c1;
-    white-space: nowrap;
-    pointer-events: none;
-    transform: translate(-50%, -50%);
 }
 
 .threat-legend {

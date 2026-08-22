@@ -149,10 +149,14 @@ function buildRaionGroup(language) {
 
     RAIONS.forEach((raion) => {
         L.marker([raion.lat, raion.lng], {
+            // Leaflet positions this outer element with its own inline "transform", which would
+            // silently clobber a centering transform on the same element - so the actual text
+            // lives in an inner span instead, and that span is the one centered over the point.
             icon: L.divIcon({
-                className: 'raion-label',
-                html: isEnglish ? raion.en : raion.uk,
-                iconSize: null,
+                className: 'map-label-anchor',
+                html: `<span class="raion-label">${isEnglish ? raion.en : raion.uk}</span>`,
+                iconSize: [0, 0],
+                iconAnchor: [0, 0],
             }),
             interactive: false,
         }).addTo(layer);
