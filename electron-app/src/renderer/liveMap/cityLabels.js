@@ -1,8 +1,12 @@
+import { CITY_BORDERS } from './cityBorders.js';
+
 // Major Ukrainian cities - standard city-center coordinates (not derived from any polygon
 // dataset, unlike the oblast/raion labels - cities are simple point locations, not shapes to
 // center on). Covers all 24 oblast capitals plus Kyiv, Sevastopol, Simferopol, and a handful of
 // other large cities that aren't a capital (Kryvyi Rih, Mariupol, Makiivka, Kramatorsk, Kamianske,
-// Melitopol, Bila Tserkva, Sievierodonetsk).
+// Melitopol, Bila Tserkva, Sievierodonetsk). The label point still anchors the text even for
+// cities that also get a real outline (below) - the outline's own shape is too irregular to
+// reliably center text inside.
 const CITIES = [
     { lat: 50.4501, lng: 30.5234, uk: 'Київ', en: 'Kyiv' },
     { lat: 49.9935, lng: 36.2304, uk: 'Харків', en: 'Kharkiv' },
@@ -41,17 +45,36 @@ const CITIES = [
 ];
 
 function buildCityGroup(language) {
+    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const color = isDark ? '#e2836f' : '#7a3b2e';
     const layer = L.layerGroup();
     const isEnglish = language === 'English';
 
     CITIES.forEach((city) => {
+        const border = CITY_BORDERS[city.uk];
+
+        // Cities with a real boundary get that outline instead of a plain dot - the dot is only
+        // a fallback for the couple of cities with no hromada boundary in the source dataset.
+        if (border) {
+            L.polygon(border, {
+                className: 'city-border',
+                color,
+                weight: 1.5,
+                opacity: 0.7,
+                fillColor: color,
+                fillOpacity: 0.12,
+            }).addTo(layer);
+        }
+
         L.marker([city.lat, city.lng], {
             // Same zero-size-anchor + absolutely-positioned-children technique as the oblast/raion
             // labels - Leaflet's own inline "transform" on the outer element would otherwise
             // clobber any centering transform placed directly on it.
             icon: L.divIcon({
                 className: 'map-label-anchor',
-                html: `<span class="city-dot"></span><span class="city-label">${isEnglish ? city.en : city.uk}</span>`,
+                html: border
+                    ? `<span class="city-label">${isEnglish ? city.en : city.uk}</span>`
+                    : `<span class="city-dot"></span><span class="city-label">${isEnglish ? city.en : city.uk}</span>`,
                 iconSize: [0, 0],
                 iconAnchor: [0, 0],
             }),

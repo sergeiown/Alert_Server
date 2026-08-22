@@ -58,10 +58,13 @@ body {
     pointer-events: none;
 }
 
+/* Oblast, raion and city labels are deliberately styled with a different weight/style AND a
+   different hue each (not just a size step), so the three tiers stay tellable apart at a glance,
+   not only by the zoom level they show up at. Oblast: boldest, darkest, warm near-black. */
 .region-label {
     font-size: 11px;
-    font-weight: 600;
-    color: #33302a;
+    font-weight: 700;
+    color: #2e2a1f;
     opacity: 0.5;
     text-shadow:
         -1px -1px 2px #d9d3c1,
@@ -82,16 +85,24 @@ body {
     stroke: #6b6349;
 }
 
+/* Raion: lightest weight, italic, and a cool slate-green - the odd one out among the three warm
+   (brown/near-black/maroon) tones, on purpose. */
 .raion-label {
     font-size: 9px;
-    font-weight: 500;
-    color: #4a4536;
+    font-weight: 400;
+    font-style: italic;
+    color: #4f6459;
     opacity: 0.55;
     text-shadow:
         -1px -1px 2px #d9d3c1,
         1px -1px 2px #d9d3c1,
         -1px 1px 2px #d9d3c1,
         1px 1px 2px #d9d3c1;
+}
+
+.city-border {
+    stroke: #7a3b2e;
+    fill: #7a3b2e;
 }
 
 .city-dot {
@@ -107,6 +118,8 @@ body {
     pointer-events: none;
 }
 
+/* City: bold like the oblast tier (it's a landmark, not a subdivision), but a distinct maroon
+   matching its own dot, not sharing the oblast's near-black. */
 .city-label {
     position: absolute;
     left: 0;
@@ -114,8 +127,8 @@ body {
     transform: translate(-50%, 0);
     font-size: 10px;
     font-weight: 700;
-    color: #33302a;
-    opacity: 0.55;
+    color: #7a3b2e;
+    opacity: 0.6;
     white-space: nowrap;
     pointer-events: none;
     text-shadow:
@@ -123,6 +136,36 @@ body {
         1px -1px 2px #d9d3c1,
         -1px 1px 2px #d9d3c1,
         1px 1px 2px #d9d3c1;
+}
+
+#statusBar {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    padding: 8px 18px;
+    text-align: center;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #1f1f1f;
+    pointer-events: none;
+}
+
+#statusClock {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+}
+
+#statusAlertCount {
+    font-size: 12px;
+    font-weight: 500;
+    color: #b3261e;
+    margin-top: 2px;
 }
 
 .threat-legend {
@@ -155,6 +198,20 @@ body {
 @media (prefers-color-scheme: dark) {
     #map {
         background: #10151c;
+    }
+
+    #statusBar {
+        background: #262b33;
+        color: #e6e6e6;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    }
+
+    #statusClock {
+        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+    }
+
+    #statusAlertCount {
+        color: #ff6b60;
     }
 
     .leaflet-bar a,
@@ -211,7 +268,7 @@ body {
     }
 
     .region-label {
-        color: #d6dde6;
+        color: #e3e8ee;
         text-shadow:
             -1px -1px 2px #333a42,
             1px -1px 2px #333a42,
@@ -224,12 +281,17 @@ body {
     }
 
     .raion-label {
-        color: #c3cad4;
+        color: #9fc2b0;
         text-shadow:
             -1px -1px 2px #333a42,
             1px -1px 2px #333a42,
             -1px 1px 2px #333a42,
             1px 1px 2px #333a42;
+    }
+
+    .city-border {
+        stroke: #e2836f;
+        fill: #e2836f;
     }
 
     .city-dot {
@@ -238,7 +300,7 @@ body {
     }
 
     .city-label {
-        color: #d6dde6;
+        color: #ef9a86;
         text-shadow:
             -1px -1px 2px #333a42,
             1px -1px 2px #333a42,
