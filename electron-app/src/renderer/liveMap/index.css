@@ -1,0 +1,40 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+#map {
+    width: 100%;
+    height: 100vh;
+    background: #aad3df;
+}
+
+@media (prefers-color-scheme: dark) {
+    #map {
+        background: #10151c;
+    }
+
+    .leaflet-bar a {
+        background-color: #262b33 !important;
+        color: #e6e6e6;
+        border-color: #3a4048 !important;
+    }
+
+    .leaflet-bar a:hover {
+        background-color: #33393f !important;
+    }
+
+    /* The fullscreen button's icon is baked into its background-image as black SVG data, so
+       inverting the whole control (icon + its own light background) is simpler and safer than
+       reaching into vendored plugin internals to recolor it. */
+    .leaflet-control-fullscreen {
+        filter: invert(1);
+    }
+
+    .leaflet-control-fullscreen:hover {
+        filter: invert(1) brightness(0.85);
+    }
+}

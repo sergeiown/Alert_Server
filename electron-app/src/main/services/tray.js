@@ -1,7 +1,7 @@
 const { Tray, Menu, app, Notification, nativeImage, nativeTheme, screen } = require('electron');
 const { getResourcePath } = require('./appPaths');
 const { openSettingsWindow } = require('../windows/settingsWindow');
-const { openMapWindow } = require('../windows/mapWindow');
+const { openLiveMapWindow } = require('../windows/liveMapWindow');
 const { openForecastWindow } = require('../windows/forecastWindow');
 const { openLogWindow } = require('../windows/logWindow');
 const { openAboutWindow } = require('../windows/aboutWindow');
@@ -11,9 +11,6 @@ const { logEvent } = require('./logger');
 const { formatDuration } = require('./forecast');
 const { getUpcomingPredictions } = require('./forecastWatcher');
 const { t } = require('../../i18n/i18n');
-
-const ALERTS_MAP_URL = 'https://alerts.in.ua/';
-const FRONT_MAP_URL = 'https://deepstatemap.live/';
 
 const ICON_SIZES = [16, 20, 24, 28, 32, 40, 48, 64];
 const PULSE_FRAME_COUNT = 12;
@@ -138,16 +135,7 @@ function buildMenu(language) {
     return Menu.buildFromTemplate([
         { label: t('appName', language), icon: getMenuIcon('app-icon-256.png'), click: () => openAboutWindow() },
         { type: 'separator' },
-        {
-            label: t('menuMapAlerts', language),
-            icon: getMenuIcon('Alert_map.png'),
-            click: () => openMapWindow(ALERTS_MAP_URL, t('menuMapAlerts', language)),
-        },
-        {
-            label: t('menuMapFront', language),
-            icon: getMenuIcon('Front_line_map.png'),
-            click: () => openMapWindow(FRONT_MAP_URL, t('menuMapFront', language)),
-        },
+        { label: t('menuLiveMap', language), icon: getMenuIcon('Live_map.png'), click: () => openLiveMapWindow() },
         { label: t('menuForecast', language), icon: getMenuIcon('Forecast.png'), click: () => openForecastWindow() },
         { label: t('menuSettings', language), icon: getMenuIcon('Settings.png'), click: () => openSettingsWindow() },
         { label: t('menuLog', language), icon: getMenuIcon('Event_log.png'), click: () => openLogWindow() },
