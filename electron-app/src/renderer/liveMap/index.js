@@ -7,6 +7,7 @@ const UKRAINE_BOUNDS = [
 
 async function main() {
     const strings = await window.alertServerLiveMap.getStrings();
+    const baseMapUrl = await window.alertServerLiveMap.getBaseMapUrl();
     document.title = strings.appName;
 
     const map = L.map('map', {
@@ -17,7 +18,7 @@ async function main() {
         attributionControl: false,
     });
 
-    L.imageOverlay('../../../resources/icons/ukraine_live_map.svg', UKRAINE_BOUNDS).addTo(map);
+    L.imageOverlay(baseMapUrl, UKRAINE_BOUNDS).addTo(map);
     map.fitBounds(UKRAINE_BOUNDS);
 
     L.control
