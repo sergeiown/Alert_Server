@@ -23,6 +23,12 @@ body {
    plugin, and the layers toggle each ship a different built-in size (26/30/36px) that doesn't
    agree with the others. !important because both the fullscreen plugin's and Leaflet's own layers
    CSS are loaded after this stylesheet, so either would otherwise win a plain specificity tie. */
+/* The shadow belongs on each actual button, not on the ".leaflet-bar" wrapper around a stacked
+   group (zoom in/out) - a shadow on both would double up right where they meet. */
+.leaflet-bar {
+    box-shadow: none !important;
+}
+
 .leaflet-bar a,
 .leaflet-control-fullscreen,
 .leaflet-control-layers-toggle {
@@ -32,6 +38,9 @@ body {
     line-height: 34px !important;
     border: 1px solid #d6d6d6 !important;
     border-radius: 4px !important;
+    /* Same shadow as .threat-legend, not Leaflet's own slightly different default, so every
+       floating box on the map (buttons, legend, status bar) reads as one consistent style. */
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4) !important;
 }
 
 .leaflet-control-fullscreen,
@@ -291,6 +300,15 @@ body {
         background-color: #262b33 !important;
         color: #e6e6e6;
         border-color: #3a4048 !important;
+    }
+
+    /* .threat-legend's own dark-mode shadow (further down in this file) is 0.6 alpha, not the
+       0.4 the light-mode button rule above matches - re-matching it here so buttons still track
+       the legend's actual shadow in this theme too, instead of freezing at the light-mode value. */
+    .leaflet-bar a,
+    .leaflet-control-fullscreen,
+    .leaflet-control-layers-toggle {
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6) !important;
     }
 
     .leaflet-bar a:hover,
