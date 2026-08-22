@@ -33,6 +33,8 @@
     "liveMapType_unknown": "Other/unknown",
     "liveMapCenterButtonTitle": "Center",
     "liveMapLayerAlertStatus": "Alert status",
+    "liveMapNoActiveAlert": "No active alert",
+    "liveMapAlertAcrossRegion": "Alert across the whole oblast: {name}",
     "liveMapLayerThreats": "Threat markers",
     "liveMapLayerRiver": "Dnipro river",
     "liveMapLayerLabels": "Map labels",

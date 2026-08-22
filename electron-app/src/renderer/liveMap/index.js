@@ -85,10 +85,10 @@ async function main() {
         map.fitBounds(UKRAINE_BOUNDS);
     }).observe(document.getElementById('map'));
 
-    const regionStatusLayer = addRegionStatusLayer(map);
+    const regionStatusLayer = addRegionStatusLayer(map, strings, settings.language);
     const threatsLayer = startNeptunLayer(map, strings);
     const riverLayer = addRiversLayer(map);
-    const labelsLayer = addLabelsLayer(map, settings.language);
+    const labelsLayer = addLabelsLayer(map, strings, settings.language);
 
     L.control
         .layers(null, {

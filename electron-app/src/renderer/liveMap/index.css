@@ -205,6 +205,11 @@ body {
     flex-shrink: 0;
 }
 
+.leaflet-popup-content {
+    font-size: 13px;
+    line-height: 1.5;
+}
+
 @media (prefers-color-scheme: dark) {
     #map {
         background: #10151c;
@@ -214,6 +219,12 @@ body {
         background: #262b33;
         color: #e6e6e6;
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    }
+
+    .leaflet-popup-content-wrapper,
+    .leaflet-popup-tip {
+        background: #262b33;
+        color: #e6e6e6;
     }
 
     #statusClock {

@@ -16,11 +16,15 @@ const RAION_MIN_ZOOM = 9;
 // visible content - nothing, oblast labels, or raion labels - as the user zooms, instead of
 // showing every label at every scale.
 const LabelsLayer = L.LayerGroup.extend({
-    initialize: function (language) {
+    initialize: function (strings, language) {
         L.LayerGroup.prototype.initialize.call(this);
         this._language = language;
         this._oblastGroup = buildOblastGroup(language);
-        this._raionGroup = L.layerGroup([buildRaionBordersGroup(), buildRaionGroup(language), buildCityGroup(language)]);
+        this._raionGroup = L.layerGroup([
+            buildRaionBordersGroup(),
+            buildRaionGroup(language),
+            buildCityGroup(strings, language),
+        ]);
         this._active = null;
     },
 
@@ -47,8 +51,8 @@ const LabelsLayer = L.LayerGroup.extend({
     },
 });
 
-function addLabelsLayer(map, language) {
-    return new LabelsLayer(language).addTo(map);
+function addLabelsLayer(map, strings, language) {
+    return new LabelsLayer(strings, language).addTo(map);
 }
 
 export { addLabelsLayer };
