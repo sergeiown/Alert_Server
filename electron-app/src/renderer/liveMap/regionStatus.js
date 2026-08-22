@@ -9,9 +9,10 @@ const RESHADE_MS = 60000; // recompute shades between fetches too, since they de
 const TIER_MS = 15 * 60 * 1000;
 
 // Progressively darker red the longer a region has been under alert (one step per 15 minutes),
-// capped at a light, clearly-still-red tone - not a dark bruise-colored one.
-const SHADES = ['#fbd6d4', '#f6b5b1', '#ef928c', '#e5716a', '#d8544b', '#c93a30'];
-const ALERTED_FILL_OPACITY = 0.35;
+// capped at a still-subdued tone - the whole scale stays light, a barely-there tint rather than a
+// loud warning color, so it doesn't compete for attention with the threat markers.
+const SHADES = ['#fbeceb', '#f7dbd9', '#f0c1bd', '#e8a8a2', '#dd8c85', '#d1716a'];
+const ALERTED_FILL_OPACITY = 0.18;
 
 // Regions with no active alert right now still get drawn - just about invisible - so the whole
 // oblast/raion is clickable everywhere, not only where something is currently lit up.
@@ -32,13 +33,13 @@ function addRegionStatusLayer(map, strings, language) {
     // `popupStartedAt`/`inheritedFromName` drive the popup, which should say so either way.
     function drawRegion(rings, displayName, ownStartedAt, now, popupStartedAt, inheritedFromName) {
         const alerted = Boolean(ownStartedAt);
-        const color = alerted ? shadeFor(ownStartedAt, now) : '#c93a30';
+        const color = alerted ? shadeFor(ownStartedAt, now) : '#d1716a';
 
         L.polygon(rings, {
             className: 'alert-status-shape',
             color,
-            weight: alerted ? 1.5 : 0,
-            opacity: alerted ? 0.8 : 0,
+            weight: alerted ? 1 : 0,
+            opacity: alerted ? 0.5 : 0,
             fillColor: color,
             fillOpacity: alerted ? ALERTED_FILL_OPACITY : NEUTRAL_FILL_OPACITY,
         })
