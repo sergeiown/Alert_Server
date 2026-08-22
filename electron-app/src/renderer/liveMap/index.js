@@ -22,7 +22,7 @@ const CenterControl = L.Control.extend({
             '<svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
         L.DomEvent.on(link, 'click', (event) => {
             L.DomEvent.preventDefault(event);
-            map.fitBounds(this.options.bounds);
+            this.options.onClick();
         });
         return container;
     },
@@ -46,8 +46,18 @@ async function main() {
         attributionControl: true,
     });
 
+    // Zooming out is never allowed past whatever "fit the whole country" needs at the map's
+    // current size - fitBounds finds that zoom, and this locks it in as the floor immediately
+    // after, so there's no empty space around the country to zoom out into. Since a resize (or
+    // fullscreen) needs a different zoom to fit the same bounds in a differently sized viewport,
+    // this re-fits and re-locks every time the map's own size actually changes, not just once.
+    function fitAndLockMinZoom() {
+        map.fitBounds(UKRAINE_BOUNDS);
+        map.setMinZoom(map.getZoom());
+    }
+
     L.imageOverlay(baseMapUrl, UKRAINE_BOUNDS).addTo(map);
-    map.fitBounds(UKRAINE_BOUNDS);
+    fitAndLockMinZoom();
     // Leaflet's own "Leaflet" credit (setPrefix) isn't required by its license, so it's dropped -
     // this app's own name takes that spot instead, ahead of the actual map data credit.
     map.attributionControl.setPrefix(false);
@@ -60,7 +70,7 @@ async function main() {
 
     // Map controls (zoom, center, fullscreen) stay on the left; the layer toggle list goes on
     // the right (Leaflet's control default) so the two groups never compete for the same corner.
-    new CenterControl({ title: strings.liveMapCenterButtonTitle, bounds: UKRAINE_BOUNDS }).addTo(map);
+    new CenterControl({ title: strings.liveMapCenterButtonTitle, onClick: fitAndLockMinZoom }).addTo(map);
 
     // The plugin's own default icons are hard-coded black-on-white - fine in light mode, but
     // inverting the whole button via CSS filter (the previous approach) turns its white
@@ -88,7 +98,7 @@ async function main() {
             ...fullScreenIconOptions,
             onFullScreenChange: () => {
                 map.invalidateSize();
-                map.fitBounds(UKRAINE_BOUNDS);
+                fitAndLockMinZoom();
             },
         })
         .addTo(map);
@@ -100,7 +110,7 @@ async function main() {
     // actual size change regardless of what caused it.
     new ResizeObserver(() => {
         map.invalidateSize();
-        map.fitBounds(UKRAINE_BOUNDS);
+        fitAndLockMinZoom();
     }).observe(document.getElementById('map'));
 
     const regionStatusLayer = addRegionStatusLayer(map, strings, settings.language);
