@@ -13,35 +13,40 @@ body {
 }
 
 .threat-icon {
-    position: relative;
-    width: 18px;
-    height: 18px;
-}
-
-.threat-core {
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    border: 2px solid #ffffff;
-    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-}
-
-.threat-arrow {
-    position: absolute;
-    top: -5px;
-    left: 5px;
-    width: 0;
-    height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-bottom: 6px solid;
+    width: 22px;
+    height: 22px;
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6));
 }
 
 #neptunAttribution {
     color: inherit;
+}
+
+.threat-legend {
+    background: #ffffff;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    padding: 8px 10px;
+    font-size: 12px;
+    color: #1f1f1f;
+    line-height: 1.6;
+}
+
+.legend-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.legend-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-row .threat-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -71,14 +76,23 @@ body {
     }
 
     .leaflet-control-attribution,
-    .leaflet-popup-content-wrapper,
-    .leaflet-popup-tip {
+    .leaflet-tooltip {
         background: #262b33 !important;
         color: #e6e6e6 !important;
+        border-color: #3a4048 !important;
     }
 
-    .leaflet-popup-content-wrapper a,
+    .leaflet-tooltip-top:before {
+        border-top-color: #262b33 !important;
+    }
+
     .leaflet-control-attribution a {
         color: #6ea8fe !important;
+    }
+
+    .threat-legend {
+        background: #262b33 !important;
+        color: #e6e6e6 !important;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
     }
 }
