@@ -32,6 +32,7 @@
     "liveMapType_missile": "Ракета",
     "liveMapType_unknown": "Інше/невідомо",
     "liveMapCenterButtonTitle": "Центрувати",
+    "liveMapLayerAlertStatus": "Статус тривог",
     "liveMapLayerThreats": "Позначки загроз",
     "liveMapLayerRiver": "Річка Дніпро",
     "liveMapLayerLabels": "Назви на мапі",

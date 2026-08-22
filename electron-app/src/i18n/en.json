@@ -32,6 +32,7 @@
     "liveMapType_missile": "Missile",
     "liveMapType_unknown": "Other/unknown",
     "liveMapCenterButtonTitle": "Center",
+    "liveMapLayerAlertStatus": "Alert status",
     "liveMapLayerThreats": "Threat markers",
     "liveMapLayerRiver": "Dnipro river",
     "liveMapLayerLabels": "Map labels",

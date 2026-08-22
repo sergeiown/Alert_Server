@@ -1,6 +1,7 @@
 import { startNeptunLayer } from './neptun.js';
 import { addRiversLayer } from './rivers.js';
 import { addLabelsLayer } from './labelsLayer.js';
+import { addRegionStatusLayer } from './regionStatus.js';
 import { startStatusBar } from './statusBar.js';
 
 // Exact bounding box taken from ukraine_default.svg's own mapsvg:geoViewBox attribute
@@ -84,12 +85,14 @@ async function main() {
         map.fitBounds(UKRAINE_BOUNDS);
     }).observe(document.getElementById('map'));
 
+    const regionStatusLayer = addRegionStatusLayer(map);
     const threatsLayer = startNeptunLayer(map, strings);
     const riverLayer = addRiversLayer(map);
     const labelsLayer = addLabelsLayer(map, settings.language);
 
     L.control
         .layers(null, {
+            [strings.liveMapLayerAlertStatus]: regionStatusLayer,
             [strings.liveMapLayerThreats]: threatsLayer,
             [strings.liveMapLayerRiver]: riverLayer,
             [strings.liveMapLayerLabels]: labelsLayer,
