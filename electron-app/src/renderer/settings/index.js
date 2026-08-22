@@ -17,6 +17,7 @@ const forecastNotifyEnabledInput = document.getElementById('forecastNotifyEnable
 const forecastNotifyLookaheadMinutesInput = document.getElementById('forecastNotifyLookaheadMinutes');
 const alertSoundModeInput = document.getElementById('alertSoundMode');
 const alertSoundCountInput = document.getElementById('alertSoundCount');
+const massAttackThresholdInput = document.getElementById('massAttackThreshold');
 const languageInput = document.getElementById('language');
 const themeInput = document.getElementById('theme');
 
@@ -34,6 +35,7 @@ function applyStrings(strings) {
     document.getElementById('alertSoundModeSirenOption').textContent = strings.alertSoundModeSiren;
     document.getElementById('alertSoundModeVoiceOption').textContent = strings.alertSoundModeVoice;
     document.getElementById('alertSoundCountLabel').textContent = strings.alertSoundCountLabel;
+    document.getElementById('massAttackThresholdLabel').textContent = strings.massAttackThresholdLabel;
     document.getElementById('languageLabel').textContent = strings.languageLabel;
     document.getElementById('themeLabel').textContent = strings.themeLabel;
     document.getElementById('themeLightOption').textContent = strings.themeLight;
@@ -70,6 +72,7 @@ async function initGeneralSettings(settings) {
     forecastNotifyLookaheadMinutesInput.value = settings.forecastNotifyLookaheadMinutes;
     alertSoundModeInput.value = settings.alertSoundMode;
     alertSoundCountInput.value = settings.alertSoundCount;
+    massAttackThresholdInput.value = settings.massAttackThreshold;
     languageInput.value = settings.language;
     themeInput.value = settings.theme;
     runAtStartupInput.checked = await window.alertServer.getLoginItem();
@@ -108,6 +111,11 @@ async function initGeneralSettings(settings) {
         const count = Math.max(1, Math.min(10, Number(alertSoundCountInput.value) || 1));
         alertSoundCountInput.value = count;
         window.alertServer.setSetting('alertSoundCount', count);
+    });
+    massAttackThresholdInput.addEventListener('change', () => {
+        const threshold = Math.max(5, Math.min(60, Number(massAttackThresholdInput.value) || 20));
+        massAttackThresholdInput.value = threshold;
+        window.alertServer.setSetting('massAttackThreshold', threshold);
     });
     languageInput.addEventListener('change', () => {
         window.alertServer.setSetting('language', languageInput.value);
