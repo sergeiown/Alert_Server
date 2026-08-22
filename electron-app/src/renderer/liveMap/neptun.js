@@ -55,6 +55,10 @@ const TYPE_ICONS = {
 };
 
 function resolveTypeKey(threat) {
+    // The real API sends reconnaissance drones as type "recon" (not "uav"), which isn't a key in
+    // TYPE_ICONS itself - without this check they fell through to "unknown" every time. The title
+    // regex stays as a fallback for a "uav"-typed threat whose text says otherwise.
+    if (threat.type === 'recon') return 'uav_recon';
     if (threat.type === 'uav' && RECON_TITLE_PATTERN.test(`${threat.title} ${threat.explanationShort}`)) {
         return 'uav_recon';
     }
