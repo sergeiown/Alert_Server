@@ -66,6 +66,8 @@
     "alertSoundModeSiren": "Сирена",
     "alertSoundModeVoice": "Голос",
     "alertSoundCountLabel": "Кількість повторень звуку",
+    "massAttackThresholdLabel": "Порогова кількість тривог по Україні для індикації масової атаки:",
+    "trayMassAttackTooltip": "Масова атака по Україні",
     "languageLabel": "Мова:",
     "themeLabel": "Тема:",
     "themeLight": "Світла",
