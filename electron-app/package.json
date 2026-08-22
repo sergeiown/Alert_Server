@@ -10,6 +10,11 @@
     "test": "node scripts/test-forecast-model.js"
   },
   "dependencies": {
-    "electron-updater": "^6.8.9"
+    "electron-updater": "^6.8.9",
+    "leaflet": "^1.9.4"
+  },
+  "devDependencies": {
+    "electron": "^43.1.1",
+    "electron-builder": "^26.15.3"
   }
 }
