@@ -33,6 +33,8 @@
     "liveMapType_unknown": "Інше/невідомо",
     "liveMapCenterButtonTitle": "Центрувати",
     "liveMapLayerAlertStatus": "Статус тривог",
+    "liveMapNoActiveAlert": "Немає активної тривоги",
+    "liveMapAlertAcrossRegion": "Тривога по всій області: {name}",
     "liveMapLayerThreats": "Позначки загроз",
     "liveMapLayerRiver": "Річка Дніпро",
     "liveMapLayerLabels": "Назви на мапі",
