@@ -1,6 +1,6 @@
 const { ipcMain } = require('electron');
 const { getResourcePath } = require('../services/appPaths');
-const { getLatestTotalAlertCount } = require('../services/alertState');
+const { getLatestTotalAlertCount, getLatestAlertedRegions } = require('../services/alertState');
 
 function registerLiveMapIpc() {
     ipcMain.handle('liveMap:getBaseMapUrl', () => {
@@ -9,6 +9,8 @@ function registerLiveMapIpc() {
     });
 
     ipcMain.handle('liveMap:getActiveAlertCount', () => getLatestTotalAlertCount());
+
+    ipcMain.handle('liveMap:getAlertedRegions', () => getLatestAlertedRegions());
 }
 
 module.exports = { registerLiveMapIpc };
