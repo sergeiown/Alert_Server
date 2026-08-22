@@ -12,9 +12,11 @@ const TIER_MS = 30 * 60 * 1000;
 // Progressively darker/more saturated red the longer a region has been under alert (one step per
 // 30 minutes). The lightest tier still has to read as clearly more colored than a plain unalerted
 // region, in both themes - a wash too pale ends up looking LIGHTER than the map's own base color,
-// which reads backwards (an "alerted" area looking calmer than an unalerted one).
-const LIGHT_SHADES = ['#f0bab4', '#eaa79f', '#e2938a', '#d97f74', '#cc6b5f', '#bf584b'];
-const DARK_SHADES = ['#4a2c2a', '#5e2f2c', '#752f2b', '#8f342c', '#ab3a2d', '#c6432f'];
+// which reads backwards (an "alerted" area looking calmer than an unalerted one). The step between
+// tiers is deliberately small - a whole map showing many regions at different tiers at once
+// shouldn't look like it's using several unrelated colors, just one color settling in gradually.
+const LIGHT_SHADES = ['#e9b3aa', '#e6aca2', '#e3a59a', '#e09e92', '#dc978a', '#d99082'];
+const DARK_SHADES = ['#4d3330', '#513532', '#553734', '#593a36', '#5e3c38', '#623f3a'];
 
 // Regions with no active alert right now still get drawn with a faint, distinctly non-red wash -
 // enough to notice when the "Статус тривог" layer checkbox is toggled (otherwise, with nothing

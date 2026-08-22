@@ -31,11 +31,34 @@ body {
     height: 34px !important;
     line-height: 34px !important;
     border: 1px solid #d6d6d6 !important;
+    border-radius: 4px !important;
 }
 
 .leaflet-control-fullscreen,
 .leaflet-control-layers-toggle {
     background-size: 22px 22px !important;
+}
+
+/* The center button's own outer wrapper div (bare ".leaflet-bar.leaflet-control", auto-created by
+   Leaflet for any single-button control) picks up a 2px border from somewhere in the platform's
+   own default styling, insetting the actual visible button 2px deeper than the fullscreen button
+   (which has no such wrapper - its own div IS the visible button) - that's the leftward
+   misalignment. Excluding fullscreen/layers-toggle so this doesn't strip their own real border. */
+.leaflet-bar.leaflet-control:not(.leaflet-control-fullscreen):not(.leaflet-control-layers-toggle) {
+    border: none !important;
+}
+
+/* The layers toggle's own outer wrapper (".leaflet-control-layers") has its own 5px-rounded,
+   drop-shadowed box around it by default - a second, slightly different frame drawn right behind
+   the toggle's own now-square-cornered border, which is what actually read as "a different
+   border" next to the other buttons' plain single frame. Flattening the wrapper to fit the toggle
+   exactly removes that second frame instead of trying to make two frames match - only while
+   collapsed, though: expanded, this same element IS the dropdown panel and needs its real frame. */
+.leaflet-control-layers:not(.leaflet-control-layers-expanded) {
+    background: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    border: none !important;
 }
 
 .leaflet-control-zoom-in,
