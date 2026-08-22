@@ -46,11 +46,15 @@ function buildOblastGroup(language) {
 
     REGIONS.forEach((region) => {
         const sizeClass = region.size ? ` region-label-${region.size}` : '';
+        // Leaflet positions this outer element with its own inline "transform", which would
+        // silently clobber a centering transform on the same element - so the actual text lives
+        // in an inner span instead, and that span is the one centered over the point.
         L.marker([region.lat, region.lng], {
             icon: L.divIcon({
-                className: `region-label${sizeClass}`,
-                html: isEnglish ? region.en : region.uk,
-                iconSize: null,
+                className: 'map-label-anchor',
+                html: `<span class="region-label${sizeClass}">${isEnglish ? region.en : region.uk}</span>`,
+                iconSize: [0, 0],
+                iconAnchor: [0, 0],
             }),
             interactive: false,
         }).addTo(layer);
