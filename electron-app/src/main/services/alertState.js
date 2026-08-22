@@ -19,9 +19,23 @@ function getLatestTotalAlertCount() {
     return latestTotalAlertCount;
 }
 
+let latestAlertedRegions = { oblasts: [], raions: [] };
+
+// Nationwide per-region alert status (oblasts/raions currently under alert, with when each one
+// started) - used by the live map's region-coloring layer.
+function setLatestAlertedRegions(regions) {
+    latestAlertedRegions = regions;
+}
+
+function getLatestAlertedRegions() {
+    return latestAlertedRegions;
+}
+
 module.exports = {
     setLatestMatchedAlerts,
     getLatestMatchedAlerts,
     setLatestTotalAlertCount,
     getLatestTotalAlertCount,
+    setLatestAlertedRegions,
+    getLatestAlertedRegions,
 };
