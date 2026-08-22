@@ -18,6 +18,31 @@ body {
     filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6));
 }
 
+/* Every map control button (zoom, center, fullscreen, layer-toggle) forced to one explicit size
+   instead of relying on each control's own default - Leaflet's plain buttons, the fullscreen
+   plugin, and the layers toggle each ship a different built-in size (26/30/36px) that doesn't
+   agree with the others. !important because both the fullscreen plugin's and Leaflet's own layers
+   CSS are loaded after this stylesheet, so either would otherwise win a plain specificity tie. */
+.leaflet-bar a,
+.leaflet-control-fullscreen,
+.leaflet-control-layers-toggle {
+    box-sizing: border-box !important;
+    width: 34px !important;
+    height: 34px !important;
+    line-height: 34px !important;
+    border: 1px solid #d6d6d6 !important;
+}
+
+.leaflet-control-fullscreen,
+.leaflet-control-layers-toggle {
+    background-size: 22px 22px !important;
+}
+
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+    font-size: 20px !important;
+}
+
 /* Qualified with the element so this beats Leaflet's own ".leaflet-bar a" specificity - a bare
    ".leaflet-control-center" rule loses to it and the icon silently keeps Leaflet's default
    line-height-based (baseline-aligned) centering, which sits an inline SVG slightly off-center. */
@@ -236,6 +261,8 @@ body {
     }
 
     .leaflet-bar a,
+    .leaflet-control-fullscreen,
+    .leaflet-control-layers-toggle,
     .leaflet-control-layers,
     .leaflet-control-layers-expanded {
         background-color: #262b33 !important;
@@ -243,19 +270,10 @@ body {
         border-color: #3a4048 !important;
     }
 
-    .leaflet-bar a:hover {
+    .leaflet-bar a:hover,
+    .leaflet-control-fullscreen:hover,
+    .leaflet-control-layers-toggle:hover {
         background-color: #33393f !important;
-    }
-
-    /* The fullscreen button's icon is baked into its background-image as black SVG data, so
-       inverting the whole control (icon + its own light background) is simpler and safer than
-       reaching into vendored plugin internals to recolor it. */
-    .leaflet-control-fullscreen {
-        filter: invert(1);
-    }
-
-    .leaflet-control-fullscreen:hover {
-        filter: invert(1) brightness(0.85);
     }
 
     .leaflet-control-attribution,
