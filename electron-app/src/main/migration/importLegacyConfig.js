@@ -19,6 +19,11 @@ function collectSelectedUids(locationsData) {
     return uids;
 }
 
+// "м. Київ" state-level uid in locations.json - the default single region for a genuinely fresh
+// install (no legacy config to migrate from), so the app has something meaningful to watch out of
+// the box instead of silently monitoring nothing until the user opens Settings.
+const DEFAULT_FRESH_INSTALL_UID = 31;
+
 function importLegacyConfig(oldDir, { settingsStore, regionsStore }) {
     if (regionsStore.isSeeded()) {
         return { imported: false, reason: 'already-seeded' };
@@ -27,7 +32,7 @@ function importLegacyConfig(oldDir, { settingsStore, regionsStore }) {
     const locationPath = path.join(oldDir, 'location.json');
     const settingsPath = path.join(oldDir, 'settings.json');
 
-    let uids = [];
+    let uids = [DEFAULT_FRESH_INSTALL_UID];
     if (fs.existsSync(locationPath)) {
         const data = JSON.parse(fs.readFileSync(locationPath, 'utf-8'));
         uids = collectSelectedUids(data);
