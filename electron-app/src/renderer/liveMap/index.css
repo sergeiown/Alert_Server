@@ -92,7 +92,9 @@ body {
     justify-content: center;
 }
 
-#neptunAttribution {
+#appAttribution,
+#neptunAttribution,
+#deepStateAttribution {
     color: inherit;
 }
 
