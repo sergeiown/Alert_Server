@@ -19,7 +19,7 @@ const CenterControl = L.Control.extend({
         link.href = '#';
         link.title = this.options.title;
         link.innerHTML =
-            '<svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+            '<svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
         L.DomEvent.on(link, 'click', (event) => {
             L.DomEvent.preventDefault(event);
             map.fitBounds(this.options.bounds);
@@ -62,12 +62,30 @@ async function main() {
     // the right (Leaflet's control default) so the two groups never compete for the same corner.
     new CenterControl({ title: strings.liveMapCenterButtonTitle, bounds: UKRAINE_BOUNDS }).addTo(map);
 
+    // The plugin's own default icons are hard-coded black-on-white - fine in light mode, but
+    // inverting the whole button via CSS filter (the previous approach) turns its white
+    // background near-black, a visibly different shade than every other button's actual dark-mode
+    // background color. Swapping in a white-fill version of the same icon instead keeps the
+    // button's own background-color the one thing controlling its color, matching the others.
+    const isDarkMap = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const fullScreenIconOptions = isDarkMap
+        ? {
+              enterFullScreenIcon: `data:image/svg+xml;base64,${btoa(
+                  '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 6a1 1 0 011-1h2a1 1 0 000-2H6a3 3 0 00-3 3v2a1 1 0 002 0V6zM5 18a1 1 0 001 1h2a1 1 0 110 2H6a3 3 0 01-3-3v-2a1 1 0 112 0v2zM18 5a1 1 0 011 1v2a1 1 0 102 0V6a3 3 0 00-3-3h-2a1 1 0 100 2h2zM19 18a1 1 0 01-1 1h-2a1 1 0 100 2h2a3 3 0 003-3v-2a1 1 0 10-2 0v2z" fill="#fff"/></svg>'
+              )}`,
+              exitFullScreenIcon: `data:image/svg+xml;base64,${btoa(
+                  '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 4a1 1 0 00-2 0v2.5a.5.5 0 01-.5.5H4a1 1 0 000 2h2.5A2.5 2.5 0 009 6.5V4zM9 20a1 1 0 11-2 0v-2.5a.5.5 0 00-.5-.5H4a1 1 0 110-2h2.5A2.5 2.5 0 019 17.5V20zM16 3a1 1 0 00-1 1v2.5A2.5 2.5 0 0017.5 9H20a1 1 0 100-2h-2.5a.5.5 0 01-.5-.5V4a1 1 0 00-1-1zM15 20a1 1 0 102 0v-2.5a.5.5 0 01.5-.5H20a1 1 0 100-2h-2.5a2.5 2.5 0 00-2.5 2.5V20z" fill="#fff"/></svg>'
+              )}`,
+          }
+        : {};
+
     L.control
         .fullScreenButton({
             title: strings.liveMapFullScreenTitle,
             enterFullScreenTitle: strings.liveMapEnterFullScreenTitle,
             exitFullScreenTitle: strings.liveMapExitFullScreenTitle,
             showNotification: false,
+            ...fullScreenIconOptions,
             onFullScreenChange: () => {
                 map.invalidateSize();
                 map.fitBounds(UKRAINE_BOUNDS);

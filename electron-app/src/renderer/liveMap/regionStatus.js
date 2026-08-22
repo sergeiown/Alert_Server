@@ -9,16 +9,22 @@ import { RAION_MIN_ZOOM } from './zoomTiers.js';
 const RESHADE_MS = 60000; // recompute shades between fetches too, since they depend on elapsed time
 const TIER_MS = 30 * 60 * 1000;
 
-// Progressively darker red the longer a region has been under alert (one step per 30 minutes),
-// capped at a still-subdued tone - the whole scale stays light, a barely-there tint rather than a
-// loud warning color, so it doesn't compete for attention with the threat markers.
-const SHADES = ['#fbeceb', '#f7dbd9', '#f0c1bd', '#e8a8a2', '#dd8c85', '#d1716a'];
-const ALERTED_FILL_OPACITY = 0.18;
+// Progressively darker/more saturated red the longer a region has been under alert (one step per
+// 30 minutes). The lightest tier still has to read as clearly more colored than a plain unalerted
+// region, in both themes - a wash too pale ends up looking LIGHTER than the map's own base color,
+// which reads backwards (an "alerted" area looking calmer than an unalerted one).
+const LIGHT_SHADES = ['#f0bab4', '#eaa79f', '#e2938a', '#d97f74', '#cc6b5f', '#bf584b'];
+const DARK_SHADES = ['#4a2c2a', '#5e2f2c', '#752f2b', '#8f342c', '#ab3a2d', '#c6432f'];
 
-// Regions with no active alert right now still get drawn - just about invisible - so the whole
-// oblast/raion is clickable everywhere, not only where something is currently lit up.
-const NEUTRAL_FILL_OPACITY = 0.02;
-const NEUTRAL_COLOR = '#d1716a';
+// Regions with no active alert right now still get drawn with a faint, distinctly non-red wash -
+// enough to notice when the "Статус тривог" layer checkbox is toggled (otherwise, with nothing
+// currently alerted anywhere, toggling it would look like it does nothing at all) - so the whole
+// oblast/raion stays clickable everywhere too, not only where something is currently lit up.
+const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+const SHADES = isDark ? DARK_SHADES : LIGHT_SHADES;
+const ALERTED_FILL_OPACITY = isDark ? 0.35 : 0.22;
+const NEUTRAL_COLOR = isDark ? '#3a4650' : '#7a8a94';
+const NEUTRAL_FILL_OPACITY = isDark ? 0.06 : 0.05;
 
 function shadeFor(startedAt, now) {
     const elapsed = now - new Date(startedAt).getTime();
