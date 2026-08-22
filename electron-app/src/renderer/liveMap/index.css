@@ -63,6 +63,10 @@ body {
     font-size: 8px;
 }
 
+.raion-border {
+    stroke: #6b6349;
+}
+
 .raion-label {
     font-size: 9px;
     font-weight: 500;
@@ -170,6 +174,10 @@ body {
             1px -1px 2px #333a42,
             -1px 1px 2px #333a42,
             1px 1px 2px #333a42;
+    }
+
+    .raion-border {
+        stroke: #8c94a0;
     }
 
     .raion-label {

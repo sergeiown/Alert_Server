@@ -1,11 +1,13 @@
 import { buildOblastGroup } from './regionLabels.js';
 import { buildRaionGroup } from './raionLabels.js';
+import { buildRaionBordersGroup } from './raionBorders.js';
 
-// Below OBLAST_MIN_ZOOM the map is too zoomed out for any label to be legible against the whole
-// country, so no labels show at all. Between the two thresholds, oblast names are shown; at
-// RAION_MIN_ZOOM and above there's enough screen space per oblast that oblast names would just
-// repeat the obvious, so raion (district) names take over instead.
-const OBLAST_MIN_ZOOM = 7;
+// The default/base view (the whole country fit to a typical window, around zoom 6) must always
+// show oblast names, so this floors at the map's own minZoom - there's no lower tier to drop to.
+// At RAION_MIN_ZOOM and above there's enough screen space per oblast that oblast names would just
+// repeat the obvious, so raion (district) names - with their own light border lines, since at that
+// scale the oblast borders alone don't say where one raion ends and the next begins - take over.
+const OBLAST_MIN_ZOOM = 5;
 const RAION_MIN_ZOOM = 9;
 
 // A single Leaflet layer (so the layer-control checkbox has one master toggle) that swaps its
@@ -16,7 +18,7 @@ const LabelsLayer = L.LayerGroup.extend({
         L.LayerGroup.prototype.initialize.call(this);
         this._language = language;
         this._oblastGroup = buildOblastGroup(language);
-        this._raionGroup = buildRaionGroup(language);
+        this._raionGroup = L.layerGroup([buildRaionBordersGroup(), buildRaionGroup(language)]);
         this._active = null;
     },
 
