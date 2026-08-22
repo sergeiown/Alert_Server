@@ -64,7 +64,7 @@ app.whenReady().then(() => {
             setLatestTotalAlertCount(alertData.alerts.length);
             setLatestAlertedRegions(computeAlertedRegions(alertData.alerts));
             processAlerts(matched, alertData.alerts);
-            updateTrayState(getActiveCount());
+            updateTrayState(getActiveCount(), alertData.alerts.length);
 
             if (!forecastWatcherStarted) {
                 forecastWatcherStarted = true;

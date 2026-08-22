@@ -66,6 +66,8 @@
     "alertSoundModeSiren": "Siren",
     "alertSoundModeVoice": "Voice",
     "alertSoundCountLabel": "Sound repeat count",
+    "massAttackThresholdLabel": "Nationwide alert count threshold for the mass-attack indicator:",
+    "trayMassAttackTooltip": "Nationwide mass attack",
     "languageLabel": "Language:",
     "themeLabel": "Theme:",
     "themeLight": "Light",

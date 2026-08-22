@@ -1,5 +1,6 @@
 const { Tray, Menu, app, Notification, nativeImage, nativeTheme, screen } = require('electron');
 const { getResourcePath } = require('./appPaths');
+const { applyMassAttackBadge } = require('./trayBadge');
 const { openSettingsWindow } = require('../windows/settingsWindow');
 const { openLiveMapWindow } = require('../windows/liveMapWindow');
 const { openForecastWindow } = require('../windows/forecastWindow');
@@ -23,6 +24,9 @@ let lastActiveCount = 0;
 let animationTimer = null;
 let alertLoopActive = false;
 let tooltipOverride = null;
+// Nationwide (not just monitored-region) mass-attack state - independent of everything else the
+// icon/tooltip otherwise reflects, see updateTrayState.
+let massAttackActive = false;
 const menuIcons = new Map();
 const iconCache = new Map();
 
@@ -42,14 +46,15 @@ function getIconSize() {
     return ICON_SIZES.reduce((best, size) => (Math.abs(size - target) < Math.abs(best - target) ? size : best));
 }
 
-function loadIcon(fileName) {
+function loadIcon(fileName, badge = false) {
     const size = getIconSize();
-    const key = `${fileName}@${size}`;
+    const key = badge ? `${fileName}@${size}#mass` : `${fileName}@${size}`;
     if (!iconCache.has(key)) {
-        iconCache.set(
-            key,
-            nativeImage.createFromPath(getResourcePath('icons', fileName)).resize({ width: size, height: size, quality: 'best' })
-        );
+        let image = nativeImage
+            .createFromPath(getResourcePath('icons', fileName))
+            .resize({ width: size, height: size, quality: 'best' });
+        if (badge) image = applyMassAttackBadge(image);
+        iconCache.set(key, image);
     }
     return iconCache.get(key);
 }
@@ -86,7 +91,7 @@ function stopAnimationTimer() {
 function playFrames(fileNames, intervalMs, loop, onDone) {
     stopAnimationTimer();
     let index = 0;
-    trayInstance.setImage(loadIcon(fileNames[0]));
+    trayInstance.setImage(loadIcon(fileNames[0], massAttackActive));
     animationTimer = setInterval(() => {
         if (!trayInstance) return;
         index++;
@@ -98,14 +103,14 @@ function playFrames(fileNames, intervalMs, loop, onDone) {
             }
             index = 0;
         }
-        trayInstance.setImage(loadIcon(fileNames[index]));
+        trayInstance.setImage(loadIcon(fileNames[index], massAttackActive));
     }, intervalMs);
 }
 
 function playIdlePulse(trayMonoIcon) {
     const frames = Array.from({ length: PULSE_FRAME_COUNT }, (_, i) => pulseFrameFile(i + 1, trayMonoIcon));
     playFrames(frames, PULSE_INTERVAL_MS, false, () => {
-        if (trayInstance) trayInstance.setImage(loadIcon(staticIconFile(0, trayMonoIcon)));
+        if (trayInstance) trayInstance.setImage(loadIcon(staticIconFile(0, trayMonoIcon), massAttackActive));
     });
 }
 
@@ -127,7 +132,7 @@ function refreshIconForCurrentState() {
         startAlertLoop(trayMonoIcon);
     } else {
         stopAnimationTimer();
-        trayInstance.setImage(loadIcon(staticIconFile(lastActiveCount, trayMonoIcon)));
+        trayInstance.setImage(loadIcon(staticIconFile(lastActiveCount, trayMonoIcon), massAttackActive));
     }
 }
 
@@ -179,37 +184,51 @@ function clearTemporaryTooltip() {
     tooltipOverride = null;
 }
 
-function updateTrayState(activeCount) {
+// activeCount is alerts in the user's own monitored regions (drives the existing shake/pulse
+// animation, unchanged); totalCount is every active alert nationwide, compared against
+// massAttackThreshold for the badge - the two are deliberately independent (see Phase 6 of the
+// update plan): a quiet monitored region can still be badged during a nationwide mass attack, and
+// vice versa.
+function updateTrayState(activeCount, totalCount) {
     if (!trayInstance) return;
 
     const wasIdle = lastActiveCount === 0;
     lastActiveCount = activeCount;
-    const { language, trayMonoIcon } = settingsStore.getSettings();
+    const { language, trayMonoIcon, massAttackThreshold } = settingsStore.getSettings();
+    const wasMassAttackActive = massAttackActive;
+    massAttackActive = totalCount >= massAttackThreshold;
 
     if (activeCount > 0) {
         if (!alertLoopActive) startAlertLoop(trayMonoIcon);
     } else if (alertLoopActive) {
         stopAlertLoop();
-        trayInstance.setImage(loadIcon(staticIconFile(0, trayMonoIcon)));
+        trayInstance.setImage(loadIcon(staticIconFile(0, trayMonoIcon), massAttackActive));
     } else if (wasIdle && !animationTimer) {
         playIdlePulse(trayMonoIcon);
+    } else if (massAttackActive !== wasMassAttackActive) {
+        // Neither branch above touches the icon (no animation running, not freshly idle) - the
+        // badge alone changed, so the static icon still needs a manual refresh to show/hide it.
+        trayInstance.setImage(loadIcon(staticIconFile(activeCount, trayMonoIcon), massAttackActive));
     }
 
     if (tooltipOverride) return;
 
+    const lines = [];
     if (activeCount > 0) {
-        trayInstance.setToolTip(`${t('trayActiveTooltip', language)}: ${activeCount}`);
-        return;
+        lines.push(`${t('trayActiveTooltip', language)}: ${activeCount}`);
+    } else {
+        const [upcoming] = getUpcomingPredictions(language, 1);
+        if (upcoming) {
+            const etaText = formatDuration(Math.max(0, upcoming.predictedAt - Date.now()), language);
+            lines.push(`${t('forecastUpcoming', language)}: ${upcoming.name} ~${etaText}`);
+        } else {
+            lines.push(t('trayDefaultTooltip', language));
+        }
     }
-
-    const [upcoming] = getUpcomingPredictions(language, 1);
-    if (upcoming) {
-        const etaText = formatDuration(Math.max(0, upcoming.predictedAt - Date.now()), language);
-        trayInstance.setToolTip(`${t('forecastUpcoming', language)}: ${upcoming.name} ~${etaText}`);
-        return;
+    if (massAttackActive) {
+        lines.push(`${t('trayMassAttackTooltip', language)}: ${totalCount}`);
     }
-
-    trayInstance.setToolTip(t('trayDefaultTooltip', language));
+    trayInstance.setToolTip(lines.join('\n'));
 }
 
 module.exports = { createTray, updateTrayState, setTemporaryTooltip, clearTemporaryTooltip };
