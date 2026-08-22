@@ -11,6 +11,10 @@ const UKRAINE_BOUNDS = [
     [52.380834, 40.220623],
 ];
 
+// The map's own absolute zoom-out floor - never changed at runtime, unlike the map's actual
+// minZoom (see fitAndLockMinZoom), which moves to track whatever fits the current window size.
+const MAP_MIN_ZOOM = 5;
+
 const CenterControl = L.Control.extend({
     options: { position: 'topleft' },
     onAdd: function (map) {
@@ -37,7 +41,7 @@ async function main() {
     const map = L.map('map', {
         center: [48.4, 31.2],
         zoom: 6,
-        minZoom: 5,
+        minZoom: MAP_MIN_ZOOM,
         maxZoom: 12,
         // Finer zoom steps (a quarter-level per scroll/pinch tick, half a level per +/- click)
         // instead of Leaflet's default whole-level jumps, which felt too coarse for this map.
@@ -51,7 +55,13 @@ async function main() {
     // after, so there's no empty space around the country to zoom out into. Since a resize (or
     // fullscreen) needs a different zoom to fit the same bounds in a differently sized viewport,
     // this re-fits and re-locks every time the map's own size actually changes, not just once.
+    // The floor is lifted back to the map's own absolute minimum first - fitBounds clamps its own
+    // result to the CURRENT minZoom, so calling this again during a fullscreen exit transition
+    // (which can briefly report a stale, mid-animation container size before settling) would
+    // otherwise get stuck: a too-high floor from that stale read blocks the correct, lower zoom
+    // the real final size needs, even once this runs again with the right measurement.
     function fitAndLockMinZoom() {
+        map.setMinZoom(MAP_MIN_ZOOM);
         map.fitBounds(UKRAINE_BOUNDS);
         map.setMinZoom(map.getZoom());
     }
