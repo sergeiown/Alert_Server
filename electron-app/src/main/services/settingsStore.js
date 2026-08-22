@@ -6,6 +6,7 @@ const defaultSettings = {
     trayMonoIcon: false,
     visualNotificationsEnabled: true,
     activeAlertNotifyEnabled: true,
+    showLiveMapOnAlert: false,
     alertSoundMode: 'siren',
     alertSoundCount: 1,
     forecastNotifyEnabled: true,

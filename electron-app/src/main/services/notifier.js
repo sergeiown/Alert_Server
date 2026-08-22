@@ -9,6 +9,7 @@ const { getHistoryFetchTarget } = require('./locationFilter');
 const { renderRegionMapImage } = require('./notificationMap');
 const { formatDuration } = require('./forecast');
 const { t } = require('../../i18n/i18n');
+const { openLiveMapWindow } = require('../windows/liveMapWindow');
 
 const ALERT_COLOR = '#dc2626';
 const CANCEL_COLOR = '#16a34a';
@@ -146,6 +147,10 @@ function processAlerts(matchedAlerts, allAlerts) {
 
     const newAlerts = matchedAlerts.filter((alert) => !displayedAlerts.has(alert.id));
     const massStart = newAlerts.length > MASS_ALERT_THRESHOLD;
+
+    if (newAlerts.length && canNotify && settings.showLiveMapOnAlert) {
+        openLiveMapWindow();
+    }
 
     if (massStart && canNotify) {
         notifyWithMap({

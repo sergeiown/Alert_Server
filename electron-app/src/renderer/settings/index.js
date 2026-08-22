@@ -12,6 +12,7 @@ const runAtStartupInput = document.getElementById('runAtStartup');
 const trayMonoIconInput = document.getElementById('trayMonoIcon');
 const visualNotificationsEnabledInput = document.getElementById('visualNotificationsEnabled');
 const activeAlertNotifyEnabledInput = document.getElementById('activeAlertNotifyEnabled');
+const showLiveMapOnAlertInput = document.getElementById('showLiveMapOnAlert');
 const forecastNotifyEnabledInput = document.getElementById('forecastNotifyEnabled');
 const forecastNotifyLookaheadMinutesInput = document.getElementById('forecastNotifyLookaheadMinutes');
 const alertSoundModeInput = document.getElementById('alertSoundMode');
@@ -24,6 +25,7 @@ function applyStrings(strings) {
     document.getElementById('trayMonoIconLabel').textContent = strings.trayMonoIconLabel;
     document.getElementById('visualNotificationsLabel').textContent = strings.visualNotificationsLabel;
     document.getElementById('activeAlertNotifyLabel').textContent = strings.activeAlertNotifyLabel;
+    document.getElementById('showLiveMapOnAlertLabel').textContent = strings.showLiveMapOnAlertLabel;
     document.getElementById('settingsForecastNotifyLabel').textContent = strings.settingsForecastNotifyLabel;
     document.getElementById('forecastNotifyLookaheadLabel').textContent = strings.forecastNotifyLookaheadLabel;
     document.getElementById('alertSoundLabel').textContent = strings.alertSoundLabel;
@@ -45,6 +47,7 @@ function formatSummary(template, selected, total) {
 function updateNotifyDisabledState() {
     const visualOn = visualNotificationsEnabledInput.checked;
     activeAlertNotifyEnabledInput.disabled = !visualOn;
+    showLiveMapOnAlertInput.disabled = !visualOn || !activeAlertNotifyEnabledInput.checked;
     forecastNotifyEnabledInput.disabled = !visualOn;
     forecastNotifyLookaheadMinutesInput.disabled = !visualOn || !forecastNotifyEnabledInput.checked;
 }
@@ -57,6 +60,7 @@ async function initGeneralSettings(settings) {
     trayMonoIconInput.checked = settings.trayMonoIcon;
     visualNotificationsEnabledInput.checked = settings.visualNotificationsEnabled;
     activeAlertNotifyEnabledInput.checked = settings.activeAlertNotifyEnabled;
+    showLiveMapOnAlertInput.checked = settings.showLiveMapOnAlert;
     forecastNotifyEnabledInput.checked = settings.forecastNotifyEnabled;
     forecastNotifyLookaheadMinutesInput.value = settings.forecastNotifyLookaheadMinutes;
     alertSoundModeInput.value = settings.alertSoundMode;
@@ -76,6 +80,10 @@ async function initGeneralSettings(settings) {
     });
     activeAlertNotifyEnabledInput.addEventListener('change', () => {
         window.alertServer.setSetting('activeAlertNotifyEnabled', activeAlertNotifyEnabledInput.checked);
+        updateNotifyDisabledState();
+    });
+    showLiveMapOnAlertInput.addEventListener('change', () => {
+        window.alertServer.setSetting('showLiveMapOnAlert', showLiveMapOnAlertInput.checked);
     });
     forecastNotifyEnabledInput.addEventListener('change', () => {
         window.alertServer.setSetting('forecastNotifyEnabled', forecastNotifyEnabledInput.checked);
