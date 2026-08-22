@@ -28,9 +28,14 @@ const lastAlertMs = Date.parse('2026-01-01T00:00:00.000Z');
 // seasonality, which gets its own dedicated tests below.
 const alerts = buildUniformAlerts(63, 1, lastAlertMs);
 
+// buildUniformAlerts puts every alert at the same time of day, so hour-of-day would be heavily
+// skewed for this dataset too - neutralize it here the same way, since these tests are about the
+// recent/baseline mixture, not the hour-of-day adjustment (which gets its own tests below).
+const configNoHourOfDay = { ...forecastConfig, HOUR_OF_DAY_MAX_MULTIPLIER: 1 };
+
 run('plateaus at baseline instead of unbounded growth after 5 days of silence', () => {
     const nowMs = lastAlertMs + 5 * DAY_MS;
-    const { lambda, baselineLambda } = estimateRegionLambda(alerts, nowMs, forecastConfig);
+    const { lambda, baselineLambda } = estimateRegionLambda(alerts, nowMs, configNoHourOfDay);
 
     const etaMs = (1 / lambda) * DAY_MS;
     const ceilingEtaMs = (1 / baselineLambda) * DAY_MS;
@@ -44,7 +49,7 @@ run('plateaus at baseline instead of unbounded growth after 5 days of silence', 
 
 run('fresh alert: recentLambda dominates, matches pre-fix behavior', () => {
     const nowMs = lastAlertMs;
-    const { lambda, recentLambda } = estimateRegionLambda(alerts, nowMs, forecastConfig);
+    const { lambda, recentLambda } = estimateRegionLambda(alerts, nowMs, configNoHourOfDay);
     assert.ok(
         Math.abs(lambda - recentLambda) < 1e-9,
         `lambda (${lambda}) should equal recentLambda (${recentLambda}) right after an alert`
@@ -55,7 +60,7 @@ run('monotonic during silence: never increases as silence continues, then platea
     const samples = [];
     for (let days = 0; days <= 30; days += 0.5) {
         const nowMs = lastAlertMs + days * DAY_MS;
-        const { lambda } = estimateRegionLambda(alerts, nowMs, forecastConfig);
+        const { lambda } = estimateRegionLambda(alerts, nowMs, configNoHourOfDay);
         samples.push(lambda);
     }
 
@@ -132,6 +137,66 @@ run('seasonality: shrinks toward neutral (1) with only a couple of same-weekday 
     assert.ok(
         seasonality < 1.5,
         `with only 2 same-weekday occurrences, the adjustment should be heavily shrunk, got ${seasonality}`
+    );
+});
+
+// --- Hour of day ---
+
+function buildHourOnlyAlerts(days, targetHour, endMs) {
+    // One alert per day, all at the same hour, for `days` days - a region that only ever alerts
+    // around e.g. 3 AM.
+    const alerts = [];
+    const end = new Date(endMs);
+    const alignMs = new Date(end.getFullYear(), end.getMonth(), end.getDate(), targetHour).getTime();
+    for (let i = 0; i < days; i++) {
+        const startedAt = new Date(alignMs - i * DAY_MS).toISOString();
+        alerts.push({ id: i, alert_type: 'air_raid', started_at: startedAt, finished_at: startedAt, deleted_at: null });
+    }
+    return alerts;
+}
+
+run('hour-of-day: a region that only ever alerts at 3 AM gets boosted at a 3 AM query', () => {
+    const hour3am = 3;
+    const endMs = new Date(2026, 0, 30, hour3am).getTime();
+    const hourAlerts = buildHourOnlyAlerts(60, hour3am, endMs);
+
+    const nowAt3am = endMs;
+    const nowAt3pm = new Date(2026, 0, 30, 15).getTime();
+
+    const { hourOfDay: atNight } = estimateRegionLambda(hourAlerts, nowAt3am, forecastConfig);
+    const { hourOfDay: atAfternoon } = estimateRegionLambda(hourAlerts, nowAt3pm, forecastConfig);
+
+    assert.ok(atNight > 1, `expected a 3am-only region to be boosted at a 3am query, got ${atNight}`);
+    assert.ok(atAfternoon < 1, `expected a 3am-only region to be suppressed at a 3pm query, got ${atAfternoon}`);
+});
+
+run('hour-of-day: never scales the estimate beyond HOUR_OF_DAY_MAX_MULTIPLIER either way', () => {
+    const hour3am = 3;
+    const endMs = new Date(2026, 0, 30, hour3am).getTime();
+    const hourAlerts = buildHourOnlyAlerts(365, hour3am, endMs); // a full year of 3am-only history
+
+    const { hourOfDay: atNight } = estimateRegionLambda(hourAlerts, endMs, forecastConfig);
+    const { hourOfDay: atAfternoon } = estimateRegionLambda(hourAlerts, new Date(2026, 0, 30, 15).getTime(), forecastConfig);
+
+    assert.ok(
+        atNight <= forecastConfig.HOUR_OF_DAY_MAX_MULTIPLIER + 1e-9,
+        `3am multiplier ${atNight} exceeds the cap`
+    );
+    assert.ok(
+        atAfternoon >= 1 / forecastConfig.HOUR_OF_DAY_MAX_MULTIPLIER - 1e-9,
+        `3pm multiplier ${atAfternoon} exceeds the cap`
+    );
+});
+
+run('hour-of-day: shrinks toward neutral (1) with only a couple of same-hour occurrences', () => {
+    const hour3am = 3;
+    const endMs = new Date(2026, 0, 30, hour3am).getTime();
+    const hourAlerts = buildHourOnlyAlerts(2, hour3am, endMs); // only 2 occurrences ever
+
+    const { hourOfDay } = estimateRegionLambda(hourAlerts, endMs, forecastConfig);
+    assert.ok(
+        hourOfDay < 1.5,
+        `with only 2 same-hour occurrences, the adjustment should be heavily shrunk, got ${hourOfDay}`
     );
 });
 
