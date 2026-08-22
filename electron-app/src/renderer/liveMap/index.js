@@ -1,6 +1,7 @@
 import { startNeptunLayer } from './neptun.js';
 import { addRiversLayer } from './rivers.js';
 import { addLabelsLayer } from './labelsLayer.js';
+import { startStatusBar } from './statusBar.js';
 
 // Exact bounding box taken from ukraine_default.svg's own mapsvg:geoViewBox attribute
 // (west north east south), so the background image lines up without distortion.
@@ -94,6 +95,8 @@ async function main() {
             [strings.liveMapLayerLabels]: labelsLayer,
         })
         .addTo(map);
+
+    startStatusBar(strings, settings.language);
 }
 
 main();
