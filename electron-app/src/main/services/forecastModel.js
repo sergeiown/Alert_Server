@@ -50,6 +50,35 @@ function seasonalityMultiplier(alerts, nowMs, config) {
     return Math.min(cap, Math.max(1 / cap, multiplier));
 }
 
+// Same shrink-to-neutral principle as seasonalityMultiplier above, bucketed by hour of day (0-23)
+// instead of weekday - independent factor, multiplied in alongside it rather than combined jointly.
+function hourOfDayMultiplier(alerts, nowMs, config) {
+    if (!alerts.length) return 1;
+
+    const times = alerts.map((alert) => new Date(alert.started_at).getTime());
+    const spanDays = Math.max(1, (nowMs - Math.min(...times)) / DAY_MS);
+    const hourOccurrences = spanDays;
+
+    const overallRate = alerts.length / spanDays;
+    if (overallRate <= 0) return 1;
+
+    const currentHour = new Date(nowMs).getHours();
+    const currentHourCount = times.filter((t) => new Date(t).getHours() === currentHour).length;
+    const currentHourRate = currentHourCount / Math.max(1, hourOccurrences);
+
+    // overallRate is a per-day rate across all 24 hours combined - divide by 24 to get the rate
+    // one would expect for a single hour bucket if alerts were spread evenly across the day,
+    // which is the right thing to compare currentHourRate against (mirrors dividing by 7 for
+    // weekday above).
+    const expectedHourRate = overallRate / 24;
+    const rawMultiplier = currentHourRate / expectedHourRate;
+    const shrinkageWeight = hourOccurrences / (hourOccurrences + config.HOUR_OF_DAY_PRIOR_OCCURRENCES);
+    const multiplier = 1 + shrinkageWeight * (rawMultiplier - 1);
+
+    const cap = config.HOUR_OF_DAY_MAX_MULTIPLIER;
+    return Math.min(cap, Math.max(1 / cap, multiplier));
+}
+
 function estimateRegionLambda(alerts, nowMs, config) {
     const usableAlerts = filterUsableAlerts(alerts);
     const exposure = exposureDays(config.WINDOW_DAYS, config.HALF_LIFE_DAYS);
@@ -65,8 +94,9 @@ function estimateRegionLambda(alerts, nowMs, config) {
     // dominate exactly as before the fix.
     const baseLambda = Math.max(recentLambda, baselineLambda);
     const seasonality = seasonalityMultiplier(usableAlerts, nowMs, config);
-    const lambda = baseLambda * seasonality;
-    return { lambda, baseLambda, recentLambda, baselineLambda, seasonality, exposure, usableAlerts };
+    const hourOfDay = hourOfDayMultiplier(usableAlerts, nowMs, config);
+    const lambda = baseLambda * seasonality * hourOfDay;
+    return { lambda, baseLambda, recentLambda, baselineLambda, seasonality, hourOfDay, exposure, usableAlerts };
 }
 
 // regionLambda should be the region's baseLambda (pre-seasonality), not its seasonally-adjusted
@@ -81,7 +111,8 @@ function estimateTypeLambda(typeAlerts, totalCount, regionLambda, nowMs, config)
     const recentLambda = (alpha + observed) / (config.PRIOR_BETA_DAYS + exposure);
     const baselineLambda = baselineLambdaOf(typeAlerts, nowMs, config);
     const seasonality = seasonalityMultiplier(typeAlerts, nowMs, config);
-    return Math.max(recentLambda, baselineLambda) * seasonality;
+    const hourOfDay = hourOfDayMultiplier(typeAlerts, nowMs, config);
+    return Math.max(recentLambda, baselineLambda) * seasonality * hourOfDay;
 }
 
 // Historical spread of the gaps between consecutive alerts, as a low/high range instead of a

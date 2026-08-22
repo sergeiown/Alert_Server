@@ -11,6 +11,12 @@ module.exports = {
     // no adjustment), and the max factor the adjustment can ever scale the estimate by either way.
     SEASONALITY_PRIOR_OCCURRENCES: 20,
     SEASONALITY_MAX_MULTIPLIER: 2,
+    // Hour-of-day adjustment: same shrink-to-neutral principle as the day-of-week one above, but
+    // for the 24 hour-of-day buckets. Occurrences of "this hour" accumulate roughly 7x faster than
+    // a single weekday does (every calendar day contributes one), so the prior needs to be larger
+    // for a comparable amount of real-world trust before the adjustment leans in fully.
+    HOUR_OF_DAY_PRIOR_OCCURRENCES: 60,
+    HOUR_OF_DAY_MAX_MULTIPLIER: 2,
     // Minimum historical gap count before showing a low-high range alongside the point ETA.
     MIN_GAP_SAMPLES_FOR_RANGE: 8,
 };
