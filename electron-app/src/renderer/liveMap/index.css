@@ -62,7 +62,7 @@ body {
     font-size: 11px;
     font-weight: 600;
     color: #33302a;
-    opacity: 0.65;
+    opacity: 0.5;
     text-shadow:
         -1px -1px 2px #d9d3c1,
         1px -1px 2px #d9d3c1,
@@ -86,7 +86,38 @@ body {
     font-size: 9px;
     font-weight: 500;
     color: #4a4536;
-    opacity: 0.75;
+    opacity: 0.55;
+    text-shadow:
+        -1px -1px 2px #d9d3c1,
+        1px -1px 2px #d9d3c1,
+        -1px 1px 2px #d9d3c1,
+        1px 1px 2px #d9d3c1;
+}
+
+.city-dot {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #7a3b2e;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.85);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.city-label {
+    position: absolute;
+    left: 0;
+    top: 5px;
+    transform: translate(-50%, 0);
+    font-size: 10px;
+    font-weight: 700;
+    color: #33302a;
+    opacity: 0.55;
+    white-space: nowrap;
+    pointer-events: none;
     text-shadow:
         -1px -1px 2px #d9d3c1,
         1px -1px 2px #d9d3c1,
@@ -194,6 +225,20 @@ body {
 
     .raion-label {
         color: #c3cad4;
+        text-shadow:
+            -1px -1px 2px #333a42,
+            1px -1px 2px #333a42,
+            -1px 1px 2px #333a42,
+            1px 1px 2px #333a42;
+    }
+
+    .city-dot {
+        background: #e2836f;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+    }
+
+    .city-label {
+        color: #d6dde6;
         text-shadow:
             -1px -1px 2px #333a42,
             1px -1px 2px #333a42,
