@@ -15,8 +15,8 @@ const TIER_MS = 30 * 60 * 1000;
 // which reads backwards (an "alerted" area looking calmer than an unalerted one). The step between
 // tiers is deliberately small - a whole map showing many regions at different tiers at once
 // shouldn't look like it's using several unrelated colors, just one color settling in gradually.
-const LIGHT_SHADES = ['#e9b3aa', '#e6aca2', '#e3a59a', '#e09e92', '#dc978a', '#d99082'];
-const DARK_SHADES = ['#4d3330', '#513532', '#553734', '#593a36', '#5e3c38', '#623f3a'];
+const LIGHT_SHADES = ['#e6ac9f', '#e2a496', '#df9d8d', '#db9584', '#d68d7b', '#d18572'];
+const DARK_SHADES = ['#5c3934', '#603b35', '#653e37', '#6a4139', '#70443b', '#76483d'];
 
 // Regions with no active alert right now still get drawn with a faint, distinctly non-red wash -
 // enough to notice when the "Статус тривог" layer checkbox is toggled (otherwise, with nothing
@@ -24,7 +24,7 @@ const DARK_SHADES = ['#4d3330', '#513532', '#553734', '#593a36', '#5e3c38', '#62
 // oblast/raion stays clickable everywhere too, not only where something is currently lit up.
 const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 const SHADES = isDark ? DARK_SHADES : LIGHT_SHADES;
-const ALERTED_FILL_OPACITY = isDark ? 0.35 : 0.22;
+const ALERTED_FILL_OPACITY = isDark ? 0.5 : 0.32;
 const NEUTRAL_COLOR = isDark ? '#3a4650' : '#7a8a94';
 const NEUTRAL_FILL_OPACITY = isDark ? 0.06 : 0.05;
 
@@ -53,6 +53,10 @@ const RegionStatusLayer = L.LayerGroup.extend({
         map.off('zoomend', this._render, this);
         if (this._unsubscribe) this._unsubscribe();
         if (this._reshadeTimer) clearInterval(this._reshadeTimer);
+        // Overriding onRemove replaces L.LayerGroup's own version entirely, not just adds to it -
+        // without this, its default "take every child shape off the map too" behavior never ran,
+        // so unchecking the layer stopped its background refresh but left everything still drawn.
+        L.LayerGroup.prototype.onRemove.call(this, map);
     },
 
     // `ownStartedAt` drives what's actually drawn. `popupStartedAt`/`inheritedFromName` drive the
