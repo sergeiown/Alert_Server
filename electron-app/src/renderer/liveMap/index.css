@@ -138,11 +138,13 @@ body {
         1px 1px 2px #d9d3c1;
 }
 
+/* The actual top-right corner (not dead-center) so it doesn't sit on top of the country while
+   looking at the map. The layer-toggle control normally lives in this same corner, so it's pushed
+   down below this box instead (see ".leaflet-top.leaflet-right" below). */
 #statusBar {
     position: absolute;
     top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
+    right: 10px;
     z-index: 1000;
     background: #ffffff;
     border-radius: 8px;
@@ -159,6 +161,8 @@ body {
     font-weight: 600;
     letter-spacing: 0.02em;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+    /* Equal-width digits, so the box doesn't subtly resize every second as the seconds tick. */
+    font-variant-numeric: tabular-nums;
 }
 
 #statusAlertCount {
@@ -166,6 +170,12 @@ body {
     font-weight: 500;
     color: #b3261e;
     margin-top: 2px;
+}
+
+/* Only the layer-toggle control lives in this corner, so pushing the whole corner down clears
+   space for #statusBar above it without touching the top-left controls (zoom/center/fullscreen). */
+.leaflet-top.leaflet-right {
+    margin-top: 68px;
 }
 
 .threat-legend {
