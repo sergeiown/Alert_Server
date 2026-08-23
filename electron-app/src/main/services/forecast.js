@@ -6,7 +6,7 @@ const { loadLocalConfig } = require('./localConfig');
 const { alertTypeName } = require('./alertTypes');
 const { t } = require('../../i18n/i18n');
 const forecastConfig = require('./forecastConfig');
-const { computeStats, estimateRegionLambda, estimateTypeLambda } = require('./forecastModel');
+const { computeStats } = require('./forecastModel');
 const historyStore = require('./forecastHistoryStore');
 const { getHistoryFetchTarget } = require('./locationFilter');
 
@@ -201,47 +201,37 @@ function getRegionForecastText(uid, language) {
     return buildForecastText(stats, language);
 }
 
+// The soonest type entry, by the same median-grounded projectedNextMs shown in the Forecast
+// window - so any other surface quoting "soonest ETA" for a region always agrees with it.
+function soonestTypeEntry(typeBreakdown) {
+    const candidates = typeBreakdown.filter((entry) => entry.projectedNextMs !== null);
+    if (!candidates.length) return null;
+    return candidates.reduce((soonest, entry) => (entry.projectedNextMs < soonest.projectedNextMs ? entry : soonest));
+}
+
 function getRegionSoonestEtaMs(uid) {
     const alerts = historyStore.getAllAlertsForRegion(uid);
     const stats = computeStats(alerts, Date.now(), forecastConfig);
     if (!stats) return null;
 
-    const etas = stats.typeBreakdown.map((entry) => entry.projectedNextMs).filter((ms) => ms !== null);
-    return etas.length ? Math.min(...etas) : null;
+    const soonest = soonestTypeEntry(stats.typeBreakdown);
+    return soonest ? soonest.projectedNextMs : null;
 }
 
-async function getRegionLambda(uid) {
+async function getRegionSoonestPrediction(uid) {
     const alerts = await getAccumulatedAlerts(uid);
     if (!alerts.length) return null;
-    const { lambda } = estimateRegionLambda(alerts, Date.now(), forecastConfig);
-    return lambda;
-}
 
-async function getRegionTypeLambdas(uid) {
-    const alerts = await getAccumulatedAlerts(uid);
-    if (!alerts.length) return [];
+    const stats = computeStats(alerts, Date.now(), forecastConfig);
+    if (!stats) return null;
 
-    const nowMs = Date.now();
-    const { baseLambda, usableAlerts } = estimateRegionLambda(alerts, nowMs, forecastConfig);
-    if (!usableAlerts.length) return [];
-
-    const byType = new Map();
-    usableAlerts.forEach((alert) => {
-        if (!byType.has(alert.alert_type)) byType.set(alert.alert_type, []);
-        byType.get(alert.alert_type).push(alert);
-    });
-
-    return Array.from(byType.entries()).map(([type, typeAlerts]) => ({
-        type,
-        lambda: estimateTypeLambda(typeAlerts, usableAlerts.length, baseLambda, nowMs, forecastConfig),
-    }));
+    return soonestTypeEntry(stats.typeBreakdown);
 }
 
 module.exports = {
     getRegionForecastText,
     getRegionSoonestEtaMs,
-    getRegionLambda,
-    getRegionTypeLambdas,
+    getRegionSoonestPrediction,
     fetchHistoryAlerts,
     formatDuration,
 };
