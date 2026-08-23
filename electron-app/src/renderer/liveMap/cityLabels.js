@@ -1,6 +1,7 @@
 import { CITY_BORDERS } from './cityBorders.js';
 import { getOblastStartedAt } from './alertedRegionsStore.js';
 import { alertPopupHtml } from './alertPopup.js';
+import { oblastDisplayName } from './regionNameUtils.js';
 
 // Major Ukrainian cities - standard city-center coordinates (not derived from any polygon
 // dataset, unlike the oblast/raion labels - cities are simple point locations, not shapes to
@@ -64,7 +65,7 @@ function buildCityGroup(strings, language) {
         // Kyiv is tracked as its own entity ("м. Київ"), not inherited from anything broader -
         // every other city here only ever shows its containing oblast's status (see the CITIES
         // comment above), so the popup says so explicitly for those.
-        const inheritedFromName = city.oblast === 'м. Київ' ? null : city.oblast;
+        const inheritedFromName = city.oblast === 'м. Київ' ? null : oblastDisplayName(city.oblast);
         const popupContent = () =>
             alertPopupHtml(displayName, getOblastStartedAt(city.oblast), strings, language, inheritedFromName);
 

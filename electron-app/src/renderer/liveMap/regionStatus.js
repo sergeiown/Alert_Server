@@ -5,6 +5,7 @@ import { subscribe as subscribeAlertedRegions, getOblastStartedAt, getRaionStart
 import { alertPopupHtml } from './alertPopup.js';
 import { RAION_OBLAST } from './raionOblastMap.js';
 import { RAION_MIN_ZOOM } from './zoomTiers.js';
+import { oblastDisplayName, raionDisplayName } from './regionNameUtils.js';
 
 const RESHADE_MS = 60000; // recompute shades between fetches too, since they depend on elapsed time
 const TIER_MS = 30 * 60 * 1000;
@@ -91,7 +92,7 @@ const RegionStatusLayer = L.LayerGroup.extend({
 
         Object.entries(OBLAST_BORDERS).forEach(([name, rings]) => {
             const startedAt = getOblastStartedAt(name);
-            this._drawRegion(rings, name, startedAt, now, startedAt);
+            this._drawRegion(rings, oblastDisplayName(name), startedAt, now, startedAt);
         });
         // Kyiv city ("м. Київ") has no oblast-tier polygon of its own - it's folded into Kyiv
         // oblast's shape in that source dataset - so its real city outline stands in for it here.
@@ -109,7 +110,7 @@ const RegionStatusLayer = L.LayerGroup.extend({
                 if (ownStartedAt) {
                     // Its own alert, no oblast-wide one behind it - the only raion-level case
                     // that must show while zoomed out.
-                    if (!oblastStartedAt) this._drawRegion([ring], name, ownStartedAt, now, ownStartedAt);
+                    if (!oblastStartedAt) this._drawRegion([ring], raionDisplayName(name), ownStartedAt, now, ownStartedAt);
                 }
                 return;
             }
@@ -117,11 +118,11 @@ const RegionStatusLayer = L.LayerGroup.extend({
             const inheritedStartedAt = !ownStartedAt ? oblastStartedAt : null;
             this._drawRegion(
                 [ring],
-                name,
+                raionDisplayName(name),
                 ownStartedAt || inheritedStartedAt,
                 now,
                 ownStartedAt || inheritedStartedAt,
-                inheritedStartedAt ? oblastKey : null
+                inheritedStartedAt ? oblastDisplayName(oblastKey) : null
             );
         });
     },
