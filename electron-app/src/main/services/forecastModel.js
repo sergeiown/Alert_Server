@@ -115,16 +115,28 @@ function estimateTypeLambda(typeAlerts, totalCount, regionLambda, nowMs, config)
     return Math.max(recentLambda, baselineLambda) * seasonality * hourOfDay;
 }
 
-// Historical spread of the gaps between consecutive alerts, as a low/high range instead of a
-// single averaged number - gives an honest sense of how much the real interval varies, since the
-// point ETA elsewhere is just one statistic and can otherwise read as more precise than it is.
-// Deliberately narrower than a full interquartile range (config.GAP_RANGE_LOW/HIGH_PERCENTILE
-// default to 0.35/0.65, not 0.25/0.75) - this is meant to read as "typically", a central band
-// around the median, not "half of everything that's ever happened, outliers included". Even that
-// narrowed band gets dropped entirely (returns null) once it's wide enough that showing it
-// wouldn't actually help - real alert timing is irregular enough that a technically-correct range
-// can still span most of a day, which reads as more precise than it is without being useful.
-function gapRangeMs(alerts, config) {
+// Historical gap statistics between consecutive alerts of one type - both the median (used as the
+// point ETA instead of the model's own 1/lambda, see below) and a narrow "typically" band around
+// it, computed from the same sorted gap list so the two can never contradict each other.
+//
+// 1/lambda is the MEAN of an exponential distribution, which real alert timing is not - it's
+// heavy-tailed (mostly-quick repeats with occasional long lulls), and a heavy tail pulls the mean
+// well above the median. That's exactly how a reading like "87%, in ~11h43m (typically 2h58m -
+// 8h1m)" happens: the 87%/11h43m pair is internally consistent (both come from the same lambda),
+// but the ETA sits entirely outside the very range meant to describe what's typical, which reads
+// as nonsense even though neither number is individually wrong. Grounding the ETA in the same
+// empirical median as the range fixes that, and is arguably the more honest "expected wait"
+// anyway. probabilityToday is left as its own lambda-based reading - "how likely is at least one
+// today" is a genuinely different question a single typical-gap number can't answer.
+//
+// The band itself is deliberately narrower than a full interquartile range
+// (config.GAP_RANGE_LOW/HIGH_PERCENTILE default to 0.35/0.65, not 0.25/0.75) - this is meant to
+// read as "typically", a central band around the median, not "half of everything that's ever
+// happened, outliers included". Even that narrowed band is dropped (range: null) once it's wide
+// enough that showing it wouldn't actually help - real alert timing is irregular enough that a
+// technically-correct range can still span most of a day, which reads as more precise than it is
+// without being useful. The median ETA itself is kept even when the band is dropped.
+function gapStats(alerts, config) {
     if (alerts.length < config.MIN_GAP_SAMPLES_FOR_RANGE + 1) return null;
 
     const sortedAsc = [...alerts].sort((a, b) => new Date(a.started_at) - new Date(b.started_at));
@@ -136,11 +148,12 @@ function gapRangeMs(alerts, config) {
 
     gaps.sort((a, b) => a - b);
     const pick = (p) => gaps[Math.min(gaps.length - 1, Math.floor(p * gaps.length))];
+    const median = pick(0.5);
     const low = pick(config.GAP_RANGE_LOW_PERCENTILE);
     const high = pick(config.GAP_RANGE_HIGH_PERCENTILE);
-    if (low <= 0 || high / low > config.GAP_RANGE_MAX_RATIO) return null;
+    const range = low > 0 && high / low <= config.GAP_RANGE_MAX_RATIO ? { low, high } : null;
 
-    return { low, high };
+    return { median, range };
 }
 
 function computeStats(alerts, nowMs, config) {
@@ -212,8 +225,12 @@ function computeStats(alerts, nowMs, config) {
 
             const percent = Math.round((typeCount / count) * 100);
             const probabilityToday = Math.round((1 - Math.exp(-lambdaType)) * 100);
-            const projectedNextMs = lambdaType > MIN_MEANINGFUL_LAMBDA ? (1 / lambdaType) * DAY_MS : null;
-            const gapRange = gapRangeMs(typeAlertsFull, config);
+            // Grounded in the same empirical median as gapRange below whenever there's enough gap
+            // history for that (see the comment on gapStats) - falls back to the model's own
+            // 1/lambda mean only while there isn't.
+            const gaps = gapStats(typeAlertsFull, config);
+            const projectedNextMs = gaps ? gaps.median : lambdaType > MIN_MEANINGFUL_LAMBDA ? (1 / lambdaType) * DAY_MS : null;
+            const gapRange = gaps ? gaps.range : null;
 
             return { type, count: typeCount, percent, projectedNextMs, probabilityToday, gapRange };
         })
