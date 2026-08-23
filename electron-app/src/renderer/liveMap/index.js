@@ -142,7 +142,7 @@ async function main() {
 
     const regionStatusLayer = addRegionStatusLayer(map, strings, settings.language);
     const occupiedTerritoryLayer = addOccupiedTerritoryLayer(map);
-    const threatsLayer = startNeptunLayer(map, strings);
+    const threatsLayer = startNeptunLayer(map, strings, settings.language);
     const riverLayer = addRiversLayer(map);
     const labelsLayer = addLabelsLayer(map, strings, settings.language);
 

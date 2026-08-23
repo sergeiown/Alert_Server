@@ -40,6 +40,11 @@ const REGIONS = [
     { lat: 45.309, lng: 34.35, uk: 'Крим', en: 'Crimea', size: 'tiny' },
 ];
 
+// Lets other modules (popups, tooltips) show the same curated English name this label layer
+// uses, keyed by the short Ukrainian name every other dataset on this map (borders, alert status)
+// already uses as its own key - so there's one place these pairs are maintained, not several.
+const OBLAST_EN_BY_UK = new Map(REGIONS.map((region) => [region.uk, region.en]));
+
 function buildOblastGroup(language) {
     const layer = L.layerGroup();
     const isEnglish = language === 'English';
@@ -63,4 +68,4 @@ function buildOblastGroup(language) {
     return layer;
 }
 
-export { buildOblastGroup };
+export { buildOblastGroup, OBLAST_EN_BY_UK };
