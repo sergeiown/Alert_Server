@@ -8,6 +8,9 @@ const THREATS_URL = 'https://neptun.in.ua/api/v1/threats';
 const STREAM_URL = 'wss://neptun.in.ua/api/v1/stream';
 const RECONNECT_DELAY_MS = 5000;
 const HEARTBEAT_TIMEOUT_MS = 30000;
+// The WebSocket stream is the primary live feed; this is just a safety-net re-fetch in case a
+// stream update is ever missed, so the map can't drift stale for long without hammering the API.
+const SNAPSHOT_REFRESH_MS = 60000;
 
 const MISSILE_TYPE_ALIASES = ['missile', 'rocket', 'cruise_missile', 'ballistic'];
 const RECON_TITLE_PATTERN = /розвід/i;
@@ -225,6 +228,7 @@ function startNeptunLayer(map, strings, language) {
 
     fetchSnapshot();
     connect();
+    setInterval(fetchSnapshot, SNAPSHOT_REFRESH_MS);
 
     return layer;
 }

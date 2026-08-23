@@ -7,6 +7,10 @@ const { getUserDataFile } = require('./appPaths');
 const STORE_FILE = 'forecast_history.json';
 const DEBOUNCE_MS = 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
+// Retention target: about 2 years of history. The forecast model itself only looks at the last
+// ~90 days (baseline) plus a bit for rare alert types, so this is purely a local-storage cap, not
+// a modeling constraint - it just stops the file from growing forever over a years-long install.
+const MAX_HISTORY_AGE_MS = 730 * DAY_MS;
 
 let store = null;
 let writeTimer = null;
@@ -25,6 +29,29 @@ function backfillFirstSeen() {
     return changed;
 }
 
+// Drops alerts older than MAX_HISTORY_AGE_MS from one region. Alerts with an unparseable
+// started_at are left alone rather than guessed at.
+function pruneRegion(region, now) {
+    let changed = false;
+    Object.keys(region).forEach((id) => {
+        const startedAtMs = new Date(region[id].started_at).getTime();
+        if (!Number.isNaN(startedAtMs) && now - startedAtMs > MAX_HISTORY_AGE_MS) {
+            delete region[id];
+            changed = true;
+        }
+    });
+    return changed;
+}
+
+function pruneAll() {
+    const now = Date.now();
+    let changed = false;
+    Object.values(store).forEach((region) => {
+        if (pruneRegion(region, now)) changed = true;
+    });
+    return changed;
+}
+
 function load() {
     const filePath = getUserDataFile(STORE_FILE);
     if (!fs.existsSync(filePath)) {
@@ -38,9 +65,11 @@ function load() {
         store = {};
     }
 
-    // Written synchronously (not debounced) so this migration survives even if the app quits
+    // Written synchronously (not debounced) so these migrations survive even if the app quits
     // moments after startup, instead of silently re-running on every restart.
-    if (backfillFirstSeen()) writeNow();
+    const backfilled = backfillFirstSeen();
+    const pruned = pruneAll();
+    if (backfilled || pruned) writeNow();
 
     return store;
 }
@@ -81,6 +110,7 @@ function mergeAlerts(uid, alerts) {
         }
     });
 
+    if (pruneRegion(region, now)) changed = true;
     if (changed) scheduleWrite();
 }
 
