@@ -69,7 +69,7 @@
     "alertSoundModeVoice": "Голос",
     "alertSoundCountLabel": "Кількість повторень звуку",
     "massAttackThresholdLabel": "Порогова кількість тривог по Україні для індикації масової атаки:",
-    "updateCheckIntervalLabel": "Періодичність перевірки оновлень (годин):",
+    "updateCheckIntervalLabel": "Періодичність перевірки оновлень застосунку (годин):",
     "trayMassAttackTooltip": "Масова атака по Україні",
     "languageLabel": "Мова:",
     "themeLabel": "Тема:",
