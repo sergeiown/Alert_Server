@@ -51,7 +51,7 @@
     "logClearButton": "Очистити лог",
     "logOpenInNotepadButton": "Відкрити у Блокноті",
     "menuExit": "Вихід",
-    "aboutBody": "Отримує дані про тривоги з alerts.in.ua і показує Windows-сповіщення для обраних вами регіонів.",
+    "aboutBody": "Стежить за тривогами в обраних регіонах (alerts.in.ua): сповіщення, live-мапа загроз і лінії фронту, прогноз та статистика тривог.",
     "aboutLicense": "Ліцензія: MIT",
     "aboutCopyright": "© 2024-2026 Serhii I. Myshko",
     "updateProgressTitle": "Завантаження оновлення",

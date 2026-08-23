@@ -51,7 +51,7 @@
     "logClearButton": "Clear log",
     "logOpenInNotepadButton": "Open in Notepad",
     "menuExit": "Exit",
-    "aboutBody": "Receives alert data from alerts.in.ua and displays Windows notifications for the regions you monitor.",
+    "aboutBody": "Tracks alerts in your chosen regions (alerts.in.ua): notifications, a live threat/front-line map, forecasts, and alert statistics.",
     "aboutLicense": "License: MIT",
     "aboutCopyright": "© 2024-2026 Serhii I. Myshko",
     "updateProgressTitle": "Downloading update",
