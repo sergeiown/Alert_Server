@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const { Tray, Menu, app, Notification, nativeImage, nativeTheme, screen } = require('electron');
 const { getResourcePath } = require('./appPaths');
 const { applyMassAttackBadge } = require('./trayBadge');
@@ -25,8 +28,6 @@ let lastActiveCount = 0;
 let animationTimer = null;
 let alertLoopActive = false;
 let tooltipOverride = null;
-// Nationwide (not just monitored-region) mass-attack state - independent of everything else the
-// icon/tooltip otherwise reflects, see updateTrayState.
 let massAttackActive = false;
 const menuIcons = new Map();
 const iconCache = new Map();
@@ -186,11 +187,9 @@ function clearTemporaryTooltip() {
     tooltipOverride = null;
 }
 
-// activeCount is alerts in the user's own monitored regions (drives the existing shake/pulse
-// animation, unchanged); totalCount is every active alert nationwide, compared against
-// massAttackThreshold for the badge - the two are deliberately independent (see Phase 6 of the
-// update plan): a quiet monitored region can still be badged during a nationwide mass attack, and
-// vice versa.
+// activeCount (monitored-region alerts) and totalCount (nationwide alerts, compared against
+// massAttackThreshold for the badge) are deliberately independent: a quiet monitored region can
+// still be badged during a nationwide mass attack, and vice versa.
 function updateTrayState(activeCount, totalCount) {
     if (!trayInstance) return;
 

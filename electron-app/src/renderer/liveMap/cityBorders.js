@@ -1,11 +1,6 @@
-// Real boundaries for the cities that have their own "міська громада" (or, for the two
-// exact-name entries, no suffix at all) in the CC BY 4.0 licensed slawomirmatuszak/ukrainian_geodata
-// "hromady.geojson" dataset - largest polygon ring, Douglas-Peucker simplified. A modern
-// "hromada" boundary is usually a bit larger than the built-up city itself (it includes annexed
-// surrounding villages from the 2020 reform), so these read as "the city's official area", not
-// a tight urban outline. Two cities in CITIES (Simferopol, Makiivka) have no entry here - both
-// have been occupied since before the 2020 reform ever reached them, so no hromada boundary
-// exists for either in this dataset; they keep the plain dot marker instead.
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const CITY_BORDERS = {
     "Київ": [
         [50.5833,30.7539], [50.5839,30.7665], [50.5756,30.7711], [50.5784,30.7854], [50.5705,30.7964], [50.5648,30.817], [50.5583,30.814], [50.5578,30.8176],

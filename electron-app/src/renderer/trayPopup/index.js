@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const headerText = document.getElementById('header-text');
 const appIcon = document.getElementById('app-icon');
 const list = document.getElementById('list');

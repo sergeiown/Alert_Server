@@ -1,21 +1,15 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 import { CITY_BORDERS } from './cityBorders.js';
 import { getOblastStartedAt } from './alertedRegionsStore.js';
 import { alertPopupHtml } from './alertPopup.js';
 import { oblastDisplayName } from './regionNameUtils.js';
 
-// Major Ukrainian cities - standard city-center coordinates (not derived from any polygon
-// dataset, unlike the oblast/raion labels - cities are simple point locations, not shapes to
-// center on). Covers all 24 oblast capitals plus Kyiv, Sevastopol, Simferopol, and a handful of
-// other large cities that aren't a capital (Kryvyi Rih, Mariupol, Makiivka, Kramatorsk, Kamianske,
-// Melitopol, Bila Tserkva, Sievierodonetsk). The label point still anchors the text even for
-// cities that also get a real outline (below) - the outline's own shape is too irregular to
-// reliably center text inside.
-//
-// `oblast` is the key into the SAME alert-status data the oblast-coloring layer uses (matching
-// OBLAST_BORDERS/regionLabels.js's short names) - alerts.in.ua doesn't track most of these cities
-// as their own entity, so clicking one shows its containing oblast's status, not the city's own
-// (Kyiv and Sevastopol are the exceptions - both are tracked as their own entity, "м. Київ" and
-// the combined Crimea entry respectively, so those two get an exact, not inherited, status).
+// `oblast` is the key into the same alert-status data the oblast-coloring layer uses. alerts.in.ua
+// does not track most of these cities as their own entity, so clicking one shows its containing
+// oblast's status, not the city's own - Kyiv ("м. Київ") and Sevastopol (via the combined Crimea
+// entry) are the only exceptions tracked as their own entity.
 const CITIES = [
     { lat: 50.4501, lng: 30.5234, uk: 'Київ', en: 'Kyiv', oblast: 'м. Київ' },
     { lat: 49.9935, lng: 36.2304, uk: 'Харків', en: 'Kharkiv', oblast: 'Харківська' },
@@ -62,15 +56,10 @@ function buildCityGroup(strings, language) {
     CITIES.forEach((city) => {
         const border = CITY_BORDERS[city.uk];
         const displayName = isEnglish ? city.en : city.uk;
-        // Kyiv is tracked as its own entity ("м. Київ"), not inherited from anything broader -
-        // every other city here only ever shows its containing oblast's status (see the CITIES
-        // comment above), so the popup says so explicitly for those.
         const inheritedFromName = city.oblast === 'м. Київ' ? null : oblastDisplayName(city.oblast, isEnglish);
         const popupContent = () =>
             alertPopupHtml(displayName, getOblastStartedAt(city.oblast), strings, language, inheritedFromName);
 
-        // Cities with a real boundary get that outline instead of a plain dot - the dot is only
-        // a fallback for the couple of cities with no hromada boundary in the source dataset.
         if (border) {
             L.polygon(border, {
                 className: 'city-border',
@@ -84,15 +73,8 @@ function buildCityGroup(strings, language) {
                 .addTo(layer);
         }
 
-        // A city with a real outline gets its popup from that polygon above - the label marker
-        // itself stays non-interactive so it doesn't steal the click. The couple of cities with
-        // no outline (dot fallback) get the popup here instead, since there's nothing else to
-        // click.
         const marker = L.marker([city.lat, city.lng], {
             interactive: !border,
-            // Same zero-size-anchor + absolutely-positioned-children technique as the oblast/raion
-            // labels - Leaflet's own inline "transform" on the outer element would otherwise
-            // clobber any centering transform placed directly on it.
             icon: L.divIcon({
                 className: 'map-label-anchor',
                 html: border

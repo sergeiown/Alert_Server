@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 function nodeName(node, type, language) {
     const useLatin = language === 'English';
     if (type === 'state') return useLatin ? node.stateNameLat : node.stateName;

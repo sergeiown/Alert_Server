@@ -1,11 +1,6 @@
-// One-off fetch script (not run by the app itself) for Phase 9's weapon-type "Trends" data -
-// downloads piterfm's "Massive Missile Attacks on Ukraine" Kaggle dataset, which needs a Kaggle
-// account's API credentials (no anonymous/GitHub-mirrored access exists for this one, unlike the
-// Vadimkin dataset used for the forecast baseline calibration). Credentials go in the same
-// git-ignored resources/config.local.json the alert-proxy client key already lives in - see
-// localConfig.js - as "kaggleUsername"/"kaggleKey" (the two fields of a standard kaggle.json).
-//
-// Usage: node scripts/fetch-kaggle-missile-data.js [outputDir]
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');

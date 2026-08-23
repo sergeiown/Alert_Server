@@ -1,19 +1,12 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 import { buildOblastGroup } from './regionLabels.js';
 import { buildRaionGroup } from './raionLabels.js';
 import { buildRaionBordersGroup } from './raionBorders.js';
 import { buildCityGroup, CITIES } from './cityLabels.js';
 import { OBLAST_MIN_ZOOM, RAION_MIN_ZOOM } from './zoomTiers.js';
 
-// The default/base view (the whole country fit to a typical window, around zoom 6) must always
-// show oblast names, so this floors at the map's own minZoom - there's no lower tier to drop to.
-// At RAION_MIN_ZOOM and above there's enough screen space per oblast that oblast names would just
-// repeat the obvious, so raion (district) names - with their own light border lines, since at that
-// scale the oblast borders alone don't say where one raion ends and the next begins - take over,
-// alongside markers for major cities as orientation landmarks.
-
-// A single Leaflet layer (so the layer-control checkbox has one master toggle) that swaps its
-// visible content - nothing, oblast labels, or raion labels - as the user zooms, instead of
-// showing every label at every scale.
 const LabelsLayer = L.LayerGroup.extend({
     initialize: function (strings, language) {
         L.LayerGroup.prototype.initialize.call(this);

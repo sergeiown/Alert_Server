@@ -1,12 +1,6 @@
-// Offline, one-off calibration tool for BASELINE_HALF_LIFE_DAYS / BASELINE_WINDOW_DAYS in
-// forecastConfig.js - not run as part of the app itself. Backtests the real estimateRegionLambda
-// against several years of real oblast-level siren history (Vadimkin/ukrainian-air-raid-sirens-
-// dataset), the same way scripts/backtest-forecast.js already validates the model against the
-// live API's much shorter (~30-90 day) history window. Only the baseline-vs-outcome fit is being
-// searched here - WINDOW_DAYS/HALF_LIFE_DAYS (the "recent" term) are left untouched, since those
-// were already tuned and validated separately.
-//
-// Usage: node scripts/calibrate-baseline.js path/to/official_data_en.csv
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const fs = require('fs');
 const forecastConfig = require('../src/main/services/forecastConfig');
 const { estimateRegionLambda } = require('../src/main/services/forecastModel');
@@ -15,9 +9,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const TEST_SAMPLE_STRIDE_DAYS = 5;
 const MIN_TRAIN_DAYS = 120;
 
-// Vadimkin's own oblast naming (Latin, "X oblast"/"Kyiv City") to this app's locations.json state
-// uid - built by hand against the 25 real names actually present in the dataset (Crimea has none,
-// unsurprising since Ukrainian civil defense sirens haven't operated there since 2014).
 const OBLAST_NAME_TO_UID = {
     'Vinnytska oblast': 4,
     'Volynska oblast': 8,
@@ -46,24 +37,11 @@ const OBLAST_NAME_TO_UID = {
     'Chernihivska oblast': 25,
 };
 
-// Candidate half-lives to try as BASELINE_HALF_LIFE_DAYS, plus the current production value (21)
-// for a direct before/after comparison. For each, the paired window is set comfortably past the
-// point where exposureDays() has already converged (see the comment on that function) so the
-// comparison isolates the half-life's own effect instead of an accidental window truncation.
 const HALF_LIFE_CANDIDATES_DAYS = [1, 2, 3, 4, 5, 6, 7, 10, 14, 21, 30, 45, 60, 90, 120, 180];
 function windowForHalfLife(halfLifeDays) {
     return Math.max(180, Math.round(halfLifeDays * 5));
 }
 
-// baseLambda = max(recentLambda, baselineLambda) - the baseline term only ever actually determines
-// that day's prediction when recentLambda has decayed low (a region that's been quiet lately);
-// whenever recentLambda is already high, max() picks it regardless of what baseline says, so that
-// trial carries no information about whether BASELINE_HALF_LIFE_DAYS/WINDOW_DAYS are well chosen.
-// Scoring every candidate's overall Brier score across ALL trials would mostly measure how well
-// the (unrelated, already-tuned) recent term fits chronically active front-line oblasts, drowning
-// out the one regime baseline exists for - so trials are also scored on this "quiet" subset alone,
-// using a recentLambda computed once with the fixed recent params (independent of which baseline
-// candidate is being evaluated), for a fair apples-to-apples comparison.
 const QUIET_RECENT_LAMBDA_THRESHOLD = 0.1;
 
 function loadAlertsByUid(csvPath) {
@@ -71,9 +49,6 @@ function loadAlertsByUid(csvPath) {
     const lines = text.split('\n');
     const byUid = new Map();
 
-    // header: oblast,raion,hromada,level,started_at,finished_at,source - only oblast/started_at
-    // are used; raion/hromada-level rows are rolled up to their parent oblast, matching how
-    // production already treats a whole-oblast monitored region (see getHistoryFetchTarget).
     for (let i = 1; i < lines.length; i++) {
         const line = lines[i];
         if (!line) continue;
@@ -98,7 +73,6 @@ function loadAlertsByUid(csvPath) {
 }
 
 function occurredOnDay(sortedTimes, dayStart) {
-    // Binary search for the first time >= dayStart, then check it also falls before dayStart+1day.
     let lo = 0;
     let hi = sortedTimes.length;
     while (lo < hi) {
@@ -219,9 +193,6 @@ function main() {
         })),
     ];
 
-    // Overall Brier score is reported for context, but ranking is done on the "quiet" subset only
-    // (recentLambda already low) - see the comment on QUIET_RECENT_LAMBDA_THRESHOLD above for why
-    // that's the only regime where BASELINE_HALF_LIFE_DAYS/WINDOW_DAYS actually change the outcome.
     console.log('\n--- Brier score по кандидатах (менше - краще; "тихі" - лише коли baseline і вирішує) ---');
     const results = candidates.map((c) => {
         const r = runCandidate(byUid, c.halfLifeDays, c.windowDays);

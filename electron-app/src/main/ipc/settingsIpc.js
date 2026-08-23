@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const { ipcMain, app, nativeTheme } = require('electron');
 const settingsStore = require('../services/settingsStore');
 const { getDictionary } = require('../../i18n/i18n');

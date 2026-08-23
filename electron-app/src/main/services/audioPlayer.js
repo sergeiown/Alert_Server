@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const { exec } = require('child_process');
 const { getResourcePath } = require('./appPaths');
 const { logEvent } = require('./logger');

@@ -1,16 +1,6 @@
-// Label points are the real area centroid of each oblast's polygon (largest ring, for the couple
-// of oblasts split across a strait/river into a MultiPolygon), computed from the public domain
-// slawomirmatuszak/ukrainian_geodata "regiony.geojson" boundaries - not hand-picked, so the label
-// actually sits inside its own oblast instead of near its capital or an arbitrary point. Kyiv city
-// has no separate polygon in that dataset (it's folded into Kyiv oblast's shape there), so it keeps
-// a curated point matching its real location. Crimea and Sevastopol are two separate polygons in
-// the source data but share one "Крим" label here (a deliberate simplification also used
-// elsewhere), so that point is Crimea's own centroid, not a blend of the two.
-// display names per language - locations.json's own names include the "область"/"region" suffix
-// and, for Crimea, a garbled source string, so these are curated separately for tidy map labels.
-// `size` shrinks the font for oblasts (and Kyiv city, and Crimea at this map's scale) whose real
-// shape is too small/narrow for the default size to stay inside it - there's no text-measurement
-// against the polygon here, so this is a curated approximation, not a computed fit.
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const REGIONS = [
     { lat: 48.92, lng: 28.685, uk: 'Вінницька', en: 'Vinnytsia' },
     { lat: 51.191, lng: 24.87, uk: 'Волинська', en: 'Volyn', size: 'small' },
@@ -40,16 +30,10 @@ const REGIONS = [
     { lat: 45.309, lng: 34.35, uk: 'Крим', en: 'Crimea', size: 'tiny' },
 ];
 
-// Lets other modules (popups, tooltips) show the same curated English name this label layer
-// uses, keyed by the short Ukrainian name every other dataset on this map (borders, alert status)
-// already uses as its own key - so there's one place these pairs are maintained, not several.
 const OBLAST_EN_BY_UK = new Map(REGIONS.map((region) => [region.uk, region.en]));
 
-// "Region" is appended for every real oblast, same as the click-popups (oblastDisplayName in
-// regionNameUtils.js) - kept as its own small copy here rather than importing that function, since
-// regionNameUtils.js itself imports OBLAST_EN_BY_UK from this file and importing back would create
-// a cycle. Crimea and the Kyiv-city entry (this array's one non-oblast member, standing in for the
-// city at this zoom tier - see the file comment above) are excluded, exactly as that function does.
+// Kept as its own copy rather than importing oblastDisplayName from regionNameUtils.js, since that
+// module imports OBLAST_EN_BY_UK from this file - importing back would create a cycle.
 function regionLabelText(region, isEnglish) {
     if (!isEnglish) return region.uk;
     if (region.uk === 'Крим' || region.uk === 'Київ') return region.en;
@@ -62,9 +46,8 @@ function buildOblastGroup(language) {
 
     REGIONS.forEach((region) => {
         const sizeClass = region.size ? ` region-label-${region.size}` : '';
-        // Leaflet positions this outer element with its own inline "transform", which would
-        // silently clobber a centering transform on the same element - so the actual text lives
-        // in an inner span instead, and that span is the one centered over the point.
+        // Leaflet sets its own inline "transform" on this element, which would clobber a
+        // centering transform applied here too - so the text lives in an inner span instead.
         L.marker([region.lat, region.lng], {
             icon: L.divIcon({
                 className: 'map-label-anchor',

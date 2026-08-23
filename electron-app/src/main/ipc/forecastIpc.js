@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const { ipcMain, dialog, BrowserWindow } = require('electron');
 const regionsStore = require('../services/regionsStore');
 const settingsStore = require('../services/settingsStore');

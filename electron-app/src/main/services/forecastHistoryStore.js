@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const fs = require('fs');
 const { getUserDataFile } = require('./appPaths');
 
@@ -35,10 +38,7 @@ function load() {
         store = {};
     }
 
-    // One-time migration for stores written before _localFirstSeenAt existed - stamps everything
-    // still missing it "now" in a single pass rather than waiting for each region's next re-poll,
-    // so the reported span is immediately consistent instead of trailing whichever region hasn't
-    // refreshed yet. Written synchronously (not debounced) so it survives even if the app quits
+    // Written synchronously (not debounced) so this migration survives even if the app quits
     // moments after startup, instead of silently re-running on every restart.
     if (backfillFirstSeen()) writeNow();
 
@@ -110,10 +110,9 @@ function getStats() {
         });
     });
 
-    // spanDays reflects how long this install has actually been accumulating alerts locally
-    // (tracked via _localFirstSeenAt on first merge), not how old the oldest alert event itself
-    // is - the API can return alerts far older than 30 days for some regions, which would
-    // otherwise make a fresh install look like it had years of local history.
+    // Based on _localFirstSeenAt, not the oldest alert's started_at - the API can return alerts
+    // far older than 30 days, which would otherwise make a fresh install look like it had years
+    // of local history.
     const spanDays = oldestLocalMs !== null ? Math.ceil((Date.now() - oldestLocalMs) / DAY_MS) : 0;
 
     return {
