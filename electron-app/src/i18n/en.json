@@ -31,6 +31,7 @@
     "liveMapType_fpv": "FPV drone",
     "liveMapType_kab": "Guided bomb (KAB)",
     "liveMapType_missile": "Missile",
+    "liveMapType_mig31k": "Missile carrier",
     "liveMapType_unknown": "Other/unknown",
     "liveMapCenterButtonTitle": "Center",
     "liveMapLayerAlertStatus": "Alert status",
