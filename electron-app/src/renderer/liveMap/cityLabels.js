@@ -109,4 +109,4 @@ function buildCityGroup(strings, language) {
     return layer;
 }
 
-export { buildCityGroup };
+export { buildCityGroup, CITIES };
