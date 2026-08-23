@@ -1,6 +1,6 @@
 // Raion (district) outlines, keyed by the same "uk" name used in raionLabels.js's RAIONS array
 // (named, not positional, so the two files can never silently drift out of sync), simplified from
-// the same public domain slawomirmatuszak/ukrainian_geodata "rayony.geojson" dataset (largest
+// the same CC BY 4.0 licensed slawomirmatuszak/ukrainian_geodata "rayony.geojson" dataset (largest
 // polygon ring per raion, Douglas-Peucker simplified to ~1km tolerance - light enough to embed,
 // still recognizable at the zoom level these are shown). A few raions with disconnected exclaves
 // (river islands, etc.) only keep their main body here, not every fragment.
