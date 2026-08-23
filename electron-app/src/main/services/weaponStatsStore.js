@@ -24,8 +24,17 @@ async function refresh() {
             return;
         }
 
-        cached = await response.json();
-        logEvent(`Weapon-stats updated (through ${cached.dateRange?.to})`);
+        const data = await response.json();
+        // Before the Worker has this route deployed, /weapon-stats falls through to its default
+        // handler (the active-alerts endpoint) and still answers 200 with unrelated JSON - this
+        // guards against caching that as if it were real weapon stats.
+        if (!data || !data.dateRange || !data.totals || !Array.isArray(data.byCategory) || !Array.isArray(data.monthly)) {
+            logEvent('Weapon-stats response missing expected fields (Worker not deployed yet?)');
+            return;
+        }
+
+        cached = data;
+        logEvent(`Weapon-stats updated (through ${cached.dateRange.to})`);
     } catch (err) {
         logEvent(`Weapon-stats fetch error: ${err.message}`);
     }
