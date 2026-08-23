@@ -99,6 +99,7 @@
     "forecastCopied": "Copied",
     "forecastLocalStatsLabel": "Locally accumulated: {days} days of history, {regions} regions, {total} alerts",
     "forecastLocalStatsNote": "With the current model settings, only roughly the last two weeks meaningfully affect the forecast - older accumulated history mainly helps estimate rare alert types more precisely.",
+    "forecastBaselineCalibrationNote": "The baseline estimate (for long alert-free stretches) is calibrated against nationwide alert statistics spanning 2022-2026.",
     "forecastClearStatsButton": "Clear statistics",
     "forecastClearStatsTitle": "Clear locally accumulated statistics?",
     "forecastClearStatsWarning": "This will delete all locally accumulated alert history. The forecast will become less accurate until new history accumulates again.",
