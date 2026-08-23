@@ -45,6 +45,17 @@ const REGIONS = [
 // already uses as its own key - so there's one place these pairs are maintained, not several.
 const OBLAST_EN_BY_UK = new Map(REGIONS.map((region) => [region.uk, region.en]));
 
+// "Region" is appended for every real oblast, same as the click-popups (oblastDisplayName in
+// regionNameUtils.js) - kept as its own small copy here rather than importing that function, since
+// regionNameUtils.js itself imports OBLAST_EN_BY_UK from this file and importing back would create
+// a cycle. Crimea and the Kyiv-city entry (this array's one non-oblast member, standing in for the
+// city at this zoom tier - see the file comment above) are excluded, exactly as that function does.
+function regionLabelText(region, isEnglish) {
+    if (!isEnglish) return region.uk;
+    if (region.uk === 'Крим' || region.uk === 'Київ') return region.en;
+    return `${region.en.replace(/\s+Oblast$/i, '')} Region`;
+}
+
 function buildOblastGroup(language) {
     const layer = L.layerGroup();
     const isEnglish = language === 'English';
@@ -57,7 +68,7 @@ function buildOblastGroup(language) {
         L.marker([region.lat, region.lng], {
             icon: L.divIcon({
                 className: 'map-label-anchor',
-                html: `<span class="region-label${sizeClass}">${isEnglish ? region.en : region.uk}</span>`,
+                html: `<span class="region-label${sizeClass}">${regionLabelText(region, isEnglish)}</span>`,
                 iconSize: [0, 0],
                 iconAnchor: [0, 0],
             }),
