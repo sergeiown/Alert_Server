@@ -178,7 +178,7 @@ function buildRaionGroup(language, cities) {
                 // The bare adjective ("Кременчуцький") reads as ambiguous next to a city label at
                 // this same zoom tier - appending the noun makes it unambiguously a raion at a
                 // glance, matching the click-popup wording (see alertPopup.js/regionStatus.js).
-                html: `<span class="raion-label">${isEnglish ? `${raion.en} district` : `${raion.uk} район`}</span>`,
+                html: `<span class="raion-label">${isEnglish ? `${raion.en} District` : `${raion.uk} район`}</span>`,
                 iconSize: [0, 0],
                 iconAnchor: [0, 0],
             }),
