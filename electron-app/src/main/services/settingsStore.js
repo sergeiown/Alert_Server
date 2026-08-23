@@ -12,7 +12,7 @@ const defaultSettings = {
     alertSoundCount: 1,
     forecastNotifyEnabled: true,
     forecastNotifyLookaheadMinutes: 120,
-    massAttackThreshold: 20,
+    massAttackThreshold: 50,
 };
 
 let settings = null;
