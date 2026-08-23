@@ -22,9 +22,12 @@ const TYPE_ICONS = {
     },
     uav_recon: {
         color: '#5b8fb0',
+        // Straight, perpendicular wings (not swept) - real reconnaissance drones (Orlan/Zala-style)
+        // are slow, high-aspect-ratio gliders, not fast swept-wing aircraft, and the silhouette
+        // should read that way rather than looking like a jet.
         svg:
-            '<path d="M12 1 L13 11 L22 15 L22 16.5 L13 14 L13.5 20.5 L16.5 22.5 L16.5 23.5 L12 22.3 ' +
-            'L7.5 23.5 L7.5 22.5 L10.5 20.5 L11 14 L2 16.5 L2 15 L11 11 Z" />',
+            '<path d="M12 1 L13 12 L22 12 L22 13.5 L13 13.5 L13.5 20.5 L16.5 22.5 L16.5 23.5 L12 22.3 ' +
+            'L7.5 23.5 L7.5 22.5 L10.5 20.5 L11 13.5 L2 13.5 L2 12 L11 12 Z" />',
     },
     fpv: {
         color: '#ff6b35',
@@ -49,6 +52,14 @@ const TYPE_ICONS = {
     missile: {
         color: '#991b1b',
         svg: '<polygon points="12,1 15,9 15,20 9,20 9,9" /><polygon points="9,15.5 4,22 9,19.5" /><polygon points="15,15.5 20,22 15,19.5" />',
+    },
+    // The carrier aircraft (MiG-31K, launches Kinzhal missiles) rather than a missile itself -
+    // documented by Neptun's own API as its own "type" value, so it needs telling apart from
+    // "missile" - a swept delta wing near the tail (fighter jet) instead of a plain cylindrical
+    // body with small fins (the missile shape) is the visual difference.
+    mig31k: {
+        color: '#7c3aed',
+        svg: '<path d="M12 1 L13 14 L21 21 L21 22.5 L13 18 L13.5 22.5 L16 24 L12 23 L8 24 L10.5 22.5 L11 18 L3 22.5 L3 21 L11 14 Z" />',
     },
     unknown: {
         color: '#6b7280',
@@ -114,7 +125,7 @@ function tooltipContent(threat, strings) {
 }
 
 function buildLegend(strings) {
-    const rows = ['uav', 'uav_recon', 'fpv', 'kab', 'missile', 'unknown']
+    const rows = ['uav', 'uav_recon', 'fpv', 'kab', 'missile', 'mig31k', 'unknown']
         .map((typeKey) => `<div class="legend-row">${iconHtml(typeKey)}<span>${escapeHtml(strings[`liveMapType_${typeKey}`])}</span></div>`)
         .join('');
 
