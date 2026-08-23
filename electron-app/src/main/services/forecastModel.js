@@ -118,6 +118,12 @@ function estimateTypeLambda(typeAlerts, totalCount, regionLambda, nowMs, config)
 // Historical spread of the gaps between consecutive alerts, as a low/high range instead of a
 // single averaged number - gives an honest sense of how much the real interval varies, since the
 // point ETA elsewhere is just one statistic and can otherwise read as more precise than it is.
+// Deliberately narrower than a full interquartile range (config.GAP_RANGE_LOW/HIGH_PERCENTILE
+// default to 0.35/0.65, not 0.25/0.75) - this is meant to read as "typically", a central band
+// around the median, not "half of everything that's ever happened, outliers included". Even that
+// narrowed band gets dropped entirely (returns null) once it's wide enough that showing it
+// wouldn't actually help - real alert timing is irregular enough that a technically-correct range
+// can still span most of a day, which reads as more precise than it is without being useful.
 function gapRangeMs(alerts, config) {
     if (alerts.length < config.MIN_GAP_SAMPLES_FOR_RANGE + 1) return null;
 
@@ -130,7 +136,11 @@ function gapRangeMs(alerts, config) {
 
     gaps.sort((a, b) => a - b);
     const pick = (p) => gaps[Math.min(gaps.length - 1, Math.floor(p * gaps.length))];
-    return { low: pick(0.25), high: pick(0.75) };
+    const low = pick(config.GAP_RANGE_LOW_PERCENTILE);
+    const high = pick(config.GAP_RANGE_HIGH_PERCENTILE);
+    if (low <= 0 || high / low > config.GAP_RANGE_MAX_RATIO) return null;
+
+    return { low, high };
 }
 
 function computeStats(alerts, nowMs, config) {
