@@ -82,6 +82,7 @@ const RegionStatusLayer = L.LayerGroup.extend({
     _render: function () {
         this.clearLayers();
         const now = Date.now();
+        const isEnglish = this._language === 'English';
         // Zoomed out to oblast level: a raion lighting up on its own (no oblast-wide alert
         // behind it) still needs to show, or it would be invisible at this zoom - but a raion
         // inside an already-alerted oblast is skipped here, since the oblast's own fill already
@@ -92,13 +93,13 @@ const RegionStatusLayer = L.LayerGroup.extend({
 
         Object.entries(OBLAST_BORDERS).forEach(([name, rings]) => {
             const startedAt = getOblastStartedAt(name);
-            this._drawRegion(rings, oblastDisplayName(name), startedAt, now, startedAt);
+            this._drawRegion(rings, oblastDisplayName(name, isEnglish), startedAt, now, startedAt);
         });
         // Kyiv city ("м. Київ") has no oblast-tier polygon of its own - it's folded into Kyiv
         // oblast's shape in that source dataset - so its real city outline stands in for it here.
         if (CITY_BORDERS['Київ']) {
             const startedAt = getOblastStartedAt('м. Київ');
-            this._drawRegion([CITY_BORDERS['Київ']], 'Київ', startedAt, now, startedAt);
+            this._drawRegion([CITY_BORDERS['Київ']], isEnglish ? 'Kyiv' : 'Київ', startedAt, now, startedAt);
         }
 
         Object.entries(RAION_BORDERS).forEach(([name, ring]) => {
@@ -110,7 +111,9 @@ const RegionStatusLayer = L.LayerGroup.extend({
                 if (ownStartedAt) {
                     // Its own alert, no oblast-wide one behind it - the only raion-level case
                     // that must show while zoomed out.
-                    if (!oblastStartedAt) this._drawRegion([ring], raionDisplayName(name), ownStartedAt, now, ownStartedAt);
+                    if (!oblastStartedAt) {
+                        this._drawRegion([ring], raionDisplayName(name, isEnglish), ownStartedAt, now, ownStartedAt);
+                    }
                 }
                 return;
             }
@@ -118,11 +121,11 @@ const RegionStatusLayer = L.LayerGroup.extend({
             const inheritedStartedAt = !ownStartedAt ? oblastStartedAt : null;
             this._drawRegion(
                 [ring],
-                raionDisplayName(name),
+                raionDisplayName(name, isEnglish),
                 ownStartedAt || inheritedStartedAt,
                 now,
                 ownStartedAt || inheritedStartedAt,
-                inheritedStartedAt ? oblastDisplayName(oblastKey) : null
+                inheritedStartedAt ? oblastDisplayName(oblastKey, isEnglish) : null
             );
         });
     },

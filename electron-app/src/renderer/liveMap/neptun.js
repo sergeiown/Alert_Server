@@ -1,3 +1,5 @@
+import { normalizeOblastName, oblastDisplayName } from './regionNameUtils.js';
+
 const THREATS_URL = 'https://neptun.in.ua/api/v1/threats';
 const STREAM_URL = 'wss://neptun.in.ua/api/v1/stream';
 const RECONNECT_DELAY_MS = 5000;
@@ -114,11 +116,27 @@ function confidenceLabel(threat, strings) {
     return strings[key] || threat.displayConfidence || threat.confidenceLevel || '';
 }
 
-function tooltipContent(threat, strings) {
-    const updatedTime = threat.updatedAt ? new Date(threat.updatedAt).toLocaleTimeString() : '';
+// threat.title/explanationShort/locality/region are Neptun's own free text, always in Ukrainian -
+// it doesn't offer an English variant of any of them. The title is replaced with this app's own
+// localized type name (already available via strings), and in English mode the explanation is
+// rebuilt as a short "locality, oblast" line instead, translating the oblast through the same
+// lookup the map's own oblast labels/popups use - but the locality (settlement) name itself has no
+// translation source anywhere in this app and stays exactly as Neptun sent it. That's a real,
+// disclosed limitation, not an oversight: there's no gazetteer here for arbitrary place names.
+function tooltipContent(threat, strings, isEnglish) {
+    const typeKey = resolveTypeKey(threat);
+    const locale = isEnglish ? 'en-US' : 'uk-UA';
+    const updatedTime = threat.updatedAt ? new Date(threat.updatedAt).toLocaleTimeString(locale) : '';
+    const title = strings[`liveMapType_${typeKey}`] || threat.title;
+
+    const oblastPart = threat.region ? oblastDisplayName(normalizeOblastName(threat.region), true) : '';
+    const locationLine = isEnglish
+        ? [threat.locality, oblastPart].filter(Boolean).join(', ')
+        : threat.explanationShort || [threat.locality, threat.region].filter(Boolean).join(', ');
+
     const lines = [
-        `<strong>${escapeHtml(threat.title)}</strong>`,
-        escapeHtml(threat.explanationShort || [threat.locality, threat.region].filter(Boolean).join(', ')),
+        `<strong>${escapeHtml(title)}</strong>`,
+        escapeHtml(locationLine),
         `<small>${escapeHtml(confidenceLabel(threat, strings))}${updatedTime ? ` · ${strings.liveMapUpdated}: ${updatedTime}` : ''}</small>`,
     ];
     return lines.filter(Boolean).join('<br>');
@@ -138,8 +156,9 @@ function buildLegend(strings) {
     return legend;
 }
 
-function startNeptunLayer(map, strings) {
+function startNeptunLayer(map, strings, language) {
     const layer = L.layerGroup().addTo(map);
+    const isEnglish = language === 'English';
     let reconnectTimer = null;
     let heartbeatTimer = null;
 
@@ -152,7 +171,7 @@ function startNeptunLayer(map, strings) {
         threats.forEach((threat) => {
             if (typeof threat.lat !== 'number' || typeof threat.lon !== 'number') return;
             L.marker([threat.lat, threat.lon], { icon: threatIcon(threat) })
-                .bindTooltip(tooltipContent(threat, strings))
+                .bindTooltip(tooltipContent(threat, strings, isEnglish))
                 .addTo(layer);
         });
     }

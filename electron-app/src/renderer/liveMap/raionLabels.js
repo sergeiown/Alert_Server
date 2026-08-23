@@ -160,6 +160,10 @@ function isNearACity(raion, cities) {
     });
 }
 
+// Same purpose as OBLAST_EN_BY_UK in regionLabels.js - lets popups show this same transliterated
+// English name instead of duplicating the list.
+const RAION_EN_BY_UK = new Map(RAIONS.map((raion) => [raion.uk, raion.en]));
+
 function buildRaionGroup(language, cities) {
     const layer = L.layerGroup();
     const isEnglish = language === 'English';
@@ -185,4 +189,4 @@ function buildRaionGroup(language, cities) {
     return layer;
 }
 
-export { buildRaionGroup };
+export { buildRaionGroup, RAION_EN_BY_UK };
