@@ -5,8 +5,7 @@ const { logEvent } = require('./logger');
 const regionsStore = require('./regionsStore');
 const settingsStore = require('./settingsStore');
 const forecastConfig = require('./forecastConfig');
-const { DAY_MS, MIN_MEANINGFUL_LAMBDA } = require('./forecastModel');
-const { getRegionLambda, getRegionTypeLambdas, formatDuration } = require('./forecast');
+const { getRegionSoonestPrediction, formatDuration } = require('./forecast');
 const { getLatestAlertData } = require('./alertPoller');
 const { getLocationLookup, getAlertCoverageUids } = require('./locationFilter');
 const { alertTypeName } = require('./alertTypes');
@@ -55,14 +54,14 @@ async function evaluateRegion(uid, language) {
         return null;
     }
 
-    const lambda = await getRegionLambda(uid);
-    if (!lambda || lambda <= MIN_MEANINGFUL_LAMBDA) {
+    const soonest = await getRegionSoonestPrediction(uid);
+    if (!soonest) {
         predictions.delete(uid);
         return null;
     }
 
     const now = Date.now();
-    const predictedAt = now + (1 / lambda) * DAY_MS;
+    const predictedAt = now + soonest.projectedNextMs;
     const previous = predictions.get(uid);
     const state = { predictedAt, lastNotifiedAt: previous ? previous.lastNotifiedAt : null };
     predictions.set(uid, state);
@@ -72,21 +71,12 @@ async function evaluateRegion(uid, language) {
 
     const lookaheadMinutes = settings.forecastNotifyLookaheadMinutes || forecastConfig.NOTIFY_LOOKAHEAD_MINUTES;
     const lookaheadMs = lookaheadMinutes * 60 * 1000;
+    if (soonest.projectedNextMs > lookaheadMs) return null;
 
-    const typeLambdas = await getRegionTypeLambdas(uid);
-    if (!typeLambdas.length) return null;
-
-    const [likeliest] = typeLambdas
-        .filter((entry) => entry.lambda > MIN_MEANINGFUL_LAMBDA)
-        .map((entry) => ({ ...entry, etaMs: (1 / entry.lambda) * DAY_MS }))
-        .sort((a, b) => a.etaMs - b.etaMs);
-
-    if (!likeliest || likeliest.etaMs > lookaheadMs) return null;
-
-    const cooldownMs = likeliest.etaMs / 2;
+    const cooldownMs = soonest.projectedNextMs / 2;
     if (state.lastNotifiedAt && now - state.lastNotifiedAt < cooldownMs) return null;
 
-    return { uid, alertType: likeliest.type, etaMs: likeliest.etaMs, state };
+    return { uid, alertType: soonest.type, etaMs: soonest.projectedNextMs, state };
 }
 
 function pruneToSelectedUids(selectedUids) {

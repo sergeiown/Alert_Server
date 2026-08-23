@@ -111,6 +111,7 @@
     "forecastNotifyTitle": "Forecast",
     "forecastUpcoming": "Forecast",
     "forecastUpcomingHeader": "Forecast",
+    "forecastMoreDetails": "More detail in the Forecast window",
     "settingsForecastNotifyLabel": "Notify when a forecasted alert time is approaching",
     "trendsWindowTitle": "Alert Server - Trends",
     "trendsHeader": "Weapon usage trends",

@@ -7,6 +7,7 @@ const list = document.getElementById('list');
 const forecastSection = document.getElementById('forecast-section');
 const forecastHeader = document.getElementById('forecast-header');
 const forecastList = document.getElementById('forecast-list');
+const forecastMore = document.getElementById('forecast-more');
 
 let strings = null;
 
@@ -46,6 +47,7 @@ async function renderForecast() {
 
     forecastSection.classList.remove('hidden');
     forecastHeader.textContent = strings.forecastUpcomingHeader;
+    forecastMore.textContent = strings.forecastMoreDetails;
 
     predictions.forEach((prediction) => {
         const item = document.createElement('div');
@@ -103,6 +105,7 @@ async function render() {
 async function main() {
     strings = await window.alertServerTrayPopup.getStrings();
     appIcon.src = await window.alertServerTrayPopup.getIcon();
+    forecastMore.addEventListener('click', () => window.alertServerTrayPopup.openForecast());
     window.alertServerTrayPopup.onRefresh(() => {
         render();
         renderForecast();
