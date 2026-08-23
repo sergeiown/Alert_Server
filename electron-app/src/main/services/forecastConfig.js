@@ -27,4 +27,10 @@ module.exports = {
     HOUR_OF_DAY_MAX_MULTIPLIER: 2,
     // Minimum historical gap count before showing a low-high range alongside the point ETA.
     MIN_GAP_SAMPLES_FOR_RANGE: 8,
+    // The "typically X-Y" range: a central band around the median (35th-65th percentile of past
+    // gaps), not a full interquartile range - and even that band is dropped (no range shown) once
+    // high/low exceeds this ratio, since a range that wide no longer helps the reader act on it.
+    GAP_RANGE_LOW_PERCENTILE: 0.35,
+    GAP_RANGE_HIGH_PERCENTILE: 0.65,
+    GAP_RANGE_MAX_RATIO: 3,
 };
