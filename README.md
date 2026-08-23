@@ -50,6 +50,8 @@ Notifications for an alert starting or ending appear through the Windows Notific
 
 Left-clicking the tray icon opens a small popup with any active alerts and, below them, the nearest upcoming forecast for your monitored regions - handy when you just want a quick glance without opening the Forecast window. Hovering the tray icon shows the same nearest forecast as a tooltip when there's no active alert. If enabled in Settings (on by default), the app also sends a notification - with a blue region map, no alert sound - when a forecasted alert time is approaching, separate from the alert/cancellation notifications above; at most 3 fire per check, soonest first, to avoid a flood if many regions qualify at once.
 
+![forecast approaching notification](docs/images/forecast-notify-en.png)
+
 The event log records app activity (start/exit, settings and region changes, alerts, update checks) as CSV, and is capped at 256 KB, automatically trimmed once it grows past that.
 
 ## Data sources & credits
