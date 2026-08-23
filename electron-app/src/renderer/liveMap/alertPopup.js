@@ -12,6 +12,23 @@ function formatDuration(ms, strings) {
     return parts.length ? parts.join(' ') : `<1${strings.unitMinute}`;
 }
 
+// A bare time ("Тривога: 00:22:00") reads as "just now-ish" - fine for the overwhelming majority
+// of alerts (started earlier today), but misleading for the rare region whose alert has been
+// running for days (a real, if unusual, case - e.g. Crimea's siren feed has been continuously "on"
+// for years). The date is only added when it's actually needed, so the common case stays as short
+// as before.
+function formatStartedAt(startedAt, locale) {
+    const started = new Date(startedAt);
+    const now = new Date();
+    const sameDay =
+        started.getFullYear() === now.getFullYear() &&
+        started.getMonth() === now.getMonth() &&
+        started.getDate() === now.getDate();
+
+    const timeText = started.toLocaleTimeString(locale);
+    return sameDay ? timeText : `${started.toLocaleDateString(locale)} ${timeText}`;
+}
+
 // Builds the popup content shown when the user clicks an oblast, raion, or city - `startedAt` is
 // the region's own alert start time if it has one right now, or null/undefined if it doesn't.
 // `inheritedFromName` names the broader region (e.g. the enclosing oblast) when `startedAt` is
@@ -24,7 +41,7 @@ function alertPopupHtml(displayName, startedAt, strings, language, inheritedFrom
         return `<strong>${displayName}</strong><br>${strings.liveMapNoActiveAlert}`;
     }
 
-    const startedTime = new Date(startedAt).toLocaleTimeString(locale);
+    const startedTime = formatStartedAt(startedAt, locale);
     const duration = formatDuration(Date.now() - new Date(startedAt).getTime(), strings);
     const note = inheritedFromName
         ? `<br><small>${strings.liveMapAlertAcrossRegion.replace('{name}', inheritedFromName)}</small>`
