@@ -16,4 +16,17 @@ function normalizeRaionName(name) {
         .trim();
 }
 
-export { normalizeOblastName, normalizeRaionName, CRIMEA_RAW_NAME };
+// The inverse of the two normalizers above - used wherever a bare short name (the only form the
+// border/label data itself stores) is shown to the user, so "Харківська" and "Харківський" don't
+// read as the same word at a glance when a popup could name either one. Crimea isn't an oblast, so
+// it's left bare rather than getting a (wrong) "область" tacked on.
+function oblastDisplayName(name) {
+    if (name === 'Крим') return name;
+    return `${name} область`;
+}
+
+function raionDisplayName(name) {
+    return `${name} район`;
+}
+
+export { normalizeOblastName, normalizeRaionName, oblastDisplayName, raionDisplayName, CRIMEA_RAW_NAME };
