@@ -2,14 +2,20 @@ flowchart LR
     subgraph ext[Зовнішні сервіси]
         api[alerts.in.ua]
         proxy[alert-proxy Worker]
+        neptun[Neptun]
+        deepstate[DeepState]
+        kaggle[Kaggle]
         gh[GitHub Releases]
     end
 
     subgraph main[Основний процес Electron]
         poller[alertPoller]
         notifier[notifier]
+        regionStatus[regionAlertStatus]
+        occupied[occupiedTerritoryStore]
         forecast[forecast-сервіси]
         watcher[forecastWatcher]
+        weaponStats[weaponStatsStore]
         tray[tray]
         stores[regionsStore, settingsStore]
         updater[updater]
@@ -18,27 +24,40 @@ flowchart LR
     subgraph win[Вікна рендерера]
         settingsWin[Налаштування]
         forecastWin[Прогноз]
+        trendsWin[Тенденції]
+        liveMapWin[Live-мапа]
         popup[Попап трею]
         logWin[Лог]
         aboutWin[Про програму]
     end
 
     api --> proxy
+    kaggle --> proxy
     proxy --> poller
     proxy --> forecast
+    proxy --> weaponStats
+    deepstate --> occupied
+    neptun --> liveMapWin
 
     poller --> notifier
+    poller --> regionStatus
     notifier --> tray
 
     forecast --> watcher
     watcher --> tray
     watcher --> popup
 
+    regionStatus --> liveMapWin
+    occupied --> liveMapWin
+    weaponStats --> trendsWin
+
     stores --> settingsWin
     forecast --> forecastWin
 
     tray --> settingsWin
     tray --> forecastWin
+    tray --> trendsWin
+    tray --> liveMapWin
     tray --> logWin
     tray --> aboutWin
     tray --> popup
@@ -49,9 +68,9 @@ flowchart LR
     classDef mainNode fill:#dcfce7,stroke:#16a34a,color:#14532d
     classDef winNode fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
 
-    class api,proxy,gh extNode
-    class poller,notifier,forecast,watcher,tray,stores,updater mainNode
-    class settingsWin,forecastWin,popup,logWin,aboutWin winNode
+    class api,proxy,neptun,deepstate,kaggle,gh extNode
+    class poller,notifier,regionStatus,occupied,forecast,watcher,weaponStats,tray,stores,updater mainNode
+    class settingsWin,forecastWin,trendsWin,liveMapWin,popup,logWin,aboutWin winNode
 
     style ext fill:#eff6ff,stroke:#93c5fd
     style main fill:#f0fdf4,stroke:#86efac
