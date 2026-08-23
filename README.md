@@ -19,7 +19,7 @@ A Windows tray application built with Electron that receives alert data from [al
 
 Download the latest installer (`Alert Server Setup x.x.x.exe`) from [Releases](https://github.com/sergeiown/Alert_Server/releases) and run it. It's a standard NSIS installer: no administrator rights required, per-user install, with a Start Menu shortcut and uninstaller created automatically.
 
-Future updates are detected and installed automatically from GitHub Releases; you'll only need to run the installer manually once. A small window shows download progress, and a notification confirms once it's ready to install.
+Future updates are detected and installed automatically from GitHub Releases; you'll only need to run the installer manually once. The app checks shortly after every launch and then keeps re-checking periodically (interval configurable in Settings, a day by default) for as long as it keeps running, so a tray app left open for weeks still gets updates without ever needing a manual restart. A small window shows download progress, and once downloaded the app restarts itself to finish installing - no reboot needed.
 
 ## Usage
 
@@ -36,7 +36,7 @@ On first launch the app appears as a tray icon only, no window. The icon itself 
 
   ![trends](docs/images/trends-en.png)
 
-- **Settings** opens a two-column settings window: regions to monitor on the left (a clickable map of Ukraine's oblasts above a searchable tree going down to individual community - selecting a region on either one selects it on the other; checking a higher-level region selects everything nested inside it; a button clears the whole selection at once), and everything else on the right - interface language and light/dark/auto theme, monochrome tray icon, visual notifications (with separate toggles for active-alert notifications and forecast-approach notifications, plus how many minutes ahead to warn), the nationwide alert-count threshold for the mass-attack tray indicator, sound notification mode (none, siren, or voice) and its repeat count, and launching at Windows startup. Dependent options grey out automatically (e.g. the sound repeat count when sound is off).
+- **Settings** opens a two-column settings window: regions to monitor on the left (a clickable map of Ukraine's oblasts above a searchable tree going down to individual community - selecting a region on either one selects it on the other; checking a higher-level region selects everything nested inside it; a button clears the whole selection at once), and everything else on the right - interface language and light/dark/auto theme, monochrome tray icon, visual notifications (with separate toggles for active-alert notifications and forecast-approach notifications, plus how many minutes ahead to warn), the nationwide alert-count threshold for the mass-attack tray indicator, sound notification mode (none, siren, or voice) and its repeat count, how often the app checks for a new version, and launching at Windows startup. Dependent options grey out automatically (e.g. the sound repeat count when sound is off).
 
   ![settings window](docs/images/settings-window-en.png)
 
