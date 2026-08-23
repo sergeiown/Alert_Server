@@ -18,6 +18,7 @@ const forecastNotifyLookaheadMinutesInput = document.getElementById('forecastNot
 const alertSoundModeInput = document.getElementById('alertSoundMode');
 const alertSoundCountInput = document.getElementById('alertSoundCount');
 const massAttackThresholdInput = document.getElementById('massAttackThreshold');
+const updateCheckIntervalHoursInput = document.getElementById('updateCheckIntervalHours');
 const languageInput = document.getElementById('language');
 const themeInput = document.getElementById('theme');
 
@@ -36,6 +37,7 @@ function applyStrings(strings) {
     document.getElementById('alertSoundModeVoiceOption').textContent = strings.alertSoundModeVoice;
     document.getElementById('alertSoundCountLabel').textContent = strings.alertSoundCountLabel;
     document.getElementById('massAttackThresholdLabel').textContent = strings.massAttackThresholdLabel;
+    document.getElementById('updateCheckIntervalLabel').textContent = strings.updateCheckIntervalLabel;
     document.getElementById('languageLabel').textContent = strings.languageLabel;
     document.getElementById('themeLabel').textContent = strings.themeLabel;
     document.getElementById('themeLightOption').textContent = strings.themeLight;
@@ -73,6 +75,7 @@ async function initGeneralSettings(settings) {
     alertSoundModeInput.value = settings.alertSoundMode;
     alertSoundCountInput.value = settings.alertSoundCount;
     massAttackThresholdInput.value = settings.massAttackThreshold;
+    updateCheckIntervalHoursInput.value = settings.updateCheckIntervalHours;
     languageInput.value = settings.language;
     themeInput.value = settings.theme;
     runAtStartupInput.checked = await window.alertServer.getLoginItem();
@@ -116,6 +119,11 @@ async function initGeneralSettings(settings) {
         const threshold = Math.max(5, Math.min(60, Number(massAttackThresholdInput.value) || 20));
         massAttackThresholdInput.value = threshold;
         window.alertServer.setSetting('massAttackThreshold', threshold);
+    });
+    updateCheckIntervalHoursInput.addEventListener('change', () => {
+        const hours = Math.max(1, Math.min(168, Number(updateCheckIntervalHoursInput.value) || 24));
+        updateCheckIntervalHoursInput.value = hours;
+        window.alertServer.setSetting('updateCheckIntervalHours', hours);
     });
     languageInput.addEventListener('change', () => {
         window.alertServer.setSetting('language', languageInput.value);

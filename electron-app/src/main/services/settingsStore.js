@@ -13,6 +13,7 @@ const defaultSettings = {
     forecastNotifyEnabled: true,
     forecastNotifyLookaheadMinutes: 120,
     massAttackThreshold: 50,
+    updateCheckIntervalHours: 24,
 };
 
 let settings = null;
