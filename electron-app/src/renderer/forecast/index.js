@@ -97,6 +97,7 @@ async function main() {
     strings = await window.alertServerForecast.getStrings();
     document.title = strings.forecastWindowTitle;
     document.getElementById('forecastHeader').textContent = strings.forecastHeader;
+    document.getElementById('baselineCalibrationNote').textContent = strings.forecastBaselineCalibrationNote;
 
     const clearStatsButton = document.getElementById('clearStatsButton');
     clearStatsButton.textContent = strings.forecastClearStatsButton;

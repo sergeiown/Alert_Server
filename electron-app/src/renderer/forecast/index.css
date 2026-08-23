@@ -108,7 +108,8 @@ main {
     margin: 0 0 6px;
 }
 
-#localStatsNote {
+#localStatsNote,
+#baselineCalibrationNote {
     color: var(--muted);
     font-size: 11px;
 }
