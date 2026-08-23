@@ -28,6 +28,10 @@ const TYPE_ICONS = {
     },
     fpv: {
         color: '#ff6b35',
+        // The quad-rotor frame alone is symmetric under a 90-degree turn, so rotating it by
+        // `heading` looked identical at four different headings - a nose triangle poking up
+        // between the front two rotors (as a real FPV frame's camera/canopy would) breaks that
+        // symmetry, so the heading rotation actually reads as a direction again.
         svg:
             '<line x1="12" y1="12" x2="7" y2="7" stroke="currentColor" stroke-width="2.4" />' +
             '<line x1="12" y1="12" x2="17" y2="7" stroke="currentColor" stroke-width="2.4" />' +
@@ -35,11 +39,12 @@ const TYPE_ICONS = {
             '<line x1="12" y1="12" x2="17" y2="17" stroke="currentColor" stroke-width="2.4" />' +
             '<circle cx="7" cy="7" r="3.4" /><circle cx="17" cy="7" r="3.4" />' +
             '<circle cx="7" cy="17" r="3.4" /><circle cx="17" cy="17" r="3.4" />' +
-            '<circle cx="12" cy="12" r="2.6" />',
+            '<circle cx="12" cy="12" r="2.6" />' +
+            '<polygon points="12,2 14.2,7 9.8,7" />',
     },
     kab: {
         color: '#dc2626',
-        svg: '<ellipse cx="12" cy="9" rx="4.2" ry="7.5" /><polygon points="7.5,16 3,22 8.5,18.5" /><polygon points="16.5,16 21,22 15.5,18.5" />',
+        svg: '<ellipse cx="12" cy="15" rx="4.2" ry="7.5" /><polygon points="7.5,8 3,2 8.5,5.5" /><polygon points="16.5,8 21,2 15.5,5.5" />',
     },
     missile: {
         color: '#991b1b',
