@@ -6,6 +6,7 @@ const { registerForecastIpc } = require('./ipc/forecastIpc');
 const { registerTrayPopupIpc } = require('./ipc/trayPopupIpc');
 const { registerLogIpc } = require('./ipc/logIpc');
 const { registerLiveMapIpc } = require('./ipc/liveMapIpc');
+const { registerTrendsIpc } = require('./ipc/trendsIpc');
 const { importLegacyConfig } = require('./migration/importLegacyConfig');
 const settingsStore = require('./services/settingsStore');
 const regionsStore = require('./services/regionsStore');
@@ -19,6 +20,7 @@ const { computeAlertedRegions } = require('./services/regionAlertStatus');
 const { createTray, updateTrayState } = require('./services/tray');
 const { startForecastWatcher } = require('./services/forecastWatcher');
 const { startOccupiedTerritoryRefresh } = require('./services/occupiedTerritoryStore');
+const { startWeaponStatsRefresh } = require('./services/weaponStatsStore');
 const { installHandlers } = require('./services/crashRestart');
 const { delayedCheckForUpdates } = require('./services/updater');
 const { destroySettingsWindow } = require('./windows/settingsWindow');
@@ -47,10 +49,12 @@ app.whenReady().then(() => {
     registerTrayPopupIpc();
     registerLogIpc();
     registerLiveMapIpc();
+    registerTrendsIpc();
 
     createTray();
     delayedCheckForUpdates();
     startOccupiedTerritoryRefresh();
+    startWeaponStatsRefresh();
 
     const { alertProxyClientKey } = loadLocalConfig();
     if (alertProxyClientKey) {
