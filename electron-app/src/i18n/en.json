@@ -69,6 +69,7 @@
     "alertSoundModeVoice": "Voice",
     "alertSoundCountLabel": "Sound repeat count",
     "massAttackThresholdLabel": "Nationwide alert count threshold for the mass-attack indicator:",
+    "updateCheckIntervalLabel": "Update check interval (hours):",
     "trayMassAttackTooltip": "Nationwide mass attack",
     "languageLabel": "Language:",
     "themeLabel": "Theme:",
