@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const { getLocationLookup } = require('./locationFilter');
 
 function upsertEarliest(map, name, startedAt) {
@@ -7,10 +10,8 @@ function upsertEarliest(map, name, startedAt) {
     }
 }
 
-// Nationwide alert status per oblast/raion (independent of the user's own monitored regions -
-// this feeds the live map's coloring layer, which shows the whole country's situation), grouped
-// by administrative level. A community/city-level alert has no polygon of its own on the map, so
-// it's attributed to its parent raion instead of being dropped.
+// A community/city-level alert has no polygon of its own on the map, so it's attributed to its
+// parent raion instead of being dropped.
 function computeAlertedRegions(alerts) {
     const lookup = getLocationLookup();
     const oblasts = new Map();

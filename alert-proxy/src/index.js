@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const ACTIVE_ALERTS_URL = 'https://api.alerts.in.ua/v1/alerts/active.json';
 const ACTIVE_CACHE_TTL_MS = 30 * 1000;
 const ACTIVE_MIN_GAP_MS = 5 * 1000;
@@ -9,10 +12,9 @@ const REGION_STATUSES_URL = 'https://api.alerts.in.ua/v1/iot/active_air_raid_ale
 const REGION_STATUSES_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const REGION_STATUSES_MIN_GAP_MS = 5 * 1000;
 
-// Kaggle's per-file download endpoint returns the plain CSV directly (confirmed against the real
-// API - no zip wrapper to unpack, which a Worker has no built-in support for anyway). The dataset
-// itself is only updated weekly, so this is cached far longer than anything else here - no origin
-// rate limit to respect either, but there's no reason to hit Kaggle more than roughly once a day.
+// Kaggle's per-file download endpoint returns the plain CSV directly (no zip wrapper to unpack,
+// which a Worker has no built-in support for anyway). The dataset itself is only updated weekly,
+// so this is cached far longer than anything else here.
 const KAGGLE_DATASET = 'piterfm/massive-missile-attacks-on-ukraine';
 const KAGGLE_ATTACKS_FILE = 'missile_attacks_daily.csv';
 const KAGGLE_MODELS_FILE = 'missiles_and_uavs.csv';
@@ -318,7 +320,7 @@ export class AlertsGateway {
         return new Response(this.regionStatusesCache.body, { headers });
     }
 
-    // Unlike every other endpoint here, this one caches the app's own AGGREGATED summary, not a
+    // Unlike every other endpoint here, this one caches the app's own aggregated summary, not a
     // passthrough of the origin response - the raw CSVs (thousands of rows) are only ever fetched
     // and parsed server-side, so the client only ever sees a small, ready-to-render JSON object.
     async getWeaponStats() {

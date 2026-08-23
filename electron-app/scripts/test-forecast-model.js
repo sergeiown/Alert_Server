@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const assert = require('assert');
 const forecastConfig = require('../src/main/services/forecastConfig');
 const { estimateRegionLambda, computeStats, DAY_MS } = require('../src/main/services/forecastModel');
@@ -80,8 +83,6 @@ run('no history at all still returns lambda 0 (no meaningful signal)', () => {
 // --- Seasonality ---
 
 function buildWeekdayOnlyAlerts(weeks, targetWeekday, endMs) {
-    // One alert per week, all on the same weekday, for `weeks` weeks - a region that only ever
-    // alerts on e.g. Fridays.
     const alerts = [];
     const endWeekday = new Date(endMs).getUTCDay();
     const alignMs = endMs - ((endWeekday - targetWeekday + 7) % 7) * DAY_MS;
@@ -116,7 +117,7 @@ run('seasonality: a region that only ever alerts on Fridays gets boosted on a Fr
 run('seasonality: never scales the estimate beyond SEASONALITY_MAX_MULTIPLIER either way', () => {
     const friday = 5;
     const endMs = Date.parse('2026-01-02T00:00:00.000Z');
-    const weekdayAlerts = buildWeekdayOnlyAlerts(52, friday, endMs); // a full year of Friday-only history
+    const weekdayAlerts = buildWeekdayOnlyAlerts(52, friday, endMs);
 
     const { seasonality: onFriday } = estimateRegionLambda(weekdayAlerts, endMs, forecastConfig);
     const { seasonality: onSaturday } = estimateRegionLambda(weekdayAlerts, endMs + DAY_MS, forecastConfig);
@@ -131,7 +132,7 @@ run('seasonality: never scales the estimate beyond SEASONALITY_MAX_MULTIPLIER ei
 run('seasonality: shrinks toward neutral (1) with only a couple of same-weekday occurrences', () => {
     const friday = 5;
     const endMs = Date.parse('2026-01-02T00:00:00.000Z');
-    const weekdayAlerts = buildWeekdayOnlyAlerts(2, friday, endMs); // only 2 occurrences ever
+    const weekdayAlerts = buildWeekdayOnlyAlerts(2, friday, endMs);
 
     const { seasonality } = estimateRegionLambda(weekdayAlerts, endMs, forecastConfig);
     assert.ok(
@@ -143,8 +144,6 @@ run('seasonality: shrinks toward neutral (1) with only a couple of same-weekday 
 // --- Hour of day ---
 
 function buildHourOnlyAlerts(days, targetHour, endMs) {
-    // One alert per day, all at the same hour, for `days` days - a region that only ever alerts
-    // around e.g. 3 AM.
     const alerts = [];
     const end = new Date(endMs);
     const alignMs = new Date(end.getFullYear(), end.getMonth(), end.getDate(), targetHour).getTime();
@@ -173,7 +172,7 @@ run('hour-of-day: a region that only ever alerts at 3 AM gets boosted at a 3 AM 
 run('hour-of-day: never scales the estimate beyond HOUR_OF_DAY_MAX_MULTIPLIER either way', () => {
     const hour3am = 3;
     const endMs = new Date(2026, 0, 30, hour3am).getTime();
-    const hourAlerts = buildHourOnlyAlerts(365, hour3am, endMs); // a full year of 3am-only history
+    const hourAlerts = buildHourOnlyAlerts(365, hour3am, endMs);
 
     const { hourOfDay: atNight } = estimateRegionLambda(hourAlerts, endMs, forecastConfig);
     const { hourOfDay: atAfternoon } = estimateRegionLambda(hourAlerts, new Date(2026, 0, 30, 15).getTime(), forecastConfig);
@@ -191,7 +190,7 @@ run('hour-of-day: never scales the estimate beyond HOUR_OF_DAY_MAX_MULTIPLIER ei
 run('hour-of-day: shrinks toward neutral (1) with only a couple of same-hour occurrences', () => {
     const hour3am = 3;
     const endMs = new Date(2026, 0, 30, hour3am).getTime();
-    const hourAlerts = buildHourOnlyAlerts(2, hour3am, endMs); // only 2 occurrences ever
+    const hourAlerts = buildHourOnlyAlerts(2, hour3am, endMs);
 
     const { hourOfDay } = estimateRegionLambda(hourAlerts, endMs, forecastConfig);
     assert.ok(
@@ -213,7 +212,6 @@ run('gapRange: present and low <= high once there is enough history', () => {
     const { gapRange } = stats.typeBreakdown[0];
     assert.ok(gapRange, 'expected a gapRange with 63 days of uniform daily alerts');
     assert.ok(gapRange.low <= gapRange.high, `expected low (${gapRange.low}) <= high (${gapRange.high})`);
-    // Uniform 1/day data has every gap at exactly 1 day, so the 25th/75th percentile should both land there.
     assert.ok(Math.abs(gapRange.low - DAY_MS) < 1000, `expected low close to 1 day, got ${gapRange.low}`);
     assert.ok(Math.abs(gapRange.high - DAY_MS) < 1000, `expected high close to 1 day, got ${gapRange.high}`);
 });

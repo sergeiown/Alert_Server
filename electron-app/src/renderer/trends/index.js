@@ -1,7 +1,6 @@
-// Category names come straight from the Kaggle dataset (English, a fixed small set) - translated
-// here for the Ukrainian UI since this screen otherwise reads like it forgot to localize, but
-// intentionally NOT touching model names (Shahed-136/131, X-101/X-555, ...) - those are proper
-// nouns/designations, not descriptive words, and stay as the source names them in either language.
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const CATEGORY_UK = {
     UAV: 'БПЛА',
     'cruise missile': 'крилата ракета',
@@ -103,8 +102,6 @@ function buildCategoryCard(stats, strings, isEnglish) {
     return card;
 }
 
-// Hand-rolled stacked bar chart (no charting library) - one bar per month, one colored segment per
-// category, proportional to that category's launched count that month.
 function buildMonthlyChart(stats, strings, isEnglish) {
     const card = document.createElement('section');
     card.className = 'card';
@@ -120,7 +117,7 @@ function buildMonthlyChart(stats, strings, isEnglish) {
     const gap = 4;
     const chartHeight = 200;
     const width = months.length * (barWidth + gap) + gap;
-    const height = chartHeight + 24; // room for month labels
+    const height = chartHeight + 24;
 
     const svgParts = [];
     months.forEach((entry, index) => {
@@ -135,7 +132,6 @@ function buildMonthlyChart(stats, strings, isEnglish) {
                 `<rect x="${x}" y="${yCursor.toFixed(1)}" width="${barWidth}" height="${barHeight.toFixed(1)}" fill="${categoryColor(category)}"><title>${monthLabel(entry.month, isEnglish)}: ${categoryName(category, isEnglish)} - ${formatNumber(value)}</title></rect>`
             );
         });
-        // Every 6th month gets a label - showing all ~48 would just overlap illegibly.
         if (index % 6 === 0) {
             svgParts.push(
                 `<text x="${x + barWidth / 2}" y="${chartHeight + 16}" font-size="9" text-anchor="middle" fill="currentColor" opacity="0.7">${monthLabel(entry.month, isEnglish)}</text>`

@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MIN_MEANINGFUL_LAMBDA = 1 / (10 * 365);
 
@@ -25,9 +28,6 @@ function baselineLambdaOf(alerts, nowMs, config) {
     return weightedCount(alerts, nowMs, config.BASELINE_HALF_LIFE_DAYS) / baselineExposure;
 }
 
-// How much busier or quieter today's weekday historically is versus this alert set's own
-// average, shrunk toward 1 (no adjustment) when there isn't much same-weekday history yet, and
-// clamped so a noisy small sample can never swing the estimate too far in either direction.
 function seasonalityMultiplier(alerts, nowMs, config) {
     if (!alerts.length) return 1;
 
@@ -50,8 +50,6 @@ function seasonalityMultiplier(alerts, nowMs, config) {
     return Math.min(cap, Math.max(1 / cap, multiplier));
 }
 
-// Same shrink-to-neutral principle as seasonalityMultiplier above, bucketed by hour of day (0-23)
-// instead of weekday - independent factor, multiplied in alongside it rather than combined jointly.
 function hourOfDayMultiplier(alerts, nowMs, config) {
     if (!alerts.length) return 1;
 
@@ -66,10 +64,8 @@ function hourOfDayMultiplier(alerts, nowMs, config) {
     const currentHourCount = times.filter((t) => new Date(t).getHours() === currentHour).length;
     const currentHourRate = currentHourCount / Math.max(1, hourOccurrences);
 
-    // overallRate is a per-day rate across all 24 hours combined - divide by 24 to get the rate
-    // one would expect for a single hour bucket if alerts were spread evenly across the day,
-    // which is the right thing to compare currentHourRate against (mirrors dividing by 7 for
-    // weekday above).
+    // overallRate is per-day across all 24 hours; divide by 24 for the expected rate of one hour
+    // bucket, to compare like with like against currentHourRate.
     const expectedHourRate = overallRate / 24;
     const rawMultiplier = currentHourRate / expectedHourRate;
     const shrinkageWeight = hourOccurrences / (hourOccurrences + config.HOUR_OF_DAY_PRIOR_OCCURRENCES);
@@ -85,13 +81,8 @@ function estimateRegionLambda(alerts, nowMs, config) {
     const recentLambda = weightedCount(usableAlerts, nowMs, config.HALF_LIFE_DAYS) / exposure;
     const baselineLambda = baselineLambdaOf(usableAlerts, nowMs, config);
 
-    // max(), not a sum or a smooth blend, on purpose: both terms already estimate the same
-    // quantity over the same alerts (just decaying at different rates), so summing would double
-    // count, and blending with weights that decay together turns out non-monotonic (dips below
-    // the eventual plateau before settling). max() is provably monotonic - as time passes with
-    // no new alerts, recentLambda only shrinks and baselineLambda barely moves, so the max simply
-    // hands over from one to the other without ever dipping - and a fresh alert makes recentLambda
-    // dominate exactly as before the fix.
+    // max(), not a sum or blend: both terms estimate the same quantity (summing would double
+    // count), and max() is provably monotonic during a silence, where a blend was not.
     const baseLambda = Math.max(recentLambda, baselineLambda);
     const seasonality = seasonalityMultiplier(usableAlerts, nowMs, config);
     const hourOfDay = hourOfDayMultiplier(usableAlerts, nowMs, config);
@@ -99,9 +90,8 @@ function estimateRegionLambda(alerts, nowMs, config) {
     return { lambda, baseLambda, recentLambda, baselineLambda, seasonality, hourOfDay, exposure, usableAlerts };
 }
 
-// regionLambda should be the region's baseLambda (pre-seasonality), not its seasonally-adjusted
-// lambda - this function applies its own seasonality (from the type's own history) at the end,
-// and applying it twice (once via an already-adjusted prior, once directly) would compound it.
+// regionLambda must be the region's baseLambda (pre-seasonality) - this function applies its own
+// seasonality afterward, and applying it twice would compound it.
 function estimateTypeLambda(typeAlerts, totalCount, regionLambda, nowMs, config) {
     const exposure = exposureDays(config.WINDOW_DAYS, config.HALF_LIFE_DAYS);
     const roughShare = typeAlerts.length / totalCount;
@@ -115,27 +105,10 @@ function estimateTypeLambda(typeAlerts, totalCount, regionLambda, nowMs, config)
     return Math.max(recentLambda, baselineLambda) * seasonality * hourOfDay;
 }
 
-// Historical gap statistics between consecutive alerts of one type - both the median (used as the
-// point ETA instead of the model's own 1/lambda, see below) and a narrow "typically" band around
-// it, computed from the same sorted gap list so the two can never contradict each other.
-//
-// 1/lambda is the MEAN of an exponential distribution, which real alert timing is not - it's
-// heavy-tailed (mostly-quick repeats with occasional long lulls), and a heavy tail pulls the mean
-// well above the median. That's exactly how a reading like "87%, in ~11h43m (typically 2h58m -
-// 8h1m)" happens: the 87%/11h43m pair is internally consistent (both come from the same lambda),
-// but the ETA sits entirely outside the very range meant to describe what's typical, which reads
-// as nonsense even though neither number is individually wrong. Grounding the ETA in the same
-// empirical median as the range fixes that, and is arguably the more honest "expected wait"
-// anyway. probabilityToday is left as its own lambda-based reading - "how likely is at least one
-// today" is a genuinely different question a single typical-gap number can't answer.
-//
-// The band itself is deliberately narrower than a full interquartile range
-// (config.GAP_RANGE_LOW/HIGH_PERCENTILE default to 0.35/0.65, not 0.25/0.75) - this is meant to
-// read as "typically", a central band around the median, not "half of everything that's ever
-// happened, outliers included". Even that narrowed band is dropped (range: null) once it's wide
-// enough that showing it wouldn't actually help - real alert timing is irregular enough that a
-// technically-correct range can still span most of a day, which reads as more precise than it is
-// without being useful. The median ETA itself is kept even when the band is dropped.
+// The ETA is grounded in the empirical median gap (not the model's 1/lambda mean) because real
+// alert timing is heavy-tailed, and the mean can land outside the very "typically" range meant to
+// describe it. Range is a narrow band around the median (not a full IQR), dropped entirely when
+// too wide to be useful.
 function gapStats(alerts, config) {
     if (alerts.length < config.MIN_GAP_SAMPLES_FOR_RANGE + 1) return null;
 
@@ -225,9 +198,6 @@ function computeStats(alerts, nowMs, config) {
 
             const percent = Math.round((typeCount / count) * 100);
             const probabilityToday = Math.round((1 - Math.exp(-lambdaType)) * 100);
-            // Grounded in the same empirical median as gapRange below whenever there's enough gap
-            // history for that (see the comment on gapStats) - falls back to the model's own
-            // 1/lambda mean only while there isn't.
             const gaps = gapStats(typeAlertsFull, config);
             const projectedNextMs = gaps ? gaps.median : lambdaType > MIN_MEANINGFUL_LAMBDA ? (1 / lambdaType) * DAY_MS : null;
             const gapRange = gaps ? gaps.range : null;

@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const { autoUpdater } = require('electron-updater');
 const { dialog, Notification } = require('electron');
 const { logEvent } = require('./logger');
@@ -12,9 +15,8 @@ const {
 
 autoUpdater.autoDownload = false;
 
-// Registered once, not per check - checkForUpdates() itself is called repeatedly (once shortly
-// after launch, then periodically for as long as the app keeps running), and re-registering these
-// on every call would pile up duplicate listeners, each firing once per event.
+// Registered once at module load, not per check - checkForUpdates() is called repeatedly, and
+// re-registering these on every call would pile up duplicate listeners, each firing once per event.
 let lastDeclinedVersion = null;
 
 autoUpdater.on('checking-for-update', () => {
@@ -28,8 +30,6 @@ autoUpdater.on('update-not-available', () => {
 autoUpdater.on('update-available', (info) => {
     logEvent(`Update available: ${info.version}`);
 
-    // Only asked once per version, not on every periodic recheck while it's still the latest -
-    // declining an update shouldn't mean re-prompting every 12 hours for that same version.
     if (info.version === lastDeclinedVersion) return;
 
     dialog
@@ -79,11 +79,8 @@ function checkForUpdates() {
     autoUpdater.checkForUpdates();
 }
 
-// A tray app is exactly the kind of thing people leave running for weeks without ever quitting or
-// rebooting - a single check right after launch would then mean an update never reaches them at
-// all, not just late, since nothing else in the app's lifecycle would trigger another check.
-// Re-scheduled after every check (rather than one fixed setInterval) specifically so a change to
-// this setting takes effect on the very next cycle, without needing the app restarted first.
+// Re-scheduled after every check (rather than one fixed setInterval) so a change to
+// updateCheckIntervalHours takes effect on the very next cycle, without needing an app restart.
 function scheduleNextCheck() {
     const hours = settingsStore.getSettings().updateCheckIntervalHours;
     const intervalMs = Math.max(1, hours) * 60 * 60 * 1000;

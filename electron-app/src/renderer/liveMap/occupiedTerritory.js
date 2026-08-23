@@ -1,13 +1,9 @@
-// Refreshed roughly daily by the main process (see occupiedTerritoryStore.js) - this just re-reads
-// whatever the main process currently has cached, on the same cadence, rather than fetching
-// anything itself.
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const REFRESH_MS = 6 * 60 * 60 * 1000;
 const PATTERN_ID = 'occupied-territory-hatch';
 
-// A light diagonal hatch reads as "this area's status differs" without needing its own flat fill
-// color - which matters here specifically, since occupied territory and an active alert can cover
-// the exact same ground at the same time, and a second flat color layered on the alert-status
-// tint would just blend into an unreadable third color instead of clearly being two separate facts.
 function ensureHatchPattern(map, color) {
     const svg = map.getPane('overlayPane').querySelector('svg');
     if (!svg || svg.querySelector(`#${PATTERN_ID}`)) return;

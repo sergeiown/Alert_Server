@@ -1,11 +1,6 @@
-// Real oblast boundaries, keyed the same way as REGIONS in regionLabels.js ("Вінницька", not
-// "Вінницька область"), from the same CC BY 4.0 licensed slawomirmatuszak/ukrainian_geodata
-// "regiony.geojson" dataset used for the label centroids - largest polygon ring, Douglas-Peucker
-// simplified. Every value is an array of one-or-more rings (Leaflet's multi-part polygon format):
-// Crimea and Sevastopol are two separate polygons in the source data sharing the one "Крим" label
-// here, so that entry alone has two rings. Kyiv city has no entry - it isn't a separate polygon in
-// this dataset (folded into Kyiv oblast's own shape), so the alert-status layer falls back to the
-// real city outline already in cityBorders.js for that specific case.
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const OBLAST_BORDERS = {
     "Вінницька": [
         [

@@ -1,6 +1,8 @@
-// Shared zoom thresholds so the label layer and the alert-status layer agree on where "oblast
-// view" ends and "raion view" begins - they need to switch at the exact same zoom level, or the
-// two would show conflicting levels of detail against each other.
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
+// Shared with the label layer and the alert-status layer - both must switch at the exact same
+// zoom level, or they'll show conflicting levels of detail against each other.
 const OBLAST_MIN_ZOOM = 5;
 const RAION_MIN_ZOOM = 9;
 

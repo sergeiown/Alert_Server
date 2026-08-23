@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 import { normalizeOblastName, oblastDisplayName } from './regionNameUtils.js';
 import { transliterate } from './transliterate.js';
 
@@ -9,13 +12,8 @@ const HEARTBEAT_TIMEOUT_MS = 30000;
 const MISSILE_TYPE_ALIASES = ['missile', 'rocket', 'cruise_missile', 'ballistic'];
 const RECON_TITLE_PATTERN = /розвід/i;
 
-// Simple, recognizable silhouettes (nose/front pointing up = 0 deg = north, so rotating the
-// wrapper by `heading` degrees points the icon the right way) rather than abstract dots, one per
-// threat category. "unknown" reuses the same triangle-and-exclamation the tray icon already uses,
-// so an unrecognized type still reads as "alert" rather than looking broken.
-// uav (kamikaze/attack, Shahed-style) is a tailless delta/flying wing; uav_recon (reconnaissance,
-// e.g. Orlan/Zala-style) is a conventional fixed-wing silhouette with a separate tail - the shape
-// difference mirrors the real distinction between the two drone families, not just a color swap.
+// Nose/front points up = 0 deg = north, so rotating the wrapper by `heading` degrees points the
+// icon the right way.
 const TYPE_ICONS = {
     uav: {
         color: '#f5a623',
@@ -25,19 +23,15 @@ const TYPE_ICONS = {
     },
     uav_recon: {
         color: '#5b8fb0',
-        // Straight, perpendicular wings (not swept) - real reconnaissance drones (Orlan/Zala-style)
-        // are slow, high-aspect-ratio gliders, not fast swept-wing aircraft, and the silhouette
-        // should read that way rather than looking like a jet.
         svg:
             '<path d="M12 1 L13 12 L22 12 L22 13.5 L13 13.5 L13.5 20.5 L16.5 22.5 L16.5 23.5 L12 22.3 ' +
             'L7.5 23.5 L7.5 22.5 L10.5 20.5 L11 13.5 L2 13.5 L2 12 L11 12 Z" />',
     },
     fpv: {
         color: '#ff6b35',
-        // The quad-rotor frame alone is symmetric under a 90-degree turn, so rotating it by
-        // `heading` looked identical at four different headings - a nose triangle poking up
-        // between the front two rotors (as a real FPV frame's camera/canopy would) breaks that
-        // symmetry, so the heading rotation actually reads as a direction again.
+        // The plain quad-rotor frame is symmetric under a 90-degree turn (a `heading` rotation
+        // would look identical at four different headings) - the nose triangle breaks that
+        // symmetry so the rotation actually reads as a direction.
         svg:
             '<line x1="12" y1="12" x2="7" y2="7" stroke="currentColor" stroke-width="2.4" />' +
             '<line x1="12" y1="12" x2="17" y2="7" stroke="currentColor" stroke-width="2.4" />' +
@@ -50,20 +44,12 @@ const TYPE_ICONS = {
     },
     kab: {
         color: '#dc2626',
-        // Three fins (a center one facing the viewer, plus the two swept side fins), matching a
-        // real bomb/missile's actual tail - not just the two side fins visible from a flat profile.
         svg: '<ellipse cx="12" cy="15" rx="4.2" ry="7.5" /><polygon points="7.5,8 3,2 8.5,5.5" /><polygon points="16.5,8 21,2 15.5,5.5" /><polygon points="10.5,7 13.5,7 12,1" />',
     },
     missile: {
         color: '#991b1b',
-        // Three fins (a center one facing the viewer, plus the two swept side fins), matching a
-        // real missile's actual tail - not just the two side fins visible from a flat profile.
         svg: '<polygon points="12,1 15,9 15,20 9,20 9,9" /><polygon points="9,15.5 4,22 9,19.5" /><polygon points="15,15.5 20,22 15,19.5" /><polygon points="10.5,17 13.5,17 12,23" />',
     },
-    // The carrier aircraft (MiG-31K, launches Kinzhal missiles) rather than a missile itself -
-    // documented by Neptun's own API as its own "type" value, so it needs telling apart from
-    // "missile" - a swept delta wing near the tail (fighter jet) instead of a plain cylindrical
-    // body with small fins (the missile shape) is the visual difference.
     mig31k: {
         color: '#7c3aed',
         svg: '<path d="M12 1 L13 14 L21 21 L21 22.5 L13 18 L13.5 22.5 L16 24 L12 23 L8 24 L10.5 22.5 L11 18 L3 22.5 L3 21 L11 14 Z" />',
@@ -78,9 +64,8 @@ const TYPE_ICONS = {
 };
 
 function resolveTypeKey(threat) {
-    // The real API sends reconnaissance drones as type "recon" (not "uav"), which isn't a key in
-    // TYPE_ICONS itself - without this check they fell through to "unknown" every time. The title
-    // regex stays as a fallback for a "uav"-typed threat whose text says otherwise.
+    // The real API sends reconnaissance drones as type "recon", not "uav" - not a key in
+    // TYPE_ICONS, so without this check they fell through to "unknown" every time.
     if (threat.type === 'recon') return 'uav_recon';
     if (threat.type === 'uav' && RECON_TITLE_PATTERN.test(`${threat.title} ${threat.explanationShort}`)) {
         return 'uav_recon';
@@ -122,13 +107,9 @@ function confidenceLabel(threat, strings) {
 }
 
 // threat.title/explanationShort/locality/region are Neptun's own free text, always in Ukrainian -
-// it doesn't offer an English variant of any of them. The title is replaced with this app's own
-// localized type name (already available via strings), and in English mode the explanation is
-// rebuilt as a short "locality, oblast" line instead, translating the oblast through the same
-// lookup the map's own oblast labels/popups use. The locality (settlement) name has no real
-// translation source anywhere in this app, so it's transliterated instead of left in Cyrillic -
-// otherwise the line mixed two scripts/languages in one place (English oblast, Ukrainian
-// locality), which read as broken even though neither half was individually wrong.
+// there is no English variant of any of them. In English mode the explanation is rebuilt as a
+// "locality, oblast" line instead, and the locality is transliterated (it has no real translation
+// source anywhere in this app) so the line doesn't mix an English oblast with a Cyrillic locality.
 function tooltipContent(threat, strings, isEnglish) {
     const typeKey = resolveTypeKey(threat);
     const locale = isEnglish ? 'en-US' : 'uk-UA';
@@ -179,9 +160,6 @@ function startNeptunLayer(map, strings, language) {
             if (typeof threat.lat !== 'number' || typeof threat.lon !== 'number') return;
             L.marker([threat.lat, threat.lon], { icon: threatIcon(threat) })
                 .bindTooltip(tooltipContent(threat, strings, isEnglish))
-                // A region/raion/city popup left open from an earlier click would otherwise sit
-                // on top of (or right next to) a threat's own tooltip - closing it the moment the
-                // cursor reaches a threat keeps the two from fighting for the same space.
                 .on('mouseover', () => map.closePopup())
                 .addTo(layer);
         });
@@ -228,7 +206,6 @@ function startNeptunLayer(map, strings, language) {
                 if (message.type === 'snapshot') {
                     renderThreats(message.data?.threats);
                 }
-                // 'alerts' and 'heartbeat' message types are not used by this layer.
             } catch (err) {
                 console.error('Neptun stream message parse failed:', err.message);
             }

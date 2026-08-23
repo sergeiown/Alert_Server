@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const REGION_TO_ISO = {
     4: ['UA-05'],
     8: ['UA-07'],

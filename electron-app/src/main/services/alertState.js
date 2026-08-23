@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 let latestMatchedAlerts = [];
 let latestTotalAlertCount = 0;
 
@@ -9,8 +12,6 @@ function getLatestMatchedAlerts() {
     return latestMatchedAlerts;
 }
 
-// Nationwide count (every active alert from the poll, not just the user's monitored regions) -
-// used by the live map's status readout.
 function setLatestTotalAlertCount(count) {
     latestTotalAlertCount = count;
 }
@@ -21,8 +22,6 @@ function getLatestTotalAlertCount() {
 
 let latestAlertedRegions = { oblasts: [], raions: [] };
 
-// Nationwide per-region alert status (oblasts/raions currently under alert, with when each one
-// started) - used by the live map's region-coloring layer.
 function setLatestAlertedRegions(regions) {
     latestAlertedRegions = regions;
 }

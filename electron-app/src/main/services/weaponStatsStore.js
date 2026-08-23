@@ -1,11 +1,9 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const { logEvent } = require('./logger');
 const { loadLocalConfig } = require('./localConfig');
 
-// The Worker (alert-proxy) holds the actual Kaggle credentials server-side and does the heavy
-// lifting (fetching both source CSVs, parsing, aggregating) - this only ever receives its already
-// small, ready-to-render summary. Refreshed far less often than anything else this app polls: the
-// underlying Kaggle dataset itself only updates weekly, and the Worker's own cache already sits at
-// 24h, so checking more often than once a day would just re-fetch the same cached response.
 const PROXY_URL = 'https://alert-proxy.alert-proxy-ua.workers.dev';
 const REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000;
 

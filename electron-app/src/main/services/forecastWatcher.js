@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const { logEvent } = require('./logger');
 const regionsStore = require('./regionsStore');
 const settingsStore = require('./settingsStore');
