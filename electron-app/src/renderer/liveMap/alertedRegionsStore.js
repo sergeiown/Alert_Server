@@ -1,8 +1,9 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 import { normalizeOblastName, normalizeRaionName } from './regionNameUtils.js';
 
-// Shared fetch+cache for the nationwide per-region alert status, so regionStatus.js (oblast/raion
-// coloring) and cityLabels.js (city click info) don't each poll the same IPC call independently.
-const REFRESH_MS = 30000; // matches the main process poll cadence
+const REFRESH_MS = 30000; // must match the main process poll cadence
 
 let latest = { oblasts: [], raions: [] };
 const listeners = new Set();
@@ -22,8 +23,6 @@ function getLatest() {
     return latest;
 }
 
-// Convenience lookups for consumers that just want one region's status (e.g. a city's parent
-// oblast when the user clicks it) without re-deriving the normalized-name Map themselves.
 function getOblastStartedAt(key) {
     const match = latest.oblasts.find((o) => normalizeOblastName(o.name) === key);
     return match ? match.startedAt : null;

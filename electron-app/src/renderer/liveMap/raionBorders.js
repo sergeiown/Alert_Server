@@ -1,9 +1,6 @@
-// Raion (district) outlines, keyed by the same "uk" name used in raionLabels.js's RAIONS array
-// (named, not positional, so the two files can never silently drift out of sync), simplified from
-// the same CC BY 4.0 licensed slawomirmatuszak/ukrainian_geodata "rayony.geojson" dataset (largest
-// polygon ring per raion, Douglas-Peucker simplified to ~1km tolerance - light enough to embed,
-// still recognizable at the zoom level these are shown). A few raions with disconnected exclaves
-// (river islands, etc.) only keep their main body here, not every fragment.
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const RAION_BORDERS = {
     "Кременчуцький": [
         [48.977,33.644], [48.912,33.573], [48.913,33.547], [48.931,33.537], [48.915,33.475], [48.952,33.477], [48.948,33.421], [48.961,33.408],

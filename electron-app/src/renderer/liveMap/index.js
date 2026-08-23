@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 import { startNeptunLayer } from './neptun.js';
 import { addRiversLayer } from './rivers.js';
 import { addLabelsLayer } from './labelsLayer.js';
@@ -5,15 +8,13 @@ import { addRegionStatusLayer } from './regionStatus.js';
 import { addOccupiedTerritoryLayer } from './occupiedTerritory.js';
 import { startStatusBar } from './statusBar.js';
 
-// Exact bounding box taken from ukraine_default.svg's own mapsvg:geoViewBox attribute
-// (west north east south), so the background image lines up without distortion.
+// Must match ukraine_default.svg's own mapsvg:geoViewBox attribute (west north east south),
+// or the background image will no longer line up.
 const UKRAINE_BOUNDS = [
     [44.387017, 22.138577],
     [52.380834, 40.220623],
 ];
 
-// The map's own absolute zoom-out floor - never changed at runtime, unlike the map's actual
-// minZoom (see fitAndLockMinZoom), which moves to track whatever fits the current window size.
 const MAP_MIN_ZOOM = 5;
 
 const CenterControl = L.Control.extend({
@@ -44,27 +45,18 @@ async function main() {
         zoom: 6,
         minZoom: MAP_MIN_ZOOM,
         maxZoom: 12,
-        // Finer zoom steps (a quarter-level per scroll/pinch tick, half a level per +/- click)
-        // instead of Leaflet's default whole-level jumps, which felt too coarse for this map.
         zoomSnap: 0.25,
         zoomDelta: 0.5,
         attributionControl: true,
-        // Forces the SVG root to exist immediately, instead of Leaflet lazily creating it on the
-        // first vector layer - the occupied-territory layer needs to inject a <pattern> into that
-        // SVG's <defs> for its hatching, before it (or anything else) has added any shape to it.
+        // The occupied-territory layer needs the SVG root to exist immediately (it injects a
+        // <pattern> into its <defs>) - forcing the renderer here avoids Leaflet lazily creating
+        // that SVG only once the first vector layer is added.
         renderer: L.svg(),
     });
 
-    // Zooming out is never allowed past whatever "fit the whole country" needs at the map's
-    // current size - fitBounds finds that zoom, and this locks it in as the floor immediately
-    // after, so there's no empty space around the country to zoom out into. Since a resize (or
-    // fullscreen) needs a different zoom to fit the same bounds in a differently sized viewport,
-    // this re-fits and re-locks every time the map's own size actually changes, not just once.
-    // The floor is lifted back to the map's own absolute minimum first - fitBounds clamps its own
-    // result to the CURRENT minZoom, so calling this again during a fullscreen exit transition
-    // (which can briefly report a stale, mid-animation container size before settling) would
-    // otherwise get stuck: a too-high floor from that stale read blocks the correct, lower zoom
-    // the real final size needs, even once this runs again with the right measurement.
+    // fitBounds clamps to the CURRENT minZoom, so the floor is always lifted back to the map's
+    // absolute minimum first - otherwise a stale floor from an earlier call (e.g. a mid-animation
+    // fullscreen-exit size read) could block the correct, lower zoom the real final size needs.
     function fitAndLockMinZoom() {
         map.setMinZoom(MAP_MIN_ZOOM);
         map.fitBounds(UKRAINE_BOUNDS);
@@ -73,16 +65,14 @@ async function main() {
 
     L.imageOverlay(baseMapUrl, UKRAINE_BOUNDS).addTo(map);
     fitAndLockMinZoom();
-    // Leaflet's own "Leaflet" credit (setPrefix) isn't required by its license, so it's dropped -
-    // this app's own name takes that spot instead, ahead of the actual map data credits.
     map.attributionControl.setPrefix(false);
     map.attributionControl.addAttribution(`<a href="#" id="appAttribution">${strings.appName}</a>`);
     map.attributionControl.addAttribution(`<a href="#" id="neptunAttribution">${strings.liveMapNeptunAttribution}</a>`);
     map.attributionControl.addAttribution(`<a href="#" id="deepStateAttribution">${strings.liveMapDeepStateAttribution}</a>`);
 
-    // Each addAttribution call above rebuilds the whole control's innerHTML from scratch (Leaflet's
-    // own _update()), which would tear down and replace any earlier of these anchors - so listeners
-    // are wired up only once, after every addAttribution call is done, not right after each one.
+    // Each addAttribution call rebuilds the whole control's innerHTML from scratch (Leaflet's own
+    // _update()), tearing down any earlier of these anchors - listeners must be wired up only
+    // once, after every addAttribution call is done.
     const attributionLinks = [
         ['appAttribution', 'https://github.com/sergeiown/Alert_Server'],
         ['neptunAttribution', 'https://neptun.in.ua'],
@@ -95,15 +85,8 @@ async function main() {
         });
     });
 
-    // Map controls (zoom, center, fullscreen) stay on the left; the layer toggle list goes on
-    // the right (Leaflet's control default) so the two groups never compete for the same corner.
     new CenterControl({ title: strings.liveMapCenterButtonTitle, onClick: fitAndLockMinZoom }).addTo(map);
 
-    // The plugin's own default icons are hard-coded black-on-white - fine in light mode, but
-    // inverting the whole button via CSS filter (the previous approach) turns its white
-    // background near-black, a visibly different shade than every other button's actual dark-mode
-    // background color. Swapping in a white-fill version of the same icon instead keeps the
-    // button's own background-color the one thing controlling its color, matching the others.
     const isDarkMap = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const fullScreenIconOptions = isDarkMap
         ? {
@@ -130,11 +113,9 @@ async function main() {
         })
         .addTo(map);
 
-    // Resizing the window itself (not just entering/exiting fullscreen) also needs Leaflet to
-    // recompute its container size and rescale to fill it, in both directions. The DOM "resize"
-    // event only fires reliably for viewport/zoom changes, not for every case a BrowserWindow's
-    // content area changes size - a ResizeObserver on the map container itself reacts to any
-    // actual size change regardless of what caused it.
+    // The DOM "resize" event only fires reliably for viewport/zoom changes, not for every case a
+    // BrowserWindow's content area changes size - a ResizeObserver reacts to any actual size change
+    // regardless of cause.
     new ResizeObserver(() => {
         map.invalidateSize();
         fitAndLockMinZoom();

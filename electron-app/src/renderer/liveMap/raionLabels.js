@@ -1,9 +1,6 @@
-// Raion (district) centroids and names, computed from the public domain
-// slawomirmatuszak/ukrainian_geodata "rayony.geojson" dataset (136 raions, the 2020 reform
-// boundaries) - centroid of each raion's largest polygon ring, not a hand-picked point. The
-// dataset only carries Ukrainian names ("rayon"), so the English names are a mechanical
-// transliteration (the official Ukrainian national system), not curated exonyms like the oblast
-// labels have - there's no common English name for most raions.
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const RAIONS = [
     { lat: 48.52, lng: 38.72, uk: 'Алчевський', en: 'Alchevskyi' },
     { lat: 48.652, lng: 38.087, uk: 'Бахмутський', en: 'Bakhmutskyi' },
@@ -143,13 +140,6 @@ const RAIONS = [
     { lat: 44.665, lng: 34.333, uk: 'Ялтинський', en: 'Yaltynskyi' },
 ];
 
-// Degrees, roughly cosine-scaled for longitude - not a true haversine distance, but close enough
-// at this scale to compare against a small threshold. A handful of raions (the ones shaped tightly
-// around their own oblast-capital city, e.g. Poltavskyi around Poltava) have a centroid close
-// enough to that city's own point that even the upward offset in the CSS (.raion-label) isn't
-// enough to keep the two labels from overlapping - so those specific raions skip their own label
-// entirely: the city's name already identifies the spot, and the raion's border (drawn separately)
-// still shows its extent.
 const CITY_PROXIMITY_THRESHOLD_DEG = 0.022;
 
 function isNearACity(raion, cities) {
@@ -160,8 +150,6 @@ function isNearACity(raion, cities) {
     });
 }
 
-// Same purpose as OBLAST_EN_BY_UK in regionLabels.js - lets popups show this same transliterated
-// English name instead of duplicating the list.
 const RAION_EN_BY_UK = new Map(RAIONS.map((raion) => [raion.uk, raion.en]));
 
 function buildRaionGroup(language, cities) {
@@ -170,14 +158,10 @@ function buildRaionGroup(language, cities) {
 
     RAIONS.filter((raion) => !isNearACity(raion, cities)).forEach((raion) => {
         L.marker([raion.lat, raion.lng], {
-            // Leaflet positions this outer element with its own inline "transform", which would
-            // silently clobber a centering transform on the same element - so the actual text
-            // lives in an inner span instead, and that span is the one centered over the point.
+            // Leaflet sets its own inline "transform" on this element, which would clobber a
+            // centering transform applied here too - so the text lives in an inner span instead.
             icon: L.divIcon({
                 className: 'map-label-anchor',
-                // The bare adjective ("Кременчуцький") reads as ambiguous next to a city label at
-                // this same zoom tier - appending the noun makes it unambiguously a raion at a
-                // glance, matching the click-popup wording (see alertPopup.js/regionStatus.js).
                 html: `<span class="raion-label">${isEnglish ? `${raion.en} District` : `${raion.uk} район`}</span>`,
                 iconSize: [0, 0],
                 iconAnchor: [0, 0],

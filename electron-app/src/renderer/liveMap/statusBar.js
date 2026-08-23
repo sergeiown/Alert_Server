@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const CLOCK_TICK_MS = 1000;
 const ALERT_COUNT_REFRESH_MS = 30000;
 

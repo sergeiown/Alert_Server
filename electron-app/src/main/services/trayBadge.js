@@ -1,8 +1,8 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const { nativeImage } = require('electron');
 
-// Recolors every non-transparent pixel of the icon to a single solid red, alpha (so the icon's own
-// shape/edges/anti-aliasing) left untouched - the icon itself turns red rather than gaining a
-// separate badge, so it reads as a status change even at a glance, not as an extra decoration.
 // nativeImage's raw bitmap buffer is BGRA on Windows (the platform this app ships for).
 const TINT_BGRA = [35, 55, 219];
 

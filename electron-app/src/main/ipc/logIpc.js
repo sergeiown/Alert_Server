@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const fs = require('fs');
 const { spawn } = require('child_process');
 const { ipcMain } = require('electron');

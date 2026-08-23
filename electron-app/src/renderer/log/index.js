@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const sizeLabel = document.getElementById('sizeLabel');
 const clearButton = document.getElementById('clearButton');
 const openNotepadButton = document.getElementById('openNotepadButton');

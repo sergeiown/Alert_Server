@@ -1,12 +1,11 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const { logEvent } = require('./logger');
 
-// The "cyterat/deepstate-map-data" community archive of DeepState's own occupied-territory map -
-// one file per day, name-dated, updated once daily around 03:00 UTC. This is real, actively
-// changing military-situation data, unlike the static administrative boundaries embedded
-// elsewhere on the live map - it's fetched at runtime and never bundled with the app.
 const BASE_URL = 'https://raw.githubusercontent.com/cyterat/deepstate-map-data/main/data/deepstatemap_data_';
-const REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000; // the source itself only updates once a day
-const MAX_LOOKBACK_DAYS = 5; // publishing can lag - give up rather than walking back forever
+const REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const MAX_LOOKBACK_DAYS = 5;
 
 let cached = { geojson: null, date: null };
 
@@ -28,7 +27,7 @@ async function refresh() {
 
     for (let daysBack = 0; daysBack < MAX_LOOKBACK_DAYS; daysBack++) {
         const dateStr = formatDate(new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000));
-        if (cached.date === dateStr) return; // already have this day's snapshot
+        if (cached.date === dateStr) return;
 
         try {
             const geojson = await tryFetch(dateStr);

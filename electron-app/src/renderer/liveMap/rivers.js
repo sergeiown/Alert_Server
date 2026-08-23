@@ -1,12 +1,6 @@
-// Real Dnipro course through Ukraine (from the Belarus border to just past Kherson), simplified
-// from the public domain Natural Earth 1:10m "rivers + lake centerlines" dataset
-// (naturalearthdata.com) - the river/lake-crossing segments were stitched back into one continuous
-// line and thinned out, not hand-drawn. The source-side portion of the raw dataset (the stretch of
-// the Dnipro that runs through Belarus before it ever reaches Ukraine) was cut off using the actual
-// Ukraine border polygon from the same Natural Earth admin-0 countries dataset, so the line starts
-// right where the river crosses into Ukraine. Rendered as the thin channel that connects the
-// reservoirs below (and covers the stretches no reservoir spans), not as the river's only
-// representation.
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const DNIPRO_COURSE = [
     [51.7547, 30.6456], [51.7399, 30.6345], [51.7159, 30.6301], [51.7032, 30.6133], [51.7001, 30.5698], [51.6656, 30.5639],
     [51.6475, 30.563], [51.6375, 30.5493],
@@ -42,12 +36,6 @@ const DNIPRO_COURSE = [
     [46.6496, 32.6455],
 ];
 
-// Real polygons for the four largest Dnipro reservoirs (Kyiv, Kremenchuk, Dniprodzerzhynsk/Kamianske,
-// Kakhovka), simplified from the same Natural Earth 1:10m lakes dataset. These are the stretches where
-// the Dnipro is famously several km wide, not a river channel - the thin course line above is not
-// enough to show that, so the actual water-body shape is drawn on top of it here. Two smaller real
-// reservoirs (Kanivske, Dniprovske/Zaporizke) aren't included in this dataset at 1:10m scale, so those
-// short stretches fall back to the plain course line.
 const KYIV_RESERVOIR = [
     [50.8636, 30.4306], [50.8765, 30.4362], [50.891, 30.4374], [50.9051, 30.4327], [50.9104, 30.4468], [50.9269, 30.4465],
     [50.9475, 30.4424], [50.9666, 30.4462], [50.974, 30.4297], [51.0122, 30.4121], [51.0211, 30.3882], [51.0293, 30.2702],

@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 function formatDuration(ms, strings) {
     const totalMinutes = Math.round(ms / 60000);
     const days = Math.floor(totalMinutes / (60 * 24));
@@ -12,11 +15,6 @@ function formatDuration(ms, strings) {
     return parts.length ? parts.join(' ') : `<1${strings.unitMinute}`;
 }
 
-// A bare time ("Тривога: 00:22:00") reads as "just now-ish" - fine for the overwhelming majority
-// of alerts (started earlier today), but misleading for the rare region whose alert has been
-// running for days (a real, if unusual, case - e.g. Crimea's siren feed has been continuously "on"
-// for years). The date is only added when it's actually needed, so the common case stays as short
-// as before.
 function formatStartedAt(startedAt, locale) {
     const started = new Date(startedAt);
     const now = new Date();
@@ -29,11 +27,6 @@ function formatStartedAt(startedAt, locale) {
     return sameDay ? timeText : `${started.toLocaleDateString(locale)} ${timeText}`;
 }
 
-// Builds the popup content shown when the user clicks an oblast, raion, or city - `startedAt` is
-// the region's own alert start time if it has one right now, or null/undefined if it doesn't.
-// `inheritedFromName` names the broader region (e.g. the enclosing oblast) when `startedAt` is
-// actually that region's alert, not this one's own - the raion/city itself has none, but sits
-// inside a region that is currently under a wider alert.
 function alertPopupHtml(displayName, startedAt, strings, language, inheritedFromName) {
     const locale = language === 'English' ? 'en-US' : 'uk-UA';
 

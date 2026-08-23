@@ -1,10 +1,6 @@
-// Which oblast (by the same short key as OBLAST_BORDERS/regionLabels.js) each raion belongs to -
-// built from locations.json's own state/district nesting for the 127 raions it tracks, plus a
-// short manual list for the 9 that only exist in the 2020-reform dataset (occupied Crimea and
-// parts of Luhansk oblast that alerts.in.ua doesn't track individually). Used so a click on a
-// raion that has no alert of its own can still show its enclosing oblast's status when that
-// whole oblast is under alert, instead of always reporting "no active alert" for every raion
-// that isn't itself the specific alerted unit.
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
 const RAION_OBLAST = {
     "Кременчуцький": "Полтавська",
     "Полтавський": "Полтавська",
