@@ -6,3 +6,4 @@ UID/
 .dev.vars
 config.local.json
 electron-app/dist/
+data-flow-notes.txt
