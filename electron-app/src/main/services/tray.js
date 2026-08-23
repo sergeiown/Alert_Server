@@ -4,6 +4,7 @@ const { applyMassAttackBadge } = require('./trayBadge');
 const { openSettingsWindow } = require('../windows/settingsWindow');
 const { openLiveMapWindow } = require('../windows/liveMapWindow');
 const { openForecastWindow } = require('../windows/forecastWindow');
+const { openTrendsWindow } = require('../windows/trendsWindow');
 const { openLogWindow } = require('../windows/logWindow');
 const { openAboutWindow } = require('../windows/aboutWindow');
 const { toggleTrayPopup } = require('../windows/trayPopupWindow');
@@ -142,6 +143,7 @@ function buildMenu(language) {
         { type: 'separator' },
         { label: t('menuLiveMap', language), icon: getMenuIcon('Live_map.png'), click: () => openLiveMapWindow() },
         { label: t('menuForecast', language), icon: getMenuIcon('Forecast.png'), click: () => openForecastWindow() },
+        { label: t('menuTrends', language), icon: getMenuIcon('Trends.png'), click: () => openTrendsWindow() },
         { label: t('menuSettings', language), icon: getMenuIcon('Settings.png'), click: () => openSettingsWindow() },
         { label: t('menuLog', language), icon: getMenuIcon('Event_log.png'), click: () => openLogWindow() },
         { type: 'separator' },
