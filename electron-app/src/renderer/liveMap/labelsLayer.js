@@ -1,7 +1,7 @@
 import { buildOblastGroup } from './regionLabels.js';
 import { buildRaionGroup } from './raionLabels.js';
 import { buildRaionBordersGroup } from './raionBorders.js';
-import { buildCityGroup } from './cityLabels.js';
+import { buildCityGroup, CITIES } from './cityLabels.js';
 import { OBLAST_MIN_ZOOM, RAION_MIN_ZOOM } from './zoomTiers.js';
 
 // The default/base view (the whole country fit to a typical window, around zoom 6) must always
@@ -21,7 +21,7 @@ const LabelsLayer = L.LayerGroup.extend({
         this._oblastGroup = buildOblastGroup(language);
         this._raionGroup = L.layerGroup([
             buildRaionBordersGroup(),
-            buildRaionGroup(language),
+            buildRaionGroup(language, CITIES),
             buildCityGroup(strings, language),
         ]);
         this._active = null;

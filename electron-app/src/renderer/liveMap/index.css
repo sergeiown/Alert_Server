@@ -115,12 +115,24 @@ body {
     pointer-events: none;
 }
 
-.region-label,
-.raion-label {
+.region-label {
     position: absolute;
     left: 0;
     top: 0;
     transform: translate(-50%, -50%);
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* Sits fully above its point rather than centered on it (unlike .region-label) - many raions'
+   centroids land within a few km of their own namesake city (most oblast capitals are the seat of
+   a small, city-shaped raion), which is close enough at this zoom tier that a centered label would
+   otherwise sit right on top of that city's own dot and label. */
+.raion-label {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, calc(-100% - 4px));
     white-space: nowrap;
     pointer-events: none;
 }
