@@ -1,4 +1,5 @@
 import { normalizeOblastName, oblastDisplayName } from './regionNameUtils.js';
+import { transliterate } from './transliterate.js';
 
 const THREATS_URL = 'https://neptun.in.ua/api/v1/threats';
 const STREAM_URL = 'wss://neptun.in.ua/api/v1/stream';
@@ -49,11 +50,15 @@ const TYPE_ICONS = {
     },
     kab: {
         color: '#dc2626',
-        svg: '<ellipse cx="12" cy="15" rx="4.2" ry="7.5" /><polygon points="7.5,8 3,2 8.5,5.5" /><polygon points="16.5,8 21,2 15.5,5.5" />',
+        // Three fins (a center one facing the viewer, plus the two swept side fins), matching a
+        // real bomb/missile's actual tail - not just the two side fins visible from a flat profile.
+        svg: '<ellipse cx="12" cy="15" rx="4.2" ry="7.5" /><polygon points="7.5,8 3,2 8.5,5.5" /><polygon points="16.5,8 21,2 15.5,5.5" /><polygon points="10.5,7 13.5,7 12,1" />',
     },
     missile: {
         color: '#991b1b',
-        svg: '<polygon points="12,1 15,9 15,20 9,20 9,9" /><polygon points="9,15.5 4,22 9,19.5" /><polygon points="15,15.5 20,22 15,19.5" />',
+        // Three fins (a center one facing the viewer, plus the two swept side fins), matching a
+        // real missile's actual tail - not just the two side fins visible from a flat profile.
+        svg: '<polygon points="12,1 15,9 15,20 9,20 9,9" /><polygon points="9,15.5 4,22 9,19.5" /><polygon points="15,15.5 20,22 15,19.5" /><polygon points="10.5,17 13.5,17 12,23" />',
     },
     // The carrier aircraft (MiG-31K, launches Kinzhal missiles) rather than a missile itself -
     // documented by Neptun's own API as its own "type" value, so it needs telling apart from
@@ -120,9 +125,10 @@ function confidenceLabel(threat, strings) {
 // it doesn't offer an English variant of any of them. The title is replaced with this app's own
 // localized type name (already available via strings), and in English mode the explanation is
 // rebuilt as a short "locality, oblast" line instead, translating the oblast through the same
-// lookup the map's own oblast labels/popups use - but the locality (settlement) name itself has no
-// translation source anywhere in this app and stays exactly as Neptun sent it. That's a real,
-// disclosed limitation, not an oversight: there's no gazetteer here for arbitrary place names.
+// lookup the map's own oblast labels/popups use. The locality (settlement) name has no real
+// translation source anywhere in this app, so it's transliterated instead of left in Cyrillic -
+// otherwise the line mixed two scripts/languages in one place (English oblast, Ukrainian
+// locality), which read as broken even though neither half was individually wrong.
 function tooltipContent(threat, strings, isEnglish) {
     const typeKey = resolveTypeKey(threat);
     const locale = isEnglish ? 'en-US' : 'uk-UA';
@@ -130,8 +136,9 @@ function tooltipContent(threat, strings, isEnglish) {
     const title = strings[`liveMapType_${typeKey}`] || threat.title;
 
     const oblastPart = threat.region ? oblastDisplayName(normalizeOblastName(threat.region), true) : '';
+    const localityPart = isEnglish && threat.locality ? transliterate(threat.locality) : threat.locality;
     const locationLine = isEnglish
-        ? [threat.locality, oblastPart].filter(Boolean).join(', ')
+        ? [localityPart, oblastPart].filter(Boolean).join(', ')
         : threat.explanationShort || [threat.locality, threat.region].filter(Boolean).join(', ');
 
     const lines = [
@@ -172,6 +179,10 @@ function startNeptunLayer(map, strings, language) {
             if (typeof threat.lat !== 'number' || typeof threat.lon !== 'number') return;
             L.marker([threat.lat, threat.lon], { icon: threatIcon(threat) })
                 .bindTooltip(tooltipContent(threat, strings, isEnglish))
+                // A region/raion/city popup left open from an earlier click would otherwise sit
+                // on top of (or right next to) a threat's own tooltip - closing it the moment the
+                // cursor reaches a threat keeps the two from fighting for the same space.
+                .on('mouseover', () => map.closePopup())
                 .addTo(layer);
         });
     }
