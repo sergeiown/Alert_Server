@@ -100,3 +100,14 @@ main {
     color: var(--muted);
     padding: 2px 0;
 }
+
+#forecast-more {
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 4px;
+    cursor: pointer;
+}
+
+#forecast-more:hover {
+    text-decoration: underline;
+}

@@ -7,6 +7,7 @@ const { getLatestMatchedAlerts } = require('../services/alertState');
 const { alertTypeName } = require('../services/alertTypes');
 const { getResourcePath } = require('../services/appPaths');
 const { getUpcomingPredictions } = require('../services/forecastWatcher');
+const { openForecastWindow } = require('../windows/forecastWindow');
 
 const POPUP_FORECAST_LIMIT = 3;
 
@@ -31,6 +32,10 @@ function registerTrayPopupIpc() {
             name: prediction.name,
             predictedAt: prediction.predictedAt,
         }));
+    });
+
+    ipcMain.handle('trayPopup:openForecast', () => {
+        openForecastWindow();
     });
 }
 
