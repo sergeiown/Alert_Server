@@ -1,5 +1,5 @@
 // Real boundaries for the cities that have their own "міська громада" (or, for the two
-// exact-name entries, no suffix at all) in the public domain slawomirmatuszak/ukrainian_geodata
+// exact-name entries, no suffix at all) in the CC BY 4.0 licensed slawomirmatuszak/ukrainian_geodata
 // "hromady.geojson" dataset - largest polygon ring, Douglas-Peucker simplified. A modern
 // "hromada" boundary is usually a bit larger than the built-up city itself (it includes annexed
 // surrounding villages from the 2020 reform), so these read as "the city's official area", not
