@@ -15,6 +15,55 @@ const SNAPSHOT_REFRESH_MS = 60000;
 const MISSILE_TYPE_ALIASES = ['missile', 'rocket', 'cruise_missile', 'ballistic'];
 const RECON_TITLE_PATTERN = /розвід/i;
 
+// Minimum on-screen center-to-center spacing kept between threat icons - comfortably more than
+// the 22px icon itself, so nudged-apart icons never end up touching, let alone one covering
+// another.
+const MARKER_MIN_GAP_PX = 28;
+const DECLUTTER_ITERATIONS = 40;
+
+// Nudges icons apart in screen-pixel space only (never changes which real-world spot a marker is
+// tooltip-anchored near by more than a fraction of the map view) - pure relaxation: as long as any
+// pair is closer than the minimum gap, push both away from each other by half the shortfall.
+// Two threats reported at the exact same point start at zero distance, which has no direction to
+// push along - resolved with a deterministic per-pair angle so they don't stay stacked.
+function declutterPoints(points, minGap) {
+    const out = points.map((p) => ({ x: p.x, y: p.y }));
+
+    for (let iter = 0; iter < DECLUTTER_ITERATIONS; iter++) {
+        let moved = false;
+
+        for (let i = 0; i < out.length; i++) {
+            for (let j = i + 1; j < out.length; j++) {
+                let dx = out[j].x - out[i].x;
+                let dy = out[j].y - out[i].y;
+                let dist = Math.hypot(dx, dy);
+
+                if (dist < 1e-6) {
+                    const angle = ((i * 47 + j * 91) % 360) * (Math.PI / 180);
+                    dx = Math.cos(angle);
+                    dy = Math.sin(angle);
+                    dist = 1;
+                }
+
+                if (dist < minGap) {
+                    const overlap = (minGap - dist) / 2;
+                    const ux = dx / dist;
+                    const uy = dy / dist;
+                    out[i].x -= ux * overlap;
+                    out[i].y -= uy * overlap;
+                    out[j].x += ux * overlap;
+                    out[j].y += uy * overlap;
+                    moved = true;
+                }
+            }
+        }
+
+        if (!moved) break;
+    }
+
+    return out;
+}
+
 // Nose/front points up = 0 deg = north, so rotating the wrapper by `heading` degrees points the
 // icon the right way.
 const TYPE_ICONS = {
@@ -82,13 +131,18 @@ function escapeHtml(text) {
     return String(text ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// The heading rotation lives on an inner wrapper, not on .threat-icon itself - a CSS filter (the
+// drop-shadow) is computed before its element's own transform is applied, so a shadow set on the
+// same element that rotates would spin along with the icon instead of staying cast in one fixed
+// direction.
 function iconHtml(typeKey, rotationDeg) {
     const { color, svg } = TYPE_ICONS[typeKey];
     const rotation = typeof rotationDeg === 'number' ? `transform: rotate(${rotationDeg}deg);` : '';
     return (
-        `<div class="threat-icon" style="color: ${color}; ${rotation}">` +
+        `<div class="threat-icon" style="color: ${color};">` +
+        `<div class="threat-icon-rotate" style="${rotation}">` +
         `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="#ffffff" stroke-width="1">${svg}</svg>` +
-        `</div>`
+        `</div></div>`
     );
 }
 
@@ -152,21 +206,32 @@ function startNeptunLayer(map, strings, language) {
     const isEnglish = language === 'English';
     let reconnectTimer = null;
     let heartbeatTimer = null;
+    let lastThreats = [];
 
     buildLegend(strings).addTo(map);
 
     function renderThreats(threats) {
         layer.clearLayers();
         if (!Array.isArray(threats)) return;
+        lastThreats = threats;
 
-        threats.forEach((threat) => {
-            if (typeof threat.lat !== 'number' || typeof threat.lon !== 'number') return;
-            L.marker([threat.lat, threat.lon], { icon: threatIcon(threat) })
+        const valid = threats.filter((t) => typeof t.lat === 'number' && typeof t.lon === 'number');
+        const points = valid.map((t) => map.latLngToContainerPoint([t.lat, t.lon]));
+        const spread = declutterPoints(points, MARKER_MIN_GAP_PX);
+
+        valid.forEach((threat, i) => {
+            const displayLatLng = map.containerPointToLatLng([spread[i].x, spread[i].y]);
+            L.marker(displayLatLng, { icon: threatIcon(threat) })
                 .bindTooltip(tooltipContent(threat, strings, isEnglish))
                 .on('mouseover', () => map.closePopup())
                 .addTo(layer);
         });
     }
+
+    // The on-screen gap between two threats changes with zoom even though nothing about the
+    // threats themselves changed - re-run the same declutter pass against the last known data
+    // instead of waiting for the next snapshot/stream update.
+    map.on('zoomend', () => renderThreats(lastThreats));
 
     async function fetchSnapshot() {
         try {
