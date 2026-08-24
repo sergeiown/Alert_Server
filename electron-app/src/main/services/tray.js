@@ -3,7 +3,6 @@
 
 const { Tray, Menu, app, Notification, nativeImage, nativeTheme, screen } = require('electron');
 const { getResourcePath } = require('./appPaths');
-const { applyMassAttackBadge } = require('./trayBadge');
 const { openSettingsWindow } = require('../windows/settingsWindow');
 const { openLiveMapWindow } = require('../windows/liveMapWindow');
 const { openForecastWindow } = require('../windows/forecastWindow');
@@ -48,14 +47,13 @@ function getIconSize() {
     return ICON_SIZES.reduce((best, size) => (Math.abs(size - target) < Math.abs(best - target) ? size : best));
 }
 
-function loadIcon(fileName, badge = false) {
+function loadIcon(fileName) {
     const size = getIconSize();
-    const key = badge ? `${fileName}@${size}#mass` : `${fileName}@${size}`;
+    const key = `${fileName}@${size}`;
     if (!iconCache.has(key)) {
-        let image = nativeImage
+        const image = nativeImage
             .createFromPath(getResourcePath('icons', fileName))
             .resize({ width: size, height: size, quality: 'best' });
-        if (badge) image = applyMassAttackBadge(image);
         iconCache.set(key, image);
     }
     return iconCache.get(key);
@@ -65,22 +63,23 @@ function currentTheme() {
     return nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
 }
 
-function staticIconFile(activeCount, trayMonoIcon) {
+// The mass-attack variant is a real dedicated icon (its own art, its own outline), not a color
+// overlay on top of the normal one - so it's picked here, by filename, same as the alert/theme
+// variants, rather than post-processed at render time.
+function staticIconFile(activeCount, massAttack) {
     const alertPart = activeCount > 0 ? '_alert' : '';
-    const stylePart = trayMonoIcon ? '_mono' : '';
-    return `tray${alertPart}${stylePart}_${currentTheme()}.png`;
+    const massPart = massAttack ? '_mass' : '';
+    return `tray${alertPart}${massPart}_${currentTheme()}.png`;
 }
 
-function pulseFrameFile(frameNumber, trayMonoIcon) {
-    return trayMonoIcon
-        ? `tray_mono_pulse_${frameNumber}_${currentTheme()}.png`
-        : `tray_pulse_${frameNumber}_${currentTheme()}.png`;
+function pulseFrameFile(frameNumber, massAttack) {
+    const massPart = massAttack ? 'mass_' : '';
+    return `tray_${massPart}pulse_${frameNumber}_${currentTheme()}.png`;
 }
 
-function shakeFrameFile(frameNumber, trayMonoIcon) {
-    return trayMonoIcon
-        ? `tray_alert_mono_shake_${frameNumber}_${currentTheme()}.png`
-        : `tray_alert_shake_${frameNumber}_${currentTheme()}.png`;
+function shakeFrameFile(frameNumber, massAttack) {
+    const massPart = massAttack ? 'mass_' : '';
+    return `tray_alert_${massPart}shake_${frameNumber}_${currentTheme()}.png`;
 }
 
 function stopAnimationTimer() {
@@ -93,7 +92,7 @@ function stopAnimationTimer() {
 function playFrames(fileNames, intervalMs, loop, onDone) {
     stopAnimationTimer();
     let index = 0;
-    trayInstance.setImage(loadIcon(fileNames[0], massAttackActive));
+    trayInstance.setImage(loadIcon(fileNames[0]));
     animationTimer = setInterval(() => {
         if (!trayInstance) return;
         index++;
@@ -105,20 +104,20 @@ function playFrames(fileNames, intervalMs, loop, onDone) {
             }
             index = 0;
         }
-        trayInstance.setImage(loadIcon(fileNames[index], massAttackActive));
+        trayInstance.setImage(loadIcon(fileNames[index]));
     }, intervalMs);
 }
 
-function playIdlePulse(trayMonoIcon) {
-    const frames = Array.from({ length: PULSE_FRAME_COUNT }, (_, i) => pulseFrameFile(i + 1, trayMonoIcon));
+function playIdlePulse(massAttack) {
+    const frames = Array.from({ length: PULSE_FRAME_COUNT }, (_, i) => pulseFrameFile(i + 1, massAttack));
     playFrames(frames, PULSE_INTERVAL_MS, false, () => {
-        if (trayInstance) trayInstance.setImage(loadIcon(staticIconFile(0, trayMonoIcon), massAttackActive));
+        if (trayInstance) trayInstance.setImage(loadIcon(staticIconFile(0, massAttack)));
     });
 }
 
-function startAlertLoop(trayMonoIcon) {
+function startAlertLoop(massAttack) {
     alertLoopActive = true;
-    const frames = Array.from({ length: SHAKE_FRAME_COUNT }, (_, i) => shakeFrameFile(i + 1, trayMonoIcon));
+    const frames = Array.from({ length: SHAKE_FRAME_COUNT }, (_, i) => shakeFrameFile(i + 1, massAttack));
     playFrames(frames, SHAKE_INTERVAL_MS, true);
 }
 
@@ -129,12 +128,11 @@ function stopAlertLoop() {
 
 function refreshIconForCurrentState() {
     if (!trayInstance) return;
-    const { trayMonoIcon } = settingsStore.getSettings();
     if (alertLoopActive) {
-        startAlertLoop(trayMonoIcon);
+        startAlertLoop(massAttackActive);
     } else {
         stopAnimationTimer();
-        trayInstance.setImage(loadIcon(staticIconFile(lastActiveCount, trayMonoIcon), massAttackActive));
+        trayInstance.setImage(loadIcon(staticIconFile(lastActiveCount, massAttackActive)));
     }
 }
 
@@ -160,9 +158,9 @@ function buildMenu(language) {
 }
 
 function createTray() {
-    const { language, trayMonoIcon } = settingsStore.getSettings();
+    const { language } = settingsStore.getSettings();
 
-    trayInstance = new Tray(loadIcon(staticIconFile(0, trayMonoIcon)));
+    trayInstance = new Tray(loadIcon(staticIconFile(0, false)));
     trayInstance.setToolTip(t('trayDefaultTooltip', language));
     trayInstance.setContextMenu(buildMenu(language));
     trayInstance.on('click', (event, bounds) => toggleTrayPopup(bounds));
@@ -195,21 +193,24 @@ function updateTrayState(activeCount, totalCount) {
 
     const wasIdle = lastActiveCount === 0;
     lastActiveCount = activeCount;
-    const { language, trayMonoIcon, massAttackThreshold } = settingsStore.getSettings();
+    const { language, massAttackThreshold } = settingsStore.getSettings();
     const wasMassAttackActive = massAttackActive;
     massAttackActive = totalCount >= massAttackThreshold;
+    const massAttackChanged = massAttackActive !== wasMassAttackActive;
 
     if (activeCount > 0) {
-        if (!alertLoopActive) startAlertLoop(trayMonoIcon);
+        // Also restarts the loop on a mass-attack change mid-alert, so the shake frames (and
+        // their color pulse direction) switch to match immediately, not just on the next alert.
+        if (!alertLoopActive || massAttackChanged) startAlertLoop(massAttackActive);
     } else if (alertLoopActive) {
         stopAlertLoop();
-        trayInstance.setImage(loadIcon(staticIconFile(0, trayMonoIcon), massAttackActive));
+        trayInstance.setImage(loadIcon(staticIconFile(0, massAttackActive)));
     } else if (wasIdle && !animationTimer) {
-        playIdlePulse(trayMonoIcon);
-    } else if (massAttackActive !== wasMassAttackActive) {
+        playIdlePulse(massAttackActive);
+    } else if (massAttackChanged) {
         // Neither branch above touches the icon (no animation running, not freshly idle) - the
         // badge alone changed, so the static icon still needs a manual refresh to show/hide it.
-        trayInstance.setImage(loadIcon(staticIconFile(activeCount, trayMonoIcon), massAttackActive));
+        trayInstance.setImage(loadIcon(staticIconFile(activeCount, massAttackActive)));
     }
 
     if (tooltipOverride) return;
