@@ -58,7 +58,6 @@
     "updateProgressReady": "Завантажено, встановлення...",
     "windowTitle": "Alert Server - Налаштування",
     "runAtStartupLabel": "Запускати при старті Windows",
-    "trayMonoIconLabel": "Монохромна іконка трею",
     "visualNotificationsLabel": "Відображати візуальні сповіщення",
     "activeAlertNotifyLabel": "Сповіщати про поточні тривоги",
     "showLiveMapOnAlertLabel": "Відображати велику мапу",

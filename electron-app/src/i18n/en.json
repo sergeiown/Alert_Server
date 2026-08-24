@@ -58,7 +58,6 @@
     "updateProgressReady": "Downloaded, installing...",
     "windowTitle": "Alert Server - Settings",
     "runAtStartupLabel": "Run at Windows startup",
-    "trayMonoIconLabel": "Monochrome tray icon",
     "visualNotificationsLabel": "Show visual notifications",
     "activeAlertNotifyLabel": "Notify about active alerts",
     "showLiveMapOnAlertLabel": "Show the live map",
