@@ -12,7 +12,6 @@ const searchInput = document.getElementById('search');
 const summary = document.getElementById('summary');
 const clearRegionsButton = document.getElementById('clearRegionsButton');
 const runAtStartupInput = document.getElementById('runAtStartup');
-const trayMonoIconInput = document.getElementById('trayMonoIcon');
 const visualNotificationsEnabledInput = document.getElementById('visualNotificationsEnabled');
 const activeAlertNotifyEnabledInput = document.getElementById('activeAlertNotifyEnabled');
 const showLiveMapOnAlertInput = document.getElementById('showLiveMapOnAlert');
@@ -28,7 +27,6 @@ const themeInput = document.getElementById('theme');
 function applyStrings(strings) {
     document.title = strings.windowTitle;
     document.getElementById('runAtStartupLabel').textContent = strings.runAtStartupLabel;
-    document.getElementById('trayMonoIconLabel').textContent = strings.trayMonoIconLabel;
     document.getElementById('visualNotificationsLabel').textContent = strings.visualNotificationsLabel;
     document.getElementById('activeAlertNotifyLabel').textContent = strings.activeAlertNotifyLabel;
     document.getElementById('showLiveMapOnAlertLabel').textContent = strings.showLiveMapOnAlertLabel;
@@ -69,7 +67,6 @@ function updateSoundCountDisabledState() {
 }
 
 async function initGeneralSettings(settings) {
-    trayMonoIconInput.checked = settings.trayMonoIcon;
     visualNotificationsEnabledInput.checked = settings.visualNotificationsEnabled;
     activeAlertNotifyEnabledInput.checked = settings.activeAlertNotifyEnabled;
     showLiveMapOnAlertInput.checked = settings.showLiveMapOnAlert;
@@ -86,9 +83,6 @@ async function initGeneralSettings(settings) {
     updateNotifyDisabledState();
     updateSoundCountDisabledState();
 
-    trayMonoIconInput.addEventListener('change', () => {
-        window.alertServer.setSetting('trayMonoIcon', trayMonoIconInput.checked);
-    });
     visualNotificationsEnabledInput.addEventListener('change', () => {
         window.alertServer.setSetting('visualNotificationsEnabled', visualNotificationsEnabledInput.checked);
         updateNotifyDisabledState();

@@ -45,9 +45,6 @@ function importLegacyConfig(oldDir, { settingsStore, regionsStore }) {
     if (fs.existsSync(settingsPath)) {
         const oldSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
         if (oldSettings.language) settingsStore.updateSetting('language', oldSettings.language);
-        if (typeof oldSettings.trayMonoIcon === 'boolean') {
-            settingsStore.updateSetting('trayMonoIcon', oldSettings.trayMonoIcon);
-        }
         if (typeof oldSettings.alertSound === 'boolean') {
             settingsStore.updateSetting('alertSound', oldSettings.alertSound);
         }
