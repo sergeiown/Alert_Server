@@ -113,7 +113,7 @@ async function initGeneralSettings(settings) {
         window.alertServer.setSetting('alertSoundCount', count);
     });
     massAttackThresholdInput.addEventListener('change', () => {
-        const threshold = Math.max(5, Math.min(60, Number(massAttackThresholdInput.value) || 20));
+        const threshold = Math.max(50, Math.min(100, Number(massAttackThresholdInput.value) || 75));
         massAttackThresholdInput.value = threshold;
         window.alertServer.setSetting('massAttackThreshold', threshold);
     });
