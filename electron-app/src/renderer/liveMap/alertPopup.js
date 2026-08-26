@@ -27,7 +27,7 @@ function formatStartedAt(startedAt, locale) {
     return sameDay ? timeText : `${started.toLocaleDateString(locale)} ${timeText}`;
 }
 
-function alertPopupHtml(displayName, startedAt, strings, language, inheritedFromName) {
+function alertPopupHtml(displayName, startedAt, alertTypeName, strings, language, inheritedFromName) {
     const locale = language === 'English' ? 'en-US' : 'uk-UA';
 
     if (!startedAt) {
@@ -36,13 +36,15 @@ function alertPopupHtml(displayName, startedAt, strings, language, inheritedFrom
 
     const startedTime = formatStartedAt(startedAt, locale);
     const duration = formatDuration(Date.now() - new Date(startedAt).getTime(), strings);
+    const typeLine = alertTypeName ? `${strings.alertType}: ${alertTypeName}<br>` : '';
     const note = inheritedFromName
         ? `<br><small>${strings.liveMapAlertAcrossRegion.replace('{name}', inheritedFromName)}</small>`
         : '';
 
     return (
         `<strong>${displayName}</strong><br>` +
-        `${strings.alertStarted}: ${startedTime}<br>` +
+        `${typeLine}` +
+        `${strings.alertPopupStarted}: ${startedTime}<br>` +
         `${strings.alertDuration}: ${duration}${note}`
     );
 }

@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 import { CITY_BORDERS } from './cityBorders.js';
-import { getOblastStartedAt } from './alertedRegionsStore.js';
+import { getOblastStartedAt, getOblastAlertTypeName } from './alertedRegionsStore.js';
 import { alertPopupHtml } from './alertPopup.js';
 import { oblastDisplayName } from './regionNameUtils.js';
 
@@ -58,7 +58,14 @@ function buildCityGroup(strings, language) {
         const displayName = isEnglish ? city.en : city.uk;
         const inheritedFromName = city.oblast === 'м. Київ' ? null : oblastDisplayName(city.oblast, isEnglish);
         const popupContent = () =>
-            alertPopupHtml(displayName, getOblastStartedAt(city.oblast), strings, language, inheritedFromName);
+            alertPopupHtml(
+                displayName,
+                getOblastStartedAt(city.oblast),
+                getOblastAlertTypeName(city.oblast),
+                strings,
+                language,
+                inheritedFromName
+            );
 
         if (border) {
             L.polygon(border, {

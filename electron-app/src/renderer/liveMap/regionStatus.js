@@ -4,7 +4,13 @@
 import { OBLAST_BORDERS } from './oblastBorders.js';
 import { RAION_BORDERS } from './raionBorders.js';
 import { CITY_BORDERS } from './cityBorders.js';
-import { subscribe as subscribeAlertedRegions, getOblastStartedAt, getRaionStartedAt } from './alertedRegionsStore.js';
+import {
+    subscribe as subscribeAlertedRegions,
+    getOblastStartedAt,
+    getRaionStartedAt,
+    getOblastAlertTypeName,
+    getRaionAlertTypeName,
+} from './alertedRegionsStore.js';
 import { alertPopupHtml } from './alertPopup.js';
 import { RAION_OBLAST } from './raionOblastMap.js';
 import { RAION_MIN_ZOOM } from './zoomTiers.js';
@@ -53,10 +59,10 @@ const RegionStatusLayer = L.LayerGroup.extend({
         L.LayerGroup.prototype.onRemove.call(this, map);
     },
 
-    // `ownStartedAt` drives what's actually drawn; `popupStartedAt`/`inheritedFromName` drive the
-    // popup text, which can differ (an inherited alert is shown in the popup even when nothing is
-    // drawn to indicate it visually).
-    _drawRegion: function (rings, displayName, ownStartedAt, now, popupStartedAt, inheritedFromName) {
+    // `ownStartedAt` drives what's actually drawn; `popupStartedAt`/`popupAlertTypeName`/
+    // `inheritedFromName` drive the popup text, which can differ (an inherited alert is shown in
+    // the popup even when nothing is drawn to indicate it visually).
+    _drawRegion: function (rings, displayName, ownStartedAt, now, popupStartedAt, popupAlertTypeName, inheritedFromName) {
         const alerted = Boolean(ownStartedAt);
         const color = alerted ? shadeFor(ownStartedAt, now) : NEUTRAL_COLOR;
         const { _strings: strings, _language: language } = this;
@@ -69,7 +75,9 @@ const RegionStatusLayer = L.LayerGroup.extend({
             fillColor: color,
             fillOpacity: alerted ? ALERTED_FILL_OPACITY : NEUTRAL_FILL_OPACITY,
         })
-            .bindPopup(() => alertPopupHtml(displayName, popupStartedAt, strings, language, inheritedFromName))
+            .bindPopup(() =>
+                alertPopupHtml(displayName, popupStartedAt, popupAlertTypeName, strings, language, inheritedFromName)
+            )
             .addTo(this);
     },
 
@@ -81,39 +89,52 @@ const RegionStatusLayer = L.LayerGroup.extend({
 
         Object.entries(OBLAST_BORDERS).forEach(([name, rings]) => {
             const startedAt = getOblastStartedAt(name);
-            this._drawRegion(rings, oblastDisplayName(name, isEnglish), startedAt, now, startedAt);
+            const alertTypeName = getOblastAlertTypeName(name);
+            this._drawRegion(rings, oblastDisplayName(name, isEnglish), startedAt, now, startedAt, alertTypeName);
         });
         // Kyiv city has no oblast-tier polygon of its own (folded into Kyiv oblast's shape in the
         // source dataset), so its city outline stands in for it here.
         if (CITY_BORDERS['Київ']) {
             const startedAt = getOblastStartedAt('м. Київ');
-            this._drawRegion([CITY_BORDERS['Київ']], isEnglish ? 'Kyiv' : 'Київ', startedAt, now, startedAt);
+            const alertTypeName = getOblastAlertTypeName('м. Київ');
+            this._drawRegion([CITY_BORDERS['Київ']], isEnglish ? 'Kyiv' : 'Київ', startedAt, now, startedAt, alertTypeName);
         }
 
         Object.entries(RAION_BORDERS).forEach(([name, ring]) => {
             const ownStartedAt = getRaionStartedAt(name);
+            const ownAlertTypeName = getRaionAlertTypeName(name);
             const oblastKey = RAION_OBLAST[name];
             const oblastStartedAt = oblastKey ? getOblastStartedAt(oblastKey) : null;
+            const oblastAlertTypeName = oblastKey ? getOblastAlertTypeName(oblastKey) : null;
 
             if (!raionTier) {
                 if (ownStartedAt) {
                     // Skipped when the oblast is also alerted: the oblast's own fill already
                     // covers this ground while zoomed out, so drawing the raion too would double up.
                     if (!oblastStartedAt) {
-                        this._drawRegion([ring], raionDisplayName(name, isEnglish), ownStartedAt, now, ownStartedAt);
+                        this._drawRegion(
+                            [ring],
+                            raionDisplayName(name, isEnglish),
+                            ownStartedAt,
+                            now,
+                            ownStartedAt,
+                            ownAlertTypeName
+                        );
                     }
                 }
                 return;
             }
 
-            const inheritedStartedAt = !ownStartedAt ? oblastStartedAt : null;
+            const inherited = !ownStartedAt;
+            const inheritedStartedAt = inherited ? oblastStartedAt : null;
             this._drawRegion(
                 [ring],
                 raionDisplayName(name, isEnglish),
                 ownStartedAt || inheritedStartedAt,
                 now,
                 ownStartedAt || inheritedStartedAt,
-                inheritedStartedAt ? oblastDisplayName(oblastKey, isEnglish) : null
+                inherited ? oblastAlertTypeName : ownAlertTypeName,
+                inherited && inheritedStartedAt ? oblastDisplayName(oblastKey, isEnglish) : null
             );
         });
     },

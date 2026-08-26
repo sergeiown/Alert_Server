@@ -167,6 +167,8 @@ function confidenceLabel(threat, strings) {
 // there is no English variant of any of them. In English mode the explanation is rebuilt as a
 // "locality, oblast" line instead, and the locality is transliterated (it has no real translation
 // source anywhere in this app) so the line doesn't mix an English oblast with a Cyrillic locality.
+// Ukrainian mode is built from the same raw fields too, rather than shown verbatim, so it doesn't
+// just repeat the type name already shown in the title line above it.
 function tooltipContent(threat, strings, isEnglish) {
     const typeKey = resolveTypeKey(threat);
     const locale = isEnglish ? 'en-US' : 'uk-UA';
@@ -175,14 +177,20 @@ function tooltipContent(threat, strings, isEnglish) {
 
     const oblastPart = threat.region ? oblastDisplayName(normalizeOblastName(threat.region), true) : '';
     const localityPart = isEnglish && threat.locality ? transliterate(threat.locality) : threat.locality;
+    const localityRegion = [threat.locality, threat.region].filter(Boolean).join(', ');
+    const confirmations =
+        typeof threat.sourceCount === 'number' ? ` ${strings.liveMapConfirmations}: ${threat.sourceCount}.` : '';
+
     const locationLine = isEnglish
         ? [localityPart, oblastPart].filter(Boolean).join(', ')
-        : threat.explanationShort || [threat.locality, threat.region].filter(Boolean).join(', ');
+        : localityRegion
+          ? `${strings.liveMapDirectionLabel} - ${localityRegion}.${confirmations}`
+          : threat.explanationShort || '';
 
     const lines = [
         `<strong>${escapeHtml(title)}</strong>`,
         escapeHtml(locationLine),
-        `<small>${escapeHtml(confidenceLabel(threat, strings))}${updatedTime ? ` · ${strings.liveMapUpdated}: ${updatedTime}` : ''}</small>`,
+        `<small>${strings.liveMapDangerLabel} ${escapeHtml(confidenceLabel(threat, strings))}${updatedTime ? ` · ${strings.liveMapUpdated}: ${updatedTime}` : ''}</small>`,
     ];
     return lines.filter(Boolean).join('<br>');
 }
