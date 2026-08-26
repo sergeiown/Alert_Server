@@ -27,6 +27,10 @@ function formatStartedAt(startedAt, locale) {
     return sameDay ? timeText : `${started.toLocaleDateString(locale)} ${timeText}`;
 }
 
+function capitalize(text) {
+    return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+}
+
 function alertPopupHtml(displayName, startedAt, alertTypeName, strings, language, inheritedFromName) {
     const locale = language === 'English' ? 'en-US' : 'uk-UA';
 
@@ -36,7 +40,7 @@ function alertPopupHtml(displayName, startedAt, alertTypeName, strings, language
 
     const startedTime = formatStartedAt(startedAt, locale);
     const duration = formatDuration(Date.now() - new Date(startedAt).getTime(), strings);
-    const typeLine = alertTypeName ? `${strings.alertType}: ${alertTypeName}<br>` : '';
+    const typeLine = alertTypeName ? `${capitalize(alertTypeName)}<br>` : '';
     const note = inheritedFromName
         ? `<br><small>${strings.liveMapAlertAcrossRegion.replace('{name}', inheritedFromName)}</small>`
         : '';
