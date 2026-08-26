@@ -1,5 +1,7 @@
 {
     "alertStarted": "Alert",
+    "alertPopupStarted": "Started",
+    "alertType": "Alert type",
     "alertCancelled": "Alert cancelled",
     "location": "Location",
     "activeInMonitored": "Active alerts in monitored regions",
@@ -25,6 +27,9 @@
     "liveMapConfidenceHigh": "high",
     "liveMapConfidenceMedium": "medium",
     "liveMapConfidenceLow": "low",
+    "liveMapDirectionLabel": "Direction",
+    "liveMapConfirmations": "Confirmations",
+    "liveMapDangerLabel": "Threat level",
     "liveMapLegendTitle": "Legend",
     "liveMapType_uav": "UAV (attack)",
     "liveMapType_uav_recon": "UAV (reconnaissance)",

@@ -33,7 +33,25 @@ function getRaionStartedAt(key) {
     return match ? match.startedAt : null;
 }
 
+function getOblastAlertTypeName(key) {
+    const match = latest.oblasts.find((o) => normalizeOblastName(o.name) === key);
+    return match ? match.alertTypeName : null;
+}
+
+function getRaionAlertTypeName(key) {
+    const match = latest.raions.find((r) => normalizeRaionName(r.name) === key);
+    return match ? match.alertTypeName : null;
+}
+
 refresh();
 setInterval(refresh, REFRESH_MS);
 
-export { subscribe, getLatest, getOblastStartedAt, getRaionStartedAt, REFRESH_MS };
+export {
+    subscribe,
+    getLatest,
+    getOblastStartedAt,
+    getRaionStartedAt,
+    getOblastAlertTypeName,
+    getRaionAlertTypeName,
+    REFRESH_MS,
+};
