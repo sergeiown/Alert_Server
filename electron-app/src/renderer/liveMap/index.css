@@ -18,10 +18,13 @@ body {
    most of the window. A bare max-width left the box's shrink-to-fit width computation free to
    collapse to something far narrower than intended (down to one word per line) - an explicit
    width pins it down. !important guards against any Leaflet-internal rule loaded after this
-   stylesheet (e.g. a per-instance class) re-asserting nowrap. */
+   stylesheet (e.g. a per-instance class) re-asserting nowrap. 410px is sized to fit a typical
+   "Напрямок - {locality}, {oblast}." line (measured via canvas at the tooltip's real 16px/
+   sans-serif, ~392px content width needed) on one line without wrapping mid-phrase, with a small
+   margin for longer oblast names. */
 .leaflet-tooltip {
-    width: 240px !important;
-    max-width: 240px !important;
+    width: 410px !important;
+    max-width: 410px !important;
     white-space: normal !important;
     overflow-wrap: break-word;
 }
