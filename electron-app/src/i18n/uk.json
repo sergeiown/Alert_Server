@@ -1,5 +1,7 @@
 {
     "alertStarted": "Тривога",
+    "alertPopupStarted": "Початок",
+    "alertType": "Тип тривоги",
     "alertCancelled": "Відбій тривоги",
     "location": "Локація",
     "activeInMonitored": "Активних тривог у ваших регіонах",
@@ -25,6 +27,9 @@
     "liveMapConfidenceHigh": "висока",
     "liveMapConfidenceMedium": "середня",
     "liveMapConfidenceLow": "низька",
+    "liveMapDirectionLabel": "Напрямок",
+    "liveMapConfirmations": "Підтверджень",
+    "liveMapDangerLabel": "Небезпека",
     "liveMapLegendTitle": "Легенда",
     "liveMapType_uav": "БПЛА (ударний)",
     "liveMapType_uav_recon": "БПЛА (розвідувальний)",
