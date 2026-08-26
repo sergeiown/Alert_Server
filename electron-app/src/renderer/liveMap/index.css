@@ -12,6 +12,17 @@ body {
     background: #aad3df;
 }
 
+/* Leaflet's own default tooltip CSS sets white-space: nowrap with no width limit - fine for a
+   short label, but a threat with an unusually long description (missile-carrier warnings run
+   noticeably longer than a typical drone blip) would render as one giant unbroken line spanning
+   most of the window. Overriding it here (after leaflet.css in the stylesheet order, so this wins
+   without !important) caps the width and wraps normally instead. */
+.leaflet-tooltip {
+    max-width: 260px;
+    white-space: normal;
+    overflow-wrap: break-word;
+}
+
 /* Three stacked drop-shadows: a tight dark contact outline right at the edge, a wider soft halo
    around that, and a down-and-to-the-side offset blur for the floating-over-the-map look (an
    overhead-only shadow reads as flat - the diagonal offset is what sells the elevation). The

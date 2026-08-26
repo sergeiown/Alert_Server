@@ -14,7 +14,7 @@ const defaultSettings = {
     alertSoundCount: 1,
     forecastNotifyEnabled: true,
     forecastNotifyLookaheadMinutes: 120,
-    massAttackThreshold: 50,
+    massAttackThreshold: 75,
     updateCheckIntervalHours: 24,
 };
 
@@ -37,6 +37,10 @@ function load() {
             settings.alertSoundMode = parsed.alertSound ? 'siren' : 'none';
         }
         delete settings.alertSound;
+
+        // The valid range moved from 5-60 to 50-100 - clamp a value saved under the old range
+        // instead of leaving it silently out of bounds until the user next touches the field.
+        settings.massAttackThreshold = Math.max(50, Math.min(100, settings.massAttackThreshold));
     } catch (err) {
         settings = { ...defaultSettings };
         save();
