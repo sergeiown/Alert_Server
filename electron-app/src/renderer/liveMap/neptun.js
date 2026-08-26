@@ -178,18 +178,23 @@ function tooltipContent(threat, strings, isEnglish) {
     const oblastPart = threat.region ? oblastDisplayName(normalizeOblastName(threat.region), true) : '';
     const localityPart = isEnglish && threat.locality ? transliterate(threat.locality) : threat.locality;
     const localityRegion = [threat.locality, threat.region].filter(Boolean).join(', ');
-    const confirmations =
-        typeof threat.sourceCount === 'number' ? ` ${strings.liveMapConfirmations}: ${threat.sourceCount}.` : '';
 
     const locationLine = isEnglish
         ? [localityPart, oblastPart].filter(Boolean).join(', ')
         : localityRegion
-          ? `${strings.liveMapDirectionLabel} - ${localityRegion}.${confirmations}`
+          ? `${strings.liveMapDirectionLabel} - ${localityRegion}.`
           : threat.explanationShort || '';
+    // Its own line, not tacked onto the end of locationLine - keeping it separate is what lets the
+    // location sentence itself get the tooltip's full width instead of a bit less.
+    const confirmationsLine =
+        !isEnglish && typeof threat.sourceCount === 'number'
+            ? `${strings.liveMapConfirmations}: ${threat.sourceCount}.`
+            : '';
 
     const lines = [
         `<strong>${escapeHtml(title)}</strong>`,
         escapeHtml(locationLine),
+        escapeHtml(confirmationsLine),
         `<small>${strings.liveMapDangerLabel} ${escapeHtml(confidenceLabel(threat, strings))}${updatedTime ? ` · ${strings.liveMapUpdated}: ${updatedTime}` : ''}</small>`,
     ];
     return lines.filter(Boolean).join('<br>');
