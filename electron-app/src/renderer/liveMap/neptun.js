@@ -12,6 +12,10 @@ const HEARTBEAT_TIMEOUT_MS = 30000;
 // stream update is ever missed, so the map can't drift stale for long without hammering the API.
 const SNAPSHOT_REFRESH_MS = 60000;
 
+const TOOLTIP_MAX_WIDTH_PX = 410;
+const TOOLTIP_MIN_WIDTH_PX = 90;
+const TOOLTIP_WIDTH_PADDING_PX = 14;
+
 const MISSILE_TYPE_ALIASES = ['missile', 'rocket', 'cruise_missile', 'ballistic'];
 const RECON_TITLE_PATTERN = /розвід/i;
 
@@ -200,6 +204,32 @@ function tooltipContent(threat, strings, isEnglish) {
     return lines.filter(Boolean).join('<br>');
 }
 
+// Sizes a tooltip to its own content, capped at a max width - can't be done in plain CSS here (see
+// the comment on .leaflet-tooltip in index.css for why). Measured via canvas rather than by
+// reading the DOM element's own offsetWidth: Leaflet's tooltip pane has no definite width of its
+// own for an absolutely-positioned child to shrink-to-fit against, so DOM-based measurements
+// (even the temporarily-forced-nowrap trick Leaflet's own Popup uses) come back unreliably small
+// here - a fresh canvas measurement of the actual text is unaffected by that.
+let measureCanvas = null;
+function measureTooltipWidth(el) {
+    if (!measureCanvas) measureCanvas = document.createElement('canvas');
+    const ctx = measureCanvas.getContext('2d');
+    const cs = getComputedStyle(el);
+    let widest = 0;
+
+    el.querySelectorAll('strong, small').forEach((node) => {
+        ctx.font = `${node.tagName === 'STRONG' ? 'bold ' : ''}${cs.fontSize} ${cs.fontFamily}`;
+        widest = Math.max(widest, ctx.measureText(node.textContent).width);
+    });
+
+    ctx.font = `${cs.fontSize} ${cs.fontFamily}`;
+    el.innerText.split('\n').forEach((line) => {
+        widest = Math.max(widest, ctx.measureText(line).width);
+    });
+
+    return Math.max(TOOLTIP_MIN_WIDTH_PX, Math.min(widest + TOOLTIP_WIDTH_PADDING_PX, TOOLTIP_MAX_WIDTH_PX));
+}
+
 function buildLegend(strings) {
     const rows = ['uav', 'uav_recon', 'fpv', 'kab', 'missile', 'mig31k', 'unknown']
         .map((typeKey) => `<div class="legend-row">${iconHtml(typeKey)}<span>${escapeHtml(strings[`liveMapType_${typeKey}`])}</span></div>`)
@@ -222,6 +252,13 @@ function startNeptunLayer(map, strings, language) {
     let lastThreats = [];
 
     buildLegend(strings).addTo(map);
+
+    map.on('tooltipopen', (e) => {
+        const el = e.tooltip.getElement();
+        if (!el) return;
+        el.style.width = `${measureTooltipWidth(el)}px`;
+        e.tooltip.update();
+    });
 
     function renderThreats(threats) {
         layer.clearLayers();

@@ -15,16 +15,13 @@ body {
 /* Leaflet's own default tooltip CSS sets white-space: nowrap with no width limit - fine for a
    short label, but a threat with an unusually long description (missile-carrier warnings run
    noticeably longer than a typical drone blip) would render as one giant unbroken line spanning
-   most of the window. A bare max-width left the box's shrink-to-fit width computation free to
-   collapse to something far narrower than intended (down to one word per line) - an explicit
-   width pins it down. !important guards against any Leaflet-internal rule loaded after this
-   stylesheet (e.g. a per-instance class) re-asserting nowrap. 410px is sized to fit a typical
-   "Напрямок - {locality}, {oblast}." line (measured via canvas at the tooltip's real 16px/
-   sans-serif, ~392px content width needed) on one line without wrapping mid-phrase, with a small
-   margin for longer oblast names. */
+   most of the window. Actual sizing (adaptive to content, capped at a max) is done in JS -
+   neptun.js's tooltipopen handler - because neither a bare max-width nor width:auto/fit-content
+   size correctly here: .leaflet-tooltip-pane has no explicit width of its own, and every child
+   in it is position:absolute (out of flow), so CSS shrink-to-fit has nothing reliable to measure
+   against and collapses to far narrower than intended. white-space here just needs to allow
+   wrapping at all - the width itself is set per-tooltip once its real content is known. */
 .leaflet-tooltip {
-    width: 410px !important;
-    max-width: 410px !important;
     white-space: normal !important;
     overflow-wrap: break-word;
 }
