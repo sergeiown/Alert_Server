@@ -91,7 +91,7 @@
     "alertSourceProviderLabel": "Alert data source:",
     "alertSourceProviderAlertsInUa": "alerts.in.ua (default)",
     "alertSourceProviderNeptun": "Neptun (backup)",
-    "alertSourceProviderNote": "Neptun needs no token, but only reports oblast/raion-level status (no individual communities) and no weapon type - a fallback, not a like-for-like replacement.",
+    "alertSourceProviderNote": "Important: Neptun only reports oblast/raion-level status (no individual communities) and no weapon type - a fallback, not a like-for-like replacement for alerts.in.ua.",
     "regionsHeader": "Regions to monitor",
     "searchPlaceholder": "Search region...",
     "selectedSummary": "Selected regions: {selected} of {total}. Changes are saved automatically.",
