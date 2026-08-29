@@ -338,9 +338,7 @@ async function main() {
     // tab (or the tab bar itself) down with it - each is fetched in its own try/catch rather than
     // letting an IPC rejection abort main() before the tabs are even built.
     const stats = await window.alertServerTrends.getWeaponStats().catch(() => null);
-    const todayStats = await window.alertServerTrends
-        .getTodayStats()
-        .catch(() => ({ total: 0, byHour: Array.from({ length: 24 }, () => 0), byOblast: [], byMonitoredLocation: [] }));
+    const todayStats = await window.alertServerTrends.getTodayStats().catch(() => null);
 
     if (stats) {
         const rangeText = strings.trendsRangeLabel
@@ -366,6 +364,19 @@ async function main() {
 
     function renderToday() {
         content.innerHTML = '';
+        if (!todayStats) {
+            const p = document.createElement('p');
+            p.id = 'errorText';
+            p.textContent = strings.trendsNoData;
+            content.appendChild(p);
+            return;
+        }
+        const notice = document.createElement('p');
+        notice.className = 'muted-note';
+        notice.textContent = todayStats.complete
+            ? strings.trendsTodayDataCurrent
+            : strings.trendsTodayWarmingUp.replace('{minutes}', todayStats.warmupEtaMinutes);
+        content.appendChild(notice);
         content.appendChild(buildTodayAlertsCard(todayStats.total, strings));
         content.appendChild(buildHourlyChart(todayStats.byHour, strings));
         content.appendChild(
