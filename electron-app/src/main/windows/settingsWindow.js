@@ -14,7 +14,7 @@ function openSettingsWindow() {
     }
 
     settingsWindow = new BrowserWindow({
-        width: 720,
+        width: 1080,
         height: 640,
         title: 'Alert Server - Налаштування',
         icon: path.join(__dirname, '..', '..', '..', 'resources', 'icons', 'app-icon-256.png'),
