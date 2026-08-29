@@ -1,8 +1,10 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
-import { normalizeOblastName, oblastDisplayName } from '../liveMap/regionNameUtils.js';
+import { normalizeOblastName, oblastDisplayName, normalizeRaionName, raionDisplayName } from '../liveMap/regionNameUtils.js';
 import { transliterate } from '../liveMap/transliterate.js';
+
+const KYIV_RAW_NAME = 'м. Київ';
 
 const CATEGORY_UK = {
     UAV: 'БПЛА',
@@ -39,17 +41,26 @@ function formatNumber(n) {
 }
 
 // Oblast names get the same curated English names the live map already uses (e.g. "Dnipropetrovsk
-// Oblast", not a mechanical transliteration of the Ukrainian). Monitored-location names can be at
-// any granularity (raion, hromada, city) with no such curated map available, so those fall back to
-// plain transliteration instead - not as polished, but never left in Cyrillic under an English UI.
+// Oblast", not a mechanical transliteration of the Ukrainian).
 function displayOblastName(name, isEnglish) {
     if (!isEnglish || !name) return name;
     return oblastDisplayName(normalizeOblastName(name), true);
 }
 
+// Monitored-location names can be at any granularity - oblast (Kyiv city itself, monitored as its
+// own region), raion, hromada, or city - each with its own curated map only for the first two
+// (same ones the live map already uses); a hromada/city name has no such map at all, so that case
+// falls back to plain transliteration instead - not as polished, but never left in Cyrillic under
+// an English UI.
 function displayLocationName(name, isEnglish) {
     if (!isEnglish || !name) return name;
-    return transliterate(name);
+    if (name === KYIV_RAW_NAME) return oblastDisplayName('Київ', true);
+    if (/область$/u.test(name)) return oblastDisplayName(normalizeOblastName(name), true);
+    if (/район$/u.test(name)) return raionDisplayName(normalizeRaionName(name), true);
+    // "м. " ("misto", city) is a Ukrainian abbreviation with no place left in an English name -
+    // transliterating the rest without it, rather than leaving the raw Cyrillic-abbreviation
+    // prefix sitting in front of an otherwise-English name (e.g. "m. Kharkiv").
+    return transliterate(name.replace(/^м\.\s*/u, ''));
 }
 
 function formatPercent(numerator, denominator) {
