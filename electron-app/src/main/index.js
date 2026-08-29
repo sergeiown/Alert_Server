@@ -15,6 +15,7 @@ const settingsStore = require('./services/settingsStore');
 const regionsStore = require('./services/regionsStore');
 const { logEvent } = require('./services/logger');
 const { startPolling } = require('./services/alertPoller');
+const { startPolling: startNeptunPolling } = require('./services/neptunAlertsSource');
 const { filterAlerts, discoverUnknownLocations } = require('./services/locationFilter');
 const { loadLocalConfig } = require('./services/localConfig');
 const { processAlerts, getActiveCount } = require('./services/notifier');
@@ -60,29 +61,36 @@ app.whenReady().then(() => {
     startOccupiedTerritoryRefresh();
     startWeaponStatsRefresh();
 
-    const { alertProxyClientKey } = loadLocalConfig();
-    if (alertProxyClientKey) {
-        let forecastWatcherStarted = false;
+    const { alertSourceProvider } = settingsStore.getSettings();
+    let forecastWatcherStarted = false;
 
-        startPolling(alertProxyClientKey, (alertData) => {
-            const matched = filterAlerts(alertData);
-            discoverUnknownLocations(alertData.alerts);
-            logEvent(`Poll (alerts.in.ua via alert-proxy): ${alertData.alerts.length} active alerts, ${matched.length} in monitored regions`, 'NETWORK');
-            setLatestMatchedAlerts(matched);
-            setLatestTotalAlertCount(alertData.alerts.length);
-            setLatestAlertedRegions(computeAlertedRegions(alertData.alerts));
-            recordAlerts(alertData.alerts);
-            processAlerts(matched, alertData.alerts);
-            updateTrayState(getActiveCount(), alertData.alerts.length);
+    function onAlertsPolled(sourceLabel, alertData) {
+        const matched = filterAlerts(alertData);
+        discoverUnknownLocations(alertData.alerts);
+        logEvent(`Poll (${sourceLabel}): ${alertData.alerts.length} active alerts, ${matched.length} in monitored regions`, 'NETWORK');
+        setLatestMatchedAlerts(matched);
+        setLatestTotalAlertCount(alertData.alerts.length);
+        setLatestAlertedRegions(computeAlertedRegions(alertData.alerts));
+        recordAlerts(alertData.alerts);
+        processAlerts(matched, alertData.alerts);
+        updateTrayState(getActiveCount(), alertData.alerts.length);
 
-            if (!forecastWatcherStarted) {
-                forecastWatcherStarted = true;
-                startForecastWatcher();
-            }
-        });
+        if (!forecastWatcherStarted) {
+            forecastWatcherStarted = true;
+            startForecastWatcher();
+        }
+    }
+
+    if (alertSourceProvider === 'neptun') {
+        startNeptunPolling((alertData) => onAlertsPolled('Neptun', alertData));
     } else {
-        logEvent('alertProxyClientKey missing from config.local.json, polling disabled', 'WARNING');
-        startForecastWatcher();
+        const { alertProxyClientKey } = loadLocalConfig();
+        if (alertProxyClientKey) {
+            startPolling(alertProxyClientKey, (alertData) => onAlertsPolled('alerts.in.ua via alert-proxy', alertData));
+        } else {
+            logEvent('alertProxyClientKey missing from config.local.json, polling disabled', 'WARNING');
+            startForecastWatcher();
+        }
     }
 });
 
