@@ -352,6 +352,15 @@ body {
     flex-shrink: 0;
 }
 
+/* The real icon's inner <svg> carries its own fixed 22x22 width/height attributes (needed for its
+   on-map size) - inside this row's shrunk 18px box those bleed 2px past the edge on every side
+   unless resized to fill it exactly, which threw its apparent position off against the plain
+   (already exactly-18px) approx-radius swatch next to it. */
+.legend-row .threat-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
 .legend-swatch {
     display: inline-flex;
     align-items: center;
@@ -432,7 +441,7 @@ body {
     }
 
     .leaflet-control-attribution a {
-        color: #6ea8fe !important;
+        color: #c9a86a !important;
     }
 
     .threat-legend,
