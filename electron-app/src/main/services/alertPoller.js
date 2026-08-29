@@ -4,13 +4,13 @@
 const fs = require('fs');
 const { getUserDataFile } = require('./appPaths');
 const { logEvent } = require('./logger');
+const { setLatestAlertData, getLatestAlertData } = require('./activeAlertData');
 
 const PROXY_URL = 'https://alert-proxy.alert-proxy-ua.workers.dev';
 const POLL_INTERVAL_MS = 30000;
 const ORIGIN_ISSUE_LOG_COOLDOWN_MS = 30 * 60 * 1000;
 
 let lastModified = null;
-let latestAlertData = null;
 let backoffUntil = 0;
 let lastLoggedStatus = null;
 let lastLoggedAt = 0;
@@ -38,7 +38,7 @@ function noteOriginHealthy() {
 
 async function pollOnce(clientKey) {
     if (Date.now() < backoffUntil) {
-        return latestAlertData;
+        return getLatestAlertData();
     }
 
     try {
@@ -49,23 +49,23 @@ async function pollOnce(clientKey) {
 
         if (response.status === 304) {
             noteOriginHealthy();
-            return latestAlertData;
+            return getLatestAlertData();
         }
 
         if (response.status === 429) {
             logOriginIssue(429);
             backoffUntil = Date.now() + POLL_INTERVAL_MS * 2;
-            return latestAlertData;
+            return getLatestAlertData();
         }
 
         if (!response.ok) {
             logOriginIssue(response.status);
-            return latestAlertData;
+            return getLatestAlertData();
         }
 
         const data = await response.json();
         lastModified = response.headers.get('Last-Modified');
-        latestAlertData = data;
+        setLatestAlertData(data);
 
         const originErrorStatus = response.headers.get('X-Origin-Error-Status');
         if (originErrorStatus) logOriginIssue(Number(originErrorStatus));
@@ -73,10 +73,10 @@ async function pollOnce(clientKey) {
 
         fs.writeFileSync(getUserDataFile('alert_received.json'), JSON.stringify(data, null, 2), 'utf-8');
 
-        return latestAlertData;
+        return data;
     } catch (err) {
         logEvent(`alert-proxy request error: ${err.message}`, 'NETWORK');
-        return latestAlertData;
+        return getLatestAlertData();
     }
 }
 
@@ -90,8 +90,4 @@ function startPolling(clientKey, onUpdate) {
     return setInterval(tick, POLL_INTERVAL_MS);
 }
 
-function getLatestAlertData() {
-    return latestAlertData;
-}
-
-module.exports = { startPolling, getLatestAlertData };
+module.exports = { startPolling };
