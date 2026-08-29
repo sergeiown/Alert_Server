@@ -124,7 +124,7 @@
     "settingsForecastNotifyLabel": "Notify when a forecasted alert time is approaching",
     "trendsWindowTitle": "Alert Server - Trends",
     "trendsHeader": "Weapon usage trends",
-    "trendsRangeLabel": "Data: {from} - {to} (source: Kaggle, piterfm)",
+    "trendsRangeLabel": "Data: {from} - {to} (source: Kaggle, piterfm; officially updated weekly)",
     "trendsNoData": "Data hasn't loaded yet - try again later.",
     "trendsSummaryTitle": "Overall",
     "trendsLaunched": "Launched",
