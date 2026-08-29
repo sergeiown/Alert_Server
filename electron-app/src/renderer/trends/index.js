@@ -307,9 +307,12 @@ async function main() {
     const content = document.getElementById('content');
     // Independent of each other - the Today tab (this app's own alert-count tracking) has nothing
     // to do with the Kaggle-sourced weapon stats, so one failing to load must not take the other
-    // tab down with it.
-    const stats = await window.alertServerTrends.getWeaponStats();
-    const todayStats = await window.alertServerTrends.getTodayStats();
+    // tab (or the tab bar itself) down with it - each is fetched in its own try/catch rather than
+    // letting an IPC rejection abort main() before the tabs are even built.
+    const stats = await window.alertServerTrends.getWeaponStats().catch(() => null);
+    const todayStats = await window.alertServerTrends
+        .getTodayStats()
+        .catch(() => ({ total: 0, byHour: Array.from({ length: 24 }, () => 0), byOblast: [], byMonitoredLocation: [] }));
 
     if (stats) {
         const rangeText = strings.trendsRangeLabel
