@@ -5,6 +5,8 @@ const fs = require('fs');
 const os = require('os');
 const { getUserDataFile } = require('./appPaths');
 
+const LOG_FILE = 'event.csv';
+const OLD_LOG_FILE = 'event.log';
 const MAX_SIZE_BYTES = 1024 * 1024;
 const LINES_TO_DROP = 100;
 
@@ -25,10 +27,18 @@ const HEADER = 'Date,Time,Level,Event';
 const OLD_HEADER = 'Date,Time,Event';
 
 function initializeLogFile() {
-    const filePath = getUserDataFile('event.log');
+    const filePath = getUserDataFile(LOG_FILE);
+
     if (!fs.existsSync(filePath)) {
-        fs.writeFileSync(filePath, HEADER + os.EOL, 'utf-8');
-        return;
+        // An install updated from before the log used a .csv extension left its history under the
+        // old name - renamed forward rather than started fresh, so that history isn't just lost.
+        const oldFilePath = getUserDataFile(OLD_LOG_FILE);
+        if (fs.existsSync(oldFilePath)) {
+            fs.renameSync(oldFilePath, filePath);
+        } else {
+            fs.writeFileSync(filePath, HEADER + os.EOL, 'utf-8');
+            return;
+        }
     }
 
     // An install updated from before the Level column existed left its old 3-column header in
@@ -54,7 +64,7 @@ function truncateIfNeeded(filePath) {
 }
 
 function logEvent(message, level = 'INFO') {
-    const filePath = getUserDataFile('event.log');
+    const filePath = getUserDataFile(LOG_FILE);
     initializeLogFile();
     truncateIfNeeded(filePath);
 
@@ -70,8 +80,8 @@ function logEvent(message, level = 'INFO') {
 }
 
 function clearLog() {
-    const filePath = getUserDataFile('event.log');
+    const filePath = getUserDataFile(LOG_FILE);
     fs.writeFileSync(filePath, HEADER + os.EOL, 'utf-8');
 }
 
-module.exports = { logEvent, clearLog };
+module.exports = { logEvent, clearLog, LOG_FILE };

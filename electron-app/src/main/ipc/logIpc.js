@@ -5,11 +5,11 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const { ipcMain } = require('electron');
 const { getUserDataFile } = require('../services/appPaths');
-const { clearLog } = require('../services/logger');
+const { clearLog, LOG_FILE } = require('../services/logger');
 
 function registerLogIpc() {
     ipcMain.handle('log:getContent', () => {
-        const filePath = getUserDataFile('event.log');
+        const filePath = getUserDataFile(LOG_FILE);
         if (!fs.existsSync(filePath)) return { content: '', size: 0 };
 
         const content = fs.readFileSync(filePath, 'utf-8');
@@ -23,7 +23,7 @@ function registerLogIpc() {
     });
 
     ipcMain.handle('log:openInNotepad', () => {
-        spawn('notepad.exe', [getUserDataFile('event.log')], { detached: true, stdio: 'ignore' }).unref();
+        spawn('notepad.exe', [getUserDataFile(LOG_FILE)], { detached: true, stdio: 'ignore' }).unref();
         return true;
     });
 }
