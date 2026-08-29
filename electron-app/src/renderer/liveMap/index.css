@@ -45,6 +45,12 @@ body {
     height: 100%;
 }
 
+/* A dashed instead of solid white outline - the quick visual cue that Neptun itself hasn't
+   confirmed this one yet, readable without opening the tooltip. */
+.threat-icon-uncertain svg {
+    stroke-dasharray: 2 1.5;
+}
+
 /* Every map control button (zoom, center, fullscreen, layer-toggle) forced to one explicit size
    instead of relying on each control's own default - Leaflet's plain buttons, the fullscreen
    plugin, and the layers toggle each ship a different built-in size (26/30/36px) that doesn't
@@ -113,10 +119,48 @@ body {
 /* Qualified with the element so this beats Leaflet's own ".leaflet-bar a" specificity - a bare
    ".leaflet-control-center" rule loses to it and the icon silently keeps Leaflet's default
    line-height-based (baseline-aligned) centering, which sits an inline SVG slightly off-center. */
-.leaflet-bar a.leaflet-control-center {
+.leaflet-bar a.leaflet-control-center,
+.leaflet-bar a.leaflet-control-screenshot {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+/* Toggled on #map for the moment of capture - hides only the interactive controls (zoom, center,
+   fullscreen, layer picker, this button itself), not the legend/attribution/status bar/threats,
+   which are the actual content a screenshot is for. visibility (not display:none) keeps their
+   layout space reserved, so nothing else on the map reflows for that one frame. */
+.screenshot-hide-controls .leaflet-control-zoom,
+.screenshot-hide-controls .leaflet-control-fullscreen,
+.screenshot-hide-controls .leaflet-control-layers,
+.screenshot-hide-controls .leaflet-control-center-wrapper,
+.screenshot-hide-controls .leaflet-control-screenshot-wrapper {
+    visibility: hidden !important;
+}
+
+#screenshotToast {
+    position: absolute;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    background: #262b33;
+    color: #e6e6e6;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    z-index: 1000;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+#screenshotToast.screenshot-toast-error {
+    background: #7a2e2e;
+}
+
+#screenshotToast.hidden {
+    opacity: 0;
+    pointer-events: none;
 }
 
 #appAttribution,

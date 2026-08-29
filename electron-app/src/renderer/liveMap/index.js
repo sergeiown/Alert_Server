@@ -7,6 +7,7 @@ import { addLabelsLayer } from './labelsLayer.js';
 import { addRegionStatusLayer } from './regionStatus.js';
 import { addOccupiedTerritoryLayer } from './occupiedTerritory.js';
 import { startStatusBar } from './statusBar.js';
+import { addScreenshotControl } from './screenshot.js';
 
 // Must match ukraine_default.svg's own mapsvg:geoViewBox attribute (west north east south),
 // or the background image will no longer line up.
@@ -20,7 +21,7 @@ const MAP_MIN_ZOOM = 5;
 const CenterControl = L.Control.extend({
     options: { position: 'topleft' },
     onAdd: function (map) {
-        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-center-wrapper');
         const link = L.DomUtil.create('a', 'leaflet-control-center', container);
         link.href = '#';
         link.title = this.options.title;
@@ -86,6 +87,7 @@ async function main() {
     });
 
     new CenterControl({ title: strings.liveMapCenterButtonTitle, onClick: fitAndLockMinZoom }).addTo(map);
+    addScreenshotControl(map, strings);
 
     const isDarkMap = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const fullScreenIconOptions = isDarkMap
