@@ -25,8 +25,16 @@ function csvField(value) {
     return /[",\r\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
 }
 
+// Excel's own double-click-to-open ignores the file's actual delimiter and splits columns on
+// whatever the SYSTEM locale's list separator is - often ";", not ",", on this app's own primary
+// locale - so without this hint every row silently landed in one single column instead of a real
+// table. This exact "sep=,\r\n" first line is a documented Excel-specific override that forces it
+// to use a comma regardless of locale; everything else that might read this file (Notepad, this
+// app's own log viewer, a person) just sees one harmless extra line above the header.
+const SEP_DIRECTIVE = 'sep=,';
 const HEADER = 'Date,Time,Level,Event';
 const OLD_HEADER = 'Date,Time,Event';
+const PREAMBLE = SEP_DIRECTIVE + os.EOL + HEADER;
 
 function initializeLogFile() {
     const filePath = getUserDataFile(LOG_FILE);
@@ -38,19 +46,20 @@ function initializeLogFile() {
         if (fs.existsSync(oldFilePath)) {
             fs.renameSync(oldFilePath, filePath);
         } else {
-            fs.writeFileSync(filePath, HEADER + os.EOL, 'utf-8');
+            fs.writeFileSync(filePath, PREAMBLE + os.EOL, 'utf-8');
             return;
         }
     }
 
-    // An install updated from before the Level column existed left its old 3-column header in
-    // place - only the header line needs rewriting; the older rows above stay as they were
-    // written (a plain viewer just shows those with an empty Level cell, harmless).
-    const firstLine = fs.readFileSync(filePath, 'utf-8').split(/\r\n|\n|\r/, 1)[0];
-    if (firstLine === OLD_HEADER) {
-        const content = fs.readFileSync(filePath, 'utf-8');
-        fs.writeFileSync(filePath, HEADER + content.slice(firstLine.length), 'utf-8');
-    }
+    const content = fs.readFileSync(filePath, 'utf-8');
+    if (content.startsWith(SEP_DIRECTIVE)) return;
+
+    // An install updated from before either the Level column or this sep= line existed - either
+    // way, the existing header line (whichever of the two it is) gets replaced by the current
+    // two-line preamble above; the actual data rows below it are untouched.
+    const firstLine = content.split(/\r\n|\n|\r/, 1)[0];
+    const rest = firstLine === HEADER || firstLine === OLD_HEADER ? content.slice(firstLine.length) : os.EOL + content;
+    fs.writeFileSync(filePath, PREAMBLE + rest, 'utf-8');
 }
 
 function truncateIfNeeded(filePath) {
@@ -59,10 +68,10 @@ function truncateIfNeeded(filePath) {
 
     const content = fs.readFileSync(filePath, 'utf-8');
     const lines = content.split(/\r\n|\n|\r/).filter((line) => line.length > 0);
-    const [header, ...rest] = lines;
-    const remaining = rest.slice(LINES_TO_DROP);
+    const preambleLines = lines.slice(0, 2);
+    const remaining = lines.slice(2).slice(LINES_TO_DROP);
 
-    fs.writeFileSync(filePath, [header, ...remaining].join(os.EOL) + os.EOL, 'utf-8');
+    fs.writeFileSync(filePath, [...preambleLines, ...remaining].join(os.EOL) + os.EOL, 'utf-8');
 }
 
 // ISO-style (YYYY-MM-DD, 24-hour HH:MM:SS) rather than any particular locale's own date format -
@@ -93,7 +102,7 @@ function logEvent(message, level = 'INFO') {
 
 function clearLog() {
     const filePath = getUserDataFile(LOG_FILE);
-    fs.writeFileSync(filePath, HEADER + os.EOL, 'utf-8');
+    fs.writeFileSync(filePath, PREAMBLE + os.EOL, 'utf-8');
 }
 
 module.exports = { logEvent, clearLog, LOG_FILE };
