@@ -176,14 +176,21 @@ function escapeHtml(text) {
 // type threat" - a quick visual cue that Neptun itself hasn't confirmed this one yet, without
 // needing to open the tooltip to find out. Only lifecycle drives this, not `status` - every threat
 // in the feed is "active" by definition of being in it, so that field never actually varies.
-function iconHtml(typeKey, rotationDeg, lifecycle) {
+const DEFAULT_ICON_SIZE_PX = 22;
+// Smaller on the map specifically for "uav" and "fpv" (confirmed and uncertain both share the same
+// entry per type, only the fill color differs) - the legend keeps the normalized default size,
+// since it's meant to show every type at one consistent scale for comparison, not the map's own
+// per-type sizing.
+const MAP_ICON_SIZE_OVERRIDES = { uav: 18, fpv: 18 };
+
+function iconHtml(typeKey, rotationDeg, lifecycle, sizePx = DEFAULT_ICON_SIZE_PX) {
     const { color, svg, align } = TYPE_ICONS[typeKey];
     const rotation = typeof rotationDeg === 'number' ? `transform: rotate(${rotationDeg}deg);` : '';
     const fillColor = lifecycle === 'uncertain' ? UNCERTAIN_ICON_COLOR : color;
     return (
         `<div class="threat-icon" style="color: ${fillColor};">` +
         `<div class="threat-icon-rotate" style="${rotation}">` +
-        `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="#ffffff" stroke-width="1">` +
+        `<svg viewBox="0 0 24 24" width="${sizePx}" height="${sizePx}" fill="currentColor" stroke="#ffffff" stroke-width="1">` +
         `<g transform="${align}">${svg}</g></svg>` +
         `</div></div>`
     );
@@ -192,12 +199,13 @@ function iconHtml(typeKey, rotationDeg, lifecycle) {
 function threatIcon(threat) {
     const typeKey = resolveTypeKey(threat);
     const rotation = typeof threat.heading === 'number' ? threat.heading : undefined;
+    const sizePx = MAP_ICON_SIZE_OVERRIDES[typeKey] || DEFAULT_ICON_SIZE_PX;
 
     return L.divIcon({
         className: 'threat-icon-wrapper',
-        html: iconHtml(typeKey, rotation, threat.lifecycle),
-        iconSize: [22, 22],
-        iconAnchor: [11, 11],
+        html: iconHtml(typeKey, rotation, threat.lifecycle, sizePx),
+        iconSize: [sizePx, sizePx],
+        iconAnchor: [sizePx / 2, sizePx / 2],
     });
 }
 
