@@ -16,6 +16,11 @@ const defaultSettings = {
     forecastNotifyLookaheadMinutes: 120,
     massAttackThreshold: 75,
     updateCheckIntervalHours: 24,
+    // 'alerts.in.ua' is the primary source (community-level granularity, weapon-type tagging).
+    // 'neptun' is a token-free alternative with only oblast/raion-level granularity and no
+    // weapon-type data - a real fallback for when alerts.in.ua itself is unreachable, not a
+    // like-for-like replacement, hence defaulting to the richer source.
+    alertSourceProvider: 'alerts.in.ua',
 };
 
 let settings = null;

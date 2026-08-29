@@ -70,6 +70,30 @@ body {
     opacity: 0.5;
 }
 
+.settings-group {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 14px 14px;
+    margin: 0;
+}
+
+.settings-group legend {
+    padding: 0 6px;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.settings-note {
+    margin: 0;
+    color: var(--muted-2);
+    font-size: 12px;
+}
+
 #map-container {
     flex: 0 0 auto;
     padding: 10px 14px 0;

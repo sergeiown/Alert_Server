@@ -14,7 +14,9 @@ function registerSettingsIpc() {
         settingsStore.updateSetting(key, value);
         logEvent(`Setting changed: ${key} = ${value}`, 'INFO');
 
-        if (key === 'language') {
+        if (key === 'language' || key === 'alertSourceProvider') {
+            // The poll loop only picks its source once, at startup (main/index.js) - a relaunch
+            // is the simplest way to make a change here take effect immediately, same as language.
             setTimeout(() => {
                 app.relaunch();
                 app.exit();
