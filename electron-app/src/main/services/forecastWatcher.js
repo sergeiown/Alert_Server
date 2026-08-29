@@ -45,7 +45,12 @@ function notifyApproaching(uid, alertType, etaMs, language) {
         color: FORECAST_COLOR,
         onClick: () => openForecastWindow(),
     });
-    logEvent(`Forecast notify: ${name} - ${typeName} (uid ${uid}, eta ~${etaText})`, 'INFO');
+    // Forced to English for the log regardless of the notification's own language above - the
+    // log is a developer-facing artifact, not part of the UI the language setting controls.
+    logEvent(
+        `Forecast notify: ${regionName(uid, 'English')} - ${alertTypeName(alertType, 'English')} (uid ${uid}, eta ~${formatDuration(etaMs, 'English')})`,
+        'INFO'
+    );
 }
 
 async function evaluateRegion(uid, language) {

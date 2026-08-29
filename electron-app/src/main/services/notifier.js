@@ -191,7 +191,11 @@ function processAlerts(matchedAlerts, allAlerts) {
             playRepeated(playAlertSound, settings.alertSoundMode, language, settings.alertSoundCount, 8000);
         }
 
-        logEvent(`Alert ${alert.alert_type}: ${locationName}`, 'INFO');
+        // The log is for reading later regardless of whatever UI language happens to be set right
+        // now, so it always uses the Latin name (falling back to the original only for a
+        // discovered location with no Latin variant on file at all) rather than locationName,
+        // which follows the user's own display language above.
+        logEvent(`Alert ${alert.alert_type}: ${alert.location_lat || alert.location_title}`, 'ALERT');
 
         displayedAlerts.set(alert.id, {
             locationUid: alert.location_uid,
@@ -255,7 +259,7 @@ function processAlerts(matchedAlerts, allAlerts) {
             playRepeated(playAlertCancellationSound, settings.alertSoundMode, language, settings.alertSoundCount, 6000);
         }
 
-        logEvent(`Alert cancelled: ${locationName}`, 'INFO');
+        logEvent(`Alert cancelled: ${value.locationLat || value.locationTitle}`, 'ALERT');
     });
 }
 
