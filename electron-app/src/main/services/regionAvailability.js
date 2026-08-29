@@ -16,7 +16,7 @@ async function fetchBitmap() {
     });
 
     if (!response.ok) {
-        logEvent(`Failed to fetch region availability: ${response.status}`);
+        logEvent(`Failed to fetch region availability (alerts.in.ua via alert-proxy): ${response.status}`, 'NETWORK');
         return;
     }
 
@@ -28,7 +28,7 @@ function ensureLoaded() {
     if (bitmap !== null) return Promise.resolve();
     if (!loadPromise) {
         loadPromise = fetchBitmap().catch((err) => {
-            logEvent(`Region availability request error: ${err.message}`);
+            logEvent(`Region availability request error (alert-proxy): ${err.message}`, 'NETWORK');
         });
     }
     return loadPromise;

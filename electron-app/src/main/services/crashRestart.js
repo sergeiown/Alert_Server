@@ -24,11 +24,11 @@ function installHandlers() {
     writeRestartTimestamp();
 
     process.on('uncaughtException', (err) => {
-        logEvent(`Uncaught exception: ${err.message}`);
-        logEvent(err.stack || '');
+        logEvent(`Uncaught exception: ${err.message}`, 'ERROR');
+        logEvent(err.stack || '', 'ERROR');
 
         if (tooSoonSinceLastRestart()) {
-            logEvent('Restart loop detected, exiting without relaunch');
+            logEvent('Restart loop detected, exiting without relaunch', 'ERROR');
             app.exit(3);
             return;
         }
@@ -43,7 +43,7 @@ function installHandlers() {
     process.on('SIGBREAK', () => app.exit(2));
 
     process.on('exit', (code) => {
-        logEvent(`Process exiting with code ${code}`);
+        logEvent(`Process exiting with code ${code}`, 'INFO');
     });
 }
 

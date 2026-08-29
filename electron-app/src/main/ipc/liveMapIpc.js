@@ -44,7 +44,7 @@ function registerLiveMapIpc() {
             clipboard.writeImage(image);
             return true;
         } catch (err) {
-            logEvent(`Live map screenshot failed: ${err.message}`);
+            logEvent(`Live map screenshot failed: ${err.message}`, 'ERROR');
             return false;
         }
     });

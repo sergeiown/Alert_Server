@@ -115,7 +115,7 @@ async function notifyWithMap({ uid, uids, title, bodyLines, iconName, color, onC
         try {
             heroImagePath = await renderRegionMapImage(stateUids, color);
         } catch (err) {
-            logEvent(`Notification map render failed: ${err.message}`);
+            logEvent(`Notification map render failed: ${err.message}`, 'ERROR');
         }
     }
 
@@ -191,7 +191,7 @@ function processAlerts(matchedAlerts, allAlerts) {
             playRepeated(playAlertSound, settings.alertSoundMode, language, settings.alertSoundCount, 8000);
         }
 
-        logEvent(`Alert ${alert.alert_type}: ${locationName}`);
+        logEvent(`Alert ${alert.alert_type}: ${locationName}`, 'INFO');
 
         displayedAlerts.set(alert.id, {
             locationUid: alert.location_uid,
@@ -255,7 +255,7 @@ function processAlerts(matchedAlerts, allAlerts) {
             playRepeated(playAlertCancellationSound, settings.alertSoundMode, language, settings.alertSoundCount, 6000);
         }
 
-        logEvent(`Alert cancelled: ${locationName}`);
+        logEvent(`Alert cancelled: ${locationName}`, 'INFO');
     });
 }
 

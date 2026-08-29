@@ -33,16 +33,16 @@ async function refresh() {
             const geojson = await tryFetch(dateStr);
             if (geojson) {
                 cached = { geojson, date: dateStr };
-                logEvent(`Occupied-territory data updated (${dateStr})`);
+                logEvent(`Occupied-territory data updated (DeepState, ${dateStr})`, 'NETWORK');
                 return;
             }
         } catch (err) {
-            logEvent(`Occupied-territory fetch failed for ${dateStr}: ${err.message}`);
+            logEvent(`Occupied-territory fetch failed for ${dateStr} (DeepState): ${err.message}`, 'NETWORK');
         }
     }
 
     if (!cached.geojson) {
-        logEvent('Occupied-territory data: no recent snapshot found');
+        logEvent(`Occupied-territory data: no snapshot found on DeepState in the last ${MAX_LOOKBACK_DAYS} days`, 'WARNING');
     }
 }
 
