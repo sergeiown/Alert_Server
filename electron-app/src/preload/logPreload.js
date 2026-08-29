@@ -7,5 +7,7 @@ contextBridge.exposeInMainWorld('alertServerLog', {
     getContent: () => ipcRenderer.invoke('log:getContent'),
     clear: () => ipcRenderer.invoke('log:clear'),
     openInNotepad: () => ipcRenderer.invoke('log:openInNotepad'),
+    isExcelAvailable: () => ipcRenderer.invoke('log:isExcelAvailable'),
+    openInExcel: () => ipcRenderer.invoke('log:openInExcel'),
     getStrings: () => ipcRenderer.invoke('i18n:getStrings'),
 });
