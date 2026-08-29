@@ -21,11 +21,11 @@ const { loadLocalConfig } = require('./services/localConfig');
 const { processAlerts, getActiveCount } = require('./services/notifier');
 const { setLatestMatchedAlerts, setLatestTotalAlertCount, setLatestAlertedRegions } = require('./services/alertState');
 const { computeAlertedRegions } = require('./services/regionAlertStatus');
-const { recordAlerts } = require('./services/dailyAlertStats');
 const { createTray, updateTrayState } = require('./services/tray');
 const { startForecastWatcher } = require('./services/forecastWatcher');
 const { startOccupiedTerritoryRefresh } = require('./services/occupiedTerritoryStore');
 const { startWeaponStatsRefresh } = require('./services/weaponStatsStore');
+const { startTodayStatsRefresh } = require('./services/todayStatsStore');
 const { installHandlers } = require('./services/crashRestart');
 const { delayedCheckForUpdates } = require('./services/updater');
 const { destroySettingsWindow } = require('./windows/settingsWindow');
@@ -60,6 +60,7 @@ app.whenReady().then(() => {
     delayedCheckForUpdates();
     startOccupiedTerritoryRefresh();
     startWeaponStatsRefresh();
+    startTodayStatsRefresh();
 
     const { alertSourceProvider } = settingsStore.getSettings();
     let forecastWatcherStarted = false;
@@ -71,7 +72,6 @@ app.whenReady().then(() => {
         setLatestMatchedAlerts(matched);
         setLatestTotalAlertCount(alertData.alerts.length);
         setLatestAlertedRegions(computeAlertedRegions(alertData.alerts));
-        recordAlerts(alertData.alerts);
         processAlerts(matched, alertData.alerts);
         updateTrayState(getActiveCount(), alertData.alerts.length);
 
