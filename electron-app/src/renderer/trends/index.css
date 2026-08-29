@@ -137,3 +137,32 @@ th.numeric {
 #errorText {
     color: var(--muted);
 }
+
+.muted-note {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+#tabsHost {
+    display: flex;
+    gap: 4px;
+    margin-top: 10px;
+}
+
+.tab {
+    font: inherit;
+    font-size: 12px;
+    color: var(--fg);
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 5px 12px;
+    cursor: pointer;
+}
+
+.tab.active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+}
