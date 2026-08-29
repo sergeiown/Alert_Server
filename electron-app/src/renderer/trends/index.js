@@ -188,6 +188,114 @@ function buildModelsCard(stats, strings, isEnglish) {
     return card;
 }
 
+function buildTodayAlertsCard(total, strings) {
+    const card = document.createElement('section');
+    card.className = 'card';
+    const h2 = document.createElement('h2');
+    h2.textContent = strings.trendsTodayAlertsTitle;
+    card.appendChild(h2);
+
+    const row = document.createElement('div');
+    row.id = 'summaryRow';
+    const tile = document.createElement('div');
+    tile.className = 'stat-tile';
+    tile.innerHTML = `<div class="value">${formatNumber(total)}</div><div class="label">${strings.trendsTodayAlertsLabel}</div>`;
+    row.appendChild(tile);
+    card.appendChild(row);
+    return card;
+}
+
+function buildHourlyChart(byHour, strings) {
+    const card = document.createElement('section');
+    card.className = 'card';
+    const h2 = document.createElement('h2');
+    h2.textContent = strings.trendsTodayByHourTitle;
+    card.appendChild(h2);
+
+    const barWidth = 18;
+    const gap = 4;
+    const chartHeight = 120;
+    const width = 24 * (barWidth + gap) + gap;
+    const height = chartHeight + 20;
+    const maxCount = Math.max(1, ...byHour);
+
+    const svgParts = [];
+    byHour.forEach((count, hour) => {
+        const x = gap + hour * (barWidth + gap);
+        const barHeight = (count / maxCount) * chartHeight;
+        svgParts.push(
+            `<rect x="${x}" y="${(chartHeight - barHeight).toFixed(1)}" width="${barWidth}" height="${barHeight.toFixed(1)}" fill="#2563eb"><title>${hour}:00 - ${count}</title></rect>`
+        );
+        if (hour % 3 === 0) {
+            svgParts.push(
+                `<text x="${x + barWidth / 2}" y="${chartHeight + 14}" font-size="9" text-anchor="middle" fill="currentColor" opacity="0.7">${hour}</text>`
+            );
+        }
+    });
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'chart-scroll';
+    wrapper.innerHTML = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="color:var(--fg)">${svgParts.join('')}</svg>`;
+    card.appendChild(wrapper);
+    return card;
+}
+
+function buildCountTable(entries, titleKey, columnKey, strings, emptyKey) {
+    const card = document.createElement('section');
+    card.className = 'card';
+    const h2 = document.createElement('h2');
+    h2.textContent = strings[titleKey];
+    card.appendChild(h2);
+
+    if (!entries.length) {
+        const p = document.createElement('p');
+        p.className = 'muted-note';
+        p.textContent = strings[emptyKey];
+        card.appendChild(p);
+        return card;
+    }
+
+    const table = document.createElement('table');
+    table.innerHTML = `<thead><tr><th>${strings[columnKey]}</th><th class="numeric">${strings.trendsTodayAlertsLabel}</th></tr></thead>`;
+    const tbody = document.createElement('tbody');
+    entries.forEach(({ label, count }) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${label}</td><td class="numeric">${formatNumber(count)}</td>`;
+        tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    card.appendChild(table);
+    return card;
+}
+
+function buildTabs(strings, onSelect) {
+    const bar = document.createElement('div');
+    bar.id = 'tabsHost';
+
+    const allTimeTab = document.createElement('button');
+    allTimeTab.className = 'tab active';
+    allTimeTab.textContent = strings.trendsTabAllTime;
+
+    const todayTab = document.createElement('button');
+    todayTab.className = 'tab';
+    todayTab.textContent = strings.trendsTabToday;
+
+    [
+        [allTimeTab, todayTab, 'allTime'],
+        [todayTab, allTimeTab, 'today'],
+    ].forEach(([active, inactive, key]) => {
+        active.addEventListener('click', () => {
+            active.classList.add('active');
+            inactive.classList.remove('active');
+            onSelect(key);
+        });
+    });
+
+    bar.appendChild(allTimeTab);
+    bar.appendChild(todayTab);
+    return bar;
+}
+
 async function main() {
     const strings = await window.alertServerTrends.getStrings();
     const settings = await window.alertServerTrends.getSettings();
@@ -197,27 +305,63 @@ async function main() {
     document.getElementById('trendsHeader').textContent = strings.trendsHeader;
 
     const content = document.getElementById('content');
+    // Independent of each other - the Today tab (this app's own alert-count tracking) has nothing
+    // to do with the Kaggle-sourced weapon stats, so one failing to load must not take the other
+    // tab down with it.
     const stats = await window.alertServerTrends.getWeaponStats();
+    const todayStats = await window.alertServerTrends.getTodayStats();
 
-    if (!stats) {
-        content.innerHTML = '';
-        const p = document.createElement('p');
-        p.id = 'errorText';
-        p.textContent = strings.trendsNoData;
-        content.appendChild(p);
-        return;
+    if (stats) {
+        const rangeText = strings.trendsRangeLabel
+            .replace('{from}', stats.dateRange.from)
+            .replace('{to}', stats.dateRange.to);
+        document.getElementById('trendsRange').textContent = rangeText;
     }
 
-    const rangeText = strings.trendsRangeLabel
-        .replace('{from}', stats.dateRange.from)
-        .replace('{to}', stats.dateRange.to);
-    document.getElementById('trendsRange').textContent = rangeText;
+    function renderAllTime() {
+        content.innerHTML = '';
+        if (!stats) {
+            const p = document.createElement('p');
+            p.id = 'errorText';
+            p.textContent = strings.trendsNoData;
+            content.appendChild(p);
+            return;
+        }
+        content.appendChild(buildSummaryCard(stats, strings));
+        content.appendChild(buildMonthlyChart(stats, strings, isEnglish));
+        content.appendChild(buildCategoryCard(stats, strings, isEnglish));
+        content.appendChild(buildModelsCard(stats, strings, isEnglish));
+    }
 
-    content.innerHTML = '';
-    content.appendChild(buildSummaryCard(stats, strings));
-    content.appendChild(buildMonthlyChart(stats, strings, isEnglish));
-    content.appendChild(buildCategoryCard(stats, strings, isEnglish));
-    content.appendChild(buildModelsCard(stats, strings, isEnglish));
+    function renderToday() {
+        content.innerHTML = '';
+        content.appendChild(buildTodayAlertsCard(todayStats.total, strings));
+        content.appendChild(buildHourlyChart(todayStats.byHour, strings));
+        content.appendChild(
+            buildCountTable(
+                todayStats.byOblast.map((e) => ({ label: e.oblast, count: e.count })),
+                'trendsTodayByOblastTitle',
+                'trendsTodayOblastColumn',
+                strings,
+                'trendsTodayNoAlerts'
+            )
+        );
+        content.appendChild(
+            buildCountTable(
+                todayStats.byMonitoredLocation.map((e) => ({ label: e.location, count: e.count })),
+                'trendsTodayByMonitoredTitle',
+                'location',
+                strings,
+                'trendsTodayNoMonitoredAlerts'
+            )
+        );
+    }
+
+    document
+        .getElementById('tabsHost')
+        .replaceWith(buildTabs(strings, (key) => (key === 'today' ? renderToday() : renderAllTime())));
+
+    renderAllTime();
 }
 
 main();
