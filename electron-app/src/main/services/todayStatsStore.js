@@ -100,9 +100,32 @@ function getLatestTodayStats(monitoredUids) {
     };
 }
 
+// A small buffer past midnight, not exactly on it - gives the proxy's own day rollover (which
+// only actually happens the moment something calls into it) a moment to have already landed by
+// the time this request arrives, rather than racing it.
+const MIDNIGHT_REFRESH_BUFFER_MS = 5000;
+
+function msUntilNextLocalMidnight() {
+    const now = new Date();
+    const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+    return next.getTime() - now.getTime() + MIDNIGHT_REFRESH_BUFFER_MS;
+}
+
+// The periodic interval alone left up to REFRESH_INTERVAL_MS of showing yesterday's total as
+// "today" right after midnight (proxy itself rolls over immediately - confirmed live - but the
+// client only finds out on its next scheduled poll). This forces a refresh right at the boundary
+// instead of waiting on that timer.
+function scheduleMidnightRefresh() {
+    setTimeout(() => {
+        refresh();
+        scheduleMidnightRefresh();
+    }, msUntilNextLocalMidnight());
+}
+
 function startTodayStatsRefresh() {
     refresh();
     setInterval(refresh, REFRESH_INTERVAL_MS);
+    scheduleMidnightRefresh();
 }
 
 module.exports = { startTodayStatsRefresh, getLatestTodayStats };
