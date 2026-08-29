@@ -10,8 +10,11 @@ flowchart LR
 
     subgraph main[Основний процес Electron]
         poller[alertPoller]
+        altSource[neptunAlertsSource]
+        activeData[(activeAlertData)]
         notifier[notifier]
         regionStatus[regionAlertStatus]
+        dailyStats[dailyAlertStats]
         occupied[occupiedTerritoryStore]
         forecast[forecast-сервіси]
         watcher[forecastWatcher]
@@ -38,11 +41,22 @@ flowchart LR
     proxy --> weaponStats
     deepstate --> occupied
     neptun --> liveMapWin
+    neptun --> altSource
 
+    stores -. обирає одне .-> poller
+    stores -. обирає одне .-> altSource
+    poller --> activeData
+    altSource --> activeData
     poller --> notifier
+    altSource --> notifier
     poller --> regionStatus
+    altSource --> regionStatus
+    poller --> dailyStats
+    altSource --> dailyStats
     notifier --> tray
 
+    activeData --> forecast
+    activeData --> watcher
     forecast --> watcher
     watcher --> tray
     watcher --> popup
@@ -50,6 +64,7 @@ flowchart LR
     regionStatus --> liveMapWin
     occupied --> liveMapWin
     weaponStats --> trendsWin
+    dailyStats --> trendsWin
 
     stores --> settingsWin
     forecast --> forecastWin
@@ -69,7 +84,7 @@ flowchart LR
     classDef winNode fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
 
     class api,proxy,neptun,deepstate,kaggle,gh extNode
-    class poller,notifier,regionStatus,occupied,forecast,watcher,weaponStats,tray,stores,updater mainNode
+    class poller,altSource,activeData,notifier,regionStatus,dailyStats,occupied,forecast,watcher,weaponStats,tray,stores,updater mainNode
     class settingsWin,forecastWin,trendsWin,liveMapWin,popup,logWin,aboutWin winNode
 
     style ext fill:#eff6ff,stroke:#93c5fd
