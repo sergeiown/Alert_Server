@@ -27,9 +27,6 @@ const historyCache = new Map();
 let queue = Promise.resolve();
 let lastOriginFetchAt = 0;
 
-const loggedNoteValues = new Set();
-let loggedCalculatedNonNull = false;
-
 let historyLastLoggedStatus = null;
 let historyLastLoggedAt = 0;
 
@@ -56,19 +53,6 @@ function noteHistoryOriginHealthy() {
     if (historyLastLoggedStatus === null) return;
     logEvent('alert-proxy history origin recovered (alerts.in.ua)', 'NETWORK');
     historyLastLoggedStatus = null;
-}
-
-function logDataHygiene(alerts) {
-    alerts.forEach((alert) => {
-        if (alert.notes && !loggedNoteValues.has(alert.notes)) {
-            loggedNoteValues.add(alert.notes);
-            logEvent(`Forecast: new "notes" value observed: ${alert.notes}`, 'WARNING');
-        }
-        if (alert.calculated !== null && alert.calculated !== undefined && !loggedCalculatedNonNull) {
-            loggedCalculatedNonNull = true;
-            logEvent(`Forecast: "calculated" field is non-null: ${JSON.stringify(alert.calculated)}`, 'WARNING');
-        }
-    });
 }
 
 async function fetchOblastAlerts(stateUid) {
@@ -106,7 +90,6 @@ async function fetchOblastAlerts(stateUid) {
         if (originErrorStatus) logHistoryOriginIssue(stateUid, Number(originErrorStatus));
         else noteHistoryOriginHealthy();
 
-        logDataHygiene(alerts);
         historyCache.set(stateUid, { fetchedAt: Date.now(), alerts });
         return alerts;
     };
