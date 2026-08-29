@@ -7,7 +7,7 @@ A description of the forecasting approach: where the data comes from, how the al
 
 ## 1. Data source
 
-Alert history comes from the public [alerts.in.ua](https://alerts.in.ua/) API - the same service that provides current-alert data. A key quirk: the API only actually returns history at the **region** level (~30 days), not for an individual district or hromada. So for any monitored area, the app:
+Alert history always comes from the public [alerts.in.ua](https://alerts.in.ua/) API, regardless of which source is selected in Settings for current-alert data (see the main README) - the alternative source doesn't offer historical data at all, so forecasting has nothing to switch to. A key quirk: the API only actually returns history at the **region** level (~30 days), not for an individual district or hromada. So for any monitored area, the app:
 
 - determines which region it belongs to;
 - requests history for the whole region at once (several monitored areas within the same region share one request);
