@@ -10,13 +10,15 @@ const OLD_LOG_FILE = 'event.log';
 const MAX_SIZE_BYTES = 1024 * 1024;
 const LINES_TO_DROP = 100;
 
-// Four fixed categories, so a scan of the log (or a filter in Notepad/Excel) can tell at a glance
+// Five fixed categories, so a scan of the log (or a filter in Notepad/Excel) can tell at a glance
 // what happened without reading every message: NETWORK for any request/response outcome (success
 // or failure) against an outside source, ERROR for the app's own bugs/crashes, WARNING for a
-// degraded-but-recovered-from state (missing config, an empty/stale source), and INFO for
-// everything else (lifecycle, user actions). Falls back to INFO for an unrecognized level rather
-// than throwing, since a bad level string shouldn't be able to take the log itself down.
-const LOG_LEVELS = ['INFO', 'WARNING', 'ERROR', 'NETWORK'];
+// degraded-but-recovered-from state (missing config, an empty/stale source), ALERT for a real
+// siren actually starting or ending (as opposed to app lifecycle or a merely-forecast one - those
+// stay INFO), and INFO for everything else (lifecycle, user actions). Falls back to INFO for an
+// unrecognized level rather than throwing, since a bad level string shouldn't be able to take the
+// log itself down.
+const LOG_LEVELS = ['INFO', 'WARNING', 'ERROR', 'NETWORK', 'ALERT'];
 
 function csvField(value) {
     const str = String(value);
@@ -63,14 +65,24 @@ function truncateIfNeeded(filePath) {
     fs.writeFileSync(filePath, [header, ...remaining].join(os.EOL) + os.EOL, 'utf-8');
 }
 
+// ISO-style (YYYY-MM-DD, 24-hour HH:MM:SS) rather than any particular locale's own date format -
+// unambiguous and sorts correctly as plain text, which a locale-formatted date/time doesn't.
+function isoDate(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function isoTime(date) {
+    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+}
+
 function logEvent(message, level = 'INFO') {
     const filePath = getUserDataFile(LOG_FILE);
     initializeLogFile();
     truncateIfNeeded(filePath);
 
     const now = new Date();
-    const date = now.toLocaleDateString('uk-UA');
-    const time = now.toLocaleTimeString('uk-UA');
+    const date = isoDate(now);
+    const time = isoTime(now);
     const text = typeof message === 'string' ? message : JSON.stringify(message);
     const resolvedLevel = LOG_LEVELS.includes(level) ? level : 'INFO';
 
