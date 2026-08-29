@@ -1,6 +1,9 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
+import { normalizeOblastName, oblastDisplayName } from '../liveMap/regionNameUtils.js';
+import { transliterate } from '../liveMap/transliterate.js';
+
 const CATEGORY_UK = {
     UAV: 'БПЛА',
     'cruise missile': 'крилата ракета',
@@ -33,6 +36,20 @@ function categoryColor(category) {
 
 function formatNumber(n) {
     return Math.round(n).toLocaleString();
+}
+
+// Oblast names get the same curated English names the live map already uses (e.g. "Dnipropetrovsk
+// Oblast", not a mechanical transliteration of the Ukrainian). Monitored-location names can be at
+// any granularity (raion, hromada, city) with no such curated map available, so those fall back to
+// plain transliteration instead - not as polished, but never left in Cyrillic under an English UI.
+function displayOblastName(name, isEnglish) {
+    if (!isEnglish || !name) return name;
+    return oblastDisplayName(normalizeOblastName(name), true);
+}
+
+function displayLocationName(name, isEnglish) {
+    if (!isEnglish || !name) return name;
+    return transliterate(name);
 }
 
 function formatPercent(numerator, denominator) {
@@ -342,7 +359,7 @@ async function main() {
         content.appendChild(buildHourlyChart(todayStats.byHour, strings));
         content.appendChild(
             buildCountTable(
-                todayStats.byOblast.map((e) => ({ label: e.oblast, count: e.count })),
+                todayStats.byOblast.map((e) => ({ label: displayOblastName(e.oblast, isEnglish), count: e.count })),
                 'trendsTodayByOblastTitle',
                 'trendsTodayOblastColumn',
                 strings,
@@ -351,7 +368,7 @@ async function main() {
         );
         content.appendChild(
             buildCountTable(
-                todayStats.byMonitoredLocation.map((e) => ({ label: e.location, count: e.count })),
+                todayStats.byMonitoredLocation.map((e) => ({ label: displayLocationName(e.location, isEnglish), count: e.count })),
                 'trendsTodayByMonitoredTitle',
                 'location',
                 strings,
