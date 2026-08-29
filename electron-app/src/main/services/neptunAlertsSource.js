@@ -16,11 +16,16 @@ const ALERTS_URL = 'https://neptun.in.ua/api/v1/alerts';
 const POLL_INTERVAL_MS = 30000;
 const UNMATCHED_LOG_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
-// locations.json's own name for Crimea is this exact mixed Latin/Cyrillic string (see the same
-// constant documented in renderer/liveMap/regionNameUtils.js) - Neptun's own "Автономна
-// Республіка Крим" is plain Cyrillic and would never exact-match it.
+// locations.json's own names for Crimea and Sevastopol are these exact mixed Latin/Cyrillic
+// strings (see CRIMEA_RAW_NAME documented in renderer/liveMap/regionNameUtils.js) - Neptun's own
+// plain-Cyrillic names would never exact-match either one.
 const CRIMEA_RAW_NAME = 'Aвmoнoмнa Pecпублiкa Kpuм';
 const CRIMEA_NEPTUN_NAME = 'Автономна Республіка Крим';
+// locations.json has no separate state entry for Sevastopol at all - it's filed as Crimea's own
+// (sole) district instead, so a Neptun "oblast" entry for it has to resolve into districtByName,
+// not stateByName, and comes out with location_type 'district' rather than 'state'.
+const SEVASTOPOL_RAW_NAME = 'м. Ceвacmoпoль';
+const SEVASTOPOL_NEPTUN_NAME = 'Севастополь';
 
 let stateByName = null;
 let districtByName = null;
@@ -43,6 +48,13 @@ function buildLookups() {
                 stateUid: state.uid,
                 stateName: state.stateName,
             });
+            if (district.districtName === SEVASTOPOL_RAW_NAME) {
+                districtByName.set(SEVASTOPOL_NEPTUN_NAME, {
+                    uid: district.uid,
+                    stateUid: state.uid,
+                    stateName: state.stateName,
+                });
+            }
         });
     });
 }
@@ -64,19 +76,36 @@ function transformOblasts(oblasts) {
     return (oblasts || [])
         .map((entry) => {
             const state = stateByName.get(entry.name);
-            if (!state) {
-                logUnmatchedOnce(entry.name, entry.oblast);
-                return null;
+            if (state) {
+                return {
+                    id: `neptun-oblast-${entry.key}`,
+                    location_uid: state.uid,
+                    location_title: state.stateName,
+                    location_oblast: state.stateName,
+                    location_type: 'state',
+                    alert_type: 'air_raid',
+                    started_at: entry.since,
+                };
             }
-            return {
-                id: `neptun-oblast-${entry.key}`,
-                location_uid: state.uid,
-                location_title: state.stateName,
-                location_oblast: state.stateName,
-                location_type: 'state',
-                alert_type: 'air_raid',
-                started_at: entry.since,
-            };
+
+            // Sevastopol (and only Sevastopol, currently) is an "oblast" in Neptun's own model but
+            // only exists in locations.json as Crimea's one district - falls back here instead of
+            // being dropped.
+            const district = districtByName.get(entry.name);
+            if (district) {
+                return {
+                    id: `neptun-oblast-${entry.key}`,
+                    location_uid: district.uid,
+                    location_title: entry.name,
+                    location_oblast: district.stateName,
+                    location_type: 'district',
+                    alert_type: 'air_raid',
+                    started_at: entry.since,
+                };
+            }
+
+            logUnmatchedOnce(entry.name, entry.oblast);
+            return null;
         })
         .filter(Boolean);
 }
