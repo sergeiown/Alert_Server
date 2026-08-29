@@ -6,8 +6,8 @@ const os = require('os');
 const { getUserDataFile } = require('./appPaths');
 const { transliterate } = require('./transliterate');
 
-const LOG_FILE = 'event.csv';
-const OLD_LOG_FILE = 'event.log';
+const LOG_FILE = 'alert_server_log.csv';
+const OLD_LOG_FILES = ['event.csv', 'event.log']; // newest first - tried in order
 const MAX_SIZE_BYTES = 1024 * 1024;
 const LINES_TO_DROP = 100;
 
@@ -41,10 +41,12 @@ function initializeLogFile() {
     const filePath = getUserDataFile(LOG_FILE);
 
     if (!fs.existsSync(filePath)) {
-        // An install updated from before the log used a .csv extension left its history under the
-        // old name - renamed forward rather than started fresh, so that history isn't just lost.
-        const oldFilePath = getUserDataFile(OLD_LOG_FILE);
-        if (fs.existsSync(oldFilePath)) {
+        // An install updated from before the file had this name (matching the app's own,
+        // "alert_server_log.csv" rather than the generic "event.csv"/"event.log" it used to be)
+        // left its history under one of those older names - renamed forward rather than started
+        // fresh, so that history isn't just lost.
+        const oldFilePath = OLD_LOG_FILES.map(getUserDataFile).find(fs.existsSync);
+        if (oldFilePath) {
             fs.renameSync(oldFilePath, filePath);
         } else {
             fs.writeFileSync(filePath, PREAMBLE + os.EOL, 'utf-8');
