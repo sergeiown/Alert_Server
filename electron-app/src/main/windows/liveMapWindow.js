@@ -36,4 +36,10 @@ function openLiveMapWindow() {
     return liveMapWindow;
 }
 
-module.exports = { openLiveMapWindow };
+// Returns null if the window isn't currently open, rather than creating one - a theme-change
+// reload has nothing to do if there's no map window to reload.
+function getLiveMapWindow() {
+    return liveMapWindow;
+}
+
+module.exports = { openLiveMapWindow, getLiveMapWindow };
