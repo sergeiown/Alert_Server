@@ -14,8 +14,8 @@ function openLogWindow() {
     }
 
     logWindow = new BrowserWindow({
-        width: 720,
-        height: 560,
+        width: 960,
+        height: 600,
         title: 'Alert Server - Event log',
         icon: path.join(__dirname, '..', '..', '..', 'resources', 'icons', 'app-icon-256.png'),
         webPreferences: {
