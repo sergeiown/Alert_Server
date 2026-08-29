@@ -18,6 +18,16 @@ function freshState() {
     return { date: localDateKey(new Date()), seenIds: [], records: [] };
 }
 
+// Validates the shape, not just that the file parsed - an earlier build of this store (still in
+// the wild on already-updated installs) wrote a different shape ({date, ids}) under this same
+// filename; trusting that blindly would have every method below throw on state.records/seenIds
+// being undefined, silently aborting whatever poll callback called into it (which is exactly what
+// happened here: the tray stopped updating and the Trends window rendered blank, both because the
+// exception cut the shared poll callback short before it reached them).
+function isValidShape(saved, today) {
+    return Boolean(saved) && saved.date === today && Array.isArray(saved.seenIds) && Array.isArray(saved.records);
+}
+
 function load() {
     const filePath = getUserDataFile(STORE_FILE);
     let saved = null;
@@ -31,7 +41,13 @@ function load() {
     }
 
     const today = localDateKey(new Date());
-    state = saved && saved.date === today ? saved : freshState();
+    if (isValidShape(saved, today)) {
+        state = saved;
+        return;
+    }
+
+    state = freshState();
+    writeNow();
 }
 
 function writeNow() {
