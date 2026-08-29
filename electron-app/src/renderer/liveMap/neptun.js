@@ -19,6 +19,15 @@ const TOOLTIP_WIDTH_PADDING_PX = 14;
 const MISSILE_TYPE_ALIASES = ['missile', 'rocket', 'cruise_missile', 'ballistic'];
 const RECON_TITLE_PATTERN = /розвід/i;
 
+// A dedicated pane so threat icons always render above every other map layer (region shading,
+// labels, occupied-territory hatching), regardless of which order those layers happen to redraw
+// in - relying on DOM insertion order across layers that redraw at different times is what let
+// icons intermittently end up hidden behind a same-pane layer that just happened to redraw after
+// them. Sits above the default markerPane (600) but below tooltipPane (650), so a hovered
+// threat's own tooltip still shows above its icon as usual.
+const THREATS_PANE = 'threatsPane';
+const THREATS_PANE_Z = 620;
+
 // Minimum on-screen center-to-center spacing kept between threat icons - comfortably more than
 // the 22px icon itself, so nudged-apart icons never end up touching, let alone one covering
 // another.
@@ -139,11 +148,16 @@ function escapeHtml(text) {
 // drop-shadow) is computed before its element's own transform is applied, so a shadow set on the
 // same element that rotates would spin along with the icon instead of staying cast in one fixed
 // direction.
-function iconHtml(typeKey, rotationDeg) {
+// `uncertain` gets a dashed outline instead of the normal solid white one - a quick visual cue
+// that Neptun itself hasn't confirmed this one yet, without needing to open the tooltip to find
+// out. Only lifecycle drives this, not `status` - every threat in the feed is "active" by
+// definition of being in it, so that field never actually varies in practice.
+function iconHtml(typeKey, rotationDeg, lifecycle) {
     const { color, svg } = TYPE_ICONS[typeKey];
     const rotation = typeof rotationDeg === 'number' ? `transform: rotate(${rotationDeg}deg);` : '';
+    const uncertainClass = lifecycle === 'uncertain' ? ' threat-icon-uncertain' : '';
     return (
-        `<div class="threat-icon" style="color: ${color};">` +
+        `<div class="threat-icon${uncertainClass}" style="color: ${color};">` +
         `<div class="threat-icon-rotate" style="${rotation}">` +
         `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="#ffffff" stroke-width="1">${svg}</svg>` +
         `</div></div>`
@@ -156,7 +170,7 @@ function threatIcon(threat) {
 
     return L.divIcon({
         className: 'threat-icon-wrapper',
-        html: iconHtml(typeKey, rotation),
+        html: iconHtml(typeKey, rotation, threat.lifecycle),
         iconSize: [22, 22],
         iconAnchor: [11, 11],
     });
@@ -181,10 +195,11 @@ function tooltipContent(threat, strings, isEnglish) {
 
     const oblastPart = threat.region ? oblastDisplayName(normalizeOblastName(threat.region), true) : '';
     const localityPart = isEnglish && threat.locality ? transliterate(threat.locality) : threat.locality;
-    const localityRegion = [threat.locality, threat.region].filter(Boolean).join(', ');
+    const districtPart = isEnglish && threat.district ? transliterate(threat.district) : threat.district;
+    const localityRegion = [threat.locality, threat.district, threat.region].filter(Boolean).join(', ');
 
     const locationLine = isEnglish
-        ? [localityPart, oblastPart].filter(Boolean).join(', ')
+        ? [localityPart, districtPart, oblastPart].filter(Boolean).join(', ')
         : localityRegion
           ? `${strings.liveMapDirectionLabel} - ${localityRegion}.`
           : threat.explanationShort || '';
@@ -230,28 +245,54 @@ function measureTooltipWidth(el) {
     return Math.max(TOOLTIP_MIN_WIDTH_PX, Math.min(widest + TOOLTIP_WIDTH_PADDING_PX, TOOLTIP_MAX_WIDTH_PX));
 }
 
-function buildLegend(strings) {
-    const rows = ['uav', 'uav_recon', 'fpv', 'kab', 'missile', 'mig31k', 'unknown']
-        .map((typeKey) => `<div class="legend-row">${iconHtml(typeKey)}<span>${escapeHtml(strings[`liveMapType_${typeKey}`])}</span></div>`)
-        .join('');
+const ALL_TYPE_KEYS = ['uav', 'uav_recon', 'fpv', 'kab', 'missile', 'mig31k', 'unknown'];
 
+// Only lists the threat types actually on the map right now, not the full fixed set - a legend
+// entry for a type nothing currently shows is a row explaining nothing. update() is called on
+// every render with whichever types are present; the legend hides itself entirely rather than
+// show an empty box during a fully quiet stretch.
+function buildLegend(strings) {
     const legend = L.control({ position: 'bottomleft' });
+    let container = null;
+
     legend.onAdd = () => {
-        const container = L.DomUtil.create('div', 'threat-legend');
-        container.innerHTML = `<div class="legend-title">${escapeHtml(strings.liveMapLegendTitle)}</div>${rows}`;
+        container = L.DomUtil.create('div', 'threat-legend');
+        legend.update([]);
         return container;
     };
+
+    legend.update = (presentTypeKeys) => {
+        if (!container) return;
+        const keys = ALL_TYPE_KEYS.filter((key) => presentTypeKeys.includes(key));
+
+        if (!keys.length) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = '';
+        const rows = keys
+            .map((typeKey) => `<div class="legend-row">${iconHtml(typeKey)}<span>${escapeHtml(strings[`liveMapType_${typeKey}`])}</span></div>`)
+            .join('');
+        container.innerHTML = `<div class="legend-title">${escapeHtml(strings.liveMapLegendTitle)}</div>${rows}`;
+    };
+
     return legend;
 }
 
 function startNeptunLayer(map, strings, language) {
+    if (!map.getPane(THREATS_PANE)) {
+        map.createPane(THREATS_PANE).style.zIndex = THREATS_PANE_Z;
+    }
+
     const layer = L.layerGroup().addTo(map);
     const isEnglish = language === 'English';
     let reconnectTimer = null;
     let heartbeatTimer = null;
     let lastThreats = [];
 
-    buildLegend(strings).addTo(map);
+    const legend = buildLegend(strings);
+    legend.addTo(map);
 
     map.on('tooltipopen', (e) => {
         const el = e.tooltip.getElement();
@@ -266,12 +307,14 @@ function startNeptunLayer(map, strings, language) {
         lastThreats = threats;
 
         const valid = threats.filter((t) => typeof t.lat === 'number' && typeof t.lon === 'number');
+        legend.update(valid.map((t) => resolveTypeKey(t)));
+
         const points = valid.map((t) => map.latLngToContainerPoint([t.lat, t.lon]));
         const spread = declutterPoints(points, MARKER_MIN_GAP_PX);
 
         valid.forEach((threat, i) => {
             const displayLatLng = map.containerPointToLatLng([spread[i].x, spread[i].y]);
-            L.marker(displayLatLng, { icon: threatIcon(threat) })
+            L.marker(displayLatLng, { icon: threatIcon(threat), pane: THREATS_PANE })
                 .bindTooltip(tooltipContent(threat, strings, isEnglish))
                 .on('mouseover', () => map.closePopup())
                 .addTo(layer);
