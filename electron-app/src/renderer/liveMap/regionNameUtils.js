@@ -10,6 +10,10 @@ const CRIMEA_RAW_NAME = 'Aвmoнoмнa Pecпублiкa Kpuм';
 
 function normalizeOblastName(name) {
     if (name === CRIMEA_RAW_NAME) return 'Крим';
+    // Kyiv city is its own oblast-equivalent admin unit, named "м. Київ" ("city Kyiv") rather
+    // than "Х область" like every other entry here - stripped to plain "Київ" so it matches
+    // OBLAST_EN_BY_UK's key and oblastDisplayName's own special case below.
+    if (name === 'м. Київ') return 'Київ';
     return name.replace(/\s*область\s*$/u, '').trim();
 }
 
@@ -22,6 +26,10 @@ function normalizeRaionName(name) {
 
 function oblastDisplayName(name, isEnglish) {
     if (name === 'Крим') return isEnglish ? 'Crimea' : name;
+    // A city, not a region - "Kyiv Region" would be wrong (that's Kyiv Oblast, the separate
+    // surrounding entity), and the Ukrainian side needs its "м. " prefix back, since the generic
+    // "${name} область" case below doesn't apply to a city either.
+    if (name === 'Київ') return isEnglish ? 'Kyiv' : 'м. Київ';
     if (isEnglish) {
         // OBLAST_EN_BY_UK's Kyiv entry is "Kyiv Oblast" - stripped here so this doesn't end up
         // appending " Region" onto an already-suffixed name.
