@@ -42,10 +42,10 @@ body {
 }
 
 #regions-column {
-    /* Fixed at its old 50%-of-720px share rather than a proportion of the (now wider) window -
-       the region tree and map don't need more room than they already had; the settings side is
-       what was cramped. */
-    flex: 0 0 360px;
+    /* 1:2 share against #general-settings's flex-grow of 2 below (both basis 0, so it's a pure
+       ratio of the available space) - stays that ratio as the window itself is resized, rather
+       than anchoring one side at a fixed pixel width while the other absorbs all the change. */
+    flex: 1 1 0;
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -54,7 +54,7 @@ body {
 }
 
 #general-settings {
-    flex: 1 1 auto;
+    flex: 2 1 0;
     padding: 14px;
     display: flex;
     flex-direction: column;
