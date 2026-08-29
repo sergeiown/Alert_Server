@@ -22,7 +22,7 @@ function play(filePath) {
     isPlaying = true;
     exec(`powershell -c (New-Object System.Media.SoundPlayer '${filePath}').PlaySync()`, (err) => {
         isPlaying = false;
-        if (err) logEvent(`Sound playback error: ${err.message}`);
+        if (err) logEvent(`Sound playback error: ${err.message}`, 'ERROR');
     });
 }
 

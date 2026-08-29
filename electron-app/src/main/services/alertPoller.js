@@ -27,12 +27,12 @@ function logOriginIssue(status) {
     if (status === lastLoggedStatus && now - lastLoggedAt < ORIGIN_ISSUE_LOG_COOLDOWN_MS) return;
     lastLoggedStatus = status;
     lastLoggedAt = now;
-    logEvent(`alert-proxy origin issue: ${status} (${describeOriginStatus(status)})`);
+    logEvent(`alert-proxy origin issue (alerts.in.ua): ${status} (${describeOriginStatus(status)})`, 'NETWORK');
 }
 
 function noteOriginHealthy() {
     if (lastLoggedStatus === null) return;
-    logEvent('alert-proxy origin recovered');
+    logEvent('alert-proxy origin recovered (alerts.in.ua)', 'NETWORK');
     lastLoggedStatus = null;
 }
 
@@ -75,7 +75,7 @@ async function pollOnce(clientKey) {
 
         return latestAlertData;
     } catch (err) {
-        logEvent(`alert-proxy request error: ${err.message}`);
+        logEvent(`alert-proxy request error: ${err.message}`, 'NETWORK');
         return latestAlertData;
     }
 }

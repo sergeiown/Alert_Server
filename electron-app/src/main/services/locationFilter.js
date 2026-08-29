@@ -107,7 +107,8 @@ function discoverUnknownLocations(alerts) {
 
         if (noted) {
             logEvent(
-                `Discovered a location not in locations.json: uid=${uid} "${alert.location_title}" (${alert.location_type}, ${alert.location_oblast})`
+                `Discovered a location not in locations.json: uid=${uid} "${alert.location_title}" (${alert.location_type}, ${alert.location_oblast})`,
+                'WARNING'
             );
         }
     });

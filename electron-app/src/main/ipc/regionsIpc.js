@@ -13,7 +13,7 @@ const { notifyRegionsChanged } = require('../windows/forecastWindow');
 const { logEvent } = require('../services/logger');
 
 function prefetchForecastHistory(uid) {
-    fetchHistoryAlerts(uid).catch((err) => logEvent(`Forecast prefetch failed for uid ${uid}: ${err.message}`));
+    fetchHistoryAlerts(uid).catch((err) => logEvent(`Forecast prefetch failed for uid ${uid} (alert-proxy): ${err.message}`, 'NETWORK'));
 }
 
 let cachedTree = null;
@@ -83,7 +83,7 @@ function registerRegionsIpc() {
         selected.filter((uid) => !previouslySelected.has(String(uid))).forEach(prefetchForecastHistory);
         notifyRegionsChanged();
 
-        logEvent(`Selected regions replaced: ${uids.length} region(s)`);
+        logEvent(`Selected regions replaced: ${uids.length} region(s)`, 'INFO');
         return selected;
     });
     ipcMain.handle('regions:toggle', (event, uid) => {
@@ -93,7 +93,7 @@ function registerRegionsIpc() {
         if (isSelected) prefetchForecastHistory(uid);
         notifyRegionsChanged();
 
-        logEvent(`Region ${uid} ${isSelected ? 'added to' : 'removed from'} monitoring`);
+        logEvent(`Region ${uid} ${isSelected ? 'added to' : 'removed from'} monitoring`, 'INFO');
         return isSelected;
     });
 }

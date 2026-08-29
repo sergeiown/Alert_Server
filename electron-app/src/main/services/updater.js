@@ -20,15 +20,15 @@ autoUpdater.autoDownload = false;
 let lastDeclinedVersion = null;
 
 autoUpdater.on('checking-for-update', () => {
-    logEvent('Checking for updates');
+    logEvent('Checking for updates (GitHub Releases)', 'NETWORK');
 });
 
 autoUpdater.on('update-not-available', () => {
-    logEvent('No update available');
+    logEvent('No update available', 'NETWORK');
 });
 
 autoUpdater.on('update-available', (info) => {
-    logEvent(`Update available: ${info.version}`);
+    logEvent(`Update available: ${info.version}`, 'NETWORK');
 
     if (info.version === lastDeclinedVersion) return;
 
@@ -42,11 +42,11 @@ autoUpdater.on('update-available', (info) => {
         })
         .then((result) => {
             if (result.response === 0) {
-                logEvent(`Update ${info.version} confirmed, downloading`);
+                logEvent(`Update ${info.version} confirmed, downloading`, 'INFO');
                 openUpdateProgressWindow();
                 autoUpdater.downloadUpdate();
             } else {
-                logEvent(`Update ${info.version} declined by user`);
+                logEvent(`Update ${info.version} declined by user`, 'INFO');
                 lastDeclinedVersion = info.version;
             }
         });
@@ -58,7 +58,7 @@ autoUpdater.on('download-progress', (progress) => {
 });
 
 autoUpdater.on('update-downloaded', (info) => {
-    logEvent(`Update ${info.version} downloaded, installing`);
+    logEvent(`Update ${info.version} downloaded, installing`, 'INFO');
     setUpdateProgress(100);
     setUpdateStatus('Завантажено, встановлення...');
     setTemporaryTooltip('Alert Server: оновлення завантажено, встановлення...');
@@ -70,7 +70,7 @@ autoUpdater.on('update-downloaded', (info) => {
 });
 
 autoUpdater.on('error', (err) => {
-    logEvent(`Auto-update error: ${err.message}`);
+    logEvent(`Auto-update error (GitHub Releases): ${err.message}`, 'NETWORK');
     clearTemporaryTooltip();
     closeUpdateProgressWindow();
 });

@@ -39,10 +39,10 @@ app.setAppUserModelId('com.sergeiown.alertserver');
 
 app.whenReady().then(() => {
     installHandlers();
-    logEvent(`Application started (v${app.getVersion()})`);
+    logEvent(`Application started (v${app.getVersion()})`, 'INFO');
 
     const result = importLegacyConfig(LEGACY_APP_DIR, { settingsStore, regionsStore });
-    logEvent(`Legacy config import: ${JSON.stringify(result)}`);
+    logEvent(`Legacy config import: ${JSON.stringify(result)}`, 'INFO');
 
     nativeTheme.themeSource = settingsStore.getSettings().theme;
 
@@ -67,7 +67,7 @@ app.whenReady().then(() => {
         startPolling(alertProxyClientKey, (alertData) => {
             const matched = filterAlerts(alertData);
             discoverUnknownLocations(alertData.alerts);
-            logEvent(`Poll: ${alertData.alerts.length} active alerts, ${matched.length} in monitored regions`);
+            logEvent(`Poll (alerts.in.ua via alert-proxy): ${alertData.alerts.length} active alerts, ${matched.length} in monitored regions`, 'NETWORK');
             setLatestMatchedAlerts(matched);
             setLatestTotalAlertCount(alertData.alerts.length);
             setLatestAlertedRegions(computeAlertedRegions(alertData.alerts));
@@ -81,7 +81,7 @@ app.whenReady().then(() => {
             }
         });
     } else {
-        logEvent('alertProxyClientKey missing from config.local.json, polling disabled');
+        logEvent('alertProxyClientKey missing from config.local.json, polling disabled', 'WARNING');
         startForecastWatcher();
     }
 });

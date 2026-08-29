@@ -49,12 +49,12 @@ function logHistoryOriginIssue(uid, status) {
     if (status === historyLastLoggedStatus && now - historyLastLoggedAt < HISTORY_ORIGIN_ISSUE_LOG_COOLDOWN_MS) return;
     historyLastLoggedStatus = status;
     historyLastLoggedAt = now;
-    logEvent(`alert-proxy history origin issue (uid ${uid}): ${status} (${describeOriginStatus(status)})`);
+    logEvent(`alert-proxy history origin issue (uid ${uid}, alerts.in.ua): ${status} (${describeOriginStatus(status)})`, 'NETWORK');
 }
 
 function noteHistoryOriginHealthy() {
     if (historyLastLoggedStatus === null) return;
-    logEvent('alert-proxy history origin recovered');
+    logEvent('alert-proxy history origin recovered (alerts.in.ua)', 'NETWORK');
     historyLastLoggedStatus = null;
 }
 
@@ -62,11 +62,11 @@ function logDataHygiene(alerts) {
     alerts.forEach((alert) => {
         if (alert.notes && !loggedNoteValues.has(alert.notes)) {
             loggedNoteValues.add(alert.notes);
-            logEvent(`Forecast: new "notes" value observed: ${alert.notes}`);
+            logEvent(`Forecast: new "notes" value observed: ${alert.notes}`, 'WARNING');
         }
         if (alert.calculated !== null && alert.calculated !== undefined && !loggedCalculatedNonNull) {
             loggedCalculatedNonNull = true;
-            logEvent(`Forecast: "calculated" field is non-null: ${JSON.stringify(alert.calculated)}`);
+            logEvent(`Forecast: "calculated" field is non-null: ${JSON.stringify(alert.calculated)}`, 'WARNING');
         }
     });
 }

@@ -45,7 +45,7 @@ function notifyApproaching(uid, alertType, etaMs, language) {
         color: FORECAST_COLOR,
         onClick: () => openForecastWindow(),
     });
-    logEvent(`Forecast notify: ${name} - ${typeName} (uid ${uid}, eta ~${etaText})`);
+    logEvent(`Forecast notify: ${name} - ${typeName} (uid ${uid}, eta ~${etaText})`, 'INFO');
 }
 
 async function evaluateRegion(uid, language) {
@@ -97,7 +97,7 @@ async function runCheck() {
             const candidate = await evaluateRegion(uid, language);
             if (candidate) candidates.push(candidate);
         } catch (err) {
-            logEvent(`Forecast watcher error for uid ${uid}: ${err.message}`);
+            logEvent(`Forecast watcher error for uid ${uid}: ${err.message}`, 'ERROR');
         }
     }
 
