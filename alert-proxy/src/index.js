@@ -8,6 +8,30 @@ const ACTIVE_MIN_GAP_MS = 5 * 1000;
 const HISTORY_CACHE_TTL_MS = 15 * 60 * 1000;
 const HISTORY_MIN_GAP_MS = 35 * 1000;
 
+// All 26 oblast-level uids alerts.in.ua's /v1/regions/{uid}/alerts endpoint accepts (matches the
+// app's own locations.json state list). Cycled round-robin by the today-stats background refresh
+// below, one per alarm tick, so a full pass takes ~26 * HISTORY_MIN_GAP_MS.
+const ALL_OBLAST_UIDS = [
+    3, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31,
+];
+const TODAY_STATS_REFRESH_INTERVAL_MS = HISTORY_MIN_GAP_MS;
+const TODAY_STATS_TIMEZONE = 'Europe/Kyiv';
+
+// "Today" is always the alerts' own real-world (Kyiv) calendar day, regardless of which timezone
+// the Worker or a requesting client happens to run in.
+function kyivDateKey(date) {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: TODAY_STATS_TIMEZONE }).format(date);
+}
+
+function kyivHour(dateStr) {
+    const formatted = new Intl.DateTimeFormat('en-GB', {
+        timeZone: TODAY_STATS_TIMEZONE,
+        hour: '2-digit',
+        hourCycle: 'h23',
+    }).format(new Date(dateStr));
+    return Number(formatted);
+}
+
 const REGION_STATUSES_URL = 'https://api.alerts.in.ua/v1/iot/active_air_raid_alerts.json';
 const REGION_STATUSES_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const REGION_STATUSES_MIN_GAP_MS = 5 * 1000;
@@ -146,6 +170,7 @@ function buildWeaponStats(attacks, models) {
 
 export class AlertsGateway {
     constructor(state, env) {
+        this.state = state;
         this.env = env;
         this.activeCache = null;
         this.activeOriginError = null;
@@ -166,6 +191,8 @@ export class AlertsGateway {
     }
 
     async fetch(request) {
+        await this.ensureTodayStatsAlarmScheduled();
+
         const url = new URL(request.url);
         const ifModifiedSince = request.headers.get('If-Modified-Since');
 
@@ -176,6 +203,10 @@ export class AlertsGateway {
 
         if (url.pathname === '/region-statuses') {
             return this.getRegionStatuses();
+        }
+
+        if (url.pathname === '/today-stats') {
+            return this.getTodayStats();
         }
 
         if (url.pathname === '/weapon-stats') {
@@ -278,6 +309,93 @@ export class AlertsGateway {
             headers['X-Origin-Error-Status'] = String(this.historyOriginErrors.get(uid).status);
         }
         return new Response(body, { headers });
+    }
+
+    // Keeps a nationwide "today" picture warm continuously via a self-perpetuating alarm, one
+    // oblast per tick, so any client asking gets an already-built answer instead of each
+    // individual install having to watch the live feed itself from whenever it happened to start.
+    async ensureTodayStatsAlarmScheduled() {
+        const current = await this.state.storage.getAlarm();
+        if (current === null) {
+            await this.state.storage.setAlarm(Date.now());
+        }
+    }
+
+    async alarm() {
+        try {
+            await this.refreshOneOblastForToday();
+        } finally {
+            // Always reschedule, even after a failed round, so a single bad fetch can't stall
+            // the loop for the rest of the day.
+            await this.state.storage.setAlarm(Date.now() + TODAY_STATS_REFRESH_INTERVAL_MS);
+        }
+    }
+
+    async loadTodayStatsState() {
+        const todayKey = kyivDateKey(new Date());
+        let saved = await this.state.storage.get('todayStatsState');
+        if (!saved || saved.date !== todayKey) {
+            saved = { date: todayKey, cursor: 0, byOblast: {} };
+            await this.state.storage.put('todayStatsState', saved);
+        }
+        return saved;
+    }
+
+    async refreshOneOblastForToday() {
+        const todayState = await this.loadTodayStatsState();
+        const uid = ALL_OBLAST_UIDS[todayState.cursor % ALL_OBLAST_UIDS.length];
+        todayState.cursor += 1;
+
+        // Reuses the same rate-limited/cached fetch the client-facing /history/:uid endpoint
+        // uses - both draw from the same shared origin-request budget either way, and a recent
+        // forecast lookup for this uid means this call is a free cache hit.
+        const response = await this.getHistory(String(uid));
+        if (response.ok) {
+            const data = await response.json();
+            const alerts = (data.alerts || []).filter(
+                (alert) => alert.started_at && kyivDateKey(new Date(alert.started_at)) === todayState.date
+            );
+            todayState.byOblast[uid] = alerts;
+        }
+        // On failure, leave whatever was previously stored for this uid untouched - a transient
+        // origin error shouldn't erase already-known data for that region; the next pass retries.
+
+        await this.state.storage.put('todayStatsState', todayState);
+    }
+
+    async getTodayStats() {
+        const todayState = await this.loadTodayStatsState();
+        const allAlerts = Object.values(todayState.byOblast).flat();
+
+        const byHour = Array.from({ length: 24 }, () => 0);
+        const byOblast = new Map();
+        allAlerts.forEach((alert) => {
+            byHour[kyivHour(alert.started_at)]++;
+            if (alert.location_oblast) {
+                byOblast.set(alert.location_oblast, (byOblast.get(alert.location_oblast) || 0) + 1);
+            }
+        });
+
+        // cursor counts total refresh attempts since this Kyiv-local day started (never reset
+        // mid-day, only on date rollover), so cursor < the oblast count means at least one oblast
+        // has never been checked yet today - the total below is a known undercount until then.
+        const oblastsRemaining = Math.max(0, ALL_OBLAST_UIDS.length - todayState.cursor);
+        const complete = oblastsRemaining === 0;
+        const warmupEtaMinutes = complete
+            ? 0
+            : Math.ceil((oblastsRemaining * TODAY_STATS_REFRESH_INTERVAL_MS) / 60000);
+
+        const body = JSON.stringify({
+            date: todayState.date,
+            total: allAlerts.length,
+            byHour,
+            byOblast: Array.from(byOblast, ([oblast, count]) => ({ oblast, count })).sort((a, b) => b.count - a.count),
+            alerts: allAlerts,
+            complete,
+            warmupEtaMinutes,
+        });
+
+        return new Response(body, { headers: { 'Content-Type': 'application/json' } });
     }
 
     async getRegionStatuses() {
