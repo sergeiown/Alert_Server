@@ -124,7 +124,7 @@
     "settingsForecastNotifyLabel": "Сповіщати про наближення прогнозованого часу тривоги",
     "trendsWindowTitle": "Alert Server - Тенденції",
     "trendsHeader": "Тенденції застосування зброї",
-    "trendsRangeLabel": "Дані: {from} - {to} (джерело: Kaggle, piterfm)",
+    "trendsRangeLabel": "Дані: {from} - {to} (джерело: Kaggle, piterfm; за офіційною інформацією оновлюється щотижня)",
     "trendsNoData": "Дані ще не завантажено - спробуйте пізніше.",
     "trendsSummaryTitle": "Загалом за весь період",
     "trendsLaunched": "Запущено",
