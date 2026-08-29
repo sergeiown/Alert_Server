@@ -34,11 +34,17 @@ On first launch the app appears as a tray icon only, no window. The icon itself 
 - **Forecast** opens a window showing, for each monitored region, either a notice that an alert is currently active or historical statistics from the past month (alert count, average interval, most common time and day of week, time since the last alert ended) plus, for each alert type, a probability and an ETA. See [forecast methodology](docs/forecast-methodology-en.md) for how this is calculated, what the numbers mean, and known limitations of the approach - still clearly labeled as statistics, not a guaranteed prediction. Cards are sorted by how soon an alert is expected, with active regions first; if a whole region and one of its districts are both tracked, only the region's (already-aggregated) card is shown. Each region's summary can be copied to the clipboard. Below the list, a small block shows how much alert history has accumulated locally beyond the API's 30-day window (capped at about 2 years, with a button to clear it if needed), plus a note on the historical dataset used to calibrate the model's long-horizon baseline.
 - **Trends** opens a window with two tabs. **All time** compiles nationwide weapon-usage statistics from a public dataset (see [Data sources & credits](#data-sources--credits)): totals and interception rate, a monthly chart broken down by weapon category, and tables by category and by specific model. **Today** is the app's own live count instead - today's nationwide alert total, a chart by hour of day, and breakdowns by oblast and by your own monitored regions specifically, all current as of the last poll rather than waiting on someone else's dataset.
 
-  ![trends](docs/images/trends-en.png)
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/trends-en-dark.png">
+    <img src="docs/images/trends-en-light.png" alt="trends">
+  </picture>
 
 - **Settings** opens a two-column settings window: regions to monitor on the left (a clickable map of Ukraine's oblasts above a searchable tree going down to individual community - selecting a region on either one selects it on the other; checking a higher-level region selects everything nested inside it; a button clears the whole selection at once), and everything else on the right, grouped into three sections - **General** (interface language, light/dark/auto theme, launching at Windows startup, how often the app checks for a new version), **Notifications** (separate toggles for active-alert notifications and forecast-approach notifications with how many minutes ahead to warn, the nationwide alert-count threshold for the mass-attack tray indicator, sound notification mode - none, siren, or voice - and its repeat count), and **Data source** (which feed to poll for the current-alerts data everything else in the app is built on - [alerts.in.ua](https://alerts.in.ua/) by default, or [Neptun](https://neptun.in.ua)'s own token-free endpoint as a fallback for when it isn't reachable; switching relaunches the app). Dependent options grey out automatically (e.g. the sound repeat count when sound is off).
 
-  ![settings window](docs/images/settings-window-en.png)
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/settings-window-en-dark.png">
+    <img src="docs/images/settings-window-en-light.png" alt="settings window">
+  </picture>
 
 - **Event log** opens an in-app, terminal-styled log viewer with buttons to clear it or open the underlying file directly in Notepad.
 
