@@ -255,52 +255,56 @@ function measureTooltipWidth(el) {
 
 const ALL_TYPE_KEYS = ['uav', 'uav_recon', 'fpv', 'kab', 'missile', 'mig31k', 'unknown'];
 
-// Small standalone swatches (not a real threat icon) explaining the two conditional visual cues -
-// the gray icon color (lifecycle: uncertain) and the dashed uncertainty-radius circle - since
-// neither is a "threat type" with its own row otherwise, and both look like unexplained noise
-// without one.
-const UNCERTAIN_SWATCH_HTML =
-    `<span class="legend-swatch" style="color:${UNCERTAIN_ICON_COLOR}"><svg viewBox="0 0 24 24" width="18" height="18" ` +
-    'fill="currentColor" stroke="#ffffff" stroke-width="1"><polygon points="12,1 19,17 12,13.5 5,17"/></svg></span>';
+// Standalone swatch (not a real threat icon) explaining the dashed uncertainty-radius circle -
+// not a "threat type" with its own row otherwise, and looks like unexplained noise without one.
+// The gray-icon convention doesn't need an equivalent generic swatch - see the uncertain rows
+// built below, which reuse each type's own real icon shape instead of a fake stand-in for it.
 const APPROX_SWATCH_HTML =
     `<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${UNCERTAINTY_CIRCLE_COLOR}" ` +
-    'stroke-width="1.4" stroke-dasharray="3 2"><circle cx="12" cy="12" r="10"/></svg></span>';
+    'stroke-width="1.2" stroke-opacity="0.45" stroke-dasharray="3 2.5"><circle cx="12" cy="12" r="10"/></svg></span>';
 
 // Only lists the threat types actually on the map right now, not the full fixed set - a legend
-// entry for a type nothing currently shows is a row explaining nothing. The "uncertain"/"approx"
-// explanatory rows are just as conditional, shown only while at least one visible threat actually
-// has that trait. update() is called on every render; the legend hides itself entirely rather
-// than show an empty box during a fully quiet stretch.
+// entry for a type nothing currently shows is a row explaining nothing. Confirmed and uncertain
+// sightings of the same type get their OWN separate rows (rather than one row per type, shown in
+// whichever color happened to be picked) - otherwise a type seen only as uncertain would still
+// show its confirmed-color swatch, which then matches nothing actually on the map. The "approx"
+// row is just as conditional, shown only while at least one visible threat has that trait.
+// update() is called on every render; the legend hides itself entirely during a fully quiet
+// stretch rather than show an empty box.
 function buildLegend(strings) {
     const legend = L.control({ position: 'bottomleft' });
     let container = null;
 
     legend.onAdd = () => {
         container = L.DomUtil.create('div', 'threat-legend');
-        legend.update({ typeKeys: [], hasUncertain: false, hasApprox: false });
+        legend.update({ confirmedTypeKeys: [], uncertainTypeKeys: [], hasApprox: false });
         return container;
     };
 
-    legend.update = ({ typeKeys, hasUncertain, hasApprox }) => {
+    legend.update = ({ confirmedTypeKeys, uncertainTypeKeys, hasApprox }) => {
         if (!container) return;
-        const keys = ALL_TYPE_KEYS.filter((key) => typeKeys.includes(key));
+        const confirmedKeys = ALL_TYPE_KEYS.filter((key) => confirmedTypeKeys.includes(key));
+        const uncertainKeys = ALL_TYPE_KEYS.filter((key) => uncertainTypeKeys.includes(key));
 
-        if (!keys.length && !hasUncertain && !hasApprox) {
+        if (!confirmedKeys.length && !uncertainKeys.length && !hasApprox) {
             container.style.display = 'none';
             return;
         }
 
         container.style.display = '';
-        const typeRows = keys
+        const confirmedRows = confirmedKeys
             .map((typeKey) => `<div class="legend-row">${iconHtml(typeKey)}<span>${escapeHtml(strings[`liveMapType_${typeKey}`])}</span></div>`)
             .join('');
-        const uncertainRow = hasUncertain
-            ? `<div class="legend-row">${UNCERTAIN_SWATCH_HTML}<span>${escapeHtml(strings.liveMapLegendUncertain)}</span></div>`
-            : '';
+        const uncertainRows = uncertainKeys
+            .map(
+                (typeKey) =>
+                    `<div class="legend-row">${iconHtml(typeKey, undefined, 'uncertain')}<span>${escapeHtml(strings[`liveMapType_${typeKey}`])} · ${escapeHtml(strings.liveMapLegendUncertain)}</span></div>`
+            )
+            .join('');
         const approxRow = hasApprox
             ? `<div class="legend-row">${APPROX_SWATCH_HTML}<span>${escapeHtml(strings.liveMapLegendApprox)}</span></div>`
             : '';
-        container.innerHTML = `<div class="legend-title">${escapeHtml(strings.liveMapLegendTitle)}</div>${typeRows}${uncertainRow}${approxRow}`;
+        container.innerHTML = `<div class="legend-title">${escapeHtml(strings.liveMapLegendTitle)}</div>${confirmedRows}${uncertainRows}${approxRow}`;
     };
 
     return legend;
@@ -337,8 +341,8 @@ function startNeptunLayer(map, strings, language, onCountChange) {
 
         const valid = threats.filter((t) => typeof t.lat === 'number' && typeof t.lon === 'number');
         legend.update({
-            typeKeys: valid.map((t) => resolveTypeKey(t)),
-            hasUncertain: valid.some((t) => t.lifecycle === 'uncertain'),
+            confirmedTypeKeys: valid.filter((t) => t.lifecycle !== 'uncertain').map((t) => resolveTypeKey(t)),
+            uncertainTypeKeys: valid.filter((t) => t.lifecycle === 'uncertain').map((t) => resolveTypeKey(t)),
             hasApprox: valid.some((t) => t.positionQuality === 'approx' && typeof t.uncertaintyKm === 'number'),
         });
         if (typeof onCountChange === 'function') onCountChange(valid.length);
@@ -346,6 +350,8 @@ function startNeptunLayer(map, strings, language, onCountChange) {
         // Drawn at the threat's true coordinates, not the decluttered on-screen spread below -
         // the circle is a statement about where the real position uncertainty is, so nudging it
         // to follow a marker that only moved to avoid overlapping a neighbor would make it lie.
+        // Kept faint (low opacity, thin line) - it's background context for the icon sitting on
+        // top of it, not something that should compete with it for attention.
         valid
             .filter((t) => t.positionQuality === 'approx' && typeof t.uncertaintyKm === 'number')
             .forEach((threat) => {
@@ -353,8 +359,9 @@ function startNeptunLayer(map, strings, language, onCountChange) {
                     pane: UNCERTAINTY_PANE,
                     radius: threat.uncertaintyKm * 1000,
                     color: UNCERTAINTY_CIRCLE_COLOR,
-                    weight: 1.4,
-                    dashArray: '5 4',
+                    weight: 1,
+                    opacity: 0.45,
+                    dashArray: '4 5',
                     fill: false,
                     interactive: false,
                 }).addTo(layer);
