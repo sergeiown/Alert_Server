@@ -86,21 +86,33 @@ function declutterPoints(points, minGap) {
 
 // Nose/front points up = 0 deg = north, so rotating the wrapper by `heading` degrees points the
 // icon the right way.
+// Each shape below was hand-drawn against its own part of the 24x24 canvas, with no shared
+// convention for how big or how centered the result would end up - "uav"'s own ink center sits
+// at (12,9), not (12,12), and its bounding box is barely 2/3 the size of "mig31k"'s. Centering the
+// 22x22 *container* (which every icon already gets) does nothing about either problem: two icons
+// can sit in identically-centered boxes and still look different heights and different sizes.
+// Each entry's `align` transform (computed once, from each shape's real bounding box - see the
+// bbox script referenced in the neptun.js commit that added this) recenters that icon's own ink
+// on (12,12) and rescales it so its longest side is ~20 units, before the shared wrapper ever
+// gets to it - only after that does every icon share one actual, not just nominal, size and center.
 const TYPE_ICONS = {
     uav: {
         color: '#f5a623',
+        align: 'translate(12,12) scale(1.25) translate(-12,-9)',
         svg:
             '<polygon points="12,1 19,17 12,13.5 5,17" />' +
             '<line x1="12" y1="2" x2="12" y2="13.5" stroke="#ffffff" stroke-width="0.8" opacity="0.6" />',
     },
     uav_recon: {
         color: '#5b8fb0',
+        align: 'translate(12,12) scale(0.889) translate(-12,-12.25)',
         svg:
             '<path d="M12 1 L13 12 L22 12 L22 13.5 L13 13.5 L13.5 20.5 L16.5 22.5 L16.5 23.5 L12 22.3 ' +
             'L7.5 23.5 L7.5 22.5 L10.5 20.5 L11 13.5 L2 13.5 L2 12 L11 12 Z" />',
     },
     fpv: {
         color: '#ff6b35',
+        align: 'translate(12,12) scale(1.087) translate(-12,-11.2)',
         // The plain quad-rotor frame is symmetric under a 90-degree turn (a `heading` rotation
         // would look identical at four different headings) - the nose triangle breaks that
         // symmetry so the rotation actually reads as a direction.
@@ -116,18 +128,22 @@ const TYPE_ICONS = {
     },
     kab: {
         color: '#dc2626',
+        align: 'translate(12,12) scale(0.93) translate(-12,-11.75)',
         svg: '<ellipse cx="12" cy="15" rx="4.2" ry="7.5" /><polygon points="7.5,8 3,2 8.5,5.5" /><polygon points="16.5,8 21,2 15.5,5.5" /><polygon points="10.5,7 13.5,7 12,1" />',
     },
     missile: {
         color: '#991b1b',
+        align: 'translate(12,12) scale(0.909) translate(-12,-12)',
         svg: '<polygon points="12,1 15,9 15,20 9,20 9,9" /><polygon points="9,15.5 4,22 9,19.5" /><polygon points="15,15.5 20,22 15,19.5" /><polygon points="10.5,17 13.5,17 12,23" />',
     },
     mig31k: {
         color: '#7c3aed',
+        align: 'translate(12,12) scale(0.87) translate(-12,-12.5)',
         svg: '<path d="M12 1 L13 14 L21 21 L21 22.5 L13 18 L13.5 22.5 L16 24 L12 23 L8 24 L10.5 22.5 L11 18 L3 22.5 L3 21 L11 14 Z" />',
     },
     unknown: {
         color: '#6b7280',
+        align: 'translate(12,12) scale(1.111) translate(-12,-11)',
         svg:
             '<path d="M12 3 L21 19 H3 Z" />' +
             '<line x1="12" y1="9" x2="12" y2="14" stroke="#fff" stroke-width="1.8" stroke-linecap="round" />' +
@@ -161,13 +177,14 @@ function escapeHtml(text) {
 // needing to open the tooltip to find out. Only lifecycle drives this, not `status` - every threat
 // in the feed is "active" by definition of being in it, so that field never actually varies.
 function iconHtml(typeKey, rotationDeg, lifecycle) {
-    const { color, svg } = TYPE_ICONS[typeKey];
+    const { color, svg, align } = TYPE_ICONS[typeKey];
     const rotation = typeof rotationDeg === 'number' ? `transform: rotate(${rotationDeg}deg);` : '';
     const fillColor = lifecycle === 'uncertain' ? UNCERTAIN_ICON_COLOR : color;
     return (
         `<div class="threat-icon" style="color: ${fillColor};">` +
         `<div class="threat-icon-rotate" style="${rotation}">` +
-        `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="#ffffff" stroke-width="1">${svg}</svg>` +
+        `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="#ffffff" stroke-width="1">` +
+        `<g transform="${align}">${svg}</g></svg>` +
         `</div></div>`
     );
 }
