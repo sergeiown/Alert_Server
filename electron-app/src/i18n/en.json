@@ -60,6 +60,7 @@
     "logSizeLabel": "Log size",
     "logClearButton": "Clear log",
     "logOpenInNotepadButton": "Open in Notepad",
+    "logOpenInExcelButton": "Open in Excel",
     "menuExit": "Exit",
     "aboutBody": "Tracks alerts in your chosen regions (alerts.in.ua): notifications, a live threat/front-line map, forecasts, and alert statistics.",
     "aboutLicense": "License: MIT",

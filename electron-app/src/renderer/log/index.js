@@ -4,6 +4,7 @@
 const sizeLabel = document.getElementById('sizeLabel');
 const clearButton = document.getElementById('clearButton');
 const openNotepadButton = document.getElementById('openNotepadButton');
+const openExcelButton = document.getElementById('openExcelButton');
 const content = document.getElementById('content');
 
 const AUTO_REFRESH_MS = 2000;
@@ -31,6 +32,7 @@ async function main() {
     document.title = strings.logWindowTitle;
     clearButton.textContent = strings.logClearButton;
     openNotepadButton.textContent = strings.logOpenInNotepadButton;
+    openExcelButton.textContent = strings.logOpenInExcelButton;
 
     clearButton.addEventListener('click', async () => {
         await window.alertServerLog.clear();
@@ -40,6 +42,14 @@ async function main() {
     openNotepadButton.addEventListener('click', () => {
         window.alertServerLog.openInNotepad();
     });
+
+    openExcelButton.addEventListener('click', () => {
+        window.alertServerLog.openInExcel();
+    });
+
+    if (await window.alertServerLog.isExcelAvailable()) {
+        openExcelButton.hidden = false;
+    }
 
     await render();
     setInterval(render, AUTO_REFRESH_MS);
