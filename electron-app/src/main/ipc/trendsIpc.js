@@ -3,12 +3,12 @@
 
 const { ipcMain } = require('electron');
 const { getLatestWeaponStats } = require('../services/weaponStatsStore');
-const { getTodayStats } = require('../services/dailyAlertStats');
+const { getLatestTodayStats } = require('../services/todayStatsStore');
 const regionsStore = require('../services/regionsStore');
 
 function registerTrendsIpc() {
     ipcMain.handle('trends:getWeaponStats', () => getLatestWeaponStats());
-    ipcMain.handle('trends:getTodayStats', () => getTodayStats(regionsStore.getSelectedUids()));
+    ipcMain.handle('trends:getTodayStats', () => getLatestTodayStats(regionsStore.getSelectedUids()));
 }
 
 module.exports = { registerTrendsIpc };
