@@ -16,7 +16,7 @@ const ScreenshotControl = L.Control.extend({
         link.href = '#';
         link.title = this.options.title;
         link.innerHTML =
-            '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" ' +
+            '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" ' +
             'stroke-linecap="round" stroke-linejoin="round">' +
             '<path d="M9 7l1.2-2h3.6L15 7"/>' +
             '<rect x="3" y="7" width="18" height="12" rx="2"/>' +
