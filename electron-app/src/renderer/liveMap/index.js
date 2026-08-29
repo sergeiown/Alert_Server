@@ -68,6 +68,7 @@ async function main() {
     fitAndLockMinZoom();
     map.attributionControl.setPrefix(false);
     map.attributionControl.addAttribution(`<a href="#" id="appAttribution">${strings.appName}</a>`);
+    map.attributionControl.addAttribution(`<a href="#" id="alertsAttribution">${strings.liveMapAlertsAttribution}</a>`);
     map.attributionControl.addAttribution(`<a href="#" id="neptunAttribution">${strings.liveMapNeptunAttribution}</a>`);
     map.attributionControl.addAttribution(`<a href="#" id="deepStateAttribution">${strings.liveMapDeepStateAttribution}</a>`);
 
@@ -76,6 +77,7 @@ async function main() {
     // once, after every addAttribution call is done.
     const attributionLinks = [
         ['appAttribution', 'https://github.com/sergeiown/Alert_Server'],
+        ['alertsAttribution', 'https://alerts.in.ua'],
         ['neptunAttribution', 'https://neptun.in.ua'],
         ['deepStateAttribution', 'https://deepstatemap.live/'],
     ];
