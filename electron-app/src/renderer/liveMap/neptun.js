@@ -27,6 +27,13 @@ const RECON_TITLE_PATTERN = /розвід/i;
 // threat's own tooltip still shows above its icon as usual.
 const THREATS_PANE = 'threatsPane';
 const THREATS_PANE_Z = 620;
+// The uncertainty-radius circles get their own lower pane so they stay a background ring under
+// every icon and label, never on top of one, while still sitting above the region-status shading
+// (overlayPane, 400).
+const UNCERTAINTY_PANE = 'threatsUncertaintyPane';
+const UNCERTAINTY_PANE_Z = 410;
+const UNCERTAINTY_CIRCLE_COLOR = '#6b7280';
+const UNCERTAIN_ICON_COLOR = '#9ca3af';
 
 // Minimum on-screen center-to-center spacing kept between threat icons - comfortably more than
 // the 22px icon itself, so nudged-apart icons never end up touching, let alone one covering
@@ -148,16 +155,17 @@ function escapeHtml(text) {
 // drop-shadow) is computed before its element's own transform is applied, so a shadow set on the
 // same element that rotates would spin along with the icon instead of staying cast in one fixed
 // direction.
-// `uncertain` gets a dashed outline instead of the normal solid white one - a quick visual cue
-// that Neptun itself hasn't confirmed this one yet, without needing to open the tooltip to find
-// out. Only lifecycle drives this, not `status` - every threat in the feed is "active" by
-// definition of being in it, so that field never actually varies in practice.
+// `uncertain` swaps the icon's own type color for a flat gray instead - distinct from any real
+// type color (including the "unknown" type's own gray) so it never reads as "this is an unknown-
+// type threat" - a quick visual cue that Neptun itself hasn't confirmed this one yet, without
+// needing to open the tooltip to find out. Only lifecycle drives this, not `status` - every threat
+// in the feed is "active" by definition of being in it, so that field never actually varies.
 function iconHtml(typeKey, rotationDeg, lifecycle) {
     const { color, svg } = TYPE_ICONS[typeKey];
     const rotation = typeof rotationDeg === 'number' ? `transform: rotate(${rotationDeg}deg);` : '';
-    const uncertainClass = lifecycle === 'uncertain' ? ' threat-icon-uncertain' : '';
+    const fillColor = lifecycle === 'uncertain' ? UNCERTAIN_ICON_COLOR : color;
     return (
-        `<div class="threat-icon${uncertainClass}" style="color: ${color};">` +
+        `<div class="threat-icon" style="color: ${fillColor};">` +
         `<div class="threat-icon-rotate" style="${rotation}">` +
         `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="#ffffff" stroke-width="1">${svg}</svg>` +
         `</div></div>`
@@ -247,42 +255,63 @@ function measureTooltipWidth(el) {
 
 const ALL_TYPE_KEYS = ['uav', 'uav_recon', 'fpv', 'kab', 'missile', 'mig31k', 'unknown'];
 
+// Small standalone swatches (not a real threat icon) explaining the two conditional visual cues -
+// the gray icon color (lifecycle: uncertain) and the dashed uncertainty-radius circle - since
+// neither is a "threat type" with its own row otherwise, and both look like unexplained noise
+// without one.
+const UNCERTAIN_SWATCH_HTML =
+    `<span class="legend-swatch" style="color:${UNCERTAIN_ICON_COLOR}"><svg viewBox="0 0 24 24" width="18" height="18" ` +
+    'fill="currentColor" stroke="#ffffff" stroke-width="1"><polygon points="12,1 19,17 12,13.5 5,17"/></svg></span>';
+const APPROX_SWATCH_HTML =
+    `<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${UNCERTAINTY_CIRCLE_COLOR}" ` +
+    'stroke-width="1.4" stroke-dasharray="3 2"><circle cx="12" cy="12" r="10"/></svg></span>';
+
 // Only lists the threat types actually on the map right now, not the full fixed set - a legend
-// entry for a type nothing currently shows is a row explaining nothing. update() is called on
-// every render with whichever types are present; the legend hides itself entirely rather than
-// show an empty box during a fully quiet stretch.
+// entry for a type nothing currently shows is a row explaining nothing. The "uncertain"/"approx"
+// explanatory rows are just as conditional, shown only while at least one visible threat actually
+// has that trait. update() is called on every render; the legend hides itself entirely rather
+// than show an empty box during a fully quiet stretch.
 function buildLegend(strings) {
     const legend = L.control({ position: 'bottomleft' });
     let container = null;
 
     legend.onAdd = () => {
         container = L.DomUtil.create('div', 'threat-legend');
-        legend.update([]);
+        legend.update({ typeKeys: [], hasUncertain: false, hasApprox: false });
         return container;
     };
 
-    legend.update = (presentTypeKeys) => {
+    legend.update = ({ typeKeys, hasUncertain, hasApprox }) => {
         if (!container) return;
-        const keys = ALL_TYPE_KEYS.filter((key) => presentTypeKeys.includes(key));
+        const keys = ALL_TYPE_KEYS.filter((key) => typeKeys.includes(key));
 
-        if (!keys.length) {
+        if (!keys.length && !hasUncertain && !hasApprox) {
             container.style.display = 'none';
             return;
         }
 
         container.style.display = '';
-        const rows = keys
+        const typeRows = keys
             .map((typeKey) => `<div class="legend-row">${iconHtml(typeKey)}<span>${escapeHtml(strings[`liveMapType_${typeKey}`])}</span></div>`)
             .join('');
-        container.innerHTML = `<div class="legend-title">${escapeHtml(strings.liveMapLegendTitle)}</div>${rows}`;
+        const uncertainRow = hasUncertain
+            ? `<div class="legend-row">${UNCERTAIN_SWATCH_HTML}<span>${escapeHtml(strings.liveMapLegendUncertain)}</span></div>`
+            : '';
+        const approxRow = hasApprox
+            ? `<div class="legend-row">${APPROX_SWATCH_HTML}<span>${escapeHtml(strings.liveMapLegendApprox)}</span></div>`
+            : '';
+        container.innerHTML = `<div class="legend-title">${escapeHtml(strings.liveMapLegendTitle)}</div>${typeRows}${uncertainRow}${approxRow}`;
     };
 
     return legend;
 }
 
-function startNeptunLayer(map, strings, language) {
+function startNeptunLayer(map, strings, language, onCountChange) {
     if (!map.getPane(THREATS_PANE)) {
         map.createPane(THREATS_PANE).style.zIndex = THREATS_PANE_Z;
+    }
+    if (!map.getPane(UNCERTAINTY_PANE)) {
+        map.createPane(UNCERTAINTY_PANE).style.zIndex = UNCERTAINTY_PANE_Z;
     }
 
     const layer = L.layerGroup().addTo(map);
@@ -307,7 +336,29 @@ function startNeptunLayer(map, strings, language) {
         lastThreats = threats;
 
         const valid = threats.filter((t) => typeof t.lat === 'number' && typeof t.lon === 'number');
-        legend.update(valid.map((t) => resolveTypeKey(t)));
+        legend.update({
+            typeKeys: valid.map((t) => resolveTypeKey(t)),
+            hasUncertain: valid.some((t) => t.lifecycle === 'uncertain'),
+            hasApprox: valid.some((t) => t.positionQuality === 'approx' && typeof t.uncertaintyKm === 'number'),
+        });
+        if (typeof onCountChange === 'function') onCountChange(valid.length);
+
+        // Drawn at the threat's true coordinates, not the decluttered on-screen spread below -
+        // the circle is a statement about where the real position uncertainty is, so nudging it
+        // to follow a marker that only moved to avoid overlapping a neighbor would make it lie.
+        valid
+            .filter((t) => t.positionQuality === 'approx' && typeof t.uncertaintyKm === 'number')
+            .forEach((threat) => {
+                L.circle([threat.lat, threat.lon], {
+                    pane: UNCERTAINTY_PANE,
+                    radius: threat.uncertaintyKm * 1000,
+                    color: UNCERTAINTY_CIRCLE_COLOR,
+                    weight: 1.4,
+                    dashArray: '5 4',
+                    fill: false,
+                    interactive: false,
+                }).addTo(layer);
+            });
 
         const points = valid.map((t) => map.latLngToContainerPoint([t.lat, t.lon]));
         const spread = declutterPoints(points, MARKER_MIN_GAP_PX);
