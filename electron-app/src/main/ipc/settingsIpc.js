@@ -14,6 +14,13 @@ function registerSettingsIpc() {
         settingsStore.updateSetting(key, value);
         logEvent(`Setting changed: ${key} = ${value}`, 'INFO');
 
+        if (key === 'alertSourceProvider') {
+            // The generic "Setting changed: alertSourceProvider = neptun" line above reads like
+            // any other settings tweak - this is a behavioral change worth its own, more legible
+            // line, since it's exactly the kind of thing worth searching the log for later.
+            logEvent(`Alert data source switched to ${value}, relaunching to apply it`, 'INFO');
+        }
+
         if (key === 'language' || key === 'alertSourceProvider') {
             // The poll loop only picks its source once, at startup (main/index.js) - a relaunch
             // is the simplest way to make a change here take effect immediately, same as language.

@@ -11,6 +11,8 @@
 const { getResourcePath } = require('./appPaths');
 const { logEvent } = require('./logger');
 const { setLatestAlertData, getLatestAlertData } = require('./activeAlertData');
+const regionsStore = require('./regionsStore');
+const { getLocationLookup } = require('./locationFilter');
 
 const ALERTS_URL = 'https://neptun.in.ua/api/v1/alerts';
 const POLL_INTERVAL_MS = 30000;
@@ -131,6 +133,27 @@ function transformRaions(raions) {
         .filter(Boolean);
 }
 
+// Community-level monitoring (a specific city/hromada, not its whole raion or oblast) is a
+// structural gap in Neptun's own data model, not a naming mismatch like Sevastopol's was - no
+// amount of name-matching fixes it, since Neptun never reports anything more granular than a
+// raion. Warning about every such gap in general would mostly be noise about places nobody here
+// is even watching; this only speaks up about the ones actually in the user's own monitored list,
+// once per app start (not per poll) since the monitored list itself doesn't change that often.
+function warnAboutUncoveredMonitoredRegions() {
+    const lookup = getLocationLookup();
+    const uncovered = regionsStore
+        .getSelectedUids()
+        .map((uid) => lookup.get(String(uid)))
+        .filter((info) => info && info.type === 'community')
+        .map((info) => info.name);
+
+    if (!uncovered.length) return;
+    logEvent(
+        `Neptun alert source: ${uncovered.length} monitored location(s) have no community-level equivalent in Neptun's data and won't be directly matched (only if their whole raion/oblast goes on alert): ${uncovered.join(', ')}`,
+        'WARNING'
+    );
+}
+
 async function pollOnce() {
     if (!stateByName) buildLookups();
 
@@ -153,6 +176,8 @@ async function pollOnce() {
 }
 
 function startPolling(onUpdate) {
+    warnAboutUncoveredMonitoredRegions();
+
     const tick = async () => {
         const data = await pollOnce();
         if (data) onUpdate(data);
