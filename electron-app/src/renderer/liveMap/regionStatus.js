@@ -97,7 +97,7 @@ const RegionStatusLayer = L.LayerGroup.extend({
         if (CITY_BORDERS['Київ']) {
             const startedAt = getOblastStartedAt('м. Київ');
             const alertTypeName = getOblastAlertTypeName('м. Київ');
-            this._drawRegion([CITY_BORDERS['Київ']], isEnglish ? 'Kyiv' : 'Київ', startedAt, now, startedAt, alertTypeName);
+            this._drawRegion([CITY_BORDERS['Київ']], oblastDisplayName('Київ', isEnglish), startedAt, now, startedAt, alertTypeName);
         }
 
         Object.entries(RAION_BORDERS).forEach(([name, ring]) => {
