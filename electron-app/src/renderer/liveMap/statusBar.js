@@ -15,13 +15,30 @@ function startStatusBar(strings, language) {
     const clockEl = document.getElementById('statusClock');
     const countEl = document.getElementById('statusAlertCount');
 
+    // Alert count and threat count come from two independent sources on two independent
+    // schedules (a periodic IPC poll here, a push from the Neptun layer whenever it re-renders)
+    // - both are kept so either one updating alone still redraws the combined line correctly.
+    let alertCount = 0;
+    let threatCount = 0;
+
     function tickClock() {
         clockEl.textContent = formatClock(new Date(), language);
     }
 
+    function renderCounts() {
+        countEl.textContent = strings.liveMapStatusCounts
+            .replace('{alerts}', alertCount)
+            .replace('{threats}', threatCount);
+    }
+
     async function refreshAlertCount() {
-        const count = await window.alertServerLiveMap.getActiveAlertCount();
-        countEl.textContent = strings.liveMapActiveAlertsCount.replace('{count}', count);
+        alertCount = await window.alertServerLiveMap.getActiveAlertCount();
+        renderCounts();
+    }
+
+    function setThreatCount(count) {
+        threatCount = count;
+        renderCounts();
     }
 
     tickClock();
@@ -29,6 +46,8 @@ function startStatusBar(strings, language) {
 
     refreshAlertCount();
     setInterval(refreshAlertCount, ALERT_COUNT_REFRESH_MS);
+
+    return { setThreatCount };
 }
 
 export { startStatusBar };
