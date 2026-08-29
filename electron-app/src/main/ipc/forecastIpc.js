@@ -38,7 +38,7 @@ function registerForecastIpc() {
 
         const text = await getRegionForecastText(uid, language);
         if (!text) {
-            fetchHistoryAlerts(uid).catch((err) => logEvent(`Forecast prefetch failed for uid ${uid}: ${err.message}`));
+            fetchHistoryAlerts(uid).catch((err) => logEvent(`Forecast prefetch failed for uid ${uid} (alert-proxy): ${err.message}`, 'NETWORK'));
             return { status: 'empty' };
         }
 

@@ -11,7 +11,7 @@ function registerSettingsIpc() {
     ipcMain.handle('i18n:getStrings', () => getDictionary(settingsStore.getSettings().language));
     ipcMain.handle('settings:set', (event, key, value) => {
         settingsStore.updateSetting(key, value);
-        logEvent(`Setting changed: ${key} = ${value}`);
+        logEvent(`Setting changed: ${key} = ${value}`, 'INFO');
 
         if (key === 'language') {
             setTimeout(() => {

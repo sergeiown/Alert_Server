@@ -150,7 +150,7 @@ function buildMenu(language) {
             label: t('menuExit', language),
             icon: getMenuIcon('Exit.png'),
             click: () => {
-                logEvent('Exit requested from tray menu');
+                logEvent('Exit requested from tray menu', 'INFO');
                 app.quit();
             },
         },

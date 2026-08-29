@@ -18,7 +18,7 @@ async function refresh() {
             headers: { 'X-Client-Key': alertProxyClientKey },
         });
         if (!response.ok) {
-            logEvent(`Weapon-stats fetch failed: ${response.status}`);
+            logEvent(`Weapon-stats fetch failed (Kaggle via alert-proxy): ${response.status}`, 'NETWORK');
             return;
         }
 
@@ -27,14 +27,14 @@ async function refresh() {
         // handler (the active-alerts endpoint) and still answers 200 with unrelated JSON - this
         // guards against caching that as if it were real weapon stats.
         if (!data || !data.dateRange || !data.totals || !Array.isArray(data.byCategory) || !Array.isArray(data.monthly)) {
-            logEvent('Weapon-stats response missing expected fields (Worker not deployed yet?)');
+            logEvent('Weapon-stats response missing expected fields (Kaggle via alert-proxy - Worker not deployed yet?)', 'WARNING');
             return;
         }
 
         cached = data;
-        logEvent(`Weapon-stats updated (through ${cached.dateRange.to})`);
+        logEvent(`Weapon-stats updated (Kaggle, through ${cached.dateRange.to})`, 'NETWORK');
     } catch (err) {
-        logEvent(`Weapon-stats fetch error: ${err.message}`);
+        logEvent(`Weapon-stats fetch error (Kaggle via alert-proxy): ${err.message}`, 'NETWORK');
     }
 }
 
