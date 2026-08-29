@@ -27,9 +27,11 @@ function normalizeRaionName(name) {
 function oblastDisplayName(name, isEnglish) {
     if (name === 'Крим') return isEnglish ? 'Crimea' : name;
     // A city, not a region - "Kyiv Region" would be wrong (that's Kyiv Oblast, the separate
-    // surrounding entity), and the Ukrainian side needs its "м. " prefix back, since the generic
-    // "${name} область" case below doesn't apply to a city either.
-    if (name === 'Київ') return isEnglish ? 'Kyiv' : 'м. Київ';
+    // surrounding entity). "Kyiv City" specifically, not plain "Kyiv" - the explicit "City" is
+    // what keeps it unambiguous next to "Kyiv Oblast" in the same list. The Ukrainian side needs
+    // its "м. " prefix back, since the generic "${name} область" case below doesn't apply to a
+    // city either.
+    if (name === 'Київ') return isEnglish ? 'Kyiv City' : 'м. Київ';
     if (isEnglish) {
         // OBLAST_EN_BY_UK's Kyiv entry is "Kyiv Oblast" - stripped here so this doesn't end up
         // appending " Region" onto an already-suffixed name.
