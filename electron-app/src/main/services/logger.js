@@ -4,6 +4,7 @@
 const fs = require('fs');
 const os = require('os');
 const { getUserDataFile } = require('./appPaths');
+const { transliterate } = require('./transliterate');
 
 const LOG_FILE = 'event.csv';
 const OLD_LOG_FILE = 'event.log';
@@ -92,7 +93,13 @@ function logEvent(message, level = 'INFO') {
     const now = new Date();
     const date = isoDate(now);
     const time = isoTime(now);
-    const text = typeof message === 'string' ? message : JSON.stringify(message);
+    // Transliterated here, once, for every message regardless of call site - a location name
+    // pulled straight from Neptun/alerts.in.ua data (no English variant available at all, e.g. a
+    // brand new "discovered" location, or one of the handful Neptun names that don't map to
+    // anything) would otherwise leave Cyrillic in the log. Idempotent on already-Latin text, so
+    // messages that never had any Cyrillic in the first place pass through unchanged.
+    const rawText = typeof message === 'string' ? message : JSON.stringify(message);
+    const text = transliterate(rawText);
     const resolvedLevel = LOG_LEVELS.includes(level) ? level : 'INFO';
 
     fs.appendFileSync(filePath, `${date},${time},${resolvedLevel},${csvField(text)}${os.EOL}`, 'utf-8');
