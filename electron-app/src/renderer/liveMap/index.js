@@ -123,9 +123,11 @@ async function main() {
         fitAndLockMinZoom();
     }).observe(document.getElementById('map'));
 
+    const statusBar = startStatusBar(strings, settings.language);
+
     const regionStatusLayer = addRegionStatusLayer(map, strings, settings.language);
     const occupiedTerritoryLayer = addOccupiedTerritoryLayer(map);
-    const threatsLayer = startNeptunLayer(map, strings, settings.language);
+    const threatsLayer = startNeptunLayer(map, strings, settings.language, statusBar.setThreatCount);
     const riverLayer = addRiversLayer(map);
     const labelsLayer = addLabelsLayer(map, strings, settings.language);
 
@@ -138,8 +140,6 @@ async function main() {
             [strings.liveMapLayerLabels]: labelsLayer,
         })
         .addTo(map);
-
-    startStatusBar(strings, settings.language);
 }
 
 main();

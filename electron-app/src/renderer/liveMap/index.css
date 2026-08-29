@@ -45,11 +45,6 @@ body {
     height: 100%;
 }
 
-/* A dashed instead of solid white outline - the quick visual cue that Neptun itself hasn't
-   confirmed this one yet, readable without opening the tooltip. */
-.threat-icon-uncertain svg {
-    stroke-dasharray: 2 1.5;
-}
 
 /* Every map control button (zoom, center, fullscreen, layer-toggle) forced to one explicit size
    instead of relying on each control's own default - Leaflet's plain buttons, the fullscreen
@@ -351,6 +346,15 @@ body {
 }
 
 .legend-row .threat-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.legend-swatch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 18px;
     height: 18px;
     flex-shrink: 0;
