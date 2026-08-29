@@ -25,7 +25,10 @@ Future updates are detected and installed automatically from GitHub Releases; yo
 
 On first launch the app appears as a tray icon only, no window. The icon itself automatically matches the Windows light/dark taskbar theme and its actual size at the current display scaling. It shows an exclamation mark and rocks side to side with a red pulse for the whole duration of an active alert, briefly pulses on every refresh while there's no active alert, and turns fully red when the nationwide active-alert count crosses a threshold you set (a mass-attack indicator, independent of your own monitored regions). Everything is controlled from the tray icon's context menu:
 
-![tray menu](docs/images/tray-menu-en.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/tray-menu-en-dark.png">
+  <img src="docs/images/tray-menu-en-light.png" alt="tray menu">
+</picture>
 
 - **Live map** opens the app's own map window: real-time threats from [Neptun](https://neptun.in.ua) (drones, missiles, guided bombs, missile-carrier aircraft - each with its own icon, shadow, and, where known, a direction of travel, automatically nudged apart when several land close together so none of them hide behind another; anything Neptun itself hasn't confirmed yet shows greyed out, with a faint circle marking how uncertain its position still is, both explained in an adaptive legend that only lists what's actually on screen), the front line from [DeepState](https://deepstatemap.live), occupied territories (hatched), and every oblast/raion/city currently under alert shaded in a red that deepens the longer the alert has been running. Layers toggle independently, the view is fullscreen-capable, a screenshot button copies the whole map to the clipboard, and a status bar shows the current date/time and the nationwide active-alert and on-map-threat counts.
 
@@ -55,11 +58,17 @@ Clicking the **Alert Server** entry at the top of the menu opens the About windo
 
 Notifications for an alert starting or ending appear through the Windows Notification Center with a small map showing the affected region (red for a new alert, green for a cancellation); clicking one shows the alert's location and start time. If more than 5 alerts start or clear at once, you get a single notification with the total count and all affected regions highlighted instead of a flood of individual ones.
 
-![alert notification](docs/images/alert-en.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/alert-en-dark.png">
+  <img src="docs/images/alert-en-light.png" alt="alert notification">
+</picture>
 
 Left-clicking the tray icon opens a small popup with any active alerts and, below them, the nearest upcoming forecast for your monitored regions - handy when you just want a quick glance without opening the Forecast window. Hovering the tray icon shows the same nearest forecast as a tooltip when there's no active alert. If enabled in Settings (on by default), the app also sends a notification - with a blue region map, no alert sound - when a forecasted alert time is approaching, separate from the alert/cancellation notifications above; at most 3 fire per check, soonest first, to avoid a flood if many regions qualify at once.
 
-![forecast approaching notification](docs/images/forecast-notify-en.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/forecast-notify-en-dark.png">
+  <img src="docs/images/forecast-notify-en-light.png" alt="forecast approaching notification">
+</picture>
 
 The event log records app activity (start/exit, settings and region changes, alerts, update checks) as CSV, each line tagged with a level (info, warning, error, network, or an actual alert starting/ending) so a quick scan shows what mattered without reading every line. It always writes in English regardless of the interface language - it's meant to be read later, not translated on the fly - and opens straight into a proper table if you double-click it in Excel, rather than one long unreadable line. Capped at 1 MB, automatically trimmed once it grows past that.
 
