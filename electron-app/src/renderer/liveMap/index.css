@@ -159,6 +159,7 @@ body {
 }
 
 #appAttribution,
+#alertsAttribution,
 #neptunAttribution,
 #deepStateAttribution {
     color: inherit;
