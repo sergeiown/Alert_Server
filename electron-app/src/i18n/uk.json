@@ -91,7 +91,7 @@
     "alertSourceProviderLabel": "Джерело даних про тривоги:",
     "alertSourceProviderAlertsInUa": "alerts.in.ua (за замовчуванням)",
     "alertSourceProviderNeptun": "Neptun (резервне)",
-    "alertSourceProviderNote": "Neptun не потребує токена, але дає статус лише по областях і районах (без окремих громад) і без типу зброї - придатний як резерв, а не рівноцінна заміна.",
+    "alertSourceProviderNote": "Важливо: Neptun дає статус лише по областях і районах (без окремих громад) і без типу зброї - придатний як резерв, а не рівноцінна заміна alerts.in.ua.",
     "regionsHeader": "Регіони моніторингу",
     "searchPlaceholder": "Пошук регіону...",
     "selectedSummary": "Обрано регіонів: {selected} з {total}. Зміни зберігаються автоматично.",
