@@ -42,6 +42,17 @@ async function hashIp(ip) {
         .slice(0, 16);
 }
 
+const LOAD_WINDOW_MS = 60 * 1000;
+
+// Drops timestamps older than the rolling window, then reports how many are left - the actual
+// "requests in the last minute" figure a known-per-minute limit can be compared against. A plain
+// "time since the last fetch" (already tracked elsewhere) can't answer that on its own: it says
+// nothing about how many fetches landed earlier in the same window.
+function pruneAndCount(timestamps, now) {
+    while (timestamps.length && now - timestamps[0] > LOAD_WINDOW_MS) timestamps.shift();
+    return timestamps.length;
+}
+
 const REGION_STATUSES_URL = 'https://api.alerts.in.ua/v1/iot/active_air_raid_alerts.json';
 const REGION_STATUSES_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const REGION_STATUSES_MIN_GAP_MS = 5 * 1000;
@@ -194,6 +205,12 @@ export class AlertsGateway {
         this.lastHistoryOriginFetchAt = 0;
         this.lastRegionStatusesOriginFetchAt = 0;
         this.lastWeaponStatsOriginFetchAt = 0;
+        // Rolling request timestamps for the /status load-percentage figures - alerts.in.ua's
+        // general limit is shared across active.json/region-statuses/history combined (from the
+        // same IP), so allAlertsInUaFetchTimestamps covers all three; historyFetchTimestamps is
+        // the same history subset again, checked separately against its own stricter 2/min cap.
+        this.allAlertsInUaFetchTimestamps = [];
+        this.historyFetchTimestamps = [];
         this.activeQueue = Promise.resolve();
         this.historyQueue = Promise.resolve();
         this.regionStatusesQueue = Promise.resolve();
@@ -240,6 +257,7 @@ export class AlertsGateway {
                 if (waitMs > 0) await delay(waitMs);
 
                 this.lastActiveOriginFetchAt = Date.now();
+                this.allAlertsInUaFetchTimestamps.push(this.lastActiveOriginFetchAt);
                 const upstream = await fetch(ACTIVE_ALERTS_URL, {
                     headers: { Authorization: `Bearer ${this.env.ALERTS_TOKEN}` },
                 });
@@ -289,6 +307,8 @@ export class AlertsGateway {
                 if (waitMs > 0) await delay(waitMs);
 
                 this.lastHistoryOriginFetchAt = Date.now();
+                this.allAlertsInUaFetchTimestamps.push(this.lastHistoryOriginFetchAt);
+                this.historyFetchTimestamps.push(this.lastHistoryOriginFetchAt);
                 const upstream = await fetch(`https://api.alerts.in.ua/v1/regions/${uid}/alerts/month_ago.json`, {
                     headers: { Authorization: `Bearer ${this.env.ALERTS_TOKEN}` },
                 });
@@ -343,17 +363,26 @@ export class AlertsGateway {
     async recordUniqueUser(request) {
         const ip = request.headers.get('CF-Connecting-IP');
         if (!ip) return;
+        const hashed = await hashIp(ip);
 
         const todayKey = kyivDateKey(new Date());
-        let saved = await this.state.storage.get('uniqueUsersState');
-        if (!saved || saved.date !== todayKey) {
-            saved = { date: todayKey, hashedIps: [] };
+        let daily = await this.state.storage.get('uniqueUsersState');
+        if (!daily || daily.date !== todayKey) {
+            daily = { date: todayKey, hashedIps: [] };
+        }
+        if (!daily.hashedIps.includes(hashed)) {
+            daily.hashedIps.push(hashed);
+            await this.state.storage.put('uniqueUsersState', daily);
         }
 
-        const hashed = await hashIp(ip);
-        if (!saved.hashedIps.includes(hashed)) {
-            saved.hashedIps.push(hashed);
-            await this.state.storage.put('uniqueUsersState', saved);
+        // Never reset (unlike the daily set above) - a running lifetime-unique count, not just
+        // today's. Same undercount/overcount caveats apply, just accumulated across every day
+        // this endpoint has been live instead of one calendar day at a time.
+        let allTime = await this.state.storage.get('allTimeUniqueUsersState');
+        if (!allTime) allTime = { hashedIps: [] };
+        if (!allTime.hashedIps.includes(hashed)) {
+            allTime.hashedIps.push(hashed);
+            await this.state.storage.put('allTimeUniqueUsersState', allTime);
         }
     }
 
@@ -441,15 +470,28 @@ export class AlertsGateway {
     async getStatus() {
         const now = Date.now();
         const ageOrNull = (ts) => (ts ? now - ts : null);
+        const percentOf = (count, limit) => Math.round((count / limit) * 100);
 
         const todayState = await this.loadTodayStatsState();
         const oblastsRemaining = Math.max(0, ALL_OBLAST_UIDS.length - todayState.cursor);
         const uniqueUsersState = await this.state.storage.get('uniqueUsersState');
+        const allTimeUniqueUsersState = await this.state.storage.get('allTimeUniqueUsersState');
+
+        // Shared across active.json/region-statuses/history combined - same origin, same IP,
+        // one budget - so this single count is what each of those three below is measured against.
+        const generalRequestsLastMinute = pruneAndCount(this.allAlertsInUaFetchTimestamps, now);
+        const historyRequestsLastMinute = pruneAndCount(this.historyFetchTimestamps, now);
 
         const body = JSON.stringify({
             generatedAt: new Date(now).toISOString(),
             active: {
-                // alerts.in.ua overall soft/hard limit: 8-10 / 12 requests per minute per IP.
+                // alerts.in.ua overall soft/hard limit: 8-10 / 12 requests per minute per IP,
+                // shared with history and regionStatuses below (not its own separate budget).
+                softLimitPerMinute: 9,
+                hardLimitPerMinute: 12,
+                requestsLastMinute: generalRequestsLastMinute,
+                percentOfSoftLimit: percentOf(generalRequestsLastMinute, 9),
+                percentOfHardLimit: percentOf(generalRequestsLastMinute, 12),
                 minGapMs: ACTIVE_MIN_GAP_MS,
                 cacheTtlMs: ACTIVE_CACHE_TTL_MS,
                 lastOriginFetchAgeMs: ageOrNull(this.lastActiveOriginFetchAt),
@@ -458,7 +500,12 @@ export class AlertsGateway {
             },
             history: {
                 // alerts.in.ua's own documented limit for this specific endpoint: 2 requests per
-                // minute per IP, shared across every uid (one gate, not per-uid).
+                // minute per IP, shared across every uid (one gate, not per-uid) - on top of
+                // (not instead of) the general limit above, since these same requests count
+                // toward both budgets at once.
+                limitPerMinute: 2,
+                requestsLastMinute: historyRequestsLastMinute,
+                percentOfLimit: percentOf(historyRequestsLastMinute, 2),
                 minGapMs: HISTORY_MIN_GAP_MS,
                 cacheTtlMs: HISTORY_CACHE_TTL_MS,
                 lastOriginFetchAgeMs: ageOrNull(this.lastHistoryOriginFetchAt),
@@ -466,6 +513,8 @@ export class AlertsGateway {
                 currentErrors: Object.fromEntries(this.historyOriginErrors),
             },
             regionStatuses: {
+                // No limit of its own - counts toward the same general alerts.in.ua budget as
+                // active.json above (see percentOfSoftLimit/percentOfHardLimit there).
                 minGapMs: REGION_STATUSES_MIN_GAP_MS,
                 cacheTtlMs: REGION_STATUSES_CACHE_TTL_MS,
                 lastOriginFetchAgeMs: ageOrNull(this.lastRegionStatusesOriginFetchAt),
@@ -473,6 +522,7 @@ export class AlertsGateway {
                 currentError: this.regionStatusesOriginError,
             },
             weaponStats: {
+                // Kaggle publishes no numeric quota - no percentage to compute here.
                 cacheTtlMs: WEAPON_STATS_CACHE_TTL_MS,
                 lastOriginFetchAgeMs: ageOrNull(this.lastWeaponStatsOriginFetchAt),
                 cacheAgeMs: this.weaponStatsCache ? now - this.weaponStatsCache.fetchedAt : null,
@@ -488,6 +538,7 @@ export class AlertsGateway {
             uniqueUsers: {
                 // Rough approximation only - see recordUniqueUser()'s own comment for why.
                 date: uniqueUsersState ? uniqueUsersState.date : kyivDateKey(new Date()),
+                allTime: allTimeUniqueUsersState ? allTimeUniqueUsersState.hashedIps.length : 0,
                 today: uniqueUsersState ? uniqueUsersState.hashedIps.length : 0,
             },
         });
@@ -504,6 +555,7 @@ export class AlertsGateway {
                 if (waitMs > 0) await delay(waitMs);
 
                 this.lastRegionStatusesOriginFetchAt = Date.now();
+                this.allAlertsInUaFetchTimestamps.push(this.lastRegionStatusesOriginFetchAt);
                 const upstream = await fetch(REGION_STATUSES_URL, {
                     headers: { Authorization: `Bearer ${this.env.ALERTS_TOKEN}` },
                 });
