@@ -213,6 +213,10 @@ export class AlertsGateway {
             return this.getWeaponStats();
         }
 
+        if (url.pathname === '/status') {
+            return this.getStatus();
+        }
+
         return this.getActive(ifModifiedSince);
     }
 
@@ -393,6 +397,61 @@ export class AlertsGateway {
             alerts: allAlerts,
             complete,
             warmupEtaMinutes,
+        });
+
+        return new Response(body, { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    // Read-only introspection of this Worker's own internal state - never touches any origin
+    // itself, so checking it costs nothing against any rate limit. Meant for an external
+    // health-check tool to see how close each origin-facing endpoint is running to its own known
+    // limit, not just whether the proxy is up.
+    async getStatus() {
+        const now = Date.now();
+        const ageOrNull = (ts) => (ts ? now - ts : null);
+
+        const todayState = await this.loadTodayStatsState();
+        const oblastsRemaining = Math.max(0, ALL_OBLAST_UIDS.length - todayState.cursor);
+
+        const body = JSON.stringify({
+            generatedAt: new Date(now).toISOString(),
+            active: {
+                // alerts.in.ua overall soft/hard limit: 8-10 / 12 requests per minute per IP.
+                minGapMs: ACTIVE_MIN_GAP_MS,
+                cacheTtlMs: ACTIVE_CACHE_TTL_MS,
+                lastOriginFetchAgeMs: ageOrNull(this.lastActiveOriginFetchAt),
+                cacheAgeMs: this.activeCache ? now - this.activeCache.fetchedAt : null,
+                currentError: this.activeOriginError,
+            },
+            history: {
+                // alerts.in.ua's own documented limit for this specific endpoint: 2 requests per
+                // minute per IP, shared across every uid (one gate, not per-uid).
+                minGapMs: HISTORY_MIN_GAP_MS,
+                cacheTtlMs: HISTORY_CACHE_TTL_MS,
+                lastOriginFetchAgeMs: ageOrNull(this.lastHistoryOriginFetchAt),
+                cachedUidCount: this.historyCache.size,
+                currentErrors: Object.fromEntries(this.historyOriginErrors),
+            },
+            regionStatuses: {
+                minGapMs: REGION_STATUSES_MIN_GAP_MS,
+                cacheTtlMs: REGION_STATUSES_CACHE_TTL_MS,
+                lastOriginFetchAgeMs: ageOrNull(this.lastRegionStatusesOriginFetchAt),
+                cacheAgeMs: this.regionStatusesCache ? now - this.regionStatusesCache.fetchedAt : null,
+                currentError: this.regionStatusesOriginError,
+            },
+            weaponStats: {
+                cacheTtlMs: WEAPON_STATS_CACHE_TTL_MS,
+                lastOriginFetchAgeMs: ageOrNull(this.lastWeaponStatsOriginFetchAt),
+                cacheAgeMs: this.weaponStatsCache ? now - this.weaponStatsCache.fetchedAt : null,
+                currentError: this.weaponStatsOriginError,
+            },
+            todayStats: {
+                date: todayState.date,
+                oblastsCovered: ALL_OBLAST_UIDS.length - oblastsRemaining,
+                oblastsTotal: ALL_OBLAST_UIDS.length,
+                complete: oblastsRemaining === 0,
+                refreshIntervalMs: TODAY_STATS_REFRESH_INTERVAL_MS,
+            },
         });
 
         return new Response(body, { headers: { 'Content-Type': 'application/json' } });
