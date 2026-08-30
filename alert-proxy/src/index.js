@@ -32,6 +32,16 @@ function kyivHour(dateStr) {
     return Number(formatted);
 }
 
+// One-way hash of the connecting IP - lets unique installs be counted (roughly; NAT/shared IPs
+// undercount, IP churn overcounts) without keeping raw addresses around in Durable Object storage.
+async function hashIp(ip) {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip));
+    return Array.from(new Uint8Array(digest))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('')
+        .slice(0, 16);
+}
+
 const REGION_STATUSES_URL = 'https://api.alerts.in.ua/v1/iot/active_air_raid_alerts.json';
 const REGION_STATUSES_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const REGION_STATUSES_MIN_GAP_MS = 5 * 1000;
@@ -192,6 +202,7 @@ export class AlertsGateway {
 
     async fetch(request) {
         await this.ensureTodayStatsAlarmScheduled();
+        await this.recordUniqueUser(request);
 
         const url = new URL(request.url);
         const ifModifiedSince = request.headers.get('If-Modified-Since');
@@ -325,6 +336,27 @@ export class AlertsGateway {
         }
     }
 
+    // Rough usage/growth signal, not precise: every install shares the same client key, so the
+    // only distinguishing thing available here at all is the connecting IP - undercounts installs
+    // behind the same NAT/shared IP, overcounts a single install whose IP happens to change
+    // mid-day. Good enough to notice real growth, not meant as an exact user count.
+    async recordUniqueUser(request) {
+        const ip = request.headers.get('CF-Connecting-IP');
+        if (!ip) return;
+
+        const todayKey = kyivDateKey(new Date());
+        let saved = await this.state.storage.get('uniqueUsersState');
+        if (!saved || saved.date !== todayKey) {
+            saved = { date: todayKey, hashedIps: [] };
+        }
+
+        const hashed = await hashIp(ip);
+        if (!saved.hashedIps.includes(hashed)) {
+            saved.hashedIps.push(hashed);
+            await this.state.storage.put('uniqueUsersState', saved);
+        }
+    }
+
     async alarm() {
         try {
             await this.refreshOneOblastForToday();
@@ -412,6 +444,7 @@ export class AlertsGateway {
 
         const todayState = await this.loadTodayStatsState();
         const oblastsRemaining = Math.max(0, ALL_OBLAST_UIDS.length - todayState.cursor);
+        const uniqueUsersState = await this.state.storage.get('uniqueUsersState');
 
         const body = JSON.stringify({
             generatedAt: new Date(now).toISOString(),
@@ -451,6 +484,11 @@ export class AlertsGateway {
                 oblastsTotal: ALL_OBLAST_UIDS.length,
                 complete: oblastsRemaining === 0,
                 refreshIntervalMs: TODAY_STATS_REFRESH_INTERVAL_MS,
+            },
+            uniqueUsers: {
+                // Rough approximation only - see recordUniqueUser()'s own comment for why.
+                date: uniqueUsersState ? uniqueUsersState.date : kyivDateKey(new Date()),
+                today: uniqueUsersState ? uniqueUsersState.hashedIps.length : 0,
             },
         });
 
