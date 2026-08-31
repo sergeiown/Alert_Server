@@ -57,6 +57,17 @@ const REGION_STATUSES_URL = 'https://api.alerts.in.ua/v1/iot/active_air_raid_ale
 const REGION_STATUSES_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const REGION_STATUSES_MIN_GAP_MS = 5 * 1000;
 
+// Stage 1 of the UkraineAlarm evaluation (see data-flow-notes.txt) - shadow monitoring only, never
+// read by the app. No published rate limit exists for this API, so this deliberately polls far
+// more gently than the alerts.in.ua endpoints above: a cheap /alerts/status check at most once a
+// minute, and the full /alerts body only when lastActionIndex actually changed (or periodically as
+// a safety net, in case an index change was itself missed between checks).
+const UKRAINEALARM_BASE_URL = 'https://api.ukrainealarm.com/api/v3';
+const UKRAINEALARM_MIN_GAP_MS = 60 * 1000;
+const UKRAINEALARM_FORCE_REFRESH_MS = 15 * 60 * 1000;
+const UKRAINEALARM_STALE_ALERT_THRESHOLD_MS = 24 * 60 * 60 * 1000;
+const UKRAINEALARM_MAX_OBSERVATIONS = 30;
+
 // Kaggle's per-file download endpoint returns the plain CSV directly (no zip wrapper to unpack,
 // which a Worker has no built-in support for anyway). The dataset itself is only updated weekly,
 // so this is cached far longer than anything else here.
@@ -211,6 +222,8 @@ export class AlertsGateway {
         // the same history subset again, checked separately against its own stricter 2/min cap.
         this.allAlertsInUaFetchTimestamps = [];
         this.historyFetchTimestamps = [];
+        this.ukraineAlarmFetchTimestamps = [];
+        this.ukraineAlarmOriginError = null;
         this.activeQueue = Promise.resolve();
         this.historyQueue = Promise.resolve();
         this.regionStatusesQueue = Promise.resolve();
@@ -243,6 +256,10 @@ export class AlertsGateway {
 
         if (url.pathname === '/status') {
             return this.getStatus();
+        }
+
+        if (url.pathname === '/ukrainealarm-status') {
+            return this.getUkraineAlarmStatus();
         }
 
         return this.getActive(ifModifiedSince);
@@ -394,6 +411,118 @@ export class AlertsGateway {
             // the loop for the rest of the day.
             await this.state.storage.setAlarm(Date.now() + TODAY_STATS_REFRESH_INTERVAL_MS);
         }
+
+        // Piggybacks on the same recurring tick - its own internal min-gap (loaded from storage,
+        // not memory, since this DO instance can be evicted and recreated between ticks) is what
+        // actually paces the real UkraineAlarm requests, not this outer interval.
+        try {
+            await this.pollUkraineAlarmIfDue();
+        } catch (err) {
+            this.ukraineAlarmOriginError = { status: 0, body: err.message };
+        }
+    }
+
+    // Shadow monitoring only (see UKRAINEALARM_* constants above) - never called from any
+    // client-facing route except the read-only /ukrainealarm-status introspection endpoint. Not
+    // part of the app's actual alert data path.
+    async pollUkraineAlarmIfDue() {
+        if (!this.env.UKRAINEALARM_TOKEN) return;
+
+        let saved = (await this.state.storage.get('ukraineAlarmState')) || {
+            lastFetchAt: 0,
+            lastFullFetchAt: 0,
+            lastActionIndex: null,
+            latestAlerts: null,
+            observations: [],
+        };
+
+        const now = Date.now();
+        if (now - saved.lastFetchAt < UKRAINEALARM_MIN_GAP_MS) return;
+
+        saved.lastFetchAt = now;
+        this.ukraineAlarmFetchTimestamps.push(now);
+
+        const statusResponse = await fetch(`${UKRAINEALARM_BASE_URL}/alerts/status`, {
+            headers: { Authorization: this.env.UKRAINEALARM_TOKEN },
+        });
+
+        if (!statusResponse.ok) {
+            this.ukraineAlarmOriginError = { status: statusResponse.status, body: await statusResponse.text() };
+            await this.state.storage.put('ukraineAlarmState', saved);
+            return;
+        }
+
+        this.ukraineAlarmOriginError = null;
+        const { lastActionIndex } = await statusResponse.json();
+
+        const indexChanged = lastActionIndex !== saved.lastActionIndex;
+        const dueForSafetyNetRefresh = now - saved.lastFullFetchAt >= UKRAINEALARM_FORCE_REFRESH_MS;
+
+        if (indexChanged || dueForSafetyNetRefresh) {
+            this.ukraineAlarmFetchTimestamps.push(Date.now());
+            const alertsResponse = await fetch(`${UKRAINEALARM_BASE_URL}/alerts`, {
+                headers: { Authorization: this.env.UKRAINEALARM_TOKEN },
+            });
+
+            if (alertsResponse.ok) {
+                const alerts = await alertsResponse.json();
+                saved.latestAlerts = alerts;
+                saved.lastFullFetchAt = now;
+                this.recordUkraineAlarmObservations(saved, alerts, now);
+            } else {
+                this.ukraineAlarmOriginError = { status: alertsResponse.status, body: await alertsResponse.text() };
+            }
+        }
+
+        saved.lastActionIndex = lastActionIndex;
+        await this.state.storage.put('ukraineAlarmState', saved);
+    }
+
+    // Flags entries whose activeAlerts look "stuck" (still reported active well past a plausible
+    // real duration) - a real anomaly spotted once already during manual testing (an ARTILLERY
+    // alert reported active for over a year). Recorded here, not acted on - Stage 1 is purely
+    // about collecting real evidence before any decision on trusting this source.
+    recordUkraineAlarmObservations(saved, alerts, now) {
+        (alerts || []).forEach((region) => {
+            (region.activeAlerts || []).forEach((alert) => {
+                const ageMs = now - new Date(alert.lastUpdate).getTime();
+                if (ageMs > UKRAINEALARM_STALE_ALERT_THRESHOLD_MS) {
+                    saved.observations.unshift({
+                        observedAt: new Date(now).toISOString(),
+                        regionId: region.regionId,
+                        regionName: region.regionName,
+                        alertType: alert.type,
+                        lastUpdate: alert.lastUpdate,
+                        ageDays: Math.round(ageMs / (24 * 60 * 60 * 1000)),
+                    });
+                }
+            });
+        });
+        saved.observations = saved.observations.slice(0, UKRAINEALARM_MAX_OBSERVATIONS);
+    }
+
+    // Read-only introspection for this Stage of the evaluation - not used by the app. Lets me
+    // check in on real accumulated evidence (index churn rate, stuck-alert observations) without
+    // costing any extra UkraineAlarm request itself.
+    async getUkraineAlarmStatus() {
+        const now = Date.now();
+        const saved = (await this.state.storage.get('ukraineAlarmState')) || null;
+        const requestsLastMinute = pruneAndCount(this.ukraineAlarmFetchTimestamps, now);
+
+        const body = JSON.stringify({
+            generatedAt: new Date(now).toISOString(),
+            configured: Boolean(this.env.UKRAINEALARM_TOKEN),
+            requestsLastMinute,
+            minGapMs: UKRAINEALARM_MIN_GAP_MS,
+            lastFetchAgeMs: saved ? now - saved.lastFetchAt : null,
+            lastFullFetchAgeMs: saved && saved.lastFullFetchAt ? now - saved.lastFullFetchAt : null,
+            lastActionIndex: saved ? saved.lastActionIndex : null,
+            currentActiveAlertCount: saved && saved.latestAlerts ? saved.latestAlerts.length : null,
+            staleAlertObservations: saved ? saved.observations : [],
+            currentError: this.ukraineAlarmOriginError,
+        });
+
+        return new Response(body, { headers: { 'Content-Type': 'application/json' } });
     }
 
     async loadTodayStatsState() {
