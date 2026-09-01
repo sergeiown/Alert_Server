@@ -16,11 +16,13 @@ const defaultSettings = {
     forecastNotifyLookaheadMinutes: 120,
     massAttackThreshold: 75,
     updateCheckIntervalHours: 24,
-    // 'alerts.in.ua' is the primary source (community-level granularity, weapon-type tagging).
-    // 'neptun' is a token-free alternative with only oblast/raion-level granularity and no
-    // weapon-type data - a real fallback for when alerts.in.ua itself is unreachable, not a
-    // like-for-like replacement, hence defaulting to the richer source.
-    alertSourceProvider: 'alerts.in.ua',
+    // 'ukrainealarm' is the primary source (community-level granularity like alerts.in.ua, plus
+    // native English region names and a richer alert-type set). 'alerts.in.ua' and 'neptun' are
+    // automatic fallbacks (alertSourceManager.js) if the preferred source's polls start failing -
+    // 'neptun' has only oblast/raion-level granularity and no weapon-type data, the last resort of
+    // the three. This is a preferred/primary choice, not an exclusive one: whichever source is
+    // actually active can differ from this during a failover.
+    alertSourceProvider: 'ukrainealarm',
 };
 
 let settings = null;
