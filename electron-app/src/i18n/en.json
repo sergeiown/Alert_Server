@@ -105,6 +105,8 @@
     "forecastActiveAlert": "Alert is currently active in this region.",
     "forecastNoRegions": "No regions are selected for monitoring. Choose regions in Settings first.",
     "forecastNoHistory": "No alert history for this region in the past month.",
+    "forecastSourceLabel": "Data source",
+    "forecastSourceUnknown": "previously accumulated data",
     "forecastCount": "Alerts in the past month",
     "forecastPerDay": "Average per day",
     "forecastAvgGap": "Average interval between alerts",
