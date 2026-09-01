@@ -58,7 +58,7 @@ async function renderForecast() {
         item.appendChild(name);
 
         const eta = document.createElement('span');
-        eta.textContent = `${strings.forecastEtaLabel} ~${formatEta(prediction.predictedAt)}`;
+        eta.textContent = `${strings.forecastEtaLabel} ${formatEta(prediction.predictedAt)}`;
         item.appendChild(eta);
 
         forecastList.appendChild(item);

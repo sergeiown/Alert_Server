@@ -40,7 +40,7 @@ function notifyApproaching(uid, alertType, etaMs, language) {
     notifyWithMap({
         uid,
         title,
-        bodyLines: [`${t('location', language)}: ${name}`, `${t('forecastEtaLabel', language)} ~${etaText}`],
+        bodyLines: [`${t('location', language)}: ${name}`, `${t('forecastEtaLabel', language)} ${etaText}`],
         iconName: null,
         color: FORECAST_COLOR,
         onClick: () => openForecastWindow(),
@@ -48,7 +48,7 @@ function notifyApproaching(uid, alertType, etaMs, language) {
     // Forced to English for the log regardless of the notification's own language above - the
     // log is a developer-facing artifact, not part of the UI the language setting controls.
     logEvent(
-        `Forecast notify: ${regionName(uid, 'English')} - ${alertTypeName(alertType, 'English')} (uid ${uid}, eta ~${formatDuration(etaMs, 'English')})`,
+        `Forecast notify: ${regionName(uid, 'English')} - ${alertTypeName(alertType, 'English')} (uid ${uid}, eta approximately ${formatDuration(etaMs, 'English')})`,
         'INFO'
     );
 }

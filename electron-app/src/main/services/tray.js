@@ -222,7 +222,7 @@ function updateTrayState(activeCount, totalCount) {
         const [upcoming] = getUpcomingPredictions(language, 1);
         if (upcoming) {
             const etaText = formatDuration(Math.max(0, upcoming.predictedAt - Date.now()), language);
-            lines.push(`${t('forecastUpcoming', language)}: ${upcoming.name} ~${etaText}`);
+            lines.push(`${t('forecastUpcoming', language)}: ${upcoming.name} ${t('forecastEtaLabel', language)} ${etaText}`);
         } else {
             lines.push(t('trayDefaultTooltip', language));
         }
