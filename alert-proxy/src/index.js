@@ -76,15 +76,15 @@ const REGION_STATUSES_URL = 'https://api.alerts.in.ua/v1/iot/active_air_raid_ale
 const REGION_STATUSES_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const REGION_STATUSES_MIN_GAP_MS = 5 * 1000;
 
-// UkraineAlarm - now also the app's primary live-alert source (see data-flow-notes.txt), not just
-// shadow monitoring. No published rate limit exists for this API, so this still polls gently: a
-// cheap /alerts/status check every UKRAINEALARM_MIN_GAP_MS, and the full /alerts body only when
-// lastActionIndex actually changed (or periodically as a safety net, in case a change was itself
-// missed between checks) - tightened from the original Stage 1 shadow-only values (60s / 15min)
-// now that real clients depend on this data's freshness, not just observation.
+// UkraineAlarm - the app's primary live-alert source (see data-flow-notes.txt). The webhook
+// (handleUkraineAlarmWebhook) now carries the real-time burden - a verified push forces an
+// immediate refetch regardless of these gaps - so this polling loop is a safety net for a missed
+// delivery, not the primary freshness mechanism anymore. Loosened accordingly from the pre-webhook
+// values (20s / 5min): still gentle either way given no published rate limit exists, but no
+// reason to keep checking every 20s when a real event pushes its own refresh already.
 const UKRAINEALARM_BASE_URL = 'https://api.ukrainealarm.com/api/v3';
-const UKRAINEALARM_MIN_GAP_MS = 20 * 1000;
-const UKRAINEALARM_FORCE_REFRESH_MS = 5 * 60 * 1000;
+const UKRAINEALARM_MIN_GAP_MS = 3 * 60 * 1000;
+const UKRAINEALARM_FORCE_REFRESH_MS = 20 * 60 * 1000;
 const UKRAINEALARM_STALE_ALERT_THRESHOLD_MS = 24 * 60 * 60 * 1000;
 const UKRAINEALARM_MAX_OBSERVATIONS = 30;
 
