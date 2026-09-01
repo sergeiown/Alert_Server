@@ -57,16 +57,28 @@ const REGION_STATUSES_URL = 'https://api.alerts.in.ua/v1/iot/active_air_raid_ale
 const REGION_STATUSES_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const REGION_STATUSES_MIN_GAP_MS = 5 * 1000;
 
-// Stage 1 of the UkraineAlarm evaluation (see data-flow-notes.txt) - shadow monitoring only, never
-// read by the app. No published rate limit exists for this API, so this deliberately polls far
-// more gently than the alerts.in.ua endpoints above: a cheap /alerts/status check at most once a
-// minute, and the full /alerts body only when lastActionIndex actually changed (or periodically as
-// a safety net, in case an index change was itself missed between checks).
+// UkraineAlarm - now also the app's primary live-alert source (see data-flow-notes.txt), not just
+// shadow monitoring. No published rate limit exists for this API, so this still polls gently: a
+// cheap /alerts/status check every UKRAINEALARM_MIN_GAP_MS, and the full /alerts body only when
+// lastActionIndex actually changed (or periodically as a safety net, in case a change was itself
+// missed between checks) - tightened from the original Stage 1 shadow-only values (60s / 15min)
+// now that real clients depend on this data's freshness, not just observation.
 const UKRAINEALARM_BASE_URL = 'https://api.ukrainealarm.com/api/v3';
-const UKRAINEALARM_MIN_GAP_MS = 60 * 1000;
-const UKRAINEALARM_FORCE_REFRESH_MS = 15 * 60 * 1000;
+const UKRAINEALARM_MIN_GAP_MS = 20 * 1000;
+const UKRAINEALARM_FORCE_REFRESH_MS = 5 * 60 * 1000;
 const UKRAINEALARM_STALE_ALERT_THRESHOLD_MS = 24 * 60 * 60 * 1000;
 const UKRAINEALARM_MAX_OBSERVATIONS = 30;
+
+// UkraineAlarm's AlertType -> this app's own alert_type strings (alertPoller.js/
+// neptunAlertsSource.js's shared vocabulary). UNKNOWN/INFO/CUSTOM have no equivalent in the app's
+// existing type set and are dropped rather than guessed at.
+const UKRAINEALARM_TYPE_MAP = {
+    AIR: 'air_raid',
+    ARTILLERY: 'artillery_shelling',
+    URBAN_FIGHTS: 'urban_fights',
+    CHEMICAL: 'chemical',
+    NUCLEAR: 'nuclear',
+};
 
 // Kaggle's per-file download endpoint returns the plain CSV directly (no zip wrapper to unpack,
 // which a Worker has no built-in support for anyway). The dataset itself is only updated weekly,
@@ -260,6 +272,10 @@ export class AlertsGateway {
 
         if (url.pathname === '/ukrainealarm-status') {
             return this.getUkraineAlarmStatus();
+        }
+
+        if (url.pathname === '/ukrainealarm-alerts') {
+            return this.getUkraineAlarmAlerts();
         }
 
         return this.getActive(ifModifiedSince);
@@ -513,6 +529,40 @@ export class AlertsGateway {
         saved.observations = Array.from(byKey.values())
             .sort((a, b) => new Date(b.lastObservedAt) - new Date(a.lastObservedAt))
             .slice(0, UKRAINEALARM_MAX_OBSERVATIONS);
+    }
+
+    // Client-facing: the app's live alert source when alertSourceProvider is 'ukrainealarm'.
+    // Serves whatever pollUkraineAlarmIfDue() last cached (kept warm by the recurring alarm() -
+    // see above) rather than fetching on demand itself, since freshness here is the background
+    // loop's job, not this request's.
+    //
+    // Filters out any activeAlerts entry older than UKRAINEALARM_STALE_ALERT_THRESHOLD_MS - the
+    // real "stuck alert" bug found during evaluation (some entries never clear, one seen still
+    // "active" 1600+ days later) would otherwise show a permanently alerted region on the map and
+    // in notifications. Also drops any alert type with no equivalent in the app's own vocabulary
+    // (UNKNOWN/INFO/CUSTOM) rather than guessing a mapping for it.
+    async getUkraineAlarmAlerts() {
+        const saved = await this.state.storage.get('ukraineAlarmState');
+        const now = Date.now();
+
+        const alerts = [];
+        (saved && saved.latestAlerts ? saved.latestAlerts : []).forEach((region) => {
+            (region.activeAlerts || []).forEach((alert) => {
+                const mappedType = UKRAINEALARM_TYPE_MAP[alert.type];
+                if (!mappedType) return;
+
+                const ageMs = now - new Date(alert.lastUpdate).getTime();
+                if (ageMs > UKRAINEALARM_STALE_ALERT_THRESHOLD_MS) return;
+
+                alerts.push({
+                    location_uid: Number(region.regionId),
+                    alert_type: mappedType,
+                    started_at: alert.lastUpdate,
+                });
+            });
+        });
+
+        return new Response(JSON.stringify({ alerts }), { headers: { 'Content-Type': 'application/json' } });
     }
 
     // Read-only introspection for this Stage of the evaluation - not used by the app. Lets me
