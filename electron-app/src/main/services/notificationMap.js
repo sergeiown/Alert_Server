@@ -92,7 +92,11 @@ async function renderNow(stateUids, color) {
         height: OUTPUT_HEIGHT,
         show: false,
         frame: false,
-        webPreferences: { sandbox: true },
+        // backgroundThrottling off - a never-shown window is exactly the case Chromium throttles
+        // hardest, which is also where capturePage() has been seen throwing "UnknownVizError"
+        // (a GPU-compositor error, not an app bug) - keeping it fully active avoids that class of
+        // failure rather than just catching it after the fact.
+        webPreferences: { sandbox: true, backgroundThrottling: false },
     });
 
     try {
@@ -107,11 +111,23 @@ async function renderNow(stateUids, color) {
     }
 }
 
+// One retry on failure - "UnknownVizError" (Chromium's compositor) has been seen as a one-off
+// transient failure, not a persistent condition; a second attempt with a fresh BrowserWindow/GPU
+// state costs little and recovers most of the time, cheaper than letting the notification go out
+// without its map for something that would have worked a moment later.
+async function renderWithRetry(stateUids, color) {
+    try {
+        return await renderNow(stateUids, color);
+    } catch (err) {
+        return renderNow(stateUids, color);
+    }
+}
+
 function renderRegionMapImage(stateUidOrUids, color) {
     const stateUids = Array.isArray(stateUidOrUids) ? stateUidOrUids : [stateUidOrUids];
     const result = queue.then(
-        () => renderNow(stateUids, color),
-        () => renderNow(stateUids, color)
+        () => renderWithRetry(stateUids, color),
+        () => renderWithRetry(stateUids, color)
     );
     queue = result.catch(() => {});
     return result;
