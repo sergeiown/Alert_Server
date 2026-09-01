@@ -3,7 +3,7 @@
 
 const { ipcMain, clipboard, BrowserWindow } = require('electron');
 const { getResourcePath } = require('../services/appPaths');
-const { getLatestTotalAlertCount, getLatestAlertedRegions } = require('../services/alertState');
+const { getLatestTotalAlertCount, getLatestAlertedRegions, getActiveAlertSource } = require('../services/alertState');
 const { getLatestOccupiedTerritory } = require('../services/occupiedTerritoryStore');
 const { alertTypeName } = require('../services/alertTypes');
 const settingsStore = require('../services/settingsStore');
@@ -26,6 +26,8 @@ function registerLiveMapIpc() {
     });
 
     ipcMain.handle('liveMap:getActiveAlertCount', () => getLatestTotalAlertCount());
+
+    ipcMain.handle('liveMap:getActiveAlertSource', () => getActiveAlertSource());
 
     ipcMain.handle('liveMap:getAlertedRegions', () => {
         const { language } = settingsStore.getSettings();

@@ -18,6 +18,15 @@ const UKRAINE_BOUNDS = [
 
 const MAP_MIN_ZOOM = 5;
 
+// Display name + external link per alertSourceManager.js chain key - kept here (not fetched from
+// main) since these are just presentation details for the attribution line, same as neptunAttribution/
+// deepStateAttribution's own static labels below.
+const ALERT_SOURCE_DISPLAY = {
+    ukrainealarm: { name: 'UkraineAlarm', url: 'https://api.ukrainealarm.com' },
+    'alerts.in.ua': { name: 'alerts.in.ua', url: 'https://alerts.in.ua' },
+    neptun: { name: 'Neptun', url: 'https://neptun.in.ua' },
+};
+
 const CenterControl = L.Control.extend({
     options: { position: 'topleft' },
     onAdd: function (map) {
@@ -39,6 +48,11 @@ async function main() {
     const strings = await window.alertServerLiveMap.getStrings();
     const settings = await window.alertServerLiveMap.getSettings();
     const baseMapUrl = await window.alertServerLiveMap.getBaseMapUrl();
+    // Which source is genuinely serving live data right now (can differ from settings.
+    // alertSourceProvider during an automatic failover) - falls back to the preferred setting on
+    // the rare chance the source manager hasn't reported one yet.
+    const activeAlertSourceKey = (await window.alertServerLiveMap.getActiveAlertSource()) || settings.alertSourceProvider;
+    const alertSourceDisplay = ALERT_SOURCE_DISPLAY[activeAlertSourceKey] || ALERT_SOURCE_DISPLAY['alerts.in.ua'];
     document.title = strings.appName;
 
     const map = L.map('map', {
@@ -68,7 +82,9 @@ async function main() {
     fitAndLockMinZoom();
     map.attributionControl.setPrefix(false);
     map.attributionControl.addAttribution(`<a href="#" id="appAttribution">${strings.appName}</a>`);
-    map.attributionControl.addAttribution(`<a href="#" id="alertsAttribution">${strings.liveMapAlertsAttribution}</a>`);
+    map.attributionControl.addAttribution(
+        `<a href="#" id="alertsAttribution">${strings.liveMapAlertsAttributionPrefix} ${alertSourceDisplay.name}</a>`
+    );
     map.attributionControl.addAttribution(`<a href="#" id="neptunAttribution">${strings.liveMapNeptunAttribution}</a>`);
     map.attributionControl.addAttribution(`<a href="#" id="deepStateAttribution">${strings.liveMapDeepStateAttribution}</a>`);
 
@@ -77,7 +93,7 @@ async function main() {
     // once, after every addAttribution call is done.
     const attributionLinks = [
         ['appAttribution', 'https://github.com/sergeiown/Alert_Server'],
-        ['alertsAttribution', 'https://alerts.in.ua'],
+        ['alertsAttribution', alertSourceDisplay.url],
         ['neptunAttribution', 'https://neptun.in.ua'],
         ['deepStateAttribution', 'https://deepstatemap.live/'],
     ];
