@@ -10,11 +10,18 @@ const HISTORY_MIN_GAP_MS = 35 * 1000;
 
 // All 26 oblast-level uids alerts.in.ua's /v1/regions/{uid}/alerts endpoint accepts (matches the
 // app's own locations.json state list). Cycled round-robin by the today-stats background refresh
-// below, one per alarm tick, so a full pass takes ~26 * HISTORY_MIN_GAP_MS.
+// below, one per alarm tick, so a full pass takes ~26 * TODAY_STATS_REFRESH_INTERVAL_MS.
 const ALL_OBLAST_UIDS = [
     3, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31,
 ];
-const TODAY_STATS_REFRESH_INTERVAL_MS = HISTORY_MIN_GAP_MS;
+// This self-perpetuating alarm (ensureTodayStatsAlarmScheduled/alarm()) runs forever once first
+// scheduled by ANY client request - regardless of alertSourceProvider, so it kept hitting
+// alerts.in.ua continuously even for installs whose preferred source is UkraineAlarm and only
+// ever fall back to this data on the rare occasion UkraineAlarm's own today-stats fails. No
+// longer tied to HISTORY_MIN_GAP_MS (which forecast.js's on-demand per-region backfill still
+// needs to stay fast) - decoupled and slowed down substantially now that it's a backup path, not
+// the primary one, cutting its own request volume roughly 8x (35s -> 5min per oblast tick).
+const TODAY_STATS_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 const TODAY_STATS_TIMEZONE = 'Europe/Kyiv';
 
 // "Today" is always the alerts' own real-world (Kyiv) calendar day, regardless of which timezone
