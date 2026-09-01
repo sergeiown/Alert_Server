@@ -8,7 +8,7 @@ const STORE_FILE = 'forecast_history.json';
 const DEBOUNCE_MS = 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 // Retention target: about 2 years of history. The forecast model itself only looks at the last
-// ~90 days (baseline) plus a bit for rare alert types, so this is purely a local-storage cap, not
+// roughly 90 days (baseline) plus a bit for rare alert types, so this is purely a local-storage cap, not
 // a modeling constraint - it just stops the file from growing forever over a years-long install.
 const MAX_HISTORY_AGE_MS = 730 * DAY_MS;
 
@@ -97,7 +97,14 @@ function scheduleWrite() {
 // immediately. Never for the normal day-to-day merge path (todayStatsStore.js, forecast.js's own
 // on-demand fetches) - there, "now" is the deliberately conservative choice explained above
 // (an API answering with old-looking alerts shouldn't make a fresh install claim years of history).
-function mergeAlerts(uid, alerts, { backfill = false } = {}) {
+//
+// `source` (e.g. 'ukrainealarm' | 'alerts.in.ua') is stamped on each merged alert as
+// `_localSource` - tagged at the point of collection, by every merge call site (todayStatsStore.js,
+// historyBackfillStore.js, forecast.js's own on-demand fetch), rather than tracked separately by
+// whichever caller happened to fetch most recently. getRegionSource() below reads it back from
+// the data actually present, instead of a side-channel that only reflected one narrow fetch path
+// and needed its own extra "keep it fresh" network call to stay meaningful.
+function mergeAlerts(uid, alerts, { backfill = false, source = null } = {}) {
     ensureLoaded();
     const key = String(uid);
     if (!store[key]) store[key] = {};
@@ -112,13 +119,29 @@ function mergeAlerts(uid, alerts, { backfill = false } = {}) {
 
         if (incomingStamp >= existingStamp) {
             const firstSeenAt = existing?._localFirstSeenAt ?? (backfill ? new Date(alert.started_at).getTime() : now);
-            region[alert.id] = { ...alert, _localFirstSeenAt: firstSeenAt };
+            region[alert.id] = { ...alert, _localFirstSeenAt: firstSeenAt, _localSource: source ?? existing?._localSource ?? null };
             changed = true;
         }
     });
 
     if (pruneRegion(region, now)) changed = true;
     if (changed) scheduleWrite();
+}
+
+// The source of the most recently STARTED alert on file for this region (not the most recently
+// merged - a backfill pass can touch old alerts long after the fact) - the best available signal
+// for "which source is this region's forecast currently reflecting", without a dedicated live
+// query just to answer that question.
+function getRegionSource(uid) {
+    ensureLoaded();
+    const region = store[String(uid)];
+    if (!region) return null;
+
+    const alerts = Object.values(region).filter((alert) => alert._localSource);
+    if (!alerts.length) return null;
+
+    const latest = alerts.reduce((a, b) => (new Date(a.started_at) >= new Date(b.started_at) ? a : b));
+    return latest._localSource;
 }
 
 function getAllAlertsForRegion(uid) {
@@ -166,4 +189,4 @@ function clearAll() {
     writeNow();
 }
 
-module.exports = { mergeAlerts, getAllAlertsForRegion, getStats, clearAll };
+module.exports = { mergeAlerts, getAllAlertsForRegion, getRegionSource, getStats, clearAll };

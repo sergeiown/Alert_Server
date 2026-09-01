@@ -62,7 +62,7 @@ function aggregateTodayStats(date, alerts) {
 // (matches what a whole-oblast tracked region reads) and each alert's own specific location_uid
 // (matches a city/raion/hromada tracked directly) - so a region added to monitoring later already
 // has today's data on day one, instead of only accumulating from whenever it was first tracked.
-function mergeIntoForecastHistory(alerts) {
+function mergeIntoForecastHistory(alerts, source) {
     // alerts.in.ua's own location_oblast_uid field just mirrors location_uid on these records
     // (not the oblast's real uid) - the real one comes from the same static location lookup
     // getHistoryFetchTarget() itself resolves through, keyed off the alert's own location_uid.
@@ -85,8 +85,8 @@ function mergeIntoForecastHistory(alerts) {
         }
     });
 
-    byOblast.forEach((list, uid) => historyStore.mergeAlerts(uid, list));
-    byLocation.forEach((list, uid) => historyStore.mergeAlerts(uid, list));
+    byOblast.forEach((list, uid) => historyStore.mergeAlerts(uid, list, { source }));
+    byLocation.forEach((list, uid) => historyStore.mergeAlerts(uid, list, { source }));
 }
 
 // Preferred source: one dateHistory request for the whole day, complete immediately - no
@@ -109,7 +109,7 @@ async function refreshFromUkraineAlarm(clientKey) {
         }
 
         cached = aggregateTodayStats(data.date, data.alerts);
-        mergeIntoForecastHistory(data.alerts);
+        mergeIntoForecastHistory(data.alerts, 'ukrainealarm');
         logEvent(`Today-stats updated (UkraineAlarm, ${data.date}): ${cached.total} nationwide`, 'NETWORK');
         return true;
     } catch (err) {
@@ -140,7 +140,7 @@ async function refreshFromAlertsInUa(clientKey) {
         }
 
         cached = { ...data, source: 'alerts.in.ua' };
-        mergeIntoForecastHistory(data.alerts);
+        mergeIntoForecastHistory(data.alerts, 'alerts.in.ua');
         logEvent(`Today-stats updated (alerts.in.ua, ${data.date}): ${data.total} nationwide`, 'NETWORK');
     } catch (err) {
         logEvent(`Today-stats fetch error (alerts.in.ua via alert-proxy): ${err.message}`, 'NETWORK');
