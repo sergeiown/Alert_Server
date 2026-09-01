@@ -62,7 +62,7 @@
     "logOpenInNotepadButton": "Відкрити у Блокноті",
     "logOpenInExcelButton": "Відкрити в Excel",
     "menuExit": "Вихід",
-    "aboutBody": "Стежить за тривогами в обраних регіонах (alerts.in.ua): сповіщення, live-мапа загроз і лінії фронту, прогноз та статистика тривог.",
+    "aboutBody": "Стежить за тривогами в обраних регіонах (UkraineAlarm, з автоматичним переходом на alerts.in.ua/Neptun): сповіщення, live-мапа загроз і лінії фронту, прогноз та статистика тривог.",
     "aboutLicense": "Ліцензія: MIT",
     "aboutCopyright": "© 2024-2026 Serhii I. Myshko",
     "updateProgressTitle": "Завантаження оновлення",
