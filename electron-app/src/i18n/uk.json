@@ -115,6 +115,7 @@
     "forecastTypes": "Типи тривог",
     "forecastSinceLast": "Минуло з моменту завершення останньої тривоги",
     "forecastProbabilityToday": "Ймовірність тривоги сьогодні, на основі статистики",
+    "forecastProbabilityPrefix": "з вірогідністю",
     "forecastEtaLabel": "орієнтовно через",
     "forecastRangeLabel": "типово",
     "forecastDisclaimer": "Це статистика минулого, а не гарантований прогноз.",

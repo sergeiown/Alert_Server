@@ -200,7 +200,7 @@ function buildForecastText(stats, language, source) {
         const rangeText = entry.gapRange
             ? ` (${t('forecastRangeLabel', language)} ${formatDuration(entry.gapRange.low, language)} - ${formatDuration(entry.gapRange.high, language)})`
             : '';
-        lines.push(`  - ${typeName}: ${entry.probabilityToday}%${etaText}${rangeText}`);
+        lines.push(`  - ${typeName}: ${t('forecastProbabilityPrefix', language)} ${entry.probabilityToday}%${etaText}${rangeText}`);
     });
 
     lines.push('');

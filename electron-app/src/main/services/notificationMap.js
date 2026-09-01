@@ -34,7 +34,7 @@ const REGION_TO_ISO = {
     29: ['UA-43', 'UA-40'],
 };
 
-// Windows toast hero images are displayed at ~2.02:1 (364x180) and center-cropped to that
+// Windows toast hero images are displayed at roughly 2.02:1 (364x180) and center-cropped to that
 // ratio, so the canvas itself must already match it - otherwise Windows crops our content.
 const OUTPUT_WIDTH = 480;
 const OUTPUT_HEIGHT = 238;
