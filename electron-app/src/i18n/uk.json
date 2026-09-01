@@ -156,6 +156,7 @@
     "trendsTodayNoMonitoredAlerts": "Сьогодні у ваших регіонах моніторингу тривог не було.",
     "trendsTodayWarmingUp": "Дані по всій Україні ще збираються - повне охоплення приблизно за {minutes} хв.",
     "trendsTodayDataCurrent": "Дані актуальні.",
+    "trendsTodaySourceLabel": "Джерело: {source}.",
     "hourBucket_night": "вночі (00:00-06:00)",
     "hourBucket_morning": "вранці (06:00-12:00)",
     "hourBucket_day": "вдень (12:00-18:00)",
