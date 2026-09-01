@@ -6,6 +6,13 @@ import { transliterate } from '../liveMap/transliterate.js';
 
 const KYIV_RAW_NAME = 'м. Київ';
 
+// Display name per todayStatsStore.js's `source` field - same short names used elsewhere (live
+// map attribution) for the same two possible sources.
+const TODAY_STATS_SOURCE_DISPLAY = {
+    ukrainealarm: 'UkraineAlarm',
+    'alerts.in.ua': 'alerts.in.ua',
+};
+
 const CATEGORY_UK = {
     UAV: 'БПЛА',
     'cruise missile': 'крилата ракета',
@@ -373,9 +380,13 @@ async function main() {
         }
         const notice = document.createElement('p');
         notice.className = 'muted-note';
-        notice.textContent = todayStats.complete
+        const statusText = todayStats.complete
             ? strings.trendsTodayDataCurrent
             : strings.trendsTodayWarmingUp.replace('{minutes}', todayStats.warmupEtaMinutes);
+        const sourceName = TODAY_STATS_SOURCE_DISPLAY[todayStats.source];
+        notice.textContent = sourceName
+            ? `${statusText} ${strings.trendsTodaySourceLabel.replace('{source}', sourceName)}`
+            : statusText;
         content.appendChild(notice);
         content.appendChild(buildTodayAlertsCard(todayStats.total, strings));
         content.appendChild(buildHourlyChart(todayStats.byHour, strings));
