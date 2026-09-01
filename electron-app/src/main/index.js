@@ -14,8 +14,7 @@ const { importLegacyConfig } = require('./migration/importLegacyConfig');
 const settingsStore = require('./services/settingsStore');
 const regionsStore = require('./services/regionsStore');
 const { logEvent } = require('./services/logger');
-const { startPolling } = require('./services/alertPoller');
-const { startPolling: startNeptunPolling } = require('./services/neptunAlertsSource');
+const { startAlertSourceManager } = require('./services/alertSourceManager');
 const { filterAlerts, discoverUnknownLocations } = require('./services/locationFilter');
 const { loadLocalConfig } = require('./services/localConfig');
 const { processAlerts, getActiveCount } = require('./services/notifier');
@@ -81,17 +80,8 @@ app.whenReady().then(() => {
         }
     }
 
-    if (alertSourceProvider === 'neptun') {
-        startNeptunPolling((alertData) => onAlertsPolled('Neptun', alertData));
-    } else {
-        const { alertProxyClientKey } = loadLocalConfig();
-        if (alertProxyClientKey) {
-            startPolling(alertProxyClientKey, (alertData) => onAlertsPolled('alerts.in.ua via alert-proxy', alertData));
-        } else {
-            logEvent('alertProxyClientKey missing from config.local.json, polling disabled', 'WARNING');
-            startForecastWatcher();
-        }
-    }
+    const { alertProxyClientKey } = loadLocalConfig();
+    startAlertSourceManager(alertSourceProvider, alertProxyClientKey, onAlertsPolled);
 });
 
 app.on('window-all-closed', () => {});

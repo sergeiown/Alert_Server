@@ -36,7 +36,11 @@ function noteOriginHealthy() {
     lastLoggedStatus = null;
 }
 
-async function pollOnce(clientKey) {
+// `onHealthChange(healthy)` - optional, used by alertSourceManager.js to decide when this source
+// is unreliable enough to fail over away from. 304/200 (even one carrying X-Origin-Error-Status,
+// since that's alerts.in.ua's own origin having trouble, not the proxy) count as healthy - the
+// proxy is still serving us something valid; a 429/other bad status or a network error don't.
+async function pollOnce(clientKey, onHealthChange) {
     if (Date.now() < backoffUntil) {
         return getLatestAlertData();
     }
@@ -49,17 +53,20 @@ async function pollOnce(clientKey) {
 
         if (response.status === 304) {
             noteOriginHealthy();
+            if (onHealthChange) onHealthChange(true);
             return getLatestAlertData();
         }
 
         if (response.status === 429) {
             logOriginIssue(429);
             backoffUntil = Date.now() + POLL_INTERVAL_MS * 2;
+            if (onHealthChange) onHealthChange(false);
             return getLatestAlertData();
         }
 
         if (!response.ok) {
             logOriginIssue(response.status);
+            if (onHealthChange) onHealthChange(false);
             return getLatestAlertData();
         }
 
@@ -70,19 +77,21 @@ async function pollOnce(clientKey) {
         const originErrorStatus = response.headers.get('X-Origin-Error-Status');
         if (originErrorStatus) logOriginIssue(Number(originErrorStatus));
         else noteOriginHealthy();
+        if (onHealthChange) onHealthChange(true);
 
         fs.writeFileSync(getUserDataFile('alert_received.json'), JSON.stringify(data, null, 2), 'utf-8');
 
         return data;
     } catch (err) {
         logEvent(`alert-proxy request error: ${err.message}`, 'NETWORK');
+        if (onHealthChange) onHealthChange(false);
         return getLatestAlertData();
     }
 }
 
-function startPolling(clientKey, onUpdate) {
+function startPolling(clientKey, onUpdate, onHealthChange) {
     const tick = async () => {
-        const data = await pollOnce(clientKey);
+        const data = await pollOnce(clientKey, onHealthChange);
         if (data) onUpdate(data);
     };
 

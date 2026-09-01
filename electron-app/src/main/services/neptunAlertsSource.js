@@ -154,13 +154,14 @@ function warnAboutUncoveredMonitoredRegions() {
     );
 }
 
-async function pollOnce() {
+async function pollOnce(onHealthChange) {
     if (!stateByName) buildLookups();
 
     try {
         const response = await fetch(ALERTS_URL);
         if (!response.ok) {
             logEvent(`Neptun alerts fetch failed: ${response.status}`, 'NETWORK');
+            if (onHealthChange) onHealthChange(false);
             return getLatestAlertData();
         }
 
@@ -168,18 +169,20 @@ async function pollOnce() {
         const alerts = [...transformOblasts(raw.oblasts), ...transformRaions(raw.raions)];
         const data = { alerts };
         setLatestAlertData(data);
+        if (onHealthChange) onHealthChange(true);
         return data;
     } catch (err) {
         logEvent(`Neptun alerts request error: ${err.message}`, 'NETWORK');
+        if (onHealthChange) onHealthChange(false);
         return getLatestAlertData();
     }
 }
 
-function startPolling(onUpdate) {
+function startPolling(onUpdate, onHealthChange) {
     warnAboutUncoveredMonitoredRegions();
 
     const tick = async () => {
-        const data = await pollOnce();
+        const data = await pollOnce(onHealthChange);
         if (data) onUpdate(data);
     };
 

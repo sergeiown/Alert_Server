@@ -49,6 +49,7 @@ function applyStrings(strings) {
     document.getElementById('settingsGroupNotifications').textContent = strings.settingsGroupNotifications;
     document.getElementById('settingsGroupDataSource').textContent = strings.settingsGroupDataSource;
     document.getElementById('alertSourceProviderLabel').textContent = strings.alertSourceProviderLabel;
+    document.getElementById('alertSourceProviderUkraineAlarmOption').textContent = strings.alertSourceProviderUkraineAlarm;
     document.getElementById('alertSourceProviderAlertsInUaOption').textContent = strings.alertSourceProviderAlertsInUa;
     document.getElementById('alertSourceProviderNeptunOption').textContent = strings.alertSourceProviderNeptun;
     document.getElementById('alertSourceProviderNote').textContent = strings.alertSourceProviderNote;
