@@ -53,6 +53,7 @@ function aggregateTodayStats(date, alerts) {
         alerts,
         complete: true,
         warmupEtaMinutes: 0,
+        source: 'ukrainealarm',
     };
 }
 
@@ -138,7 +139,7 @@ async function refreshFromAlertsInUa(clientKey) {
             return;
         }
 
-        cached = data;
+        cached = { ...data, source: 'alerts.in.ua' };
         mergeIntoForecastHistory(data.alerts);
         logEvent(`Today-stats updated (alerts.in.ua, ${data.date}): ${data.total} nationwide`, 'NETWORK');
     } catch (err) {
@@ -178,6 +179,7 @@ function getLatestTodayStats(monitoredUids) {
         ),
         complete: cached.complete,
         warmupEtaMinutes: cached.warmupEtaMinutes,
+        source: cached.source,
     };
 }
 
