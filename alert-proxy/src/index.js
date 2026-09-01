@@ -596,6 +596,11 @@ export class AlertsGateway {
                 if (ageMs > UKRAINEALARM_STALE_ALERT_THRESHOLD_MS) return;
 
                 alerts.push({
+                    // A stable synthetic id (electron-app's forecastHistoryStore.js keys merged
+                    // records by `alert.id` - without one here, every UkraineAlarm-derived alert
+                    // for the same region would collide on the same undefined key and overwrite
+                    // each other). regionId+lastUpdate uniquely and stably identifies one alert.
+                    id: `ukrainealarm-${region.regionId}-${alert.lastUpdate}`,
                     location_uid: Number(region.regionId),
                     alert_type: mappedType,
                     started_at: alert.lastUpdate,
@@ -632,6 +637,9 @@ export class AlertsGateway {
                         .filter((record) => UKRAINEALARM_TYPE_MAP[record.alertType])
                         .filter((record) => parseDotNetDurationMs(record.duration) <= UKRAINEALARM_TODAY_MAX_DURATION_MS)
                         .map((record) => ({
+                            // Same stable-id requirement as getUkraineAlarmAlerts() above -
+                            // forecastHistoryStore.js's mergeAlerts keys by `alert.id`.
+                            id: `ukrainealarm-${record.regionId}-${record.startDate}`,
                             location_uid: Number(record.regionId),
                             location_title: record.regionName,
                             alert_type: UKRAINEALARM_TYPE_MAP[record.alertType],
