@@ -35,18 +35,29 @@ const UNCERTAINTY_PANE_Z = 410;
 const UNCERTAINTY_CIRCLE_COLOR = '#6b7280';
 const UNCERTAIN_ICON_COLOR = '#9ca3af';
 
-// Minimum on-screen center-to-center spacing kept between threat icons - comfortably more than
-// the 22px icon itself, so nudged-apart icons never end up touching, let alone one covering
-// another.
-const MARKER_MIN_GAP_PX = 28;
+// Minimum on-screen center-to-center spacing kept between threat icons - still comfortably more
+// than the 22px icon itself, so nudged-apart icons never end up touching, let alone one covering
+// another. Randomized per pair within MARKER_MIN_GAP_JITTER_PX on top of the base (rather than one
+// fixed distance for every pair) so a cluster of icons doesn't look mechanically evenly spaced.
+const MARKER_MIN_GAP_BASE_PX = 18;
+const MARKER_MIN_GAP_JITTER_PX = 6;
 const DECLUTTER_ITERATIONS = 40;
+
+// Deterministic pseudo-random value in [0, 1) for a given pair of indices - same trick as the
+// exact-overlap angle below, just fractional. Deliberately NOT Math.random(): points get
+// redeclutterred on every data refresh, and a truly random gap would make already-settled icons
+// visibly hop around each time even though nothing about them actually changed.
+function pairFraction(i, j) {
+    const seed = Math.sin(i * 12.9898 + j * 78.233) * 43758.5453;
+    return seed - Math.floor(seed);
+}
 
 // Nudges icons apart in screen-pixel space only (never changes which real-world spot a marker is
 // tooltip-anchored near by more than a fraction of the map view) - pure relaxation: as long as any
-// pair is closer than the minimum gap, push both away from each other by half the shortfall.
+// pair is closer than its minimum gap, push both away from each other by half the shortfall.
 // Two threats reported at the exact same point start at zero distance, which has no direction to
 // push along - resolved with a deterministic per-pair angle so they don't stay stacked.
-function declutterPoints(points, minGap) {
+function declutterPoints(points) {
     const out = points.map((p) => ({ x: p.x, y: p.y }));
 
     for (let iter = 0; iter < DECLUTTER_ITERATIONS; iter++) {
@@ -64,6 +75,8 @@ function declutterPoints(points, minGap) {
                     dy = Math.sin(angle);
                     dist = 1;
                 }
+
+                const minGap = MARKER_MIN_GAP_BASE_PX + pairFraction(i, j) * MARKER_MIN_GAP_JITTER_PX;
 
                 if (dist < minGap) {
                     const overlap = (minGap - dist) / 2;
@@ -393,7 +406,7 @@ function startNeptunLayer(map, strings, language, onCountChange) {
             });
 
         const points = valid.map((t) => map.latLngToContainerPoint([t.lat, t.lon]));
-        const spread = declutterPoints(points, MARKER_MIN_GAP_PX);
+        const spread = declutterPoints(points);
 
         valid.forEach((threat, i) => {
             const displayLatLng = map.containerPointToLatLng([spread[i].x, spread[i].y]);
