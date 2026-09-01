@@ -482,23 +482,37 @@ export class AlertsGateway {
     // real duration) - a real anomaly spotted once already during manual testing (an ARTILLERY
     // alert reported active for over a year). Recorded here, not acted on - Stage 1 is purely
     // about collecting real evidence before any decision on trusting this source.
+    //
+    // Keyed by regionId+alertType (one slot per distinct stuck alert, not one per poll) - an
+    // unkeyed version fills the fixed-size buffer with repeats of the same handful of
+    // long-running problems on every poll, crowding out genuinely new/different ones over a
+    // multi-day observation window.
     recordUkraineAlarmObservations(saved, alerts, now) {
+        const byKey = new Map(saved.observations.map((o) => [`${o.regionId}:${o.alertType}`, o]));
+
         (alerts || []).forEach((region) => {
             (region.activeAlerts || []).forEach((alert) => {
                 const ageMs = now - new Date(alert.lastUpdate).getTime();
-                if (ageMs > UKRAINEALARM_STALE_ALERT_THRESHOLD_MS) {
-                    saved.observations.unshift({
-                        observedAt: new Date(now).toISOString(),
-                        regionId: region.regionId,
-                        regionName: region.regionName,
-                        alertType: alert.type,
-                        lastUpdate: alert.lastUpdate,
-                        ageDays: Math.round(ageMs / (24 * 60 * 60 * 1000)),
-                    });
-                }
+                if (ageMs <= UKRAINEALARM_STALE_ALERT_THRESHOLD_MS) return;
+
+                const key = `${region.regionId}:${alert.type}`;
+                const existing = byKey.get(key);
+                byKey.set(key, {
+                    firstObservedAt: existing ? existing.firstObservedAt : new Date(now).toISOString(),
+                    lastObservedAt: new Date(now).toISOString(),
+                    timesSeen: existing ? existing.timesSeen + 1 : 1,
+                    regionId: region.regionId,
+                    regionName: region.regionName,
+                    alertType: alert.type,
+                    lastUpdate: alert.lastUpdate,
+                    ageDays: Math.round(ageMs / (24 * 60 * 60 * 1000)),
+                });
             });
         });
-        saved.observations = saved.observations.slice(0, UKRAINEALARM_MAX_OBSERVATIONS);
+
+        saved.observations = Array.from(byKey.values())
+            .sort((a, b) => new Date(b.lastObservedAt) - new Date(a.lastObservedAt))
+            .slice(0, UKRAINEALARM_MAX_OBSERVATIONS);
     }
 
     // Read-only introspection for this Stage of the evaluation - not used by the app. Lets me
