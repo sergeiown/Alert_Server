@@ -48,11 +48,15 @@ const CITIES = [
     { lat: 48.5111, lng: 34.6023, uk: "Кам'янське", en: 'Kamianske', oblast: 'Дніпропетровська' },
 ];
 
+// The outline itself stays visible always (it's the city's landmark boundary, same idea as the
+// dot/label) - only the fill is conditional on alert state. Zeroing weight/opacity together with
+// fillOpacity (an earlier version of this fix) made the whole border vanish whenever a city had
+// no active alert, instead of just clearing the red tint.
 function borderStyle(color, alerted) {
     return {
         color,
-        weight: alerted ? 1.5 : 0,
-        opacity: alerted ? 0.7 : 0,
+        weight: 1.5,
+        opacity: 0.7,
         fillColor: color,
         fillOpacity: alerted ? 0.12 : 0,
     };
