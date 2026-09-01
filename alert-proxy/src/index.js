@@ -542,6 +542,18 @@ export class AlertsGateway {
     // in notifications. Also drops any alert type with no equivalent in the app's own vocabulary
     // (UNKNOWN/INFO/CUSTOM) rather than guessing a mapping for it.
     async getUkraineAlarmAlerts() {
+        // Was relying entirely on the background alarm() loop to keep ukraineAlarmState warm -
+        // real-world alarm scheduling isn't perfectly on-cadence (observed a 6+ minute gap once,
+        // long enough to miss a genuinely new alert entirely), so this now also forces a check
+        // itself, same as getActive()/getHistory() lazily refreshing on client read rather than
+        // trusting a background timer alone. pollUkraineAlarmIfDue() already self-throttles via
+        // UKRAINEALARM_MIN_GAP_MS, so calling it here on every request is cheap.
+        try {
+            await this.pollUkraineAlarmIfDue();
+        } catch (err) {
+            this.ukraineAlarmOriginError = { status: 0, body: err.message };
+        }
+
         const saved = await this.state.storage.get('ukraineAlarmState');
         const now = Date.now();
 
