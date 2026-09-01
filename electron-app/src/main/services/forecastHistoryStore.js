@@ -91,7 +91,13 @@ function scheduleWrite() {
     writeTimer = setTimeout(writeNow, DEBOUNCE_MS);
 }
 
-function mergeAlerts(uid, alerts) {
+// `backfill: true` stamps _localFirstSeenAt from the alert's own started_at instead of "now" -
+// only for a deliberate, known-genuine historical import (historyBackfillStore.js's one-time
+// past-month pull), where the data really is that old and getStats()'s spanDays should say so
+// immediately. Never for the normal day-to-day merge path (todayStatsStore.js, forecast.js's own
+// on-demand fetches) - there, "now" is the deliberately conservative choice explained above
+// (an API answering with old-looking alerts shouldn't make a fresh install claim years of history).
+function mergeAlerts(uid, alerts, { backfill = false } = {}) {
     ensureLoaded();
     const key = String(uid);
     if (!store[key]) store[key] = {};
@@ -105,7 +111,8 @@ function mergeAlerts(uid, alerts) {
         const incomingStamp = new Date(alert.updated_at || alert.started_at).getTime();
 
         if (incomingStamp >= existingStamp) {
-            region[alert.id] = { ...alert, _localFirstSeenAt: existing?._localFirstSeenAt ?? now };
+            const firstSeenAt = existing?._localFirstSeenAt ?? (backfill ? new Date(alert.started_at).getTime() : now);
+            region[alert.id] = { ...alert, _localFirstSeenAt: firstSeenAt };
             changed = true;
         }
     });
