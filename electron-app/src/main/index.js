@@ -25,6 +25,7 @@ const { startForecastWatcher } = require('./services/forecastWatcher');
 const { startOccupiedTerritoryRefresh } = require('./services/occupiedTerritoryStore');
 const { startWeaponStatsRefresh } = require('./services/weaponStatsStore');
 const { startTodayStatsRefresh } = require('./services/todayStatsStore');
+const { startHistoryBackfill } = require('./services/historyBackfillStore');
 const { installHandlers } = require('./services/crashRestart');
 const { delayedCheckForUpdates } = require('./services/updater');
 const { destroySettingsWindow } = require('./windows/settingsWindow');
@@ -60,6 +61,7 @@ app.whenReady().then(() => {
     startOccupiedTerritoryRefresh();
     startWeaponStatsRefresh();
     startTodayStatsRefresh();
+    startHistoryBackfill();
 
     const { alertSourceProvider } = settingsStore.getSettings();
     let forecastWatcherStarted = false;
