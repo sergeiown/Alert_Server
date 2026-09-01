@@ -122,7 +122,17 @@ function filterAlerts(alertData) {
         .filter((alert) => getAlertCoverageUids(alert).some((uid) => selectedUids.has(uid)))
         .map((alert) => {
             const info = lookup.get(String(alert.location_uid));
-            return { ...alert, location_lat: info ? info.lat : null };
+            return {
+                ...alert,
+                location_lat: info ? info.lat : null,
+                // Resolved from the same static lookup as location_lat above, not trusted from
+                // the source - alerts.in.ua/Neptun both happen to already provide this natively,
+                // but UkraineAlarm's own alert shape doesn't carry a Ukrainian display name at
+                // all, which showed up as a literal "undefined" location in notifications. Falls
+                // back to whatever the source itself sent for a genuinely unknown uid (not in the
+                // static lookup), same case discoverUnknownLocations() already handles.
+                location_title: info ? info.name : alert.location_title,
+            };
         });
 }
 

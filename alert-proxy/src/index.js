@@ -789,6 +789,7 @@ export class AlertsGateway {
                     // each other). regionId+lastUpdate uniquely and stably identifies one alert.
                     id: `ukrainealarm-${region.regionId}-${alert.lastUpdate}`,
                     location_uid: Number(region.regionId),
+                    location_title: region.regionName,
                     alert_type: mappedType,
                     started_at: alert.lastUpdate,
                 });
@@ -923,6 +924,7 @@ export class AlertsGateway {
                         .map((record) => ({
                             id: `ukrainealarm-${regionId}-${record.startDate}`,
                             location_uid: Number(regionId),
+                            location_title: record.regionName,
                             alert_type: UKRAINEALARM_TYPE_MAP[record.alertType],
                             started_at: record.startDate,
                         }));
