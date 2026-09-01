@@ -7,13 +7,14 @@ A description of the forecasting approach: where the data comes from, how the al
 
 ## 1. Data source
 
-Alert history always comes from the public [alerts.in.ua](https://alerts.in.ua/) API, regardless of which source is selected in Settings for current-alert data (see the main README) - the alternative source doesn't offer historical data at all, so forecasting has nothing to switch to. A key quirk: the API only actually returns history at the **region** level (~30 days), not for an individual district or hromada. So for any monitored area, the app:
+Alert history comes from two sources with automatic failover, independent of whichever source is selected in Settings for current (live) alert data (see the main README) - forecasting has its own, separate source chain:
 
-- determines which region it belongs to;
-- requests history for the whole region at once (several monitored areas within the same region share one request);
-- if the region itself is being tracked as a whole, it counts every alert within its borders; if a specific district/hromada/city is tracked, it filters the response down to just that one.
+- **Primary - [UkraineAlarm](https://api.ukrainealarm.com/).** Returns history directly for the specific monitored area (not only at the region level, as before). Not always reliable in practice - its per-area history endpoint fails roughly half the time - so every request tries this source first and falls straight through to the fallback on failure, with no added delay for the user.
+- **Fallback - the public [alerts.in.ua](https://alerts.in.ua/) API.** Only returns history at the **region** level (roughly 30 days), not for an individual district or hromada. So in this case, for any monitored area, the app determines which region it belongs to, requests history for the whole region at once (several monitored areas within the same region share one request), and, if the region itself isn't being tracked as a whole but a specific district/hromada/city is, filters the response down to just that one.
 
-The API's 30-day limit doesn't mean the app only remembers the last month: it **accumulates history locally**, indefinitely, from whenever the region was first tracked. Updates happen in the background (periodically, and immediately after adding a new region), not only when you happen to look.
+Whichever of the two sources actually answered, the app **accumulates history locally**, indefinitely, from whenever the region was first tracked - the fallback source's own 30-day limit doesn't by itself mean the app only remembers the last month. Additionally, once (the first time a build with support for this runs), the local history is backfilled with a real month of data from the primary source for the whole country at once (not just monitored regions), so the model starts with enough material immediately instead of waiting weeks for organic accumulation.
+
+Updates happen in the background (periodically, and immediately after adding a new region), not only when you happen to look. The Forecast window itself now also shows which of the two sources most recently supplied that region's data.
 
 Active (current) alerts are a separate, instant data channel with no forecasting model involved - they're simply matched against the list of monitored regions.
 
