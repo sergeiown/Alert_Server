@@ -261,6 +261,8 @@ export class AlertsGateway {
         this.ukraineAlarmOriginError = null;
         this.ukraineAlarmTodayCache = null;
         this.ukraineAlarmTodayOriginError = null;
+        this.ukraineAlarmRegionHistoryCache = new Map();
+        this.ukraineAlarmRegionHistoryOriginErrors = new Map();
         this.activeQueue = Promise.resolve();
         this.historyQueue = Promise.resolve();
         this.regionStatusesQueue = Promise.resolve();
@@ -305,6 +307,11 @@ export class AlertsGateway {
 
         if (url.pathname === '/ukrainealarm-today-stats') {
             return this.getUkraineAlarmTodayStats();
+        }
+
+        const ukraineAlarmRegionHistoryMatch = url.pathname.match(/^\/ukrainealarm-region-history\/(\d+)$/);
+        if (ukraineAlarmRegionHistoryMatch) {
+            return this.getUkraineAlarmRegionHistory(ukraineAlarmRegionHistoryMatch[1]);
         }
 
         return this.getActive(ifModifiedSince);
@@ -669,6 +676,66 @@ export class AlertsGateway {
             complete: true,
             warmupEtaMinutes: 0,
         });
+        return new Response(body, { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    // Forecast backfill via UkraineAlarm - one regionHistory request gives a region's own most
+    // recent ~20-25 alerts directly, with durations already computed, instead of forecast.js's
+    // current approach (fetch the WHOLE oblast's month of alerts.in.ua history, then filter down
+    // to one location). electron-app's forecast.js tries this first, falling back to the existing
+    // alerts.in.ua oblast-history approach on failure - same pattern as Trends "Today" above.
+    //
+    // Not date-range filterable (confirmed by testing, see data-flow-notes.txt) - a fixed recent
+    // count, so this can end up with LESS depth than a month for a very busy region, or MORE for a
+    // quiet one. Cached fairly long (like alerts.in.ua's own HISTORY_CACHE_TTL_MS) since one
+    // region's history doesn't change every minute.
+    async getUkraineAlarmRegionHistory(regionId) {
+        const now = Date.now();
+        const cached = this.ukraineAlarmRegionHistoryCache.get(regionId);
+
+        if (!cached || now - cached.fetchedAt >= HISTORY_CACHE_TTL_MS) {
+            try {
+                const response = await fetch(`${UKRAINEALARM_BASE_URL}/alerts/regionHistory?regionId=${regionId}`, {
+                    headers: { Authorization: this.env.UKRAINEALARM_TOKEN },
+                });
+
+                if (!response.ok) {
+                    this.ukraineAlarmRegionHistoryOriginErrors.set(regionId, { status: response.status, body: await response.text() });
+                } else {
+                    const raw = await response.json();
+                    // regionHistory replies with an ARRAY of RegionAlarmsHistory objects
+                    // ({regionId, regionName, alarms: [...]}) - one element per queried regionId,
+                    // so exactly one here since only one is ever requested at a time.
+                    const records = (raw && raw[0] && raw[0].alarms) || [];
+                    const alerts = records
+                        .filter((record) => UKRAINEALARM_TYPE_MAP[record.alertType])
+                        .filter((record) => parseDotNetDurationMs(record.duration) <= UKRAINEALARM_TODAY_MAX_DURATION_MS)
+                        .map((record) => ({
+                            id: `ukrainealarm-${regionId}-${record.startDate}`,
+                            location_uid: Number(regionId),
+                            alert_type: UKRAINEALARM_TYPE_MAP[record.alertType],
+                            started_at: record.startDate,
+                        }));
+
+                    this.ukraineAlarmRegionHistoryOriginErrors.delete(regionId);
+                    this.ukraineAlarmRegionHistoryCache.set(regionId, { alerts, fetchedAt: now });
+                }
+            } catch (err) {
+                this.ukraineAlarmRegionHistoryOriginErrors.set(regionId, { status: 0, body: err.message });
+            }
+        }
+
+        if (!this.ukraineAlarmRegionHistoryCache.has(regionId)) {
+            const originError = this.ukraineAlarmRegionHistoryOriginErrors.get(regionId);
+            if (originError) {
+                return new Response(JSON.stringify({ error: originError }), {
+                    status: originError.status || 502,
+                    headers: { 'Content-Type': 'application/json' },
+                });
+            }
+        }
+
+        const body = JSON.stringify({ alerts: this.ukraineAlarmRegionHistoryCache.get(regionId).alerts });
         return new Response(body, { headers: { 'Content-Type': 'application/json' } });
     }
 
