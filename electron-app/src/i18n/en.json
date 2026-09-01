@@ -20,7 +20,7 @@
     "liveMapFullScreenTitle": "Toggle fullscreen",
     "liveMapEnterFullScreenTitle": "Enter fullscreen mode",
     "liveMapExitFullScreenTitle": "Exit fullscreen mode",
-    "liveMapAlertsAttribution": "Alerts: alerts.in.ua",
+    "liveMapAlertsAttributionPrefix": "Alerts:",
     "liveMapNeptunAttribution": "Threat data: Neptun",
     "liveMapDeepStateAttribution": "Front line: DeepState",
     "liveMapUpdated": "Updated",
