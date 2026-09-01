@@ -34,12 +34,31 @@ function kyivHour(dateStr) {
 
 // One-way hash of the connecting IP - lets unique installs be counted (roughly; NAT/shared IPs
 // undercount, IP churn overcounts) without keeping raw addresses around in Durable Object storage.
-async function hashIp(ip) {
-    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip));
+async function sha256Hex(text) {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
     return Array.from(new Uint8Array(digest))
         .map((b) => b.toString(16).padStart(2, '0'))
-        .join('')
-        .slice(0, 16);
+        .join('');
+}
+
+async function hashIp(ip) {
+    return (await sha256Hex(ip)).slice(0, 16);
+}
+
+// PEM (SPKI, "-----BEGIN PUBLIC KEY-----...") -> a usable verification key. UkraineAlarm signs
+// webhook bodies with RSA-SHA256 (see tools/example/ukraine-alarm-api.md) - PKCS1 v1.5, not PSS,
+// per their own Node.js example (crypto.createVerify('RSA-SHA256'), the PKCS1 default).
+async function importUkraineAlarmWebhookPublicKey(pem) {
+    const base64 = pem.replace(/-----BEGIN PUBLIC KEY-----/, '').replace(/-----END PUBLIC KEY-----/, '').replace(/\s+/g, '');
+    const der = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+    return crypto.subtle.importKey('spki', der.buffer, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
+}
+
+async function verifyUkraineAlarmWebhookSignature(publicKeyPem, signatureBase64, canonicalString) {
+    const key = await importUkraineAlarmWebhookPublicKey(publicKeyPem);
+    const signatureBytes = Uint8Array.from(atob(signatureBase64), (c) => c.charCodeAt(0));
+    const dataBytes = new TextEncoder().encode(canonicalString);
+    return crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, signatureBytes, dataBytes);
 }
 
 const LOAD_WINDOW_MS = 60 * 1000;
@@ -68,6 +87,15 @@ const UKRAINEALARM_MIN_GAP_MS = 20 * 1000;
 const UKRAINEALARM_FORCE_REFRESH_MS = 5 * 60 * 1000;
 const UKRAINEALARM_STALE_ALERT_THRESHOLD_MS = 24 * 60 * 60 * 1000;
 const UKRAINEALARM_MAX_OBSERVATIONS = 30;
+
+// Unpredictable path segment (in addition to signature verification below) - not a secret in
+// itself, just a shallow extra layer so the endpoint isn't sitting at an obvious guessable URL.
+// Fixed permanently once registered with UkraineAlarm (POST /api/v3/webhook) - changing it later
+// means re-registering.
+const UKRAINEALARM_WEBHOOK_PATH = '/webhook/ukrainealarm/x1fP-zwrLYGX0KsseCw_uB8CdR4cOjKU';
+// Vendor's own anti-replay recommendation (see tools/example/ukraine-alarm-api.md).
+const UKRAINEALARM_WEBHOOK_MAX_TIMESTAMP_AGE_MS = 5 * 60 * 1000;
+const UKRAINEALARM_WEBHOOK_DEDUPE_WINDOW_MS = 5 * 60 * 1000;
 
 // Trends "Today" via UkraineAlarm's dateHistory - one request for the whole day, replacing the
 // slow 26-oblast round-robin the alerts.in.ua-based today-stats mechanism needs (todayStatsState
@@ -267,6 +295,12 @@ export class AlertsGateway {
         this.ukraineAlarmDateStatsCache = new Map();
         this.ukraineAlarmRegionHistoryCache = new Map();
         this.ukraineAlarmRegionHistoryOriginErrors = new Map();
+        // Recent webhook body hashes -> received-at ms, for anti-replay dedup (vendor's own
+        // recommendation). In-memory only - a DO restart just means the (short, 5-minute) replay
+        // window resets, not persisted since this is a low-stakes dataset (public alert status),
+        // not worth the extra storage complexity.
+        this.ukraineAlarmWebhookSeenHashes = new Map();
+        this.ukraineAlarmWebhookPublicKey = null;
         this.activeQueue = Promise.resolve();
         this.historyQueue = Promise.resolve();
         this.regionStatusesQueue = Promise.resolve();
@@ -274,10 +308,17 @@ export class AlertsGateway {
     }
 
     async fetch(request) {
+        const url = new URL(request.url);
+
+        // Routed before recordUniqueUser() - the connecting IP here is UkraineAlarm's own server,
+        // not a real install, and would otherwise pollute the unique-user counts.
+        if (url.pathname === UKRAINEALARM_WEBHOOK_PATH) {
+            return this.handleUkraineAlarmWebhook(request);
+        }
+
         await this.ensureTodayStatsAlarmScheduled();
         await this.recordUniqueUser(request);
 
-        const url = new URL(request.url);
         const ifModifiedSince = request.headers.get('If-Modified-Since');
 
         const historyMatch = url.pathname.match(/^\/history\/(\d+)$/);
@@ -486,7 +527,76 @@ export class AlertsGateway {
     // Shadow monitoring only (see UKRAINEALARM_* constants above) - never called from any
     // client-facing route except the read-only /ukrainealarm-status introspection endpoint. Not
     // part of the app's actual alert data path.
-    async pollUkraineAlarmIfDue() {
+    // `force: true` (from a verified webhook push - see handleUkraineAlarmWebhook) bypasses the
+    // MIN_GAP throttle and always does the full /alerts fetch, skipping the /alerts/status cheap
+    // check entirely - the whole point of a push is that we already know something changed,
+    // there's nothing to "check" first.
+    // UkraineAlarm's push notification (POST, routed here before the app's own client-key gate -
+    // see the default export below). Verifies the RSA-SHA256 signature over `{timestamp}.{body}`
+    // against UKRAINEALARM_WEBHOOK_PUBLIC_KEY (a Cloudflare secret - never trust an unverified
+    // push), checks the timestamp isn't stale, and dedupes by body hash - all per the vendor's own
+    // documented recommendations. Doesn't yet trust the payload's own exact shape (only ever
+    // described as "an AlertRegionModel example", never a precise wire format) - stores it for
+    // inspection and triggers an immediate authoritative /alerts refetch instead. Once real
+    // payloads have actually been seen, this can move to parsing them directly and skip that extra
+    // fetch - the main latency/request-count win either way is not polling BLIND every 20s.
+    async handleUkraineAlarmWebhook(request) {
+        const rawBody = await request.text();
+        const signature = request.headers.get('X-Webhook-Signature');
+        const timestamp = request.headers.get('X-Webhook-Timestamp');
+        const alg = (request.headers.get('X-Webhook-Signature-Alg') || '').toLowerCase();
+
+        if (!signature || !timestamp) {
+            return new Response('Missing signature headers', { status: 400 });
+        }
+        if (alg && alg !== 'rsa-sha256') {
+            return new Response('Unsupported signature algorithm', { status: 400 });
+        }
+        if (!this.env.UKRAINEALARM_WEBHOOK_PUBLIC_KEY) {
+            return new Response('Webhook not configured', { status: 503 });
+        }
+
+        const timestampMs = Number(timestamp) * 1000;
+        if (!Number.isFinite(timestampMs) || Math.abs(Date.now() - timestampMs) > UKRAINEALARM_WEBHOOK_MAX_TIMESTAMP_AGE_MS) {
+            return new Response('Timestamp out of range', { status: 400 });
+        }
+
+        let verified = false;
+        try {
+            verified = await verifyUkraineAlarmWebhookSignature(
+                this.env.UKRAINEALARM_WEBHOOK_PUBLIC_KEY,
+                signature,
+                `${timestamp}.${rawBody}`
+            );
+        } catch (err) {
+            verified = false;
+        }
+        if (!verified) {
+            return new Response('Invalid signature', { status: 401 });
+        }
+
+        const now = Date.now();
+        for (const [hash, seenAt] of this.ukraineAlarmWebhookSeenHashes) {
+            if (now - seenAt > UKRAINEALARM_WEBHOOK_DEDUPE_WINDOW_MS) this.ukraineAlarmWebhookSeenHashes.delete(hash);
+        }
+        const bodyHash = await sha256Hex(rawBody);
+        if (this.ukraineAlarmWebhookSeenHashes.has(bodyHash)) {
+            // Ack it (200) rather than error, so a legitimately-retrying sender doesn't keep
+            // hammering a delivery we've already processed.
+            return new Response('Duplicate, already processed', { status: 200 });
+        }
+        this.ukraineAlarmWebhookSeenHashes.set(bodyHash, now);
+
+        await this.state.storage.put('ukraineAlarmLastWebhookPayload', {
+            receivedAt: new Date(now).toISOString(),
+            body: rawBody.slice(0, 5000),
+        });
+        await this.pollUkraineAlarmIfDue({ force: true });
+
+        return new Response('OK', { status: 200 });
+    }
+
+    async pollUkraineAlarmIfDue({ force = false } = {}) {
         if (!this.env.UKRAINEALARM_TOKEN) return;
 
         let saved = (await this.state.storage.get('ukraineAlarmState')) || {
@@ -498,26 +608,32 @@ export class AlertsGateway {
         };
 
         const now = Date.now();
-        if (now - saved.lastFetchAt < UKRAINEALARM_MIN_GAP_MS) return;
+        if (!force && now - saved.lastFetchAt < UKRAINEALARM_MIN_GAP_MS) return;
 
         saved.lastFetchAt = now;
-        this.ukraineAlarmFetchTimestamps.push(now);
 
-        const statusResponse = await fetch(`${UKRAINEALARM_BASE_URL}/alerts/status`, {
-            headers: { Authorization: this.env.UKRAINEALARM_TOKEN },
-        });
+        let indexChanged = true;
+        let dueForSafetyNetRefresh = true;
 
-        if (!statusResponse.ok) {
-            this.ukraineAlarmOriginError = { status: statusResponse.status, body: await statusResponse.text() };
-            await this.state.storage.put('ukraineAlarmState', saved);
-            return;
+        if (!force) {
+            this.ukraineAlarmFetchTimestamps.push(now);
+
+            const statusResponse = await fetch(`${UKRAINEALARM_BASE_URL}/alerts/status`, {
+                headers: { Authorization: this.env.UKRAINEALARM_TOKEN },
+            });
+
+            if (!statusResponse.ok) {
+                this.ukraineAlarmOriginError = { status: statusResponse.status, body: await statusResponse.text() };
+                await this.state.storage.put('ukraineAlarmState', saved);
+                return;
+            }
+
+            this.ukraineAlarmOriginError = null;
+            const { lastActionIndex } = await statusResponse.json();
+            indexChanged = lastActionIndex !== saved.lastActionIndex;
+            dueForSafetyNetRefresh = now - saved.lastFullFetchAt >= UKRAINEALARM_FORCE_REFRESH_MS;
+            saved.lastActionIndex = lastActionIndex;
         }
-
-        this.ukraineAlarmOriginError = null;
-        const { lastActionIndex } = await statusResponse.json();
-
-        const indexChanged = lastActionIndex !== saved.lastActionIndex;
-        const dueForSafetyNetRefresh = now - saved.lastFullFetchAt >= UKRAINEALARM_FORCE_REFRESH_MS;
 
         if (indexChanged || dueForSafetyNetRefresh) {
             this.ukraineAlarmFetchTimestamps.push(Date.now());
@@ -535,7 +651,6 @@ export class AlertsGateway {
             }
         }
 
-        saved.lastActionIndex = lastActionIndex;
         await this.state.storage.put('ukraineAlarmState', saved);
     }
 
@@ -785,6 +900,7 @@ export class AlertsGateway {
         const now = Date.now();
         const saved = (await this.state.storage.get('ukraineAlarmState')) || null;
         const requestsLastMinute = pruneAndCount(this.ukraineAlarmFetchTimestamps, now);
+        const lastWebhookPayload = await this.state.storage.get('ukraineAlarmLastWebhookPayload');
 
         const body = JSON.stringify({
             generatedAt: new Date(now).toISOString(),
@@ -797,6 +913,8 @@ export class AlertsGateway {
             currentActiveAlertCount: saved && saved.latestAlerts ? saved.latestAlerts.length : null,
             staleAlertObservations: saved ? saved.observations : [],
             currentError: this.ukraineAlarmOriginError,
+            webhookConfigured: Boolean(this.env.UKRAINEALARM_WEBHOOK_PUBLIC_KEY),
+            lastWebhookPayload,
         });
 
         return new Response(body, { headers: { 'Content-Type': 'application/json' } });
@@ -1035,6 +1153,19 @@ export class AlertsGateway {
 
 export default {
     async fetch(request, env) {
+        const url = new URL(request.url);
+
+        // UkraineAlarm pushes here directly (POST, no X-Client-Key of ours - it's their server,
+        // not our client) - routed before the GET-only/client-key gate below, which is only for
+        // this app's own client traffic. Signature verification happens inside the Durable Object
+        // itself (handleUkraineAlarmWebhook), not here.
+        if (url.pathname === UKRAINEALARM_WEBHOOK_PATH) {
+            if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
+            const id = env.ALERTS_GATEWAY.idFromName('global');
+            const stub = env.ALERTS_GATEWAY.get(id);
+            return stub.fetch(request);
+        }
+
         if (request.method !== 'GET') {
             return new Response('Method not allowed', { status: 405 });
         }
