@@ -12,7 +12,7 @@ module.exports = {
     BASELINE_WINDOW_DAYS: 180,
     SEASONALITY_PRIOR_OCCURRENCES: 20,
     SEASONALITY_MAX_MULTIPLIER: 2,
-    // Larger prior than the weekday one: hour-of-day occurrences accumulate ~7x faster (every
+    // Larger prior than the weekday one: hour-of-day occurrences accumulate roughly 7x faster (every
     // calendar day contributes one), so more of them are needed for comparable real-world trust.
     HOUR_OF_DAY_PRIOR_OCCURRENCES: 60,
     HOUR_OF_DAY_MAX_MULTIPLIER: 2,
