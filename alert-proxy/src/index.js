@@ -598,9 +598,58 @@ export class AlertsGateway {
             receivedAt: new Date(now).toISOString(),
             body: rawBody.slice(0, 5000),
         });
-        await this.pollUkraineAlarmIfDue({ force: true });
+
+        // Real shape confirmed live 2026-09-01: {status:"Activate", regionId, alarmType,
+        // createdAt} - much more compact than the "AlertRegionModel example" the docs describe.
+        // Applied directly for this one confirmed case (skips a whole /alerts refetch); anything
+        // else - including "Deactivate", which hasn't actually been observed yet, or any future/
+        // unrecognized shape - falls back to a full authoritative refetch instead of guessing.
+        let event = null;
+        try {
+            event = JSON.parse(rawBody);
+        } catch (err) {
+            event = null;
+        }
+
+        if (event && event.status === 'Activate' && event.regionId !== undefined && event.alarmType && event.createdAt) {
+            await this.applyUkraineAlarmActivateEvent(event);
+        } else {
+            await this.pollUkraineAlarmIfDue({ force: true });
+        }
 
         return new Response('OK', { status: 200 });
+    }
+
+    // Merges one confirmed-shape "Activate" webhook event directly into the cached alert list,
+    // instead of a full refetch - same UKRAINEALARM_TYPE_MAP-mapped shape getUkraineAlarmAlerts()
+    // already reads (region.regionId/activeAlerts[].type/lastUpdate). regionName is left unset
+    // for a region not already known - only used for observability (getUkraineAlarmStatus's
+    // observations), not by the actual client-facing alert data.
+    async applyUkraineAlarmActivateEvent(event) {
+        const saved = (await this.state.storage.get('ukraineAlarmState')) || {
+            lastFetchAt: 0,
+            lastFullFetchAt: 0,
+            lastActionIndex: null,
+            latestAlerts: [],
+            observations: [],
+        };
+        if (!saved.latestAlerts) saved.latestAlerts = [];
+
+        const regionId = String(event.regionId);
+        let region = saved.latestAlerts.find((r) => String(r.regionId) === regionId);
+        if (!region) {
+            region = { regionId, regionType: undefined, regionName: undefined, lastUpdate: event.createdAt, activeAlerts: [] };
+            saved.latestAlerts.push(region);
+        }
+        if (!region.activeAlerts) region.activeAlerts = [];
+        region.lastUpdate = event.createdAt;
+
+        const alreadyActive = region.activeAlerts.some((a) => a.type === event.alarmType);
+        if (!alreadyActive) {
+            region.activeAlerts.push({ regionId, type: event.alarmType, lastUpdate: event.createdAt });
+        }
+
+        await this.state.storage.put('ukraineAlarmState', saved);
     }
 
     async pollUkraineAlarmIfDue({ force = false } = {}) {
