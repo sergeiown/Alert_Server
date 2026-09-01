@@ -261,6 +261,10 @@ export class AlertsGateway {
         this.ukraineAlarmOriginError = null;
         this.ukraineAlarmTodayCache = null;
         this.ukraineAlarmTodayOriginError = null;
+        // A genuinely past day's data never changes once fetched - keyed by date, kept for the
+        // Durable Object instance's lifetime (not persisted; a restart just means it's re-fetched
+        // once, cheap for the one-time backfill this serves).
+        this.ukraineAlarmDateStatsCache = new Map();
         this.ukraineAlarmRegionHistoryCache = new Map();
         this.ukraineAlarmRegionHistoryOriginErrors = new Map();
         this.activeQueue = Promise.resolve();
@@ -307,6 +311,11 @@ export class AlertsGateway {
 
         if (url.pathname === '/ukrainealarm-today-stats') {
             return this.getUkraineAlarmTodayStats();
+        }
+
+        const ukraineAlarmDateStatsMatch = url.pathname.match(/^\/ukrainealarm-date-stats\/(\d{8})$/);
+        if (ukraineAlarmDateStatsMatch) {
+            return this.getUkraineAlarmDateStats(ukraineAlarmDateStatsMatch[1]);
         }
 
         const ukraineAlarmRegionHistoryMatch = url.pathname.match(/^\/ukrainealarm-region-history\/(\d+)$/);
@@ -618,6 +627,35 @@ export class AlertsGateway {
         return new Response(JSON.stringify({ alerts }), { headers: { 'Content-Type': 'application/json' } });
     }
 
+    // Shared by getUkraineAlarmTodayStats() and getUkraineAlarmDateStats() - dateHistory itself
+    // takes any date, not just today (confirmed by testing), so both are the same fetch+transform
+    // against a different `date` param.
+    async fetchUkraineAlarmDateHistory(dateKey) {
+        const response = await fetch(`${UKRAINEALARM_BASE_URL}/alerts/dateHistory?date=${dateKey.replace(/-/g, '')}`, {
+            headers: { Authorization: this.env.UKRAINEALARM_TOKEN },
+        });
+
+        if (!response.ok) {
+            return { error: { status: response.status, body: await response.text() } };
+        }
+
+        const raw = await response.json();
+        const alerts = raw
+            .filter((record) => UKRAINEALARM_TYPE_MAP[record.alertType])
+            .filter((record) => parseDotNetDurationMs(record.duration) <= UKRAINEALARM_TODAY_MAX_DURATION_MS)
+            .map((record) => ({
+                // Same stable-id requirement as getUkraineAlarmAlerts() above -
+                // forecastHistoryStore.js's mergeAlerts keys by `alert.id`.
+                id: `ukrainealarm-${record.regionId}-${record.startDate}`,
+                location_uid: Number(record.regionId),
+                location_title: record.regionName,
+                alert_type: UKRAINEALARM_TYPE_MAP[record.alertType],
+                started_at: record.startDate,
+            }));
+
+        return { alerts };
+    }
+
     // Trends "Today" via UkraineAlarm - one dateHistory request for the whole Kyiv-local calendar
     // day, client-facing (electron-app's todayStatsStore.js tries this first, falling back to the
     // existing alerts.in.ua-based /today-stats on failure - the same preferred-source-with-
@@ -631,33 +669,12 @@ export class AlertsGateway {
             this.ukraineAlarmTodayCache.date !== todayKey ||
             now - this.ukraineAlarmTodayCache.fetchedAt >= UKRAINEALARM_TODAY_CACHE_TTL_MS
         ) {
-            try {
-                const response = await fetch(`${UKRAINEALARM_BASE_URL}/alerts/dateHistory?date=${todayKey.replace(/-/g, '')}`, {
-                    headers: { Authorization: this.env.UKRAINEALARM_TOKEN },
-                });
-
-                if (!response.ok) {
-                    this.ukraineAlarmTodayOriginError = { status: response.status, body: await response.text() };
-                } else {
-                    const raw = await response.json();
-                    const alerts = raw
-                        .filter((record) => UKRAINEALARM_TYPE_MAP[record.alertType])
-                        .filter((record) => parseDotNetDurationMs(record.duration) <= UKRAINEALARM_TODAY_MAX_DURATION_MS)
-                        .map((record) => ({
-                            // Same stable-id requirement as getUkraineAlarmAlerts() above -
-                            // forecastHistoryStore.js's mergeAlerts keys by `alert.id`.
-                            id: `ukrainealarm-${record.regionId}-${record.startDate}`,
-                            location_uid: Number(record.regionId),
-                            location_title: record.regionName,
-                            alert_type: UKRAINEALARM_TYPE_MAP[record.alertType],
-                            started_at: record.startDate,
-                        }));
-
-                    this.ukraineAlarmTodayOriginError = null;
-                    this.ukraineAlarmTodayCache = { date: todayKey, alerts, fetchedAt: now };
-                }
-            } catch (err) {
-                this.ukraineAlarmTodayOriginError = { status: 0, body: err.message };
+            const result = await this.fetchUkraineAlarmDateHistory(todayKey);
+            if (result.error) {
+                this.ukraineAlarmTodayOriginError = result.error;
+            } else {
+                this.ukraineAlarmTodayOriginError = null;
+                this.ukraineAlarmTodayCache = { date: todayKey, alerts: result.alerts, fetchedAt: now };
             }
         }
 
@@ -676,6 +693,28 @@ export class AlertsGateway {
             complete: true,
             warmupEtaMinutes: 0,
         });
+        return new Response(body, { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    // One-time nationwide history backfill (electron-app's historyBackfillStore.js) - unlike
+    // today-stats, a genuinely PAST day's data never changes once fetched, so this caches
+    // indefinitely per date instead of on a TTL. `dateParam` is a plain YYYYMMDD/YYYY-MM-DD-ish
+    // Kyiv-local date, not necessarily today's.
+    async getUkraineAlarmDateStats(dateParam) {
+        const dateKey = `${dateParam.slice(0, 4)}-${dateParam.slice(4, 6)}-${dateParam.slice(6, 8)}`;
+
+        if (!this.ukraineAlarmDateStatsCache.has(dateKey)) {
+            const result = await this.fetchUkraineAlarmDateHistory(dateKey);
+            if (result.error) {
+                return new Response(JSON.stringify({ error: result.error }), {
+                    status: result.error.status || 502,
+                    headers: { 'Content-Type': 'application/json' },
+                });
+            }
+            this.ukraineAlarmDateStatsCache.set(dateKey, result.alerts);
+        }
+
+        const body = JSON.stringify({ date: dateKey, alerts: this.ukraineAlarmDateStatsCache.get(dateKey) });
         return new Response(body, { headers: { 'Content-Type': 'application/json' } });
     }
 
