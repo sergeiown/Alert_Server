@@ -48,6 +48,15 @@ function load() {
         // The valid range moved from 5-60 to 50-100 - clamp a value saved under the old range
         // instead of leaving it silently out of bounds until the user next touches the field.
         settings.massAttackThreshold = Math.max(50, Math.min(100, settings.massAttackThreshold));
+
+        // One-time migration for installs updating from before UkraineAlarm existed: 'alerts.in.ua'
+        // was the ONLY default back then, so this can't tell a genuine past choice apart from
+        // never having touched the setting - but since it only fires while the stored value is
+        // still exactly the old default, it's self-limiting (never re-fires once migrated, and
+        // never touches a real deliberate switch to 'neptun').
+        if (parsed.alertSourceProvider === 'alerts.in.ua') {
+            settings.alertSourceProvider = 'ukrainealarm';
+        }
     } catch (err) {
         settings = { ...defaultSettings };
         save();
