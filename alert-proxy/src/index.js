@@ -10,7 +10,7 @@ const HISTORY_MIN_GAP_MS = 35 * 1000;
 
 // All 26 oblast-level uids alerts.in.ua's /v1/regions/{uid}/alerts endpoint accepts (matches the
 // app's own locations.json state list). Cycled round-robin by the today-stats background refresh
-// below, one per alarm tick, so a full pass takes ~26 * TODAY_STATS_REFRESH_INTERVAL_MS.
+// below, one per alarm tick, so a full pass takes roughly 26 * TODAY_STATS_REFRESH_INTERVAL_MS.
 const ALL_OBLAST_UIDS = [
     3, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31,
 ];
@@ -107,7 +107,7 @@ const UKRAINEALARM_WEBHOOK_DEDUPE_WINDOW_MS = 5 * 60 * 1000;
 // Trends "Today" via UkraineAlarm's dateHistory - one request for the whole day, replacing the
 // slow 26-oblast round-robin the alerts.in.ua-based today-stats mechanism needs (todayStatsState
 // below). Short TTL since a single request is cheap and this is meant to feel closer to
-// real-time than the old mechanism's up-to-~15-minute warmup.
+// real-time than the old mechanism's up-to-roughly-15-minute warmup.
 const UKRAINEALARM_TODAY_CACHE_TTL_MS = 2 * 60 * 1000;
 // A single dateHistory record spans at most one Kyiv-local calendar day - anything claiming
 // longer than that within one day's response is implausible (same "stuck alert" caution as the
@@ -891,7 +891,7 @@ export class AlertsGateway {
     }
 
     // Forecast backfill via UkraineAlarm - one regionHistory request gives a region's own most
-    // recent ~20-25 alerts directly, with durations already computed, instead of forecast.js's
+    // recent 20-25 alerts (roughly) directly, with durations already computed, instead of forecast.js's
     // current approach (fetch the WHOLE oblast's month of alerts.in.ua history, then filter down
     // to one location). electron-app's forecast.js tries this first, falling back to the existing
     // alerts.in.ua oblast-history approach on failure - same pattern as Trends "Today" above.
