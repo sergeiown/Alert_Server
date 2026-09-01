@@ -9,7 +9,7 @@
 
 > **Disclaimer. The aggressor state's full-scale war against Ukraine has been ongoing since February 2014 and escalated into a full invasion on February 24, 2022. The entire territory of Ukraine remains a zone of active hostilities and potential missile threat. Stay vigilant, never ignore air raid alerts, and follow safety guidelines.**
 
-A Windows tray application built with Electron that receives alert data from [UkraineAlarm](https://api.ukrainealarm.com/) (with automatic failover to [alerts.in.ua](https://alerts.in.ua/) and [Neptun](https://neptun.in.ua) if it stops responding) at a specified frequency, shows it through the Windows Notification Center for the regions of Ukraine you choose to monitor, and brings together a live threat map, a statistics-based forecast, and nationwide weapon-usage trends in one place.
+A Windows tray application built with Electron that keeps watch on air-raid alerts across Ukraine so you don't have to: it pulls data from [UkraineAlarm](https://api.ukrainealarm.com/) (automatically falling back to [alerts.in.ua](https://alerts.in.ua/) and [Neptun](https://neptun.in.ua) if it goes quiet), delivers it straight to the Windows Notification Center for the regions you choose to monitor, and brings a live threat map, a statistics-based forecast, and nationwide weapon-usage trends together in one place.
 
 ## Architecture
 
