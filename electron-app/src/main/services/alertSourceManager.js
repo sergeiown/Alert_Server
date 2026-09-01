@@ -13,6 +13,7 @@ const { logEvent } = require('./logger');
 const { startPolling: startUkraineAlarmPolling } = require('./ukraineAlarmSource');
 const { startPolling: startAlertsInUaPolling } = require('./alertPoller');
 const { startPolling: startNeptunPolling } = require('./neptunAlertsSource');
+const { setActiveAlertSource } = require('./alertState');
 
 // A few bad polls in a row (not just one - a single transient blip shouldn't trigger a switch)
 // before treating a source as actually down.
@@ -71,6 +72,7 @@ function startAlertSourceManager(preferredProvider, clientKey, onAlertsPolled) {
         }
 
         logEvent(`Alert source active: ${source.label}${reason ? ` (${reason})` : ''}`, 'NETWORK');
+        setActiveAlertSource(key);
         activeHandle = source.start(clientKey, (alertData) => onAlertsPolled(source.label, alertData), onHealthChange);
     }
 
