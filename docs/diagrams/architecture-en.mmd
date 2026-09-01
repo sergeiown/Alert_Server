@@ -1,5 +1,6 @@
 flowchart LR
     subgraph ext[External services]
+        ukrainealarm[UkraineAlarm]
         api[alerts.in.ua]
         proxy[alert-proxy Worker]
         neptun[Neptun]
@@ -9,12 +10,15 @@ flowchart LR
     end
 
     subgraph main[Electron main process]
+        sourceManager[alertSourceManager]
+        uaSource[ukraineAlarmSource]
         poller[alertPoller]
         altSource[neptunAlertsSource]
         activeData[(activeAlertData)]
         notifier[notifier]
         regionStatus[regionAlertStatus]
-        dailyStats[dailyAlertStats]
+        todayStats[todayStatsStore]
+        historyBackfill[historyBackfillStore]
         occupied[occupiedTerritoryStore]
         forecast[forecast services]
         watcher[forecastWatcher]
@@ -34,29 +38,38 @@ flowchart LR
         aboutWin[About]
     end
 
+    ukrainealarm --> proxy
+    ukrainealarm -. webhook push .-> proxy
     api --> proxy
     kaggle --> proxy
+    proxy --> uaSource
     proxy --> poller
     proxy --> forecast
     proxy --> weaponStats
+    proxy --> todayStats
+    proxy --> historyBackfill
     deepstate --> occupied
     neptun --> liveMapWin
     neptun --> altSource
 
-    stores -. picks one .-> poller
-    stores -. picks one .-> altSource
+    stores -. preferred source .-> sourceManager
+    sourceManager -. failover chain .-> uaSource
+    sourceManager -. failover chain .-> poller
+    sourceManager -. failover chain .-> altSource
+    uaSource --> activeData
     poller --> activeData
     altSource --> activeData
+    uaSource --> notifier
     poller --> notifier
     altSource --> notifier
+    uaSource --> regionStatus
     poller --> regionStatus
     altSource --> regionStatus
-    poller --> dailyStats
-    altSource --> dailyStats
     notifier --> tray
 
     activeData --> forecast
     activeData --> watcher
+    historyBackfill --> forecast
     forecast --> watcher
     watcher --> tray
     watcher --> popup
@@ -64,7 +77,7 @@ flowchart LR
     regionStatus --> liveMapWin
     occupied --> liveMapWin
     weaponStats --> trendsWin
-    dailyStats --> trendsWin
+    todayStats --> trendsWin
 
     stores --> settingsWin
     forecast --> forecastWin
@@ -83,8 +96,8 @@ flowchart LR
     classDef mainNode fill:#dcfce7,stroke:#16a34a,color:#14532d
     classDef winNode fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
 
-    class api,proxy,neptun,deepstate,kaggle,gh extNode
-    class poller,altSource,activeData,notifier,regionStatus,dailyStats,occupied,forecast,watcher,weaponStats,tray,stores,updater mainNode
+    class ukrainealarm,api,proxy,neptun,deepstate,kaggle,gh extNode
+    class sourceManager,uaSource,poller,altSource,activeData,notifier,regionStatus,todayStats,historyBackfill,occupied,forecast,watcher,weaponStats,tray,stores,updater mainNode
     class settingsWin,forecastWin,trendsWin,liveMapWin,popup,logWin,aboutWin winNode
 
     style ext fill:#eff6ff,stroke:#93c5fd
