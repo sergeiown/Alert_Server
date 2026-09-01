@@ -27,6 +27,16 @@ const historyCache = new Map();
 let queue = Promise.resolve();
 let lastOriginFetchAt = 0;
 
+// Which source most recently supplied backfill data for a given uid - historyStore itself merges
+// alerts from whichever source succeeded on each fetch indefinitely, so this isn't "the" source
+// for everything a region's forecast is built from, just the most recent one, shown to make clear
+// which source's data this forecast currently reflects.
+const lastHistorySourceByUid = new Map();
+
+function getRegionHistorySource(uid) {
+    return lastHistorySourceByUid.get(String(uid)) || null;
+}
+
 let historyLastLoggedStatus = null;
 let historyLastLoggedAt = 0;
 
@@ -99,7 +109,35 @@ async function fetchOblastAlerts(stateUid) {
     return result;
 }
 
+// Preferred: UkraineAlarm's regionHistory, one direct request for this exact uid, no need to fetch
+// a whole oblast and filter it down. Not always available (see alert-proxy/src/index.js's own
+// comment - roughly half of regionHistory calls fail outright, a real reliability gap on
+// UkraineAlarm's own side) - null return means "couldn't get it", not "genuinely empty", so the
+// caller knows to fall back rather than treat that as a real answer.
+async function fetchUkraineAlarmHistory(uid) {
+    try {
+        const { alertProxyClientKey } = loadLocalConfig();
+        const response = await fetch(`${PROXY_URL}/ukrainealarm-region-history/${uid}`, {
+            headers: { 'X-Client-Key': alertProxyClientKey },
+        });
+        if (!response.ok) return null;
+
+        const data = await response.json();
+        if (!data || !Array.isArray(data.alerts)) return null;
+        return data.alerts;
+    } catch (err) {
+        return null;
+    }
+}
+
 async function fetchHistoryAlerts(uid) {
+    const ukraineAlarmAlerts = await fetchUkraineAlarmHistory(uid);
+    if (ukraineAlarmAlerts) {
+        historyStore.mergeAlerts(uid, ukraineAlarmAlerts);
+        lastHistorySourceByUid.set(String(uid), 'ukrainealarm');
+        return ukraineAlarmAlerts;
+    }
+
     const target = getHistoryFetchTarget(uid);
     if (!target) return [];
 
@@ -109,6 +147,7 @@ async function fetchHistoryAlerts(uid) {
             ? oblastAlerts
             : oblastAlerts.filter((alert) => String(alert.location_uid) === String(target.matchUid));
     historyStore.mergeAlerts(uid, matched);
+    lastHistorySourceByUid.set(String(uid), 'alerts.in.ua');
     return matched;
 }
 
@@ -126,8 +165,18 @@ function formatDuration(ms, language) {
     return parts.length ? parts.join(' ') : `<1${t('unitMinute', language)}`;
 }
 
-function buildForecastText(stats, language) {
+// Display name per lastHistorySourceByUid's own vocabulary - same two possible sources as
+// elsewhere (Trends Today, live map attribution).
+const HISTORY_SOURCE_DISPLAY = {
+    ukrainealarm: 'UkraineAlarm',
+    'alerts.in.ua': 'alerts.in.ua',
+};
+
+function buildForecastText(stats, language, source) {
     const lines = [];
+
+    const sourceName = HISTORY_SOURCE_DISPLAY[source];
+    lines.push(`${t('forecastSourceLabel', language)}: ${sourceName || t('forecastSourceUnknown', language)}`);
 
     lines.push(`${t('forecastCount', language)}: ${stats.count}`);
     lines.push(`${t('forecastPerDay', language)}: ${stats.perDay.toFixed(1)}`);
@@ -181,7 +230,7 @@ function getRegionForecastText(uid, language) {
     const alerts = historyStore.getAllAlertsForRegion(uid);
     const stats = computeStats(alerts, Date.now(), forecastConfig);
     if (!stats) return null;
-    return buildForecastText(stats, language);
+    return buildForecastText(stats, language, getRegionHistorySource(uid));
 }
 
 // The soonest type entry, by the same median-grounded projectedNextMs shown in the Forecast
@@ -215,6 +264,7 @@ module.exports = {
     getRegionForecastText,
     getRegionSoonestEtaMs,
     getRegionSoonestPrediction,
+    getRegionHistorySource,
     fetchHistoryAlerts,
     formatDuration,
 };

@@ -37,10 +37,14 @@ function registerForecastIpc() {
         if (isActive) return { status: 'active' };
 
         const text = await getRegionForecastText(uid, language);
-        if (!text) {
-            fetchHistoryAlerts(uid).catch((err) => logEvent(`Forecast prefetch failed for uid ${uid} (alert-proxy): ${err.message}`, 'NETWORK'));
-            return { status: 'empty' };
-        }
+
+        // Fire-and-forget, always (not just when text is empty) - keeps historyStore fresh and
+        // the "Джерело: ..." line in getRegionForecastText's own output accurate for the NEXT
+        // view, without making this call itself wait on a network fetch (which could block for
+        // the alerts.in.ua fallback's own throttling on a cold region).
+        fetchHistoryAlerts(uid).catch((err) => logEvent(`Forecast prefetch failed for uid ${uid} (alert-proxy): ${err.message}`, 'NETWORK'));
+
+        if (!text) return { status: 'empty' };
 
         return { status: 'ok', text, etaMs: getRegionSoonestEtaMs(uid) };
     });
