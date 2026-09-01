@@ -8,8 +8,53 @@ const historyStore = require('./forecastHistoryStore');
 
 const PROXY_URL = 'https://alert-proxy.alert-proxy-ua.workers.dev';
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+const TODAY_STATS_TIMEZONE = 'Europe/Kyiv';
 
 let cached = null;
+
+function kyivHour(dateStr) {
+    const formatted = new Intl.DateTimeFormat('en-GB', {
+        timeZone: TODAY_STATS_TIMEZONE,
+        hour: '2-digit',
+        hourCycle: 'h23',
+    }).format(new Date(dateStr));
+    return Number(formatted);
+}
+
+// UkraineAlarm's dateHistory only gives location_uid/location_title, not the oblast name
+// alerts.in.ua's own today-stats already carries - resolved here via the same static/discovered
+// location lookup mergeIntoForecastHistory below already relies on.
+function resolveOblastName(locationUid) {
+    const lookup = getLocationLookup();
+    const info = lookup.get(String(locationUid));
+    if (!info) return null;
+    const state = lookup.get(String(info.stateUid));
+    return state ? state.name : null;
+}
+
+// Builds the same {total, byHour, byOblast, alerts, complete, warmupEtaMinutes} shape the
+// alerts.in.ua-based /today-stats endpoint already returns server-side - UkraineAlarm's
+// dateHistory only needs this done client-side, once, since it isn't pre-aggregated by the proxy.
+function aggregateTodayStats(date, alerts) {
+    const byHour = Array.from({ length: 24 }, () => 0);
+    const byOblast = new Map();
+
+    alerts.forEach((alert) => {
+        byHour[kyivHour(alert.started_at)]++;
+        const oblastName = resolveOblastName(alert.location_uid);
+        if (oblastName) byOblast.set(oblastName, (byOblast.get(oblastName) || 0) + 1);
+    });
+
+    return {
+        date,
+        total: alerts.length,
+        byHour,
+        byOblast: Array.from(byOblast, ([oblast, count]) => ({ oblast, count })).sort((a, b) => b.count - a.count),
+        alerts,
+        complete: true,
+        warmupEtaMinutes: 0,
+    };
+}
 
 // The response already carries every alert nationwide for today - folded into the same local,
 // indefinitely-retained history forecast.js itself builds up, under both the oblast-level bucket
@@ -43,13 +88,41 @@ function mergeIntoForecastHistory(alerts) {
     byLocation.forEach((list, uid) => historyStore.mergeAlerts(uid, list));
 }
 
-async function refresh() {
+// Preferred source: one dateHistory request for the whole day, complete immediately - no
+// per-oblast warmup wait. Returns whether it actually got usable data, so refresh() knows whether
+// to fall back.
+async function refreshFromUkraineAlarm(clientKey) {
     try {
-        const { alertProxyClientKey } = loadLocalConfig();
-        if (!alertProxyClientKey) return;
+        const response = await fetch(`${PROXY_URL}/ukrainealarm-today-stats`, {
+            headers: { 'X-Client-Key': clientKey },
+        });
+        if (!response.ok) {
+            logEvent(`Today-stats fetch failed (UkraineAlarm via alert-proxy): ${response.status}`, 'NETWORK');
+            return false;
+        }
 
+        const data = await response.json();
+        if (!data || !Array.isArray(data.alerts)) {
+            logEvent('Today-stats response missing expected fields (UkraineAlarm via alert-proxy)', 'WARNING');
+            return false;
+        }
+
+        cached = aggregateTodayStats(data.date, data.alerts);
+        mergeIntoForecastHistory(data.alerts);
+        logEvent(`Today-stats updated (UkraineAlarm, ${data.date}): ${cached.total} nationwide`, 'NETWORK');
+        return true;
+    } catch (err) {
+        logEvent(`Today-stats fetch error (UkraineAlarm via alert-proxy): ${err.message}`, 'NETWORK');
+        return false;
+    }
+}
+
+// Fallback: the existing alerts.in.ua-based nationwide backfill (slow per-oblast warmup, but
+// well-proven) - used only when UkraineAlarm's own today-stats couldn't be fetched.
+async function refreshFromAlertsInUa(clientKey) {
+    try {
         const response = await fetch(`${PROXY_URL}/today-stats`, {
-            headers: { 'X-Client-Key': alertProxyClientKey },
+            headers: { 'X-Client-Key': clientKey },
         });
         if (!response.ok) {
             logEvent(`Today-stats fetch failed (alerts.in.ua via alert-proxy): ${response.status}`, 'NETWORK');
@@ -71,6 +144,14 @@ async function refresh() {
     } catch (err) {
         logEvent(`Today-stats fetch error (alerts.in.ua via alert-proxy): ${err.message}`, 'NETWORK');
     }
+}
+
+async function refresh() {
+    const { alertProxyClientKey } = loadLocalConfig();
+    if (!alertProxyClientKey) return;
+
+    const gotUkraineAlarmData = await refreshFromUkraineAlarm(alertProxyClientKey);
+    if (!gotUkraineAlarmData) await refreshFromAlertsInUa(alertProxyClientKey);
 }
 
 // null when never successfully fetched yet (fresh start, or the proxy currently unreachable) -

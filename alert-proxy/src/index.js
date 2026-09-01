@@ -69,6 +69,29 @@ const UKRAINEALARM_FORCE_REFRESH_MS = 5 * 60 * 1000;
 const UKRAINEALARM_STALE_ALERT_THRESHOLD_MS = 24 * 60 * 60 * 1000;
 const UKRAINEALARM_MAX_OBSERVATIONS = 30;
 
+// Trends "Today" via UkraineAlarm's dateHistory - one request for the whole day, replacing the
+// slow 26-oblast round-robin the alerts.in.ua-based today-stats mechanism needs (todayStatsState
+// below). Short TTL since a single request is cheap and this is meant to feel closer to
+// real-time than the old mechanism's up-to-~15-minute warmup.
+const UKRAINEALARM_TODAY_CACHE_TTL_MS = 2 * 60 * 1000;
+// A single dateHistory record spans at most one Kyiv-local calendar day - anything claiming
+// longer than that within one day's response is implausible (same "stuck alert" caution as the
+// live /alerts endpoint, just checked via the duration UkraineAlarm itself computes here instead
+// of an age comparison).
+const UKRAINEALARM_TODAY_MAX_DURATION_MS = 24 * 60 * 60 * 1000;
+
+// .NET TimeSpan string, e.g. "00:29:40.1514750" or "1.02:30:00" (day.hours:minutes:seconds) for
+// anything past 24h - the "d." prefix is only present when there's at least one whole day.
+function parseDotNetDurationMs(duration) {
+    const dotIndex = duration.indexOf('.');
+    const hasDayPrefix = dotIndex !== -1 && duration.slice(0, dotIndex).match(/^\d+$/) && duration.includes(':');
+    const days = hasDayPrefix ? Number(duration.slice(0, dotIndex)) : 0;
+    const rest = hasDayPrefix ? duration.slice(dotIndex + 1) : duration;
+    const [hours, minutes, secondsPart] = rest.split(':');
+    const seconds = parseFloat(secondsPart) || 0;
+    return (((days * 24 + Number(hours)) * 60 + Number(minutes)) * 60 + seconds) * 1000;
+}
+
 // UkraineAlarm's AlertType -> this app's own alert_type strings (alertPoller.js/
 // neptunAlertsSource.js's shared vocabulary). UNKNOWN/INFO/CUSTOM have no equivalent in the app's
 // existing type set and are dropped rather than guessed at.
@@ -236,6 +259,8 @@ export class AlertsGateway {
         this.historyFetchTimestamps = [];
         this.ukraineAlarmFetchTimestamps = [];
         this.ukraineAlarmOriginError = null;
+        this.ukraineAlarmTodayCache = null;
+        this.ukraineAlarmTodayOriginError = null;
         this.activeQueue = Promise.resolve();
         this.historyQueue = Promise.resolve();
         this.regionStatusesQueue = Promise.resolve();
@@ -276,6 +301,10 @@ export class AlertsGateway {
 
         if (url.pathname === '/ukrainealarm-alerts') {
             return this.getUkraineAlarmAlerts();
+        }
+
+        if (url.pathname === '/ukrainealarm-today-stats') {
+            return this.getUkraineAlarmTodayStats();
         }
 
         return this.getActive(ifModifiedSince);
@@ -575,6 +604,64 @@ export class AlertsGateway {
         });
 
         return new Response(JSON.stringify({ alerts }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    // Trends "Today" via UkraineAlarm - one dateHistory request for the whole Kyiv-local calendar
+    // day, client-facing (electron-app's todayStatsStore.js tries this first, falling back to the
+    // existing alerts.in.ua-based /today-stats on failure - the same preferred-source-with-
+    // automatic-fallback idea as the live alert chain, just for this analytics endpoint instead).
+    async getUkraineAlarmTodayStats() {
+        const todayKey = kyivDateKey(new Date());
+        const now = Date.now();
+
+        if (
+            !this.ukraineAlarmTodayCache ||
+            this.ukraineAlarmTodayCache.date !== todayKey ||
+            now - this.ukraineAlarmTodayCache.fetchedAt >= UKRAINEALARM_TODAY_CACHE_TTL_MS
+        ) {
+            try {
+                const response = await fetch(`${UKRAINEALARM_BASE_URL}/alerts/dateHistory?date=${todayKey.replace(/-/g, '')}`, {
+                    headers: { Authorization: this.env.UKRAINEALARM_TOKEN },
+                });
+
+                if (!response.ok) {
+                    this.ukraineAlarmTodayOriginError = { status: response.status, body: await response.text() };
+                } else {
+                    const raw = await response.json();
+                    const alerts = raw
+                        .filter((record) => UKRAINEALARM_TYPE_MAP[record.alertType])
+                        .filter((record) => parseDotNetDurationMs(record.duration) <= UKRAINEALARM_TODAY_MAX_DURATION_MS)
+                        .map((record) => ({
+                            location_uid: Number(record.regionId),
+                            location_title: record.regionName,
+                            alert_type: UKRAINEALARM_TYPE_MAP[record.alertType],
+                            started_at: record.startDate,
+                        }));
+
+                    this.ukraineAlarmTodayOriginError = null;
+                    this.ukraineAlarmTodayCache = { date: todayKey, alerts, fetchedAt: now };
+                }
+            } catch (err) {
+                this.ukraineAlarmTodayOriginError = { status: 0, body: err.message };
+            }
+        }
+
+        if (this.ukraineAlarmTodayOriginError && !this.ukraineAlarmTodayCache) {
+            return new Response(JSON.stringify({ error: this.ukraineAlarmTodayOriginError }), {
+                status: this.ukraineAlarmTodayOriginError.status || 502,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+
+        // Unlike the alerts.in.ua-based today-stats, this is a single request for the whole day -
+        // no partial-warmup state to report, it's complete from the first successful fetch.
+        const body = JSON.stringify({
+            date: this.ukraineAlarmTodayCache.date,
+            alerts: this.ukraineAlarmTodayCache.alerts,
+            complete: true,
+            warmupEtaMinutes: 0,
+        });
+        return new Response(body, { headers: { 'Content-Type': 'application/json' } });
     }
 
     // Read-only introspection for this Stage of the evaluation - not used by the app. Lets me
