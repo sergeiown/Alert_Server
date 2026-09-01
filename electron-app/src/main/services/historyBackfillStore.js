@@ -20,7 +20,7 @@ const historyStore = require('./forecastHistoryStore');
 const PROXY_URL = 'https://alert-proxy.alert-proxy-ua.workers.dev';
 const BACKFILL_DAYS = 30;
 const TIMEZONE = 'Europe/Kyiv';
-// Gentle pacing between the up-to-30 one-time requests - regionHistory's own real ~50% failure
+// Gentle pacing between the up-to-30 one-time requests - regionHistory's own real, roughly 50% failure
 // rate (see data-flow-notes.txt) suggests this API can be flaky under any load; no reason to rush
 // a one-time background job that isn't blocking anything the user is looking at.
 const REQUEST_GAP_MS = 3000;
@@ -83,8 +83,8 @@ function mergeNationwide(alerts) {
         }
     });
 
-    byOblast.forEach((list, uid) => historyStore.mergeAlerts(uid, list, { backfill: true }));
-    byLocation.forEach((list, uid) => historyStore.mergeAlerts(uid, list, { backfill: true }));
+    byOblast.forEach((list, uid) => historyStore.mergeAlerts(uid, list, { backfill: true, source: 'ukrainealarm' }));
+    byLocation.forEach((list, uid) => historyStore.mergeAlerts(uid, list, { backfill: true, source: 'ukrainealarm' }));
 }
 
 async function runBackfill() {

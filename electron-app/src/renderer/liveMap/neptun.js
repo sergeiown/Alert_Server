@@ -106,7 +106,7 @@ function declutterPoints(points) {
 // can sit in identically-centered boxes and still look different heights and different sizes.
 // Each entry's `align` transform (computed once, from each shape's real bounding box - see the
 // bbox script referenced in the neptun.js commit that added this) recenters that icon's own ink
-// on (12,12) and rescales it so its longest side is ~20 units, before the shared wrapper ever
+// on (12,12) and rescales it so its longest side is roughly 20 units, before the shared wrapper ever
 // gets to it - only after that does every icon share one actual, not just nominal, size and center.
 const TYPE_ICONS = {
     uav: {
