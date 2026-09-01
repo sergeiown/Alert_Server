@@ -27,16 +27,6 @@ const historyCache = new Map();
 let queue = Promise.resolve();
 let lastOriginFetchAt = 0;
 
-// Which source most recently supplied backfill data for a given uid - historyStore itself merges
-// alerts from whichever source succeeded on each fetch indefinitely, so this isn't "the" source
-// for everything a region's forecast is built from, just the most recent one, shown to make clear
-// which source's data this forecast currently reflects.
-const lastHistorySourceByUid = new Map();
-
-function getRegionHistorySource(uid) {
-    return lastHistorySourceByUid.get(String(uid)) || null;
-}
-
 let historyLastLoggedStatus = null;
 let historyLastLoggedAt = 0;
 
@@ -133,8 +123,7 @@ async function fetchUkraineAlarmHistory(uid) {
 async function fetchHistoryAlerts(uid) {
     const ukraineAlarmAlerts = await fetchUkraineAlarmHistory(uid);
     if (ukraineAlarmAlerts) {
-        historyStore.mergeAlerts(uid, ukraineAlarmAlerts);
-        lastHistorySourceByUid.set(String(uid), 'ukrainealarm');
+        historyStore.mergeAlerts(uid, ukraineAlarmAlerts, { source: 'ukrainealarm' });
         return ukraineAlarmAlerts;
     }
 
@@ -146,8 +135,7 @@ async function fetchHistoryAlerts(uid) {
         target.matchUid === null
             ? oblastAlerts
             : oblastAlerts.filter((alert) => String(alert.location_uid) === String(target.matchUid));
-    historyStore.mergeAlerts(uid, matched);
-    lastHistorySourceByUid.set(String(uid), 'alerts.in.ua');
+    historyStore.mergeAlerts(uid, matched, { source: 'alerts.in.ua' });
     return matched;
 }
 
@@ -207,7 +195,7 @@ function buildForecastText(stats, language, source) {
         const typeName = alertTypeName(entry.type, language);
         const etaText =
             entry.projectedNextMs !== null
-                ? `, ${t('forecastEtaLabel', language)} ~${formatDuration(entry.projectedNextMs, language)}`
+                ? `, ${t('forecastEtaLabel', language)} ${formatDuration(entry.projectedNextMs, language)}`
                 : '';
         const rangeText = entry.gapRange
             ? ` (${t('forecastRangeLabel', language)} ${formatDuration(entry.gapRange.low, language)} - ${formatDuration(entry.gapRange.high, language)})`
@@ -230,7 +218,7 @@ function getRegionForecastText(uid, language) {
     const alerts = historyStore.getAllAlertsForRegion(uid);
     const stats = computeStats(alerts, Date.now(), forecastConfig);
     if (!stats) return null;
-    return buildForecastText(stats, language, getRegionHistorySource(uid));
+    return buildForecastText(stats, language, historyStore.getRegionSource(uid));
 }
 
 // The soonest type entry, by the same median-grounded projectedNextMs shown in the Forecast
@@ -264,7 +252,6 @@ module.exports = {
     getRegionForecastText,
     getRegionSoonestEtaMs,
     getRegionSoonestPrediction,
-    getRegionHistorySource,
     fetchHistoryAlerts,
     formatDuration,
 };

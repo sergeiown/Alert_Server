@@ -37,14 +37,15 @@ function registerForecastIpc() {
         if (isActive) return { status: 'active' };
 
         const text = await getRegionForecastText(uid, language);
-
-        // Fire-and-forget, always (not just when text is empty) - keeps historyStore fresh and
-        // the "Джерело: ..." line in getRegionForecastText's own output accurate for the NEXT
-        // view, without making this call itself wait on a network fetch (which could block for
-        // the alerts.in.ua fallback's own throttling on a cold region).
-        fetchHistoryAlerts(uid).catch((err) => logEvent(`Forecast prefetch failed for uid ${uid} (alert-proxy): ${err.message}`, 'NETWORK'));
-
-        if (!text) return { status: 'empty' };
+        if (!text) {
+            // Only fire-and-forget when there's genuinely nothing local yet - historyStore is
+            // otherwise already kept fresh passively (todayStatsStore.js's nationwide merge every
+            // 5 min, the one-time historyBackfillStore.js pass), and the "Джерело: ..." line
+            // itself now reads from data already in historyStore (_localSource, tagged at merge
+            // time) rather than needing a dedicated live query to stay accurate.
+            fetchHistoryAlerts(uid).catch((err) => logEvent(`Forecast prefetch failed for uid ${uid} (alert-proxy): ${err.message}`, 'NETWORK'));
+            return { status: 'empty' };
+        }
 
         return { status: 'ok', text, etaMs: getRegionSoonestEtaMs(uid) };
     });
