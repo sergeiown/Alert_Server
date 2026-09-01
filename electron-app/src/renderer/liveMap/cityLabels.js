@@ -2,16 +2,17 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 import { CITY_BORDERS } from './cityBorders.js';
-import { getOblastStartedAt, getOblastAlertTypeName } from './alertedRegionsStore.js';
+import { subscribe as subscribeAlertedRegions, getOblastStartedAt, getOblastAlertTypeName } from './alertedRegionsStore.js';
 import { alertPopupHtml } from './alertPopup.js';
 import { oblastDisplayName } from './regionNameUtils.js';
 
-// `oblast` is the key into the same alert-status data the oblast-coloring layer uses. alerts.in.ua
-// does not track most of these cities as their own entity, so clicking one shows its containing
-// oblast's status, not the city's own - Kyiv ("м. Київ") and Sevastopol (via the combined Crimea
+// `oblast` is the key into the same alert-status data the oblast-coloring layer uses (already
+// normalized - see regionNameUtils.js's normalizeOblastName - not the raw locations.json name).
+// alerts.in.ua does not track most of these cities as their own entity, so clicking one shows its
+// containing oblast's status, not the city's own - Kyiv and Sevastopol (via the combined Crimea
 // entry) are the only exceptions tracked as their own entity.
 const CITIES = [
-    { lat: 50.4501, lng: 30.5234, uk: 'Київ', en: 'Kyiv', oblast: 'м. Київ' },
+    { lat: 50.4501, lng: 30.5234, uk: 'Київ', en: 'Kyiv', oblast: 'Київ' },
     { lat: 49.9935, lng: 36.2304, uk: 'Харків', en: 'Kharkiv', oblast: 'Харківська' },
     { lat: 46.4825, lng: 30.7233, uk: 'Одеса', en: 'Odesa', oblast: 'Одеська' },
     { lat: 48.4647, lng: 35.0462, uk: 'Дніпро', en: 'Dnipro', oblast: 'Дніпропетровська' },
@@ -47,16 +48,31 @@ const CITIES = [
     { lat: 48.5111, lng: 34.6023, uk: "Кам'янське", en: 'Kamianske', oblast: 'Дніпропетровська' },
 ];
 
+function borderStyle(color, alerted) {
+    return {
+        color,
+        weight: alerted ? 1.5 : 0,
+        opacity: alerted ? 0.7 : 0,
+        fillColor: color,
+        fillOpacity: alerted ? 0.12 : 0,
+    };
+}
+
 function buildCityGroup(strings, language) {
     const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const color = isDark ? '#e2836f' : '#7a3b2e';
     const layer = L.layerGroup();
     const isEnglish = language === 'English';
+    // Tracked so the alert-state subscription below can restyle each border in place - this
+    // group is built once by labelsLayer.js and reused for the window's lifetime (only shown/
+    // hidden by zoom level, never rebuilt), so without this the fill would freeze at whatever
+    // alert state happened to be live at map-open time.
+    const borderPolygons = [];
 
     CITIES.forEach((city) => {
         const border = CITY_BORDERS[city.uk];
         const displayName = isEnglish ? city.en : city.uk;
-        const inheritedFromName = city.oblast === 'м. Київ' ? null : oblastDisplayName(city.oblast, isEnglish);
+        const inheritedFromName = city.oblast === 'Київ' ? null : oblastDisplayName(city.oblast, isEnglish);
         const popupContent = () =>
             alertPopupHtml(
                 displayName,
@@ -68,16 +84,13 @@ function buildCityGroup(strings, language) {
             );
 
         if (border) {
-            L.polygon(border, {
-                className: 'city-border',
-                color,
-                weight: 1.5,
-                opacity: 0.7,
-                fillColor: color,
-                fillOpacity: 0.12,
-            })
+            // Fill/stroke reflect the city's actual alert state (same on/off idea as
+            // regionStatus.js's oblast/raion shading) - previously drawn with the alerted tint
+            // unconditionally, making every city with a border shape look permanently alerted.
+            const polygon = L.polygon(border, borderStyle(color, Boolean(getOblastStartedAt(city.oblast))))
                 .bindPopup(popupContent)
                 .addTo(layer);
+            borderPolygons.push({ polygon, city });
         }
 
         const marker = L.marker([city.lat, city.lng], {
@@ -93,6 +106,12 @@ function buildCityGroup(strings, language) {
         }).addTo(layer);
 
         if (!border) marker.bindPopup(popupContent);
+    });
+
+    subscribeAlertedRegions(() => {
+        borderPolygons.forEach(({ polygon, city }) => {
+            polygon.setStyle(borderStyle(color, Boolean(getOblastStartedAt(city.oblast))));
+        });
     });
 
     return layer;

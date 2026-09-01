@@ -95,8 +95,8 @@ const RegionStatusLayer = L.LayerGroup.extend({
         // Kyiv city has no oblast-tier polygon of its own (folded into Kyiv oblast's shape in the
         // source dataset), so its city outline stands in for it here.
         if (CITY_BORDERS['Київ']) {
-            const startedAt = getOblastStartedAt('м. Київ');
-            const alertTypeName = getOblastAlertTypeName('м. Київ');
+            const startedAt = getOblastStartedAt('Київ');
+            const alertTypeName = getOblastAlertTypeName('Київ');
             this._drawRegion([CITY_BORDERS['Київ']], oblastDisplayName('Київ', isEnglish), startedAt, now, startedAt, alertTypeName);
         }
 
