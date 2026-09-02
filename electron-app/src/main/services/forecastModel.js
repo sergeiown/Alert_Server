@@ -4,8 +4,42 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MIN_MEANINGFUL_LAMBDA = 1 / (10 * 365);
 
+// Multiple raions within a tracked whole oblast can each report the very same real-world wave (one
+// mass attack) within seconds of one another - UkraineAlarm reports per-raion, so an oblast-level
+// rollup sees these as several "different" alerts of the same type, mere seconds apart. Left
+// uncollapsed, this both inflates the region's estimated intensity (lambda) and, worse, swamps the
+// gap-based ETA's median/percentile range with a cluster of near-zero gaps that says nothing about
+// how often the region actually gets hit (confirmed on real Odesa oblast data: two thirds of all
+// recorded gaps were under a minute, purely from this). Collapsing same-type alerts that start
+// within SIMULTANEOUS_WAVE_WINDOW_MS of the earliest alert in their own cluster down to that one
+// earliest occurrence fixes both, without needing to know which raion originated which record.
+const SIMULTANEOUS_WAVE_WINDOW_MS = 3 * 60 * 1000;
+
+function collapseSimultaneousWaves(alerts) {
+    const byType = new Map();
+    alerts.forEach((alert) => {
+        if (!byType.has(alert.alert_type)) byType.set(alert.alert_type, []);
+        byType.get(alert.alert_type).push(alert);
+    });
+
+    const collapsed = [];
+    byType.forEach((typeAlerts) => {
+        const sorted = [...typeAlerts].sort((a, b) => new Date(a.started_at) - new Date(b.started_at));
+        let clusterStartMs = null;
+        sorted.forEach((alert) => {
+            const t = new Date(alert.started_at).getTime();
+            if (clusterStartMs === null || t - clusterStartMs > SIMULTANEOUS_WAVE_WINDOW_MS) {
+                collapsed.push(alert);
+                clusterStartMs = t;
+            }
+        });
+    });
+
+    return collapsed;
+}
+
 function filterUsableAlerts(alerts) {
-    return alerts.filter((alert) => !alert.deleted_at);
+    return collapseSimultaneousWaves(alerts.filter((alert) => !alert.deleted_at));
 }
 
 function freshnessWeight(alert, nowMs, halfLifeDays) {
