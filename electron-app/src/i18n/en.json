@@ -119,7 +119,7 @@
     "forecastCommonWeekday": "Most common day of week",
     "forecastTypes": "Alert types",
     "forecastSinceLast": "Time since the last alert ended",
-    "forecastProbabilityToday": "Probability of at least one alert within the next hour, based on statistics",
+    "forecastProbabilityToday": "Probability of at least one alert within the next 2 hours, based on statistics",
     "forecastProbabilityPrefix": "with a probability of",
     "forecastProbabilityNearCertain": "close to 100",
     "forecastExpectedTodayLabel": "roughly {count} alerts expected today",
