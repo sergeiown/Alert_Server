@@ -237,11 +237,15 @@ function computeStats(alerts, nowMs, config) {
             // same "100%" with no way to tell them apart. Display decides how many decimals to
             // show (buildForecastText in forecast.js) - this stays the exact number.
             const probabilityToday = 1 - Math.exp(-lambdaType);
+            // lambdaType itself (expected count today, not clamped to a 0-1 probability) doesn't
+            // saturate the way probabilityToday does - it keeps telling a very active region (say
+            // 14/day) apart from a merely active one (4/day) even once both read as ~100%.
+            const expectedToday = lambdaType;
             const gaps = gapStats(typeAlertsFull, config);
             const projectedNextMs = gaps ? gaps.median : lambdaType > MIN_MEANINGFUL_LAMBDA ? (1 / lambdaType) * DAY_MS : null;
             const gapRange = gaps ? gaps.range : null;
 
-            return { type, count: typeCount, percent, projectedNextMs, probabilityToday, gapRange };
+            return { type, count: typeCount, percent, projectedNextMs, probabilityToday, expectedToday, gapRange };
         })
         .sort((a, b) => b.count - a.count);
 
