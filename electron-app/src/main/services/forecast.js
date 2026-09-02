@@ -6,7 +6,7 @@ const { loadLocalConfig } = require('./localConfig');
 const { alertTypeName } = require('./alertTypes');
 const { t } = require('../../i18n/i18n');
 const forecastConfig = require('./forecastConfig');
-const { computeStats } = require('./forecastModel');
+const { computeStats, filterUsableAlerts } = require('./forecastModel');
 const historyStore = require('./forecastHistoryStore');
 const { getHistoryFetchTarget } = require('./locationFilter');
 
@@ -209,6 +209,31 @@ function buildForecastText(stats, language, source) {
     return lines.join('\n');
 }
 
+function buildActiveDurationText(durationStats, language) {
+    const lines = [t('forecastActiveAlert', language)];
+
+    durationStats.forEach((entry) => {
+        lines.push('');
+        lines.push(`${t('forecastActiveDurationHeader', language)} (${alertTypeName(entry.type, language)}):`);
+        lines.push(
+            `  - ${t('forecastActiveDurationLast24h', language)}: ${
+                entry.avgDurationLast24hMs !== null
+                    ? `${formatDuration(entry.avgDurationLast24hMs, language)} (n=${entry.countLast24h})`
+                    : t('forecastActiveDurationNoData', language)
+            }`
+        );
+        lines.push(
+            `  - ${t('forecastActiveDurationAllTime', language)}: ${
+                entry.avgDurationAllTimeMs !== null
+                    ? `${formatDuration(entry.avgDurationAllTimeMs, language)} (n=${entry.countAllTime})`
+                    : t('forecastActiveDurationNoData', language)
+            }`
+        );
+    });
+
+    return lines.join('\n');
+}
+
 async function getAccumulatedAlerts(uid) {
     await fetchHistoryAlerts(uid);
     return historyStore.getAllAlertsForRegion(uid);
@@ -238,6 +263,33 @@ function getRegionSoonestEtaMs(uid) {
     return soonest ? soonest.projectedNextMs : null;
 }
 
+// For an ACTIVE alert - how long it typically lasts is more immediately useful than the
+// probability/ETA of the next one. Grounded in the same locally accumulated history as everything
+// else; only alerts with a real recorded finished_at can contribute a duration (one that's still
+// active elsewhere with no end yet obviously can't).
+function getRegionDurationStats(uid, alertTypes) {
+    const alerts = filterUsableAlerts(historyStore.getAllAlertsForRegion(uid));
+    const now = Date.now();
+    const DAY_MS = 24 * 60 * 60 * 1000;
+
+    const avgOf = (list) => (list.length ? list.reduce((sum, a) => sum + a._durationMs, 0) / list.length : null);
+
+    return alertTypes.map((type) => {
+        const finished = alerts
+            .filter((a) => a.alert_type === type && a.finished_at)
+            .map((a) => ({ ...a, _durationMs: new Date(a.finished_at).getTime() - new Date(a.started_at).getTime() }));
+        const last24h = finished.filter((a) => now - new Date(a.started_at).getTime() <= DAY_MS);
+
+        return {
+            type,
+            avgDurationLast24hMs: avgOf(last24h),
+            avgDurationAllTimeMs: avgOf(finished),
+            countLast24h: last24h.length,
+            countAllTime: finished.length,
+        };
+    });
+}
+
 async function getRegionSoonestPrediction(uid) {
     const alerts = await getAccumulatedAlerts(uid);
     if (!alerts.length) return null;
@@ -252,6 +304,8 @@ module.exports = {
     getRegionForecastText,
     getRegionSoonestEtaMs,
     getRegionSoonestPrediction,
+    getRegionDurationStats,
+    buildActiveDurationText,
     fetchHistoryAlerts,
     formatDuration,
 };

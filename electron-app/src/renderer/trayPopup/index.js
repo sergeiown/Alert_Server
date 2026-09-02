@@ -98,6 +98,17 @@ async function render() {
         startedAt.textContent = `${strings.alertStartedAt}: ${formatStartedAt(alert.startedAt)}`;
         item.appendChild(startedAt);
 
+        if (alert.avgDurationLast24h || alert.avgDurationAllTime) {
+            const duration = document.createElement('div');
+            duration.className = 'duration';
+            const parts = [
+                alert.avgDurationLast24h ? `${strings.forecastActiveDurationLast24h}: ${alert.avgDurationLast24h}` : null,
+                alert.avgDurationAllTime ? `${strings.forecastActiveDurationAllTime}: ${alert.avgDurationAllTime}` : null,
+            ].filter(Boolean);
+            duration.textContent = `${strings.forecastActiveDurationHeader} (${parts.join(', ')})`;
+            item.appendChild(duration);
+        }
+
         list.appendChild(item);
     });
 }
