@@ -231,15 +231,17 @@ function computeStats(alerts, nowMs, config) {
             const lambdaType = estimateTypeLambda(typeAlertsFull, usableAlerts.length, baseLambda, nowMs, config);
 
             const percent = Math.round((typeCount / count) * 100);
-            // Kept as a raw fraction (0-1), not rounded to a whole percent here - 1-e^(-x) shoots
-            // past 99.5% for any lambda much above 5/day, which the current pace of nationwide
-            // activity makes common; rounding it here would flatten every busy region down to the
-            // same "100%" with no way to tell them apart. Display decides how many decimals to
-            // show (buildForecastText in forecast.js) - this stays the exact number.
-            const probabilityToday = 1 - Math.exp(-lambdaType);
-            // lambdaType itself (expected count today, not clamped to a 0-1 probability) doesn't
-            // saturate the way probabilityToday does - it keeps telling a very active region (say
-            // 14/day) apart from a merely active one (4/day) even once both read as ~100%.
+            // A short, fixed window (see PROBABILITY_WINDOW_HOURS) instead of a full day - "at
+            // least one TODAY" saturates to an uninformative ~100% for any region much above
+            // roughly 5/day, which the current pace of the war makes common; scaling lambda down
+            // to this shorter window keeps the probability genuinely differentiated across the
+            // whole range of regions instead of flattening the busy ones together, and it lines up
+            // with the ETA shown right next to it. Kept as a raw fraction (0-1), not rounded to a
+            // whole percent here - display decides how to present it (buildForecastText).
+            const probabilityToday = 1 - Math.exp(-lambdaType * (config.PROBABILITY_WINDOW_HOURS / 24));
+            // lambdaType itself (expected count over a full day, not clamped to a 0-1 probability)
+            // still doesn't saturate - it keeps telling a very active region (say 14/day) apart
+            // from a merely active one (4/day) even once both round to a similar short-window %.
             const expectedToday = lambdaType;
             const gaps = gapStats(typeAlertsFull, config);
             const projectedNextMs = gaps ? gaps.median : lambdaType > MIN_MEANINGFUL_LAMBDA ? (1 / lambdaType) * DAY_MS : null;

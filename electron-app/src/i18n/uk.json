@@ -119,7 +119,7 @@
     "forecastCommonWeekday": "Найчастіший день тижня",
     "forecastTypes": "Типи тривог",
     "forecastSinceLast": "Минуло з моменту завершення останньої тривоги",
-    "forecastProbabilityToday": "Ймовірність тривоги сьогодні, на основі статистики",
+    "forecastProbabilityToday": "Ймовірність хоча б однієї тривоги протягом найближчої години, на основі статистики",
     "forecastProbabilityPrefix": "з вірогідністю",
     "forecastProbabilityNearCertain": "близько до 100",
     "forecastExpectedTodayLabel": "очікувано приблизно {count} тривог сьогодні",
