@@ -94,14 +94,6 @@ main {
     margin-bottom: 4px;
 }
 
-.forecast-item {
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-    color: var(--muted);
-    padding: 2px 0;
-}
-
 #forecast-more {
     color: var(--muted);
     font-size: 11px;
