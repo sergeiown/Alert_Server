@@ -56,7 +56,7 @@ On first launch the app appears as a tray icon only, no window. The icon itself 
 
 Clicking the **Alert Server** entry at the top of the menu opens the About window, showing the current version, license, and a link to the project's GitHub page.
 
-Notifications for an alert starting or ending appear through the Windows Notification Center with a small map showing the affected region (red for a new alert, green for a cancellation); clicking one shows the alert's location and start time. If more than 5 alerts start or clear at once, you get a single notification with the total count and all affected regions highlighted instead of a flood of individual ones.
+Notifications for an alert starting or ending appear through the Windows Notification Center with a small map showing the affected region (red for a new alert, green for a cancellation); clicking one shows the alert's location and start time. If 3 or more alerts start or clear at once, you get a single notification with the total count and all affected regions highlighted instead of a flood of individual ones. An alert that turns out to have already been active for a while when the app (re)connects - after the computer was off or asleep, say - is added to your list quietly, without a "just started" notification for something that didn't just start.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/alert-en-dark.png">

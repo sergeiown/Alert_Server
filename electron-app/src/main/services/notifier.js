@@ -16,7 +16,14 @@ const { openLiveMapWindow } = require('../windows/liveMapWindow');
 
 const ALERT_COLOR = '#dc2626';
 const CANCEL_COLOR = '#16a34a';
-const MASS_ALERT_THRESHOLD = 5;
+const MASS_ALERT_THRESHOLD = 2;
+// If an alert first appears as "new" (no prior record in displayedAlerts) but its own started_at
+// is already older than this, it didn't just start - the app (or the whole machine) was off or
+// asleep while it began, and this is just catching up on startup/reconnect/source failover. A
+// "started" notification for something that's actually been running for a while would be
+// misleading, so it's skipped; the alert is still tracked normally (still logged, still eligible
+// for a real cancellation notice later).
+const STALE_ON_FIRST_SIGHT_MS = 5 * 60 * 1000;
 
 let displayedAlerts = null;
 let isInitialSync = false;
@@ -149,16 +156,18 @@ function processAlerts(matchedAlerts, allAlerts) {
     const canNotify = settings.visualNotificationsEnabled && settings.activeAlertNotifyEnabled;
 
     const newAlerts = matchedAlerts.filter((alert) => !displayedAlerts.has(alert.id));
-    const massStart = newAlerts.length > MASS_ALERT_THRESHOLD;
+    const isStaleOnFirstSight = (alert) => Date.now() - new Date(alert.started_at).getTime() > STALE_ON_FIRST_SIGHT_MS;
+    const freshNewAlerts = newAlerts.filter((alert) => !isStaleOnFirstSight(alert));
+    const massStart = freshNewAlerts.length > MASS_ALERT_THRESHOLD;
 
-    if (newAlerts.length && canNotify && settings.showLiveMapOnAlert) {
+    if (freshNewAlerts.length && canNotify && settings.showLiveMapOnAlert) {
         openLiveMapWindow();
     }
 
     if (massStart && canNotify) {
         notifyWithMap({
-            uids: newAlerts.map((alert) => alert.location_uid),
-            title: t('massAlertStartTitle', language).replace('{count}', newAlerts.length),
+            uids: freshNewAlerts.map((alert) => alert.location_uid),
+            title: t('massAlertStartTitle', language).replace('{count}', freshNewAlerts.length),
             bodyLines: [`${t('activeInMonitored', language)}: ${alertCount}`],
             iconName: 'alert.png',
             color: ALERT_COLOR,
@@ -166,12 +175,13 @@ function processAlerts(matchedAlerts, allAlerts) {
     }
 
     newAlerts.forEach((alert) => {
+        const stale = isStaleOnFirstSight(alert);
         const typeName = alertTypeName(alert.alert_type, language);
         const locationName = language === 'English' ? alert.location_lat : alert.location_title;
         const title = `${t('alertStarted', language)}: ${typeName}`;
         const startedAtText = formatStartedAt(alert.started_at, language);
 
-        if (!massStart && canNotify) {
+        if (!stale && !massStart && canNotify) {
             notifyWithMap({
                 uid: alert.location_uid,
                 title,
@@ -187,15 +197,16 @@ function processAlerts(matchedAlerts, allAlerts) {
             });
         }
 
-        if (settings.alertSoundMode !== 'none') {
+        if (!stale && settings.alertSoundMode !== 'none') {
             playRepeated(playAlertSound, settings.alertSoundMode, language, settings.alertSoundCount, 8000);
         }
 
         // The log is for reading later regardless of whatever UI language happens to be set right
         // now, so it always uses the Latin name (falling back to the original only for a
         // discovered location with no Latin variant on file at all) rather than locationName,
-        // which follows the user's own display language above.
-        logEvent(`Alert ${alert.alert_type}: ${alert.location_lat || alert.location_title}`, 'ALERT');
+        // which follows the user's own display language above. Still logged even when stale (no
+        // notification/sound) - the log is a complete record, the notification is what's muted.
+        logEvent(`Alert ${alert.alert_type}: ${alert.location_lat || alert.location_title}${stale ? ' (already active before this check)' : ''}`, 'ALERT');
 
         displayedAlerts.set(alert.id, {
             locationUid: alert.location_uid,
