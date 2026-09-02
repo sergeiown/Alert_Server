@@ -89,15 +89,9 @@ main {
     display: none;
 }
 
-#forecast-header {
-    font-weight: 600;
-    margin-bottom: 4px;
-}
-
 #forecast-more {
     color: var(--muted);
     font-size: 11px;
-    margin-top: 4px;
     cursor: pointer;
 }
 
