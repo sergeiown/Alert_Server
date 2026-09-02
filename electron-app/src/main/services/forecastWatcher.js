@@ -16,6 +16,7 @@ const { t } = require('../../i18n/i18n');
 const CHECK_INTERVAL_MS = 5 * 60 * 1000;
 const FORECAST_COLOR = '#2563eb';
 const MAX_SIMULTANEOUS_FORECAST_NOTIFICATIONS = 3;
+const MIN_RENOTIFY_COOLDOWN_MS = 10 * 60 * 1000;
 
 const predictions = new Map();
 
@@ -78,7 +79,9 @@ async function evaluateRegion(uid, language) {
     const lookaheadMs = lookaheadMinutes * 60 * 1000;
     if (soonest.projectedNextMs > lookaheadMs) return null;
 
-    const cooldownMs = soonest.projectedNextMs / 2;
+    // A floor, not just half the ETA - for a near-term prediction (say 12 min out), half of that
+    // alone would let this repeat for the same region every 6 min, faster than genuinely useful.
+    const cooldownMs = Math.max(MIN_RENOTIFY_COOLDOWN_MS, soonest.projectedNextMs / 2);
     if (state.lastNotifiedAt && now - state.lastNotifiedAt < cooldownMs) return null;
 
     return { uid, alertType: soonest.type, etaMs: soonest.projectedNextMs, state };
