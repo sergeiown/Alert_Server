@@ -122,7 +122,7 @@
     "forecastProbabilityToday": "Probability of at least one alert within the next 2 hours, based on statistics",
     "forecastProbabilityPrefix": "with a probability of",
     "forecastProbabilityNearCertain": "close to 100",
-    "forecastExpectedTodayLabel": "roughly {count} alerts expected today",
+    "forecastExpectedTodayLabel": "Overall, roughly {count} alerts are expected today",
     "forecastEtaLabel": "in about",
     "forecastRangeLabel": "typically",
     "forecastDisclaimer": "This is historical statistics, not a guaranteed prediction.",
