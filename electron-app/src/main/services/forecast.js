@@ -160,6 +160,15 @@ const HISTORY_SOURCE_DISPLAY = {
     'alerts.in.ua': 'alerts.in.ua',
 };
 
+// Below 99.5% a whole percent is precise enough and reads cleaner; at or above it, 1-e^(-x) is so
+// flat that almost every currently-active region would otherwise show the same bare "100%" with
+// no way to tell a merely busy region from an extremely busy one - two decimals keeps that
+// distinction visible instead of quietly discarding it at the rounding step.
+function formatProbabilityPercent(fraction) {
+    const percent = fraction * 100;
+    return percent >= 99.5 ? percent.toFixed(2) : Math.round(percent).toString();
+}
+
 function buildForecastText(stats, language, source) {
     const lines = [];
 
@@ -200,7 +209,7 @@ function buildForecastText(stats, language, source) {
         const rangeText = entry.gapRange
             ? ` (${t('forecastRangeLabel', language)} ${formatDuration(entry.gapRange.low, language)} - ${formatDuration(entry.gapRange.high, language)})`
             : '';
-        lines.push(`  - ${typeName}: ${t('forecastProbabilityPrefix', language)} ${entry.probabilityToday}%${etaText}${rangeText}`);
+        lines.push(`  - ${typeName}: ${t('forecastProbabilityPrefix', language)} ${formatProbabilityPercent(entry.probabilityToday)}%${etaText}${rangeText}`);
     });
 
     lines.push('');
