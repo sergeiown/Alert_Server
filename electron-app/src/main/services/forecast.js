@@ -214,7 +214,7 @@ function buildForecastText(stats, language, source) {
         // formatProbabilityPercent) - expectedToday (a plain count, not a 0-1 probability) never
         // saturates, so it's what still shows a very active region is worse than a merely active
         // one even when both read as ~100%.
-        const expectedText = t('forecastExpectedTodayLabel', language).replace('{count}', entry.expectedToday.toFixed(1));
+        const expectedText = t('forecastExpectedTodayLabel', language).replace('{count}', Math.round(entry.expectedToday).toString());
         lines.push(`  - ${typeName}: ${t('forecastProbabilityPrefix', language)} ${formatProbabilityPercent(entry.probabilityToday, language)}% (${expectedText})${etaText}${rangeText}`);
     });
 

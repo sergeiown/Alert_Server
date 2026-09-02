@@ -6,11 +6,8 @@ const settingsStore = require('../services/settingsStore');
 const { getLatestMatchedAlerts } = require('../services/alertState');
 const { alertTypeName } = require('../services/alertTypes');
 const { getResourcePath } = require('../services/appPaths');
-const { getUpcomingPredictions } = require('../services/forecastWatcher');
 const { getRegionDurationStats, formatDuration } = require('../services/forecast');
 const { openForecastWindow } = require('../windows/forecastWindow');
-
-const POPUP_FORECAST_LIMIT = 3;
 
 function registerTrayPopupIpc() {
     ipcMain.handle('trayPopup:getIcon', () =>
@@ -30,14 +27,6 @@ function registerTrayPopupIpc() {
                 avgDurationAllTime: duration.avgDurationAllTimeMs !== null ? formatDuration(duration.avgDurationAllTimeMs, language) : null,
             };
         });
-    });
-
-    ipcMain.handle('trayPopup:getForecast', () => {
-        const language = settingsStore.getSettings().language;
-        return getUpcomingPredictions(language, POPUP_FORECAST_LIMIT).map((prediction) => ({
-            name: prediction.name,
-            predictedAt: prediction.predictedAt,
-        }));
     });
 
     ipcMain.handle('trayPopup:openForecast', () => {
