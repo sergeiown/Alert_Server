@@ -9,7 +9,7 @@ module.exports = {
     // current pace of the war makes common. A shorter, fixed window keeps the same probability
     // genuinely differentiated across the whole range of regions instead of flattening the busy
     // ones together, and lines up naturally with the ETA already shown right next to it.
-    PROBABILITY_WINDOW_HOURS: 1,
+    PROBABILITY_WINDOW_HOURS: 2,
     PRIOR_BETA_DAYS: 4,
     NOTIFY_LOOKAHEAD_MINUTES: 120,
     // Floor so lambda plateaus instead of decaying to zero during a long silence; 5-day half-life
