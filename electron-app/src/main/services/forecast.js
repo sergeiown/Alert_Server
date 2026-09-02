@@ -215,7 +215,7 @@ function buildForecastText(stats, language, source) {
         // different question (how many today, not the odds of at least one soon) and doesn't
         // saturate the way the 2-hour probability can, so it's worth reading on its own rather
         // than as a parenthetical aside to a different number.
-        lines.push(`    ${t('forecastExpectedTodayLabel', language).replace('{count}', Math.round(entry.expectedToday).toString())}`);
+        lines.push(`  - ${t('forecastExpectedTodayLabel', language).replace('{count}', Math.round(entry.expectedToday).toString())}`);
     });
 
     lines.push('');
