@@ -783,11 +783,17 @@ export class AlertsGateway {
                 if (ageMs > UKRAINEALARM_STALE_ALERT_THRESHOLD_MS) return;
 
                 alerts.push({
-                    // A stable synthetic id (electron-app's forecastHistoryStore.js keys merged
-                    // records by `alert.id` - without one here, every UkraineAlarm-derived alert
-                    // for the same region would collide on the same undefined key and overwrite
-                    // each other). regionId+lastUpdate uniquely and stably identifies one alert.
-                    id: `ukrainealarm-${region.regionId}-${alert.lastUpdate}`,
+                    // Keyed by region+type, NOT lastUpdate - electron-app's notifier.js diffs
+                    // live alerts strictly by `id` to decide what's newly started/cancelled.
+                    // UkraineAlarm periodically bumps lastUpdate on an alert that's still
+                    // genuinely ongoing (the same behavior behind the stale-alert filter above);
+                    // an id built from that value would then change under a continuing alert,
+                    // reading as "old id vanished, new id appeared" - a false cancel+restart pair
+                    // in the very same poll (observed in a user's real log, 2026-09-02). Since
+                    // this snapshot only ever lists alerts currently active, region+type alone is
+                    // enough to identify one - two genuinely separate alerts of the same type in
+                    // the same region can't both be "currently active" at once here.
+                    id: `ukrainealarm-${region.regionId}-${mappedType}`,
                     location_uid: Number(region.regionId),
                     location_title: region.regionName,
                     alert_type: mappedType,
