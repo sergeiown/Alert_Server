@@ -82,7 +82,7 @@ async function renderRegionsList() {
 
         if (result.status === 'active') {
             card.className = 'region-card active';
-            pre.textContent = strings.forecastActiveAlert;
+            pre.textContent = result.text || strings.forecastActiveAlert;
         } else if (result.status === 'ok') {
             card.className = 'region-card';
             pre.textContent = result.text;

@@ -68,7 +68,8 @@ main {
     font-weight: 600;
 }
 
-.alert-item .started-at {
+.alert-item .started-at,
+.alert-item .duration {
     color: var(--muted);
     font-size: 11px;
 }

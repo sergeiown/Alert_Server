@@ -6,9 +6,16 @@ const regionsStore = require('../services/regionsStore');
 const settingsStore = require('../services/settingsStore');
 const { getLocationLookup, getAlertCoverageUids, getAncestorUids } = require('../services/locationFilter');
 const { getLatestAlertData } = require('../services/activeAlertData');
-const { getRegionForecastText, getRegionSoonestEtaMs, fetchHistoryAlerts } = require('../services/forecast');
+const {
+    getRegionForecastText,
+    getRegionSoonestEtaMs,
+    getRegionDurationStats,
+    buildActiveDurationText,
+    fetchHistoryAlerts,
+} = require('../services/forecast');
 const historyStore = require('../services/forecastHistoryStore');
 const { logEvent } = require('../services/logger');
+const { alertTypeName } = require('../services/alertTypes');
 const { t } = require('../../i18n/i18n');
 
 function registerForecastIpc() {
@@ -30,11 +37,15 @@ function registerForecastIpc() {
     ipcMain.handle('forecast:getRegionForecast', async (event, uid) => {
         const language = settingsStore.getSettings().language;
         const activeData = getLatestAlertData();
-        const isActive = Boolean(
-            activeData && activeData.alerts.some((alert) => getAlertCoverageUids(alert).includes(String(uid)))
-        );
+        const activeAlertsHere = activeData
+            ? activeData.alerts.filter((alert) => getAlertCoverageUids(alert).includes(String(uid)))
+            : [];
 
-        if (isActive) return { status: 'active' };
+        if (activeAlertsHere.length) {
+            const activeTypes = [...new Set(activeAlertsHere.map((alert) => alert.alert_type))];
+            const durationStats = getRegionDurationStats(uid, activeTypes);
+            return { status: 'active', text: buildActiveDurationText(durationStats, language) };
+        }
 
         const text = await getRegionForecastText(uid, language);
         if (!text) {
