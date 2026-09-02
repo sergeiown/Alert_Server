@@ -48,12 +48,7 @@
                 <label><input type="checkbox" id="visualNotificationsEnabled" /> <span id="visualNotificationsLabel"></span></label>
                 <label><input type="checkbox" id="activeAlertNotifyEnabled" /> <span id="activeAlertNotifyLabel"></span></label>
                 <label style="margin-left: 18px"><input type="checkbox" id="showLiveMapOnAlert" /> <span id="showLiveMapOnAlertLabel"></span></label>
-                <label><input type="checkbox" id="forecastNotifyEnabled" /> <span id="settingsForecastNotifyLabel"></span></label>
-                <label>
-                    <span id="forecastNotifyLookaheadLabel"></span>
-                    <input type="number" id="forecastNotifyLookaheadMinutes" min="1" max="600" style="width: 4em" />
-                </label>
-                <label>
+                <label style="margin-left: 18px">
                     <span id="alertSoundLabel"></span>
                     <select id="alertSoundMode">
                         <option value="none" id="alertSoundModeNoneOption"></option>
@@ -61,13 +56,18 @@
                         <option value="voice" id="alertSoundModeVoiceOption"></option>
                     </select>
                 </label>
-                <label>
+                <label style="margin-left: 18px">
                     <span id="alertSoundCountLabel"></span>
                     <input type="number" id="alertSoundCount" min="1" max="10" style="width: 3em" />
                 </label>
                 <label>
                     <span id="massAttackThresholdLabel"></span>
                     <input type="number" id="massAttackThreshold" min="50" max="100" style="width: 3em" />
+                </label>
+                <label><input type="checkbox" id="forecastNotifyEnabled" /> <span id="settingsForecastNotifyLabel"></span></label>
+                <label style="margin-left: 18px">
+                    <span id="forecastNotifyLookaheadLabel"></span>
+                    <input type="number" id="forecastNotifyLookaheadMinutes" min="1" max="600" style="width: 4em" />
                 </label>
             </fieldset>
             <fieldset class="settings-group">
