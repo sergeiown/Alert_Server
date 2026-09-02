@@ -5,7 +5,6 @@ const headerText = document.getElementById('header-text');
 const appIcon = document.getElementById('app-icon');
 const list = document.getElementById('list');
 const forecastSection = document.getElementById('forecast-section');
-const forecastHeader = document.getElementById('forecast-header');
 const forecastMore = document.getElementById('forecast-more');
 
 let strings = null;
@@ -34,7 +33,6 @@ async function renderForecast() {
     }
 
     forecastSection.classList.remove('hidden');
-    forecastHeader.textContent = strings.forecastUpcomingHeader;
     forecastMore.textContent = strings.forecastMoreDetails;
 }
 
