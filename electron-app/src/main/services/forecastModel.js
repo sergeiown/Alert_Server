@@ -231,7 +231,12 @@ function computeStats(alerts, nowMs, config) {
             const lambdaType = estimateTypeLambda(typeAlertsFull, usableAlerts.length, baseLambda, nowMs, config);
 
             const percent = Math.round((typeCount / count) * 100);
-            const probabilityToday = Math.round((1 - Math.exp(-lambdaType)) * 100);
+            // Kept as a raw fraction (0-1), not rounded to a whole percent here - 1-e^(-x) shoots
+            // past 99.5% for any lambda much above 5/day, which the current pace of nationwide
+            // activity makes common; rounding it here would flatten every busy region down to the
+            // same "100%" with no way to tell them apart. Display decides how many decimals to
+            // show (buildForecastText in forecast.js) - this stays the exact number.
+            const probabilityToday = 1 - Math.exp(-lambdaType);
             const gaps = gapStats(typeAlertsFull, config);
             const projectedNextMs = gaps ? gaps.median : lambdaType > MIN_MEANINGFUL_LAMBDA ? (1 / lambdaType) * DAY_MS : null;
             const gapRange = gaps ? gaps.range : null;
