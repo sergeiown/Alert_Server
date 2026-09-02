@@ -4,7 +4,6 @@
 const headerText = document.getElementById('header-text');
 const appIcon = document.getElementById('app-icon');
 const list = document.getElementById('list');
-const forecastSection = document.getElementById('forecast-section');
 const forecastMore = document.getElementById('forecast-more');
 
 let strings = null;
@@ -20,19 +19,12 @@ function formatStartedAt(startedAt) {
     });
 }
 
-async function renderForecast() {
-    // Only a pointer to the Forecast window here, not the per-region breakdown itself - the
+function renderForecast() {
+    // Always just a pointer to the Forecast window, not the per-region breakdown itself - the
     // popup is meant for a quick glance at what's ACTIVE right now, and duplicating the forecast
     // list (already one click away, and already shown in full in that window) just added clutter
-    // without adding information.
-    const predictions = await window.alertServerTrayPopup.getForecast();
-
-    if (!predictions.length) {
-        forecastSection.classList.add('hidden');
-        return;
-    }
-
-    forecastSection.classList.remove('hidden');
+    // without adding information. Shown regardless of whether anything is upcoming soon right now
+    // - "where to look" doesn't stop being true just because nothing is imminent at this moment.
     forecastMore.textContent = strings.forecastMoreDetails;
 }
 
@@ -42,10 +34,6 @@ async function render() {
 
     if (!alerts.length) {
         headerText.textContent = strings.trayPopupNoAlerts;
-        const empty = document.createElement('div');
-        empty.className = 'no-alerts';
-        empty.textContent = strings.trayPopupNoAlerts;
-        list.appendChild(empty);
         return;
     }
 
