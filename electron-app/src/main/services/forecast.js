@@ -210,12 +210,12 @@ function buildForecastText(stats, language, source) {
         const rangeText = entry.gapRange
             ? ` (${t('forecastRangeLabel', language)} ${formatDuration(entry.gapRange.low, language)} - ${formatDuration(entry.gapRange.high, language)})`
             : '';
-        // probabilityToday alone stops telling regions apart once it's saturated (see
-        // formatProbabilityPercent) - expectedToday (a plain count, not a 0-1 probability) never
-        // saturates, so it's what still shows a very active region is worse than a merely active
-        // one even when both read as ~100%.
-        const expectedText = t('forecastExpectedTodayLabel', language).replace('{count}', Math.round(entry.expectedToday).toString());
-        lines.push(`  - ${typeName}: ${t('forecastProbabilityPrefix', language)} ${formatProbabilityPercent(entry.probabilityToday, language)}% (${expectedText})${etaText}${rangeText}`);
+        lines.push(`  - ${typeName}: ${t('forecastProbabilityPrefix', language)} ${formatProbabilityPercent(entry.probabilityToday, language)}%${etaText}${rangeText}`);
+        // A separate line, not folded into the probability bullet above - it's answering a
+        // different question (how many today, not the odds of at least one soon) and doesn't
+        // saturate the way the 2-hour probability can, so it's worth reading on its own rather
+        // than as a parenthetical aside to a different number.
+        lines.push(`    ${t('forecastExpectedTodayLabel', language).replace('{count}', Math.round(entry.expectedToday).toString())}`);
     });
 
     lines.push('');
