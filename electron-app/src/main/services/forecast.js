@@ -218,14 +218,14 @@ function buildActiveDurationText(durationStats, language) {
         lines.push(
             `  - ${t('forecastActiveDurationLast24h', language)}: ${
                 entry.avgDurationLast24hMs !== null
-                    ? `${formatDuration(entry.avgDurationLast24hMs, language)} (n=${entry.countLast24h})`
+                    ? `${formatDuration(entry.avgDurationLast24hMs, language)} (${t('forecastActiveDurationSampleSize', language).replace('{count}', entry.countLast24h)})`
                     : t('forecastActiveDurationNoData', language)
             }`
         );
         lines.push(
             `  - ${t('forecastActiveDurationAllTime', language)}: ${
                 entry.avgDurationAllTimeMs !== null
-                    ? `${formatDuration(entry.avgDurationAllTimeMs, language)} (n=${entry.countAllTime})`
+                    ? `${formatDuration(entry.avgDurationAllTimeMs, language)} (${t('forecastActiveDurationSampleSize', language).replace('{count}', entry.countAllTime)})`
                     : t('forecastActiveDurationNoData', language)
             }`
         );
