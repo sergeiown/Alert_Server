@@ -7,6 +7,7 @@ const { getLatestMatchedAlerts } = require('../services/alertState');
 const { alertTypeName } = require('../services/alertTypes');
 const { getResourcePath } = require('../services/appPaths');
 const { getUpcomingPredictions } = require('../services/forecastWatcher');
+const { getRegionDurationStats, formatDuration } = require('../services/forecast');
 const { openForecastWindow } = require('../windows/forecastWindow');
 
 const POPUP_FORECAST_LIMIT = 3;
@@ -19,11 +20,16 @@ function registerTrayPopupIpc() {
     ipcMain.handle('trayPopup:getAlerts', () => {
         const language = settingsStore.getSettings().language;
 
-        return getLatestMatchedAlerts().map((alert) => ({
-            location: language === 'English' ? alert.location_lat : alert.location_title,
-            type: alertTypeName(alert.alert_type, language),
-            startedAt: alert.started_at,
-        }));
+        return getLatestMatchedAlerts().map((alert) => {
+            const [duration] = getRegionDurationStats(alert.location_uid, [alert.alert_type]);
+            return {
+                location: language === 'English' ? alert.location_lat : alert.location_title,
+                type: alertTypeName(alert.alert_type, language),
+                startedAt: alert.started_at,
+                avgDurationLast24h: duration.avgDurationLast24hMs !== null ? formatDuration(duration.avgDurationLast24hMs, language) : null,
+                avgDurationAllTime: duration.avgDurationAllTimeMs !== null ? formatDuration(duration.avgDurationAllTimeMs, language) : null,
+            };
+        });
     });
 
     ipcMain.handle('trayPopup:getForecast', () => {
