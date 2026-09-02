@@ -160,13 +160,14 @@ const HISTORY_SOURCE_DISPLAY = {
     'alerts.in.ua': 'alerts.in.ua',
 };
 
-// Below 99.5% a whole percent is precise enough and reads cleaner; at or above it, 1-e^(-x) is so
-// flat that almost every currently-active region would otherwise show the same bare "100%" with
-// no way to tell a merely busy region from an extremely busy one - two decimals keeps that
-// distinction visible instead of quietly discarding it at the rounding step.
-function formatProbabilityPercent(fraction) {
+// Below 99.5% a whole percent is precise enough. At or above it, 1-e^(-x) is so flat that most
+// currently-active regions land there anyway, often close enough to 1 that even two decimals
+// still just read "100.00%" - a falsely precise-looking number that isn't actually precise, and
+// isn't the number that tells regions apart anymore regardless (expectedToday, shown alongside
+// this, is). So instead of a number, this just says so plainly once it's saturated.
+function formatProbabilityPercent(fraction, language) {
     const percent = fraction * 100;
-    return percent >= 99.5 ? percent.toFixed(2) : Math.round(percent).toString();
+    return percent >= 99.5 ? t('forecastProbabilityNearCertain', language) : Math.round(percent).toString();
 }
 
 function buildForecastText(stats, language, source) {
@@ -214,7 +215,7 @@ function buildForecastText(stats, language, source) {
         // saturates, so it's what still shows a very active region is worse than a merely active
         // one even when both read as ~100%.
         const expectedText = t('forecastExpectedTodayLabel', language).replace('{count}', entry.expectedToday.toFixed(1));
-        lines.push(`  - ${typeName}: ${t('forecastProbabilityPrefix', language)} ${formatProbabilityPercent(entry.probabilityToday)}% (${expectedText})${etaText}${rangeText}`);
+        lines.push(`  - ${typeName}: ${t('forecastProbabilityPrefix', language)} ${formatProbabilityPercent(entry.probabilityToday, language)}% (${expectedText})${etaText}${rangeText}`);
     });
 
     lines.push('');
