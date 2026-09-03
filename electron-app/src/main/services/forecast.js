@@ -238,20 +238,38 @@ function daysSince(dateValue) {
     return Math.max(1, Math.round((Date.now() - new Date(dateValue).getTime()) / MS_PER_DAY));
 }
 
+// Ukrainian counted nouns take a different form depending on the count (1 доба, 2-4 доби, 5+ діб,
+// with the usual "11-14 always діб" exception) - a flat "{count} діб" reads wrong for most values.
+function daysWord(count, language) {
+    if (language === 'English') return count === 1 ? 'day' : 'days';
+
+    const mod100 = count % 100;
+    const mod10 = count % 10;
+    if (mod100 >= 11 && mod100 <= 14) return 'діб';
+    if (mod10 === 1) return 'добу';
+    if (mod10 >= 2 && mod10 <= 4) return 'доби';
+    return 'діб';
+}
+
 // `ongoingSinceMs`, added per entry by forecastIpc.js before calling this (the earliest started_at
 // among the currently-active alerts of that type at this uid) - the whole point of showing this
 // screen is an alert that's happening right now, so how long THIS ONE has already run is the
 // first thing worth saying, ahead of the historical averages.
 function buildActiveDurationText(durationStats, language) {
-    const lines = [t('forecastActiveAlert', language)];
+    const lines = [];
 
     durationStats.forEach((entry) => {
-        // The type name once, as its own line, rather than repeated as a parenthetical on every
-        // line below it - still separates one active type from the next when several are active
-        // at once, without saying "повітряна тривога" three times in a row.
-        lines.push(alertTypeName(entry.type, language));
-        lines.push(`${t('alertStartedAt', language)}: ${formatShortDateTime(entry.ongoingSinceMs, language)}`);
-        lines.push(`${t('alertOngoingDuration', language)}: ${formatDuration(Date.now() - entry.ongoingSinceMs, language)}`);
+        const typeName = alertTypeName(entry.type, language);
+        const days = entry.oldestStartedAt ? daysSince(entry.oldestStartedAt) : null;
+        const allTimeLabel =
+            days !== null
+                ? t('forecastActiveDurationObservationDays', language).replace('{days}', days.toString()).replace('{daysWord}', daysWord(days, language))
+                : t('forecastActiveDurationAllTime', language);
+
+        lines.push(`${t('forecastActiveAlert', language)} ${t('alertTypeLabel', language)}: ${typeName}.`);
+        lines.push(
+            `${t('alertStartedAt', language)}: ${formatShortDateTime(entry.ongoingSinceMs, language)}. ${t('alertOngoingDuration', language)}: ${formatDuration(Date.now() - entry.ongoingSinceMs, language)}.`
+        );
         lines.push(`${t('forecastActiveDurationHeader', language)}:`);
         lines.push(
             `  - ${t('forecastActiveDurationLast24h', language)}: ${
@@ -261,11 +279,7 @@ function buildActiveDurationText(durationStats, language) {
             }`
         );
         lines.push(
-            `  - ${
-                entry.oldestStartedAt
-                    ? t('forecastActiveDurationObservationDays', language).replace('{days}', daysSince(entry.oldestStartedAt).toString())
-                    : t('forecastActiveDurationAllTime', language)
-            }: ${
+            `  - ${allTimeLabel}: ${
                 entry.avgDurationAllTimeMs !== null
                     ? `${formatDuration(entry.avgDurationAllTimeMs, language)} (${t('forecastActiveDurationSampleSize', language).replace('{count}', entry.countAllTime)})`
                     : t('forecastActiveDurationNoData', language)
