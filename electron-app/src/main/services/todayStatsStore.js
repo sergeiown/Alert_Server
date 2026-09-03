@@ -21,6 +21,15 @@ function kyivHour(dateStr) {
     return Number(formatted);
 }
 
+function kyivDateStr(dateStr) {
+    return new Intl.DateTimeFormat('en-CA', {
+        timeZone: TODAY_STATS_TIMEZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    }).format(new Date(dateStr));
+}
+
 // UkraineAlarm's dateHistory only gives location_uid/location_title, not the oblast name
 // alerts.in.ua's own today-stats already carries - resolved here via the same static/discovered
 // location lookup mergeIntoForecastHistory below already relies on.
@@ -35,7 +44,16 @@ function resolveOblastName(locationUid) {
 // Builds the same {total, byHour, byOblast, alerts, complete, warmupEtaMinutes} shape the
 // alerts.in.ua-based /today-stats endpoint already returns server-side - UkraineAlarm's
 // dateHistory only needs this done client-side, once, since it isn't pre-aggregated by the proxy.
-function aggregateTodayStats(date, alerts) {
+function aggregateTodayStats(date, rawAlerts) {
+    // UkraineAlarm's dateHistory for a date includes alerts that started the PREVIOUS Kyiv day
+    // but are still ongoing into this one (confirmed on real data: a handful of late-evening
+    // entries with yesterday's own started_at, carried into today's response) - useful for them,
+    // but bucketed by raw started_at hour here it would show alerts in hours of today that
+    // haven't happened yet. Kept for forecast-history merging (mergeIntoForecastHistory uses the
+    // caller's own unfiltered list, not this one) - dropped only from what's actually displayed as
+    // "today".
+    const alerts = rawAlerts.filter((alert) => kyivDateStr(alert.started_at) === date);
+
     const byHour = Array.from({ length: 24 }, () => 0);
     const byOblast = new Map();
 
