@@ -107,7 +107,7 @@
     "forecastActiveAlert": "У цьому регіоні зараз активна тривога.",
     "forecastActiveDurationHeader": "Середня тривалість",
     "forecastActiveDurationLast24h": "за останню добу",
-    "forecastActiveDurationAllTime": "за весь період",
+    "forecastActiveDurationAllTime": "за період",
     "forecastActiveDurationObservationDays": "за {days} {daysWord} спостережень",
     "forecastActiveDurationNoData": "немає завершених тривог цього типу для оцінки",
     "forecastActiveDurationSampleSize": "на основі {count} тривог",
