@@ -224,9 +224,18 @@ function buildForecastText(stats, language, source) {
     return lines.join('\n');
 }
 
-function formatShortDate(dateValue, language) {
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function formatShortDateTime(dateValue, language) {
     const locale = language === 'English' ? 'en-US' : 'uk-UA';
-    return new Date(dateValue).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return new Date(dateValue).toLocaleString(locale, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+// A plain date range ("24.07.2026 - 03.09.2026") reads as two dates to parse before it means
+// anything - how many days of data that actually is is the part worth knowing at a glance, so
+// "all-time" is reported as an observation-day count instead.
+function daysSince(dateValue) {
+    return Math.max(1, Math.round((Date.now() - new Date(dateValue).getTime()) / MS_PER_DAY));
 }
 
 // `ongoingSinceMs`, added per entry by forecastIpc.js before calling this (the earliest started_at
@@ -238,6 +247,7 @@ function buildActiveDurationText(durationStats, language) {
 
     durationStats.forEach((entry) => {
         const typeName = alertTypeName(entry.type, language);
+        lines.push(`${t('alertStartedAt', language)} (${typeName}): ${formatShortDateTime(entry.ongoingSinceMs, language)}`);
         lines.push(`${t('alertOngoingDuration', language)} (${typeName}): ${formatDuration(Date.now() - entry.ongoingSinceMs, language)}`);
         lines.push(`${t('forecastActiveDurationHeader', language)} (${typeName}):`);
         lines.push(
@@ -248,7 +258,11 @@ function buildActiveDurationText(durationStats, language) {
             }`
         );
         lines.push(
-            `  - ${t('forecastActiveDurationAllTime', language)}${entry.oldestStartedAt ? ` (${formatShortDate(entry.oldestStartedAt, language)} - ${formatShortDate(Date.now(), language)})` : ''}: ${
+            `  - ${
+                entry.oldestStartedAt
+                    ? t('forecastActiveDurationObservationDays', language).replace('{days}', daysSince(entry.oldestStartedAt).toString())
+                    : t('forecastActiveDurationAllTime', language)
+            }: ${
                 entry.avgDurationAllTimeMs !== null
                     ? `${formatDuration(entry.avgDurationAllTimeMs, language)} (${t('forecastActiveDurationSampleSize', language).replace('{count}', entry.countAllTime)})`
                     : t('forecastActiveDurationNoData', language)
