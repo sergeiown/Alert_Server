@@ -44,6 +44,20 @@ function registerForecastIpc() {
         if (activeAlertsHere.length) {
             const activeTypes = [...new Set(activeAlertsHere.map((alert) => alert.alert_type))];
             const durationStats = getRegionDurationStats(uid, activeTypes);
+
+            // The earliest start among currently-active alerts of that type at this uid - how
+            // long THIS one has already been running, not derived from history.
+            const earliestStartedAtByType = new Map();
+            activeAlertsHere.forEach((alert) => {
+                const existing = earliestStartedAtByType.get(alert.alert_type);
+                if (!existing || new Date(alert.started_at) < new Date(existing)) {
+                    earliestStartedAtByType.set(alert.alert_type, alert.started_at);
+                }
+            });
+            durationStats.forEach((entry) => {
+                entry.ongoingSinceMs = new Date(earliestStartedAtByType.get(entry.type)).getTime();
+            });
+
             return { status: 'active', text: buildActiveDurationText(durationStats, language) };
         }
 
