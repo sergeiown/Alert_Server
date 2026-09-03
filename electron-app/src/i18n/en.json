@@ -104,6 +104,7 @@
     "forecastWindowTitle": "Alert Server - Forecast",
     "forecastHeader": "Forecast by monitored region",
     "forecastLoading": "Loading statistics...",
+    "forecastActiveDurationNotApplicable": "Forecast is not applicable right now.",
     "forecastActiveAlert": "Alert is currently active in this region.",
     "forecastActiveDurationHeader": "Average duration",
     "forecastActiveDurationLast24h": "over the last 24 hours",

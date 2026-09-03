@@ -256,7 +256,10 @@ function daysWord(count, language) {
 // screen is an alert that's happening right now, so how long THIS ONE has already run is the
 // first thing worth saying, ahead of the historical averages.
 function buildActiveDurationText(durationStats, language) {
-    const lines = [];
+    // The probability/ETA forecast below is for the NEXT alert - meaningless while one is already
+    // running, so say that up front instead of silently swapping it out for duration stats with no
+    // explanation of why the usual forecast section is missing.
+    const lines = [t('forecastActiveDurationNotApplicable', language)];
 
     durationStats.forEach((entry) => {
         const typeName = alertTypeName(entry.type, language);

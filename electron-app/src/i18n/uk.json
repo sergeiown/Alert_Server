@@ -104,6 +104,7 @@
     "forecastWindowTitle": "Alert Server - Прогноз",
     "forecastHeader": "Прогноз по регіонах моніторингу",
     "forecastLoading": "Завантаження статистики...",
+    "forecastActiveDurationNotApplicable": "Прогноз наразі неактуальний.",
     "forecastActiveAlert": "У цьому регіоні зараз активна тривога.",
     "forecastActiveDurationHeader": "Середня тривалість",
     "forecastActiveDurationLast24h": "за останню добу",
