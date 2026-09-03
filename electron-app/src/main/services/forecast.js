@@ -246,10 +246,13 @@ function buildActiveDurationText(durationStats, language) {
     const lines = [t('forecastActiveAlert', language)];
 
     durationStats.forEach((entry) => {
-        const typeName = alertTypeName(entry.type, language);
-        lines.push(`${t('alertStartedAt', language)} (${typeName}): ${formatShortDateTime(entry.ongoingSinceMs, language)}`);
-        lines.push(`${t('alertOngoingDuration', language)} (${typeName}): ${formatDuration(Date.now() - entry.ongoingSinceMs, language)}`);
-        lines.push(`${t('forecastActiveDurationHeader', language)} (${typeName}):`);
+        // The type name once, as its own line, rather than repeated as a parenthetical on every
+        // line below it - still separates one active type from the next when several are active
+        // at once, without saying "повітряна тривога" three times in a row.
+        lines.push(alertTypeName(entry.type, language));
+        lines.push(`${t('alertStartedAt', language)}: ${formatShortDateTime(entry.ongoingSinceMs, language)}`);
+        lines.push(`${t('alertOngoingDuration', language)}: ${formatDuration(Date.now() - entry.ongoingSinceMs, language)}`);
+        lines.push(`${t('forecastActiveDurationHeader', language)}:`);
         lines.push(
             `  - ${t('forecastActiveDurationLast24h', language)}: ${
                 entry.avgDurationLast24hMs !== null
