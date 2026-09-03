@@ -43,26 +43,16 @@ async function render() {
         const item = document.createElement('div');
         item.className = 'alert-item';
 
-        const type = document.createElement('div');
-        type.className = 'type';
-        type.textContent = alert.type;
-        item.appendChild(type);
+        const header = document.createElement('div');
+        header.className = 'type';
+        header.textContent = `${alert.location} - ${alert.type}.`;
+        item.appendChild(header);
 
-        const location = document.createElement('div');
-        location.textContent = alert.location;
-        item.appendChild(location);
-
-        const startedAt = document.createElement('div');
-        startedAt.className = 'started-at';
-        startedAt.textContent = `${strings.alertStartedAt}: ${formatStartedAt(alert.startedAt)}`;
-        item.appendChild(startedAt);
-
-        if (alert.ongoingDuration) {
-            const ongoing = document.createElement('div');
-            ongoing.className = 'started-at';
-            ongoing.textContent = `${strings.alertOngoingDuration}: ${alert.ongoingDuration}`;
-            item.appendChild(ongoing);
-        }
+        const startedAtText = `${strings.alertStartedAt}: ${formatStartedAt(alert.startedAt)}`;
+        const timing = document.createElement('div');
+        timing.className = 'started-at';
+        timing.textContent = alert.ongoingDuration ? `${startedAtText}. ${strings.alertOngoingDuration}: ${alert.ongoingDuration}` : startedAtText;
+        item.appendChild(timing);
 
         if (alert.avgDurationLast24h || alert.avgDurationAllTime) {
             const duration = document.createElement('div');
