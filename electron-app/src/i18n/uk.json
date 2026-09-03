@@ -107,6 +107,7 @@
     "forecastActiveDurationHeader": "Середня тривалість",
     "forecastActiveDurationLast24h": "за останню добу",
     "forecastActiveDurationAllTime": "за весь період",
+    "forecastActiveDurationObservationDays": "за {days} діб спостережень",
     "forecastActiveDurationNoData": "немає завершених тривог цього типу для оцінки",
     "forecastActiveDurationSampleSize": "на основі {count} тривог",
     "forecastNoRegions": "Не обрано жодного регіону моніторингу. Спершу оберіть регіони в Налаштуваннях.",
