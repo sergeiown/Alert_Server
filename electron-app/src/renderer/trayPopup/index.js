@@ -51,7 +51,7 @@ async function render() {
         const startedAtText = `${strings.alertStartedAt}: ${formatStartedAt(alert.startedAt)}`;
         const timing = document.createElement('div');
         timing.className = 'started-at';
-        timing.textContent = alert.ongoingDuration ? `${startedAtText}. ${strings.alertOngoingDuration}: ${alert.ongoingDuration}` : startedAtText;
+        timing.textContent = alert.ongoingDuration ? `${startedAtText}. ${strings.alertOngoingDuration}: ${alert.ongoingDuration}.` : startedAtText;
         item.appendChild(timing);
 
         if (alert.avgDurationLast24h || alert.avgDurationAllTime) {

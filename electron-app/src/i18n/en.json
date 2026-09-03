@@ -107,7 +107,7 @@
     "forecastActiveAlert": "Alert is currently active in this region.",
     "forecastActiveDurationHeader": "Average duration",
     "forecastActiveDurationLast24h": "over the last 24 hours",
-    "forecastActiveDurationAllTime": "over the whole period",
+    "forecastActiveDurationAllTime": "over the period",
     "forecastActiveDurationObservationDays": "over {days} {daysWord} of observation",
     "forecastActiveDurationNoData": "no finished alerts of this type to estimate from yet",
     "forecastActiveDurationSampleSize": "based on {count} alerts",
