@@ -23,6 +23,7 @@ function registerTrayPopupIpc() {
                 location: language === 'English' ? alert.location_lat : alert.location_title,
                 type: alertTypeName(alert.alert_type, language),
                 startedAt: alert.started_at,
+                ongoingDuration: formatDuration(Date.now() - new Date(alert.started_at).getTime(), language),
                 avgDurationLast24h: duration.avgDurationLast24hMs !== null ? formatDuration(duration.avgDurationLast24hMs, language) : null,
                 avgDurationAllTime: duration.avgDurationAllTimeMs !== null ? formatDuration(duration.avgDurationAllTimeMs, language) : null,
             };

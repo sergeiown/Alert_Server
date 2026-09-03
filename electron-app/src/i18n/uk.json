@@ -7,6 +7,7 @@
     "massAlertStartTitle": "Тривога одночасно в {count} регіонах",
     "massAlertCancelTitle": "Відбій тривоги одночасно в {count} регіонах",
     "alertStartedAt": "Розпочалась",
+    "alertOngoingDuration": "Триває",
     "alertSource": "Джерело",
     "alertDuration": "Тривалість",
     "trayPopupNoAlerts": "Немає активних тривог у ваших регіонах",

@@ -224,12 +224,22 @@ function buildForecastText(stats, language, source) {
     return lines.join('\n');
 }
 
+function formatShortDate(dateValue, language) {
+    const locale = language === 'English' ? 'en-US' : 'uk-UA';
+    return new Date(dateValue).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+// `ongoingSinceMs`, added per entry by forecastIpc.js before calling this (the earliest started_at
+// among the currently-active alerts of that type at this uid) - the whole point of showing this
+// screen is an alert that's happening right now, so how long THIS ONE has already run is the
+// first thing worth saying, ahead of the historical averages.
 function buildActiveDurationText(durationStats, language) {
     const lines = [t('forecastActiveAlert', language)];
 
     durationStats.forEach((entry) => {
-        lines.push('');
-        lines.push(`${t('forecastActiveDurationHeader', language)} (${alertTypeName(entry.type, language)}):`);
+        const typeName = alertTypeName(entry.type, language);
+        lines.push(`${t('alertOngoingDuration', language)} (${typeName}): ${formatDuration(Date.now() - entry.ongoingSinceMs, language)}`);
+        lines.push(`${t('forecastActiveDurationHeader', language)} (${typeName}):`);
         lines.push(
             `  - ${t('forecastActiveDurationLast24h', language)}: ${
                 entry.avgDurationLast24hMs !== null
@@ -238,7 +248,7 @@ function buildActiveDurationText(durationStats, language) {
             }`
         );
         lines.push(
-            `  - ${t('forecastActiveDurationAllTime', language)}: ${
+            `  - ${t('forecastActiveDurationAllTime', language)}${entry.oldestStartedAt ? ` (${formatShortDate(entry.oldestStartedAt, language)} - ${formatShortDate(Date.now(), language)})` : ''}: ${
                 entry.avgDurationAllTimeMs !== null
                     ? `${formatDuration(entry.avgDurationAllTimeMs, language)} (${t('forecastActiveDurationSampleSize', language).replace('{count}', entry.countAllTime)})`
                     : t('forecastActiveDurationNoData', language)
@@ -294,6 +304,11 @@ function getRegionDurationStats(uid, alertTypes) {
             .filter((a) => a.alert_type === type && a.finished_at)
             .map((a) => ({ ...a, _durationMs: new Date(a.finished_at).getTime() - new Date(a.started_at).getTime() }));
         const last24h = finished.filter((a) => now - new Date(a.started_at).getTime() <= DAY_MS);
+        // "The whole period" needs its own start date spelled out - otherwise it reads as if it
+        // could mean anything from "since I installed this" to "since the war started".
+        const oldestStartedAt = finished.length
+            ? finished.reduce((oldest, a) => (new Date(a.started_at) < new Date(oldest) ? a.started_at : oldest), finished[0].started_at)
+            : null;
 
         return {
             type,
@@ -301,6 +316,7 @@ function getRegionDurationStats(uid, alertTypes) {
             avgDurationAllTimeMs: avgOf(finished),
             countLast24h: last24h.length,
             countAllTime: finished.length,
+            oldestStartedAt,
         };
     });
 }
