@@ -12,6 +12,17 @@ body {
     background: #aad3df;
 }
 
+/* Leaflet's own default gives attribution links its container-wide link color (#0078A8, plain
+   blue) while plain text (the Google tiles' own "&copy; Google Maps" credit, added with no link
+   of its own) stays whatever color the attribution box itself uses (#333) - two different colors
+   in the very same line for no real reason. One color for both, and half Leaflet's own default
+   12px attribution font-size. */
+.leaflet-control-attribution,
+.leaflet-control-attribution a {
+    font-size: 6px;
+    color: #565656;
+}
+
 /* Leaflet's own popup/tooltip panes default to z-index 700/650 - lower than this app's own
    absolutely-positioned overlays (#statusBar, #screenshotToast, both 1000), so a threat marker's
    popup opening near either of them would render BEHIND it instead of on top like a popup should.
@@ -29,7 +40,7 @@ body {
    Kyiv's real outer boundary. Blurred so that boundary reads as a soft fade into the surrounding
    background instead of a hard, ruler-straight cutoff. */
 .kyiv-mask-shape {
-    filter: blur(6px);
+    filter: blur(24px);
 }
 
 /* Leaflet's own default tooltip CSS sets white-space: nowrap with no width limit - fine for a
@@ -467,16 +478,20 @@ body {
     .leaflet-control-attribution,
     .leaflet-tooltip {
         background: #262b33 !important;
-        color: #e6e6e6 !important;
         border-color: #3a4048 !important;
+    }
+
+    .leaflet-tooltip {
+        color: #e6e6e6 !important;
     }
 
     .leaflet-tooltip-top:before {
         border-top-color: #262b33 !important;
     }
 
+    .leaflet-control-attribution,
     .leaflet-control-attribution a {
-        color: #c9a86a !important;
+        color: #a8a8a8 !important;
     }
 
     .threat-legend,
