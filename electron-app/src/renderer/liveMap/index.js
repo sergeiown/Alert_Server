@@ -127,21 +127,9 @@ async function main() {
     // While Kyiv mode is on, EVERY re-fit (the center button, a fullscreen toggle, a window
     // resize) targets Kyiv instead of the whole country - not just the one click that turned it
     // on - or leaving Kyiv mode on through any of those would silently snap back out to Ukraine.
-    // Persisted in localStorage (survives a same-window page reload AND a real close of this
-    // window - liveMapWindow.js destroys the whole BrowserWindow when it's closed, not just hides
-    // it, so a real close+reopen gets a genuinely fresh renderer with empty sessionStorage; the
-    // live map window's own default disk-backed partition keeps localStorage around regardless).
-    // A theme change also reloads this window outright (see settingsIpc.js) to re-evaluate every
-    // layer's baked-in light/dark colors, which would otherwise silently drop back to the Ukraine
-    // view instead of staying in Kyiv mode until the user actually turns it off themselves.
-    const KYIV_MODE_STORAGE_KEY = 'liveMapKyivModeActive';
+    // Not persisted across a reload or a window close - always starts in Ukraine mode, on the
+    // user to turn back on each time.
     let kyivModeActive = false;
-    try {
-        kyivModeActive = localStorage.getItem(KYIV_MODE_STORAGE_KEY) === 'true';
-    } catch {
-        // Storage can throw in a locked-down/private context - falls back to off, same as a fresh
-        // window would start anyway.
-    }
 
     // fitBounds/flyToBounds both clamp to the CURRENT minZoom, so the floor is always lifted back
     // to the map's absolute minimum first - otherwise a stale floor from an earlier call (e.g. a
@@ -344,18 +332,9 @@ async function main() {
         })
         .addTo(map);
 
-    // Single entry point for entering/leaving Kyiv mode - used both by the toggle button itself and
-    // by the startup restore below, so a reload (theme change) ends up in exactly the same state a
-    // real click would have produced, not a partial/inconsistent one. `animate` defaults to true (a
-    // real toggle click deserves the crossfade/fly) but the startup restore passes false - nothing
-    // should visibly "switch" on window open, it should just already be in that state.
-    function applyKyivMode(active, animate = true) {
+    // Single entry point for entering/leaving Kyiv mode, used by the toggle button.
+    function applyKyivMode(active) {
         kyivModeActive = active;
-        try {
-            localStorage.setItem(KYIV_MODE_STORAGE_KEY, String(active));
-        } catch {
-            // Ignored - same reasoning as the read above.
-        }
         kyivToggle.setActive(active);
         // Scopes the attribution font-size/color tweak (index.css) to Kyiv mode only - normal
         // (Ukraine) mode has no plain-text Google credit next to the other links to clash with, so
@@ -373,7 +352,7 @@ async function main() {
 
         // maxBounds itself is handled inside fitAndLockMinZoom (cleared before the fly, reapplied
         // once it lands) - see the comment there for why the order matters.
-        fitAndLockMinZoom(animate);
+        fitAndLockMinZoom(true);
     }
 
     // Added last (not right after CenterControl) so it lands directly under the fullscreen button
@@ -386,12 +365,6 @@ async function main() {
         offTitle: strings.liveMapUkraineButtonTitle,
         onToggle: () => applyKyivMode(!kyivModeActive),
     }).addTo(map);
-
-    // Restores Kyiv mode right where it was before a same-window reload (see the sessionStorage
-    // read above) - without this, a theme change while Kyiv mode was on would silently drop back
-    // to the whole-country view, which is exactly the "turns off on its own" behavior this exists
-    // to avoid.
-    if (kyivModeActive) applyKyivMode(true, false);
 
     // The DOM "resize" event only fires reliably for viewport/zoom changes, not for every case a
     // BrowserWindow's content area changes size - a ResizeObserver reacts to any actual size change
