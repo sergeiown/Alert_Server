@@ -7,6 +7,8 @@
 // an alert (notifications, live map, tray popup, Forecast window) so they all agree on one
 // vocabulary rather than each re-deriving it.
 
+const { transliterate } = require('./transliterate');
+
 const LEVEL_COLOR = { red: '#dc2626', yellow: '#eab308' };
 const DEFAULT_COLOR = '#dc2626';
 
@@ -45,14 +47,20 @@ function stripDistrictSuffix(district) {
 // threats[] can carry more than one concurrent distinct threat (e.g. an ongoing drone alert that a
 // missile threat later joins), each with its own human-readable source_message already in the
 // source's own language - shown as-is rather than re-translated (same treatment alert.notes
-// already gets elsewhere). Grouped by description, one per line, with the specific districts named
-// alongside it when the source broke them out (a wide-area alert covering many districts would
-// otherwise repeat the same description once per district, unreadable as one run-together string).
-// Each line keeps its OWN level (a yellow drone line and a red missile line reported together for
-// the same alert are two different lines, not one line at the alert's overall worst level) so a UI
-// that can color per line - unlike a single flat string - shows each threat as its own color.
-function getThreatLines(threats) {
+// already gets elsewhere, and there's no translation source for open-ended free text like this
+// anyway). Grouped by description, one per line, with the specific districts named alongside it
+// when the source broke them out (a wide-area alert covering many districts would otherwise repeat
+// the same description once per district, unreadable as one run-together string). Each line keeps
+// its OWN level (a yellow drone line and a red missile line reported together for the same alert
+// are two different lines, not one line at the alert's overall worst level) so a UI that can color
+// per line - unlike a single flat string - shows each threat as its own color.
+// The district names/word ARE translated in English mode though (unlike the free-text description
+// itself) - a small, fully known vocabulary (this is the same "район"/"District" swap the live
+// map's own Kyiv district popups already do), transliterated the same way place names elsewhere in
+// English mode are (see transliterate.js).
+function getThreatLines(threats, language) {
     if (!threats || !threats.length) return [];
+    const isEnglish = language === 'English';
 
     const districtsByDescription = new Map();
     const levelByDescription = new Map();
@@ -67,16 +75,16 @@ function getThreatLines(threats) {
     return [...districtsByDescription.entries()].map(([description, districts]) => {
         const level = levelByDescription.get(description);
         if (!districts.size) return { level, text: `${description}:` };
-        const names = [...districts].map(stripDistrictSuffix);
-        const word = names.length === 1 ? 'район' : 'райони';
+        const names = [...districts].map(stripDistrictSuffix).map((name) => (isEnglish ? transliterate(name) : name));
+        const word = isEnglish ? (names.length === 1 ? 'district' : 'districts') : names.length === 1 ? 'район' : 'райони';
         return { level, text: `${description}: ${names.join(', ')} ${word}` };
     });
 }
 
 // Plain-text form for consumers that can't color individual lines anyway (notification bodies, the
 // Forecast window's copy-to-clipboard text, the ALERT log line).
-function describeThreats(threats) {
-    const lines = getThreatLines(threats);
+function describeThreats(threats, language) {
+    const lines = getThreatLines(threats, language);
     return lines.length ? lines.map((line) => line.text).join('\n') : null;
 }
 

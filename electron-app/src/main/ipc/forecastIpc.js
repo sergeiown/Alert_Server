@@ -67,7 +67,7 @@ function registerForecastIpc() {
                 entry.ongoingSinceMs = new Date(earliestStartedAtByType.get(entry.type)).getTime();
                 const typeAlerts = alertsByType.get(entry.type) || [];
                 entry.alertLevel = worstLevelAmong(typeAlerts);
-                entry.threatLines = getThreatLines(typeAlerts.flatMap((alert) => alert.threats || []));
+                entry.threatLines = getThreatLines(typeAlerts.flatMap((alert) => alert.threats || []), language);
             });
 
             return {
