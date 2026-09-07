@@ -3,8 +3,10 @@
     --fg: #1f1f1f;
     --border: #ddd;
     --muted: #888;
-    --item-bg: #fff8ec;
-    --item-border: #e0a020;
+    --item-bg: #f4f4f4;
+    --item-border: #bbbbbb;
+    --item-bg-yellow: #fff4cc;
+    --item-border-yellow: #eab308;
     --item-bg-red: #fdf0ef;
     --item-border-red: #dc2626;
     --threat-color-yellow: #a16207;
@@ -17,8 +19,10 @@
         --fg: #e6e6e6;
         --border: #3a3a3a;
         --muted: #999999;
-        --item-bg: #3a2f18;
-        --item-border: #b98122;
+        --item-bg: #2e2e2e;
+        --item-border: #555555;
+        --item-bg-yellow: #4a3a10;
+        --item-border-yellow: #eab308;
         --item-bg-red: #3a1f1f;
         --item-border-red: #b94a4a;
         --threat-color-yellow: #d9b35c;
@@ -72,9 +76,15 @@ main {
     margin-bottom: 6px;
 }
 
-/* Matches the same red/yellow classification the live map and notifications use - "yellow"
-   happens to already be this project's default item styling, kept as-is; "red" gets its own tint
-   so a more severe active alert visibly stands out from a merely-active one. */
+/* Matches the same red/yellow classification the live map and notifications use - each level gets
+   its own distinct tint (neither reuses the plain neutral default) so a more severe active alert
+   visibly stands out from a merely-active one, and "no level reported at all" (older cached data)
+   reads as genuinely neutral rather than looking like a third color of its own. */
+.alert-item.level-yellow {
+    border-color: var(--item-border-yellow);
+    background: var(--item-bg-yellow);
+}
+
 .alert-item.level-red {
     border-color: var(--item-border-red);
     background: var(--item-bg-red);
