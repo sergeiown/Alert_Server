@@ -42,6 +42,20 @@ function levelBadge(alertLevel, strings) {
     return ` <span style="color:${LEVEL_COLOR[alertLevel]};font-weight:600">(${label})</span>`;
 }
 
+// The description is Neptun/alerts.in.ua's own free text with no general translation source, but
+// the couple of phrases actually observed in Kyiv's own per-district breakdown specifically are a
+// small, bounded, known set - confirmed live, not guessed (same table notifier.js's own
+// describeThreats uses on the main-process side for notifications/tray popup/Forecast). Anything
+// not in here falls back to the untranslated Ukrainian text.
+const KNOWN_DESCRIPTION_EN = {
+    'Дронова загроза': 'Drone threat',
+    'Ракетна загроза': 'Missile threat',
+};
+
+function translateDescription(description, isEnglish) {
+    return isEnglish ? KNOWN_DESCRIPTION_EN[description] || description : description;
+}
+
 // `threatLines` ({level, description}[], worst first) is Kyiv districts' own thing - unlike every
 // other oblast/raion (one alertTypeName + one alertLevel is always enough), a district can
 // genuinely have a red AND a yellow threat live at once (see regionAlertStatus.js's
@@ -49,6 +63,7 @@ function levelBadge(alertLevel, strings) {
 // the worst one. Takes over from the plain alertTypeName/alertLevel pair when given.
 function alertPopupHtml(displayName, startedAt, alertTypeName, strings, language, inheritedFromName, alertLevel, threatLines) {
     const locale = language === 'English' ? 'en-US' : 'uk-UA';
+    const isEnglish = language === 'English';
 
     if (!startedAt) {
         return `<strong>${displayName}</strong><br>${strings.liveMapNoActiveAlert}`;
@@ -58,7 +73,9 @@ function alertPopupHtml(displayName, startedAt, alertTypeName, strings, language
     const duration = formatDuration(Date.now() - new Date(startedAt).getTime(), strings);
     const typeLine =
         threatLines && threatLines.length
-            ? threatLines.map((line) => `${capitalize(line.description)}${levelBadge(line.level, strings)}<br>`).join('')
+            ? threatLines
+                  .map((line) => `${capitalize(translateDescription(line.description, isEnglish))}${levelBadge(line.level, strings)}<br>`)
+                  .join('')
             : alertTypeName
               ? `${capitalize(alertTypeName)}${levelBadge(alertLevel, strings)}<br>`
               : '';
