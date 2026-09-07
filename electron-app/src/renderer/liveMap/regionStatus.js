@@ -53,76 +53,46 @@ function shadeFor(startedAt, now, alertLevel) {
 // Currently only Kyiv's own per-district breakdown can have this (a drone threat that a missile
 // threat later joins, both still active for the same district at once) - collapsing straight to
 // the worst level would silently drop the fact that a lesser one is ALSO still live there. A
-// striped hatch (tried first, via an injected SVG <pattern> - the same technique
-// occupiedTerritory.js already uses for its own hatching) read as fussy texture rather than a
-// clean answer to "which half is which" - this instead genuinely cuts the district's own polygon
-// in two along a fixed diagonal through its centroid (Sutherland-Hodgman single-edge clip - no
-// SVG defs/patterns involved at all, so there's nothing shared to go stale if other layers come
-// and go), each half then drawn as its own plain, solid-color polygon.
-function ringCentroid(ring) {
-    const points = ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1] ? ring : [...ring, ring[0]];
-    let area = 0;
-    let cLat = 0;
-    let cLng = 0;
-    for (let i = 0; i < points.length - 1; i++) {
-        const [lat0, lng0] = points[i];
-        const [lat1, lng1] = points[i + 1];
-        const cross = lng0 * lat1 - lng1 * lat0;
-        area += cross;
-        cLng += (lng0 + lng1) * cross;
-        cLat += (lat0 + lat1) * cross;
-    }
-    area /= 2;
-    if (Math.abs(area) < 1e-9) {
-        const [latSum, lngSum] = ring.reduce(([lat, lng], [pointLat, pointLng]) => [lat + pointLat, lng + pointLng], [0, 0]);
-        return [latSum / ring.length, lngSum / ring.length];
-    }
-    return [cLat / (6 * area), cLng / (6 * area)];
-}
+// plain geometric half-split (tried in between) read as an arbitrary, uneven cut depending on each
+// district's own shape - a diagonal two-color hatch instead, via an injected SVG <pattern> (the
+// same technique occupiedTerritory.js already uses for its own hatching). Re-created on every
+// render (not just once) - toggling Kyiv mode removes/re-adds several OTHER vector layers
+// (occupied territory, rivers), and if that ever causes Leaflet's shared SVG renderer to tear down
+// and recreate its root, a pattern only ever created once at startup would be gone from the (new)
+// document with nothing to notice or recreate it.
+const DUAL_LEVEL_PATTERN_ID = 'kyiv-dual-level-hatch';
 
-// Signed distance (up to a constant factor) of a point from the line through `centroid` running in
-// direction (dirLat, dirLng) - sign alone is what matters, to sort each vertex onto one side or
-// the other of that line.
-function sideOf(point, centroid, dirLat, dirLng) {
-    return (point[0] - centroid[0]) * dirLng - (point[1] - centroid[1]) * dirLat;
-}
+function ensureDualLevelPattern(map) {
+    const svg = map.getPane('overlayPane').querySelector('svg');
+    if (!svg || svg.querySelector(`#${DUAL_LEVEL_PATTERN_ID}`)) return;
 
-function lineIntersection(p1, p2, centroid, dirLat, dirLng) {
-    const s1 = sideOf(p1, centroid, dirLat, dirLng);
-    const s2 = sideOf(p2, centroid, dirLat, dirLng);
-    const t = s1 / (s1 - s2);
-    return [p1[0] + t * (p2[0] - p1[0]), p1[1] + t * (p2[1] - p1[1])];
-}
-
-// Sutherland-Hodgman clip of one ring against one half-plane (the line through the polygon's own
-// centroid, along a fixed NE-SW diagonal) - `keepPositive` picks which side survives.
-function clipHalf(ring, centroid, dirLat, dirLng, keepPositive) {
-    const output = [];
-    const n = ring.length;
-
-    for (let i = 0; i < n; i++) {
-        const curr = ring[i];
-        const prev = ring[(i - 1 + n) % n];
-        const currSide = sideOf(curr, centroid, dirLat, dirLng);
-        const prevSide = sideOf(prev, centroid, dirLat, dirLng);
-        const currInside = keepPositive ? currSide >= 0 : currSide <= 0;
-        const prevInside = keepPositive ? prevSide >= 0 : prevSide <= 0;
-
-        if (currInside !== prevInside) output.push(lineIntersection(prev, curr, centroid, dirLat, dirLng));
-        if (currInside) output.push(curr);
+    let defs = svg.querySelector('defs');
+    if (!defs) {
+        defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        svg.insertBefore(defs, svg.firstChild);
     }
 
-    return output;
-}
+    const pattern = document.createElementNS('http://www.w3.org/2000/svg', 'pattern');
+    pattern.setAttribute('id', DUAL_LEVEL_PATTERN_ID);
+    pattern.setAttribute('width', '14');
+    pattern.setAttribute('height', '14');
+    pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+    pattern.setAttribute('patternTransform', 'rotate(45)');
 
-// A fixed 45° diagonal for every district - simpler and more predictable than trying to orient the
-// split to each shape's own long axis, and reads fine regardless of a given district's proportions.
-const SPLIT_DIR_LAT = 1;
-const SPLIT_DIR_LNG = 1;
+    const redRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    redRect.setAttribute('width', '7');
+    redRect.setAttribute('height', '14');
+    redRect.setAttribute('fill', RED_SHADES[2]);
+    pattern.appendChild(redRect);
 
-function splitRingInHalf(ring) {
-    const centroid = ringCentroid(ring);
-    return [clipHalf(ring, centroid, SPLIT_DIR_LAT, SPLIT_DIR_LNG, true), clipHalf(ring, centroid, SPLIT_DIR_LAT, SPLIT_DIR_LNG, false)];
+    const yellowRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    yellowRect.setAttribute('x', '7');
+    yellowRect.setAttribute('width', '7');
+    yellowRect.setAttribute('height', '14');
+    yellowRect.setAttribute('fill', YELLOW_SHADES[2]);
+    pattern.appendChild(yellowRect);
+
+    defs.appendChild(pattern);
 }
 
 const RegionStatusLayer = L.LayerGroup.extend({
@@ -161,16 +131,17 @@ const RegionStatusLayer = L.LayerGroup.extend({
 
     // `ownStartedAt` drives what's actually drawn; `popupStartedAt`/`popupAlertTypeName`/
     // `inheritedFromName` drive the popup text, which can differ (an inherited alert is shown in
-    // the popup even when nothing is drawn to indicate it visually). `borderLevel` (defaults to
-    // `alertLevel`) lets a half-district draw (see _drawKyivRaions) use its OWN half's color for the
-    // border too, instead of always outlining in the worst level's color regardless of which half
-    // is which. `forceBorder` (Kyiv districts only) keeps the outline visible even with no active
-    // alert at all - real imagery underneath means the district shape itself needs its own outline
-    // to read as a district, unlike the plain abstract background elsewhere, where an unalerted
-    // region is already legible from the underlying map art alone.
-    _drawRegion: function (rings, displayName, ownStartedAt, now, popupStartedAt, popupAlertTypeName, inheritedFromName, alertLevel, borderLevel, forceBorder) {
+    // the popup even when nothing is drawn to indicate it visually). `hasBothLevels` (Kyiv
+    // districts only, for now) swaps the fill for the red/yellow diagonal hatch instead of a solid
+    // shade - the border still uses the worst level's own color. `forceBorder` (also Kyiv districts
+    // only) keeps the outline visible even with no active alert at all - real imagery underneath
+    // means the district shape itself needs its own outline to read as a district, unlike the plain
+    // abstract background elsewhere, where an unalerted region is already legible from the
+    // underlying map art alone.
+    _drawRegion: function (rings, displayName, ownStartedAt, now, popupStartedAt, popupAlertTypeName, inheritedFromName, alertLevel, hasBothLevels, forceBorder) {
         const alerted = Boolean(ownStartedAt);
-        const color = alerted ? shadeFor(ownStartedAt, now, borderLevel || alertLevel) : NEUTRAL_COLOR;
+        const color = alerted ? shadeFor(ownStartedAt, now, alertLevel) : NEUTRAL_COLOR;
+        const fillColor = alerted && hasBothLevels ? `url(#${DUAL_LEVEL_PATTERN_ID})` : color;
         const { _strings: strings, _language: language } = this;
 
         L.polygon(rings, {
@@ -178,7 +149,7 @@ const RegionStatusLayer = L.LayerGroup.extend({
             color,
             weight: alerted || forceBorder ? 1 : 0,
             opacity: alerted ? 0.5 : forceBorder ? 0.35 : 0,
-            fillColor: color,
+            fillColor,
             fillOpacity: alerted ? ALERTED_FILL_OPACITY : NEUTRAL_FILL_OPACITY,
         })
             .bindPopup(() =>
@@ -201,22 +172,13 @@ const RegionStatusLayer = L.LayerGroup.extend({
             const hasBothLevels = getKyivRaionHasBothLevels(name);
             const displayName = isEnglish ? `${name} District` : `${name} район`;
 
-            if (hasBothLevels) {
-                // A real cut of the district's own shape into two halves (see splitRingInHalf) -
-                // red half shaded on the red ladder, yellow half on the yellow ladder, both from the
-                // SAME startedAt (there's only one per district, not one per level).
-                const [halfA, halfB] = splitRingInHalf(ring);
-                this._drawRegion([halfA], displayName, ownStartedAt, now, ownStartedAt, null, null, 'red', 'red', true);
-                this._drawRegion([halfB], displayName, ownStartedAt, now, ownStartedAt, null, null, 'yellow', 'yellow', true);
-                return;
-            }
-
-            this._drawRegion([ring], displayName, ownStartedAt, now, ownStartedAt, null, null, ownAlertLevel, null, true);
+            this._drawRegion([ring], displayName, ownStartedAt, now, ownStartedAt, null, null, ownAlertLevel, hasBothLevels, true);
         });
     },
 
     _render: function () {
         this.clearLayers();
+        if (this._map) ensureDualLevelPattern(this._map);
         const now = Date.now();
         const isEnglish = this._language === 'English';
 
