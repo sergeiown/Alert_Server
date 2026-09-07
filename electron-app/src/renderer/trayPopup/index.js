@@ -43,6 +43,13 @@ async function render() {
         const item = document.createElement('div');
         item.className = 'alert-item';
 
+        // "level-red"/"level-yellow" tint the item's border/background to match the same
+        // red/yellow classification the live map and notifications now use - unset (older cached
+        // data, or a source that hasn't reported a level) keeps the original neutral styling.
+        if (alert.alertLevel === 'red' || alert.alertLevel === 'yellow') {
+            item.classList.add(`level-${alert.alertLevel}`);
+        }
+
         const header = document.createElement('div');
         header.className = 'type';
         header.textContent = `${alert.location} - ${alert.type}.`;
@@ -53,6 +60,13 @@ async function render() {
         timing.className = 'started-at';
         timing.textContent = alert.ongoingDuration ? `${startedAtText}. ${strings.alertOngoingDuration}: ${alert.ongoingDuration}.` : startedAtText;
         item.appendChild(timing);
+
+        if (alert.threatDescription) {
+            const threat = document.createElement('div');
+            threat.className = 'threat';
+            threat.textContent = alert.threatDescription;
+            item.appendChild(threat);
+        }
 
         if (alert.avgDurationLast24h || alert.avgDurationAllTime) {
             const duration = document.createElement('div');
