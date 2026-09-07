@@ -53,4 +53,36 @@ function computeAlertedRegions(alerts) {
     };
 }
 
-module.exports = { computeAlertedRegions };
+// Kyiv (location_uid 31 in all three live sources - alerts.in.ua/UkraineAlarm/Neptun all happen to
+// agree on this uid) is the one place in the country where a district-level breakdown exists only
+// as free text inside threats[].source_message ("Ракетна загроза (червоний рівень) Дарницький
+// район") rather than as its own separately matchable location_uid the way every other raion has -
+// see alertLevels.js's describeThreats for the same text shape parsed for display elsewhere. This
+// is purely for the live map's Kyiv view; it has no bearing on alerting/notifications, which stay
+// anchored to the whole city record exactly as before.
+const KYIV_CITY_UID = 31;
+const THREAT_DISTRICT_PATTERN = /^.*?\)\s+(.+?)\s+район$/iu;
+
+function computeKyivRaionStatuses(alerts) {
+    const statusByDistrict = new Map();
+
+    alerts
+        .filter((alert) => Number(alert.location_uid) === KYIV_CITY_UID)
+        .forEach((alert) => {
+            (alert.threats || []).forEach((threat) => {
+                if (!threat.source_message) return;
+                const match = threat.source_message.match(THREAT_DISTRICT_PATTERN);
+                if (!match) return;
+
+                const district = match[1].trim();
+                const existing = statusByDistrict.get(district);
+                if (!existing || levelRank(threat.level) > levelRank(existing.alertLevel)) {
+                    statusByDistrict.set(district, { alertLevel: threat.level, startedAt: threat.started_at });
+                }
+            });
+        });
+
+    return Array.from(statusByDistrict, ([name, v]) => ({ name, startedAt: v.startedAt, alertLevel: v.alertLevel }));
+}
+
+module.exports = { computeAlertedRegions, computeKyivRaionStatuses };

@@ -4,6 +4,7 @@
 import { buildOblastGroup } from './regionLabels.js';
 import { buildRaionGroup } from './raionLabels.js';
 import { buildRaionBordersGroup } from './raionBorders.js';
+import { buildKyivRaionGroup } from './kyivRaionLabels.js';
 import { buildCityGroup, CITIES } from './cityLabels.js';
 import { OBLAST_MIN_ZOOM, RAION_MIN_ZOOM } from './zoomTiers.js';
 
@@ -15,6 +16,7 @@ const LabelsLayer = L.LayerGroup.extend({
         this._raionGroup = L.layerGroup([
             buildRaionBordersGroup(),
             buildRaionGroup(language, CITIES),
+            buildKyivRaionGroup(language),
             buildCityGroup(strings, language),
         ]);
         this._active = null;
