@@ -127,14 +127,17 @@ async function main() {
     // While Kyiv mode is on, EVERY re-fit (the center button, a fullscreen toggle, a window
     // resize) targets Kyiv instead of the whole country - not just the one click that turned it
     // on - or leaving Kyiv mode on through any of those would silently snap back out to Ukraine.
-    // Persisted in sessionStorage (survives a same-window page reload, not a real app restart) -
-    // a theme change reloads this whole window outright (see settingsIpc.js) to re-evaluate every
+    // Persisted in localStorage (survives a same-window page reload AND a real close of this
+    // window - liveMapWindow.js destroys the whole BrowserWindow when it's closed, not just hides
+    // it, so a real close+reopen gets a genuinely fresh renderer with empty sessionStorage; the
+    // live map window's own default disk-backed partition keeps localStorage around regardless).
+    // A theme change also reloads this window outright (see settingsIpc.js) to re-evaluate every
     // layer's baked-in light/dark colors, which would otherwise silently drop back to the Ukraine
     // view instead of staying in Kyiv mode until the user actually turns it off themselves.
     const KYIV_MODE_STORAGE_KEY = 'liveMapKyivModeActive';
     let kyivModeActive = false;
     try {
-        kyivModeActive = sessionStorage.getItem(KYIV_MODE_STORAGE_KEY) === 'true';
+        kyivModeActive = localStorage.getItem(KYIV_MODE_STORAGE_KEY) === 'true';
     } catch {
         // Storage can throw in a locked-down/private context - falls back to off, same as a fresh
         // window would start anyway.
@@ -147,18 +150,35 @@ async function main() {
     // below, that pins the view to Kyiv: no zooming out past it, no panning past its edges either.
     // `animate` is only true for a deliberate user action worth the fly (the Center button, toggling
     // Kyiv mode itself) - a plain fitBounds stays the default everywhere else (initial load, a
-    // fullscreen toggle, a window resize), where an animated fly would just be an odd delay. Locking
-    // minZoom has to wait for the fly to actually land (`moveend`), not fire immediately - doing it
-    // right away would clamp the zoom mid-flight to whatever it happened to be at that instant.
+    // fullscreen toggle, a window resize), where an animated fly would just be an odd delay.
+    // maxBounds is always cleared before the fit/fly and only reapplied once the camera has
+    // actually arrived (in lockAfterMove, on 'moveend') - setting it beforehand while the current
+    // view is still the whole-country one (well outside Kyiv's own bounds) makes Leaflet snap the
+    // view to fit inside it immediately, which looked exactly like a broken/wrong zoom happening
+    // before the real animated fly even got to run. Locking minZoom has the same reason to wait for
+    // 'moveend' rather than fire immediately: doing it right away would clamp the zoom mid-flight to
+    // whatever it happened to be at that instant.
     function fitAndLockMinZoom(animate) {
         map.setMinZoom(MAP_MIN_ZOOM);
+        map.setMaxBounds(null);
         const bounds = kyivModeActive ? KYIV_BOUNDS : UKRAINE_BOUNDS;
+
+        function lockAfterMove() {
+            map.setMinZoom(map.getZoom());
+            if (kyivModeActive) map.setMaxBounds(L.latLngBounds(KYIV_BOUNDS).pad(0.05));
+        }
+
         if (animate) {
-            map.once('moveend', () => map.setMinZoom(map.getZoom()));
-            map.flyToBounds(bounds);
+            map.once('moveend', lockAfterMove);
+            // A plain flyToBounds swoops out to a much lower zoom mid-flight before coming back in
+            // on any large enough zoom change (its default easing curve) - fine for a modest pan,
+            // but between the whole-country view and Kyiv's own scale that swoop was wide enough to
+            // look like the zoom had broken rather than like a deliberate camera move.
+            // easeLinearity near 1 flattens that curve down to close to a straight pan+zoom.
+            map.flyToBounds(bounds, { duration: 0.9, easeLinearity: 1 });
         } else {
             map.fitBounds(bounds);
-            map.setMinZoom(map.getZoom());
+            lockAfterMove();
         }
     }
 
@@ -208,46 +228,66 @@ async function main() {
         interactive: false,
     });
 
-    // Crossfades the base map / satellite tiles / Kyiv mask in and out on a mode switch instead of
-    // popping them in/out on the same tick the camera starts moving - all three are genuinely
-    // different layers underneath (not just a shading change), so swapping them instantly under a
-    // still-moving camera read as a jump cut rather than one continuous transition. Each pending
-    // removal is tracked so a rapid re-toggle (on-off-on before the first fade even finishes)
-    // cancels the earlier one instead of it firing later and yanking away a layer the newer toggle
-    // just faded back in.
-    const KYIV_FADE_MS = 350;
-    const fadeOutTimers = new WeakMap();
+    // Swaps the base map / satellite tiles / Kyiv mask on a mode switch by fading whatever's
+    // currently shown fully OUT first, only THEN adding and fading the new scene IN - not a true
+    // crossfade (both partially visible at once), which could show the old map flashing on top of
+    // the new one for that instant depending on which Leaflet pane/DOM position each layer's
+    // element happened to land in (baseMapOverlay and the Kyiv mask share the vector overlay pane;
+    // the satellite tiles sit in the tile pane underneath it - not a fixed, guaranteed stacking
+    // order between the two once both are visible with partial opacity at once). Fading to nothing
+    // before anything new appears removes that ambiguity outright. `sceneToken` guards a rapid
+    // re-toggle mid-fade: only the transition that's still current gets to swap the actual layers.
+    const KYIV_SCENE_FADE_MS = 300;
+    let sceneToken = 0;
 
-    function cancelPendingRemoval(layer) {
-        const pending = fadeOutTimers.get(layer);
-        if (pending) {
-            clearTimeout(pending);
-            fadeOutTimers.delete(layer);
-        }
-    }
-
-    function fadeLayerIn(layer, el) {
-        cancelPendingRemoval(layer);
+    function setOpacity(el, value) {
         if (!el) return;
         el.classList.add('kyiv-fade-layer');
-        el.style.opacity = '0';
-        void el.offsetWidth; // Force a reflow so the browser registers 0 before animating to 1.
-        el.style.opacity = '1';
+        el.style.opacity = String(value);
     }
 
-    function fadeLayerOut(layer, el) {
-        cancelPendingRemoval(layer);
-        if (!el) {
-            map.removeLayer(layer);
-            return;
+    function fadeIn(el) {
+        if (!el) return;
+        setOpacity(el, 0);
+        void el.offsetWidth; // Force a reflow so the browser registers 0 before animating to 1.
+        setOpacity(el, 1);
+    }
+
+    function swapScene(active) {
+        const token = ++sceneToken;
+
+        if (active) {
+            setOpacity(baseMapOverlay.getElement(), 0);
+        } else {
+            setOpacity(kyivTileLayer.getContainer(), 0);
+            setOpacity(kyivMask.getElement(), 0);
         }
-        el.classList.add('kyiv-fade-layer');
-        el.style.opacity = '0';
-        const timer = setTimeout(() => {
-            fadeOutTimers.delete(layer);
-            map.removeLayer(layer);
-        }, KYIV_FADE_MS);
-        fadeOutTimers.set(layer, timer);
+
+        setTimeout(() => {
+            if (token !== sceneToken) return; // superseded by a later toggle mid-fade
+
+            if (active) {
+                map.removeLayer(baseMapOverlay);
+                if (riverLayerWasOn) map.removeLayer(riverLayer);
+                if (occupiedTerritoryLayerWasOn) map.removeLayer(occupiedTerritoryLayer);
+                kyivTileLayer.addTo(map);
+                // Added (and pushed behind everything else already in the shared vector-overlay
+                // pane) BEFORE the district layers re-render just below - so their freshly
+                // (re)drawn shapes land after the mask in the DOM and paint on top of it, not the
+                // other way around.
+                kyivMask.addTo(map);
+                kyivMask.bringToBack();
+                fadeIn(kyivTileLayer.getContainer());
+                fadeIn(kyivMask.getElement());
+            } else {
+                map.removeLayer(kyivTileLayer);
+                map.removeLayer(kyivMask);
+                baseMapOverlay.addTo(map);
+                if (riverLayerWasOn) riverLayer.addTo(map);
+                if (occupiedTerritoryLayerWasOn) occupiedTerritoryLayer.addTo(map);
+                fadeIn(baseMapOverlay.getElement());
+            }
+        }, KYIV_SCENE_FADE_MS);
     }
 
     fitAndLockMinZoom();
@@ -312,45 +352,27 @@ async function main() {
     function applyKyivMode(active, animate = true) {
         kyivModeActive = active;
         try {
-            sessionStorage.setItem(KYIV_MODE_STORAGE_KEY, String(active));
+            localStorage.setItem(KYIV_MODE_STORAGE_KEY, String(active));
         } catch {
             // Ignored - same reasoning as the read above.
         }
         kyivToggle.setActive(active);
+        // Scopes the attribution font-size/color tweak (index.css) to Kyiv mode only - normal
+        // (Ukraine) mode has no plain-text Google credit next to the other links to clash with, so
+        // it should keep Leaflet's own default attribution styling untouched.
+        map.getContainer().classList.toggle('kyiv-mode-active', active);
 
         if (active) {
             riverLayerWasOn = map.hasLayer(riverLayer);
             occupiedTerritoryLayerWasOn = map.hasLayer(occupiedTerritoryLayer);
-            fadeLayerOut(baseMapOverlay, baseMapOverlay.getElement());
-            if (riverLayerWasOn) map.removeLayer(riverLayer);
-            if (occupiedTerritoryLayerWasOn) map.removeLayer(occupiedTerritoryLayer);
-            kyivTileLayer.addTo(map);
-            fadeLayerIn(kyivTileLayer, kyivTileLayer.getContainer());
-            // Added (and pushed behind everything else already in the shared vector-overlay
-            // pane) BEFORE the district layers re-render just below - so their freshly (re)drawn
-            // shapes land after the mask in the DOM and paint on top of it, not the other way
-            // around.
-            kyivMask.addTo(map);
-            kyivMask.bringToBack();
-            fadeLayerIn(kyivMask, kyivMask.getElement());
-            // Padded slightly past the district borders themselves - a bare fit would let the
-            // user pan just enough to reveal a sliver of the country outside Kyiv at the edge.
-            map.setMaxBounds(L.latLngBounds(KYIV_BOUNDS).pad(0.05));
-        } else {
-            fadeLayerOut(kyivTileLayer, kyivTileLayer.getContainer());
-            fadeLayerOut(kyivMask, kyivMask.getElement());
-            baseMapOverlay.addTo(map);
-            fadeLayerIn(baseMapOverlay, baseMapOverlay.getElement());
-            if (riverLayerWasOn) riverLayer.addTo(map);
-            if (occupiedTerritoryLayerWasOn) occupiedTerritoryLayer.addTo(map);
-            map.setMaxBounds(null);
         }
+        swapScene(active);
 
-        // After the mask (if any) is already placed and pushed to the back - so their own
-        // freshly-drawn district shapes land on top of it, not the other way around.
         regionStatusLayer.setKyivMode(active);
         labelsLayer.setKyivMode(active);
 
+        // maxBounds itself is handled inside fitAndLockMinZoom (cleared before the fly, reapplied
+        // once it lands) - see the comment there for why the order matters.
         fitAndLockMinZoom(animate);
     }
 
