@@ -75,14 +75,23 @@ function computeKyivRaionStatuses(alerts) {
                 if (!match) return;
 
                 const district = match[1].trim();
-                const existing = statusByDistrict.get(district);
-                if (!existing || levelRank(threat.level) > levelRank(existing.alertLevel)) {
-                    statusByDistrict.set(district, { alertLevel: threat.level, startedAt: threat.started_at });
+                if (!statusByDistrict.has(district)) {
+                    statusByDistrict.set(district, { startedAt: threat.started_at, levels: new Set() });
                 }
+                const entry = statusByDistrict.get(district);
+                entry.levels.add(threat.level);
+                if (new Date(threat.started_at) < new Date(entry.startedAt)) entry.startedAt = threat.started_at;
             });
         });
 
-    return Array.from(statusByDistrict, ([name, v]) => ({ name, startedAt: v.startedAt, alertLevel: v.alertLevel }));
+    // "both" - a genuinely real, observed situation (a drone threat that a missile threat later
+    // joins, both still active at once) - collapsing straight to the worst level would silently
+    // drop the fact that a lesser one is ALSO still live for that district.
+    return Array.from(statusByDistrict, ([name, v]) => {
+        const levels = [...v.levels];
+        const worstLevel = levels.reduce((worst, level) => (levelRank(level) > levelRank(worst) ? level : worst), null);
+        return { name, startedAt: v.startedAt, alertLevel: worstLevel, hasBothLevels: levels.length > 1 };
+    });
 }
 
 module.exports = { computeAlertedRegions, computeKyivRaionStatuses };
