@@ -138,6 +138,30 @@ const UKRAINEALARM_TYPE_MAP = {
     NUCLEAR: 'nuclear',
 };
 
+// UkraineAlarm's own red/yellow threat-level split (confirmed live on the /alerts polling
+// endpoint, not just the webhook - each activeAlerts[] item now carries an activeAlertLevels[]
+// array: [{alertLevel: "Red"|"Yellow", reason, createdAt}], one entry per concurrent distinct
+// threat - e.g. an ongoing drone (yellow) alert that a missile threat (red) later joins). Mapped
+// into the exact same {alert_level, threats[]} shape alerts.in.ua's active.json already carries
+// natively (alert_level + threats[].{threat_type, level, started_at, source_message}), so every
+// downstream consumer (notifier, tray, live map, forecast) can read one field name regardless of
+// which live source is currently active - threat_type has no UkraineAlarm equivalent (only a
+// human-readable `reason`), left null there rather than guessed at from the reason text.
+function worstUkraineAlarmLevel(activeAlertLevels) {
+    if (activeAlertLevels.some((l) => l.alertLevel === 'Red')) return 'red';
+    if (activeAlertLevels.length) return 'yellow';
+    return null;
+}
+
+function mapUkraineAlarmThreats(activeAlertLevels) {
+    return activeAlertLevels.map((l) => ({
+        threat_type: null,
+        level: l.alertLevel ? l.alertLevel.toLowerCase() : null,
+        started_at: l.createdAt || null,
+        source_message: l.reason || null,
+    }));
+}
+
 // Kaggle's per-file download endpoint returns the plain CSV directly (no zip wrapper to unpack,
 // which a Worker has no built-in support for anyway). The dataset itself is only updated weekly,
 // so this is cached far longer than anything else here.
@@ -782,6 +806,8 @@ export class AlertsGateway {
                 const ageMs = now - new Date(alert.lastUpdate).getTime();
                 if (ageMs > UKRAINEALARM_STALE_ALERT_THRESHOLD_MS) return;
 
+                const activeAlertLevels = alert.activeAlertLevels || [];
+
                 alerts.push({
                     // Keyed by region+type, NOT lastUpdate - electron-app's notifier.js diffs
                     // live alerts strictly by `id` to decide what's newly started/cancelled.
@@ -798,6 +824,8 @@ export class AlertsGateway {
                     location_title: region.regionName,
                     alert_type: mappedType,
                     started_at: alert.lastUpdate,
+                    alert_level: worstUkraineAlarmLevel(activeAlertLevels),
+                    threats: mapUkraineAlarmThreats(activeAlertLevels),
                 });
             });
         });
