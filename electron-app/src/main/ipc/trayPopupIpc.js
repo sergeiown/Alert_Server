@@ -29,7 +29,7 @@ function registerTrayPopupIpc() {
                 avgDurationLast24h: duration.avgDurationLast24hMs !== null ? formatDuration(duration.avgDurationLast24hMs, language) : null,
                 avgDurationAllTime: duration.avgDurationAllTimeMs !== null ? formatDuration(duration.avgDurationAllTimeMs, language) : null,
                 alertLevel: alert.alert_level || null,
-                threatLines: getThreatLines(alert.threats),
+                threatLines: getThreatLines(alert.threats, language),
             };
         });
     });

@@ -190,7 +190,7 @@ function processAlerts(matchedAlerts, allAlerts) {
                     `${t('location', language)}: ${locationName}`,
                     `${t('activeInMonitored', language)}: ${alertCount}`,
                     startedAtText ? `${t('alertStartedAt', language)}: ${startedAtText}` : null,
-                    describeThreats(alert.threats),
+                    describeThreats(alert.threats, language),
                     alert.notes ? `${t('alertSource', language)}: ${alert.notes}` : null,
                 ]
                     .filter(Boolean)
