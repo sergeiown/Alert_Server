@@ -9,6 +9,7 @@ import { addOccupiedTerritoryLayer } from './occupiedTerritory.js';
 import { startStatusBar } from './statusBar.js';
 import { addScreenshotControl } from './screenshot.js';
 import { KYIV_RAION_BORDERS } from './kyivRaionBorders.js';
+import { applyTitleBarAccentColor } from './chromeTint.js';
 
 // Must match ukraine_default.svg's own mapsvg:geoViewBox attribute (west north east south),
 // or the background image will no longer line up.
@@ -109,6 +110,13 @@ async function main() {
     const activeAlertSourceKey = (await window.alertServerLiveMap.getActiveAlertSource()) || settings.alertSourceProvider;
     const alertSourceDisplay = ALERT_SOURCE_DISPLAY[activeAlertSourceKey] || ALERT_SOURCE_DISPLAY['alerts.in.ua'];
     document.title = strings.appName;
+
+    // Tints the map's own chrome to match the window's REAL title bar - only actually different
+    // from index.css's own static default when the user has Windows' "Show accent color on title
+    // bars" setting on (see accentColor.js on the main-process side); null otherwise, and the CSS
+    // default already looks like the title bar in that (more common) case.
+    applyTitleBarAccentColor(await window.alertServerLiveMap.getTitleBarAccentColor());
+    window.alertServerLiveMap.onTitleBarAccentColorChanged(applyTitleBarAccentColor);
 
     const map = L.map('map', {
         center: [48.4, 31.2],
