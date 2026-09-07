@@ -48,24 +48,36 @@ function stripDistrictSuffix(district) {
 // already gets elsewhere). Grouped by description, one per line, with the specific districts named
 // alongside it when the source broke them out (a wide-area alert covering many districts would
 // otherwise repeat the same description once per district, unreadable as one run-together string).
-function describeThreats(threats) {
-    if (!threats || !threats.length) return null;
+// Each line keeps its OWN level (a yellow drone line and a red missile line reported together for
+// the same alert are two different lines, not one line at the alert's overall worst level) so a UI
+// that can color per line - unlike a single flat string - shows each threat as its own color.
+function getThreatLines(threats) {
+    if (!threats || !threats.length) return [];
 
     const districtsByDescription = new Map();
+    const levelByDescription = new Map();
     threats.forEach((threat) => {
         if (!threat.source_message) return;
         const { description, district } = splitThreatMessage(threat.source_message);
         if (!districtsByDescription.has(description)) districtsByDescription.set(description, new Set());
         if (district) districtsByDescription.get(description).add(district);
+        if (!levelByDescription.has(description)) levelByDescription.set(description, threat.level);
     });
 
-    const lines = [...districtsByDescription.entries()].map(([description, districts]) => {
-        if (!districts.size) return `${description}:`;
+    return [...districtsByDescription.entries()].map(([description, districts]) => {
+        const level = levelByDescription.get(description);
+        if (!districts.size) return { level, text: `${description}:` };
         const names = [...districts].map(stripDistrictSuffix);
         const word = names.length === 1 ? 'район' : 'райони';
-        return `${description}: ${names.join(', ')} ${word}`;
+        return { level, text: `${description}: ${names.join(', ')} ${word}` };
     });
-    return lines.length ? lines.join('\n') : null;
 }
 
-module.exports = { levelColor, worstLevelAmong, describeThreats };
+// Plain-text form for consumers that can't color individual lines anyway (notification bodies, the
+// Forecast window's copy-to-clipboard text, the ALERT log line).
+function describeThreats(threats) {
+    const lines = getThreatLines(threats);
+    return lines.length ? lines.map((line) => line.text).join('\n') : null;
+}
+
+module.exports = { levelColor, worstLevelAmong, describeThreats, getThreatLines };
