@@ -12,6 +12,26 @@ body {
     background: #aad3df;
 }
 
+/* Leaflet's own popup/tooltip panes default to z-index 700/650 - lower than this app's own
+   absolutely-positioned overlays (#statusBar, #screenshotToast, both 1000), so a threat marker's
+   popup opening near either of them would render BEHIND it instead of on top like a popup should.
+   Raised above every one of this app's own overlay z-indexes. */
+.leaflet-popup-pane {
+    z-index: 1100;
+}
+
+.leaflet-tooltip-pane {
+    z-index: 1050;
+}
+
+/* The Kyiv view's own mask (see index.js) sits directly behind the district shapes, covering
+   everything else in view with the plain background color - its own inner edges are exactly
+   Kyiv's real outer boundary. Blurred so that boundary reads as a soft fade into the surrounding
+   background instead of a hard, ruler-straight cutoff. */
+.kyiv-mask-shape {
+    filter: blur(6px);
+}
+
 /* Leaflet's own default tooltip CSS sets white-space: nowrap with no width limit - fine for a
    short label, but a threat with an unusually long description (missile-carrier warnings run
    noticeably longer than a typical drone blip) would render as one giant unbroken line spanning
@@ -135,14 +155,6 @@ body {
     color: #ffffff;
 }
 
-/* Faked dark mode for the Kyiv tile layer (see index.js) - no free, keyless tile provider publishes
-   an actual dark style, so the same light tiles are inverted and hue-rotated back instead. Applied
-   to the tile <img>s themselves (Leaflet's own className option), not the pane, so it doesn't also
-   invert the district color fills or labels drawn above them. */
-.kyiv-tiles-dark {
-    filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
-}
-
 /* Toggled on #map for the moment of capture - hides only the interactive controls (zoom, center,
    fullscreen, layer picker, this button itself), not the legend/attribution/status bar/threats,
    which are the actual content a screenshot is for. visibility (not display:none) keeps their
@@ -262,26 +274,6 @@ body {
     font-style: italic;
     color: #4f6459;
     opacity: 0.55;
-    text-shadow:
-        -1px -1px 2px #d9d3c1,
-        1px -1px 2px #d9d3c1,
-        -1px 1px 2px #d9d3c1,
-        1px 1px 2px #d9d3c1;
-}
-
-/* Kyiv's own district labels, shown only in the live map's dedicated Kyiv view - centered fully
-   on their district (unlike .raion-label, which sits above its point) and sized to read as the
-   main label on screen at that zoom, not one of dozens at a country-wide view. */
-.kyiv-raion-label {
-    position: absolute;
-    left: 0;
-    top: 0;
-    transform: translate(-50%, -50%);
-    white-space: nowrap;
-    pointer-events: none;
-    font-size: 15px;
-    font-weight: 600;
-    color: #2e2a1f;
     text-shadow:
         -1px -1px 2px #d9d3c1,
         1px -1px 2px #d9d3c1,
@@ -518,15 +510,6 @@ body {
 
     .raion-label {
         color: #9fc2b0;
-        text-shadow:
-            -1px -1px 2px #333a42,
-            1px -1px 2px #333a42,
-            -1px 1px 2px #333a42,
-            1px 1px 2px #333a42;
-    }
-
-    .kyiv-raion-label {
-        color: #e3e8ee;
         text-shadow:
             -1px -1px 2px #333a42,
             1px -1px 2px #333a42,

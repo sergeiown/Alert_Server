@@ -144,21 +144,19 @@ async function main() {
 
     const isDarkMap = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    // A real street/building-level tile layer, shown ONLY in Kyiv mode - the app's own base map is
+    // A real satellite/street-level tile layer, shown ONLY in Kyiv mode - the app's own base map is
     // one flat-color abstract SVG of the whole country, fine at a national view but not something
     // that gets more detailed no matter how far in this zooms, so it reads as a blown-up blur at
-    // Kyiv's own scale. Wikimedia's own OSM-based tiles - genuinely free and keyless (CARTO's
-    // basemap tiles, tried first, turned out to require a paid API key now and rendered a giant
-    // "API KEY REQUIRED" watermark instead - confirmed live, not assumed), and a cleaner, less
-    // ad-hoc-colored style than raw OSM Mapnik tiles. No free keyless provider publishes an actual
-    // dark-styled tile set, so dark mode is faked with a CSS filter on the same light tiles instead
-    // (invert + hue-rotate a full 180° roughly restores natural hue while flipping the lightness -
-    // water stays blue-ish, land stays neutral, just dark instead of light) - not as clean as a
-    // purpose-made dark style, but a real difference between the two themes rather than none at all.
-    const kyivTileLayer = L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
-        className: isDarkMap ? 'kyiv-tiles-dark' : '',
+    // Kyiv's own scale. Google's own satellite+hybrid tiles (real imagery, with roads/place labels
+    // overlaid) - already carries real place names on its own, so Kyiv's own district name labels
+    // (kyivRaionLabels.js) are skipped entirely in this mode rather than doubling up on it. Not an
+    // officially published tile API (no key, but also no formal terms covering this exact endpoint
+    // the way the Maps JavaScript API's billed access does) - fine for this app's actual scale, but
+    // worth knowing if it ever needs revisiting.
+    const kyivTileLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+        attribution: '&copy; Google Maps',
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        maxZoom: 20,
     });
 
     // Kept so leaving Kyiv mode restores each to whatever state it was actually in before entering
@@ -179,8 +177,11 @@ async function main() {
         [85, -180],
     ];
     const kyivMask = L.polygon([WORLD_RING, ...Object.values(KYIV_RAION_BORDERS)], {
+        className: 'kyiv-mask-shape',
         stroke: false,
-        fillColor: '#aad3df',
+        // Same background #map itself already uses outside Ukraine's own shape in the normal view
+        // (see index.css) - light or dark, matching whichever theme is active, not fixed to one.
+        fillColor: isDarkMap ? '#10151c' : '#aad3df',
         fillOpacity: 1,
         interactive: false,
     });
