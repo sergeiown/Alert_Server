@@ -50,12 +50,63 @@ function centroid(ring) {
     return [cLat / (6 * area), cLng / (6 * area)];
 }
 
+// Kyiv's own compact central districts (Печерський, Шевченківський, Голосіївський...) sit close
+// enough together that their plain area centroids can land within a label-width of each other -
+// fine for the thin nationwide labels elsewhere, not for these, sized to be the main label on
+// screen. A simple iterative repulsion pass (not a real label-placement algorithm, just pairwise
+// push-apart until nothing is closer than the minimum) nudges the LABEL positions apart without
+// touching the actual district shapes underneath them.
+const MIN_LABEL_SEPARATION_DEG = 0.055;
+const REPULSION_ITERATIONS = 60;
+
+function declutter(positions) {
+    const points = positions.map((p) => [...p]);
+
+    for (let iter = 0; iter < REPULSION_ITERATIONS; iter++) {
+        let moved = false;
+
+        for (let i = 0; i < points.length; i++) {
+            for (let j = i + 1; j < points.length; j++) {
+                const dLat = points[j][0] - points[i][0];
+                const dLng = points[j][1] - points[i][1];
+                const dist = Math.hypot(dLat, dLng);
+
+                if (dist < 1e-9) {
+                    // Two labels landed on the exact same point - nudge one a token amount so the
+                    // repulsion below has an actual direction to push along next iteration.
+                    points[j][0] += MIN_LABEL_SEPARATION_DEG / 2;
+                    moved = true;
+                    continue;
+                }
+
+                if (dist < MIN_LABEL_SEPARATION_DEG) {
+                    const push = (MIN_LABEL_SEPARATION_DEG - dist) / 2;
+                    const uLat = dLat / dist;
+                    const uLng = dLng / dist;
+                    points[i][0] -= uLat * push;
+                    points[i][1] -= uLng * push;
+                    points[j][0] += uLat * push;
+                    points[j][1] += uLng * push;
+                    moved = true;
+                }
+            }
+        }
+
+        if (!moved) break;
+    }
+
+    return points;
+}
+
 function buildKyivRaionGroup(language) {
     const layer = L.layerGroup();
     const isEnglish = language === 'English';
 
-    Object.entries(KYIV_RAION_BORDERS).forEach(([name, ring]) => {
-        const [lat, lng] = centroid(ring);
+    const entries = Object.entries(KYIV_RAION_BORDERS);
+    const labelPositions = declutter(entries.map(([, ring]) => centroid(ring)));
+
+    entries.forEach(([name], i) => {
+        const [lat, lng] = labelPositions[i];
         L.marker([lat, lng], {
             // Leaflet sets its own inline "transform" on this element, which would clobber a
             // centering transform applied here too - so the text lives in an inner span instead

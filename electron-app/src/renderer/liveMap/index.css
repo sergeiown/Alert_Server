@@ -135,6 +135,14 @@ body {
     color: #ffffff;
 }
 
+/* Faked dark mode for the Kyiv tile layer (see index.js) - no free, keyless tile provider publishes
+   an actual dark style, so the same light tiles are inverted and hue-rotated back instead. Applied
+   to the tile <img>s themselves (Leaflet's own className option), not the pane, so it doesn't also
+   invert the district color fills or labels drawn above them. */
+.kyiv-tiles-dark {
+    filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
+}
+
 /* Toggled on #map for the moment of capture - hides only the interactive controls (zoom, center,
    fullscreen, layer picker, this button itself), not the legend/attribution/status bar/threats,
    which are the actual content a screenshot is for. visibility (not display:none) keeps their
