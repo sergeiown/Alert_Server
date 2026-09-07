@@ -132,13 +132,30 @@ async function main() {
     // fitBounds clamps to the CURRENT minZoom, so the floor is always lifted back to the map's
     // absolute minimum first - otherwise a stale floor from an earlier call (e.g. a mid-animation
     // fullscreen-exit size read) could block the correct, lower zoom the real final size needs.
+    // The floor stays at the fitted zoom itself in Kyiv mode - together with maxBounds below, that
+    // pins the view to Kyiv: no zooming out past it, no panning past its edges either.
     function fitAndLockMinZoom() {
         map.setMinZoom(MAP_MIN_ZOOM);
         map.fitBounds(kyivModeActive ? KYIV_BOUNDS : UKRAINE_BOUNDS);
         map.setMinZoom(map.getZoom());
     }
 
-    L.imageOverlay(baseMapUrl, UKRAINE_BOUNDS).addTo(map);
+    const baseMapOverlay = L.imageOverlay(baseMapUrl, UKRAINE_BOUNDS).addTo(map);
+
+    // A real street/building-level tile layer, shown ONLY in Kyiv mode - the app's own base map is
+    // one flat-color abstract SVG of the whole country, fine at a national view but not something
+    // that gets more detailed no matter how far in this zooms, so it reads as a blown-up blur at
+    // Kyiv's own scale. Not added to the map until Kyiv mode actually turns on.
+    const kyivTileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+    });
+
+    // Kept so leaving Kyiv mode restores each to whatever state it was actually in before entering
+    // it (a layer the user had already turned off via the layers control shouldn't reappear).
+    let riverLayerWasOn = true;
+    let occupiedTerritoryLayerWasOn = true;
+
     fitAndLockMinZoom();
     map.attributionControl.setPrefix(false);
     map.attributionControl.addAttribution(`<a href="#" id="appAttribution">${strings.appName}</a>`);
@@ -174,6 +191,27 @@ async function main() {
         onToggle: () => {
             kyivModeActive = !kyivModeActive;
             kyivToggle.setActive(kyivModeActive);
+            regionStatusLayer.setKyivMode(kyivModeActive);
+            labelsLayer.setKyivMode(kyivModeActive);
+
+            if (kyivModeActive) {
+                riverLayerWasOn = map.hasLayer(riverLayer);
+                occupiedTerritoryLayerWasOn = map.hasLayer(occupiedTerritoryLayer);
+                map.removeLayer(baseMapOverlay);
+                if (riverLayerWasOn) map.removeLayer(riverLayer);
+                if (occupiedTerritoryLayerWasOn) map.removeLayer(occupiedTerritoryLayer);
+                kyivTileLayer.addTo(map);
+                // Padded slightly past the district borders themselves - a bare fit would let the
+                // user pan just enough to reveal a sliver of the country outside Kyiv at the edge.
+                map.setMaxBounds(L.latLngBounds(KYIV_BOUNDS).pad(0.05));
+            } else {
+                map.removeLayer(kyivTileLayer);
+                baseMapOverlay.addTo(map);
+                if (riverLayerWasOn) riverLayer.addTo(map);
+                if (occupiedTerritoryLayerWasOn) occupiedTerritoryLayer.addTo(map);
+                map.setMaxBounds(null);
+            }
+
             fitAndLockMinZoom();
         },
     }).addTo(map);

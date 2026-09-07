@@ -254,12 +254,15 @@ function daysWord(count, language) {
 // `ongoingSinceMs`, added per entry by forecastIpc.js before calling this (the earliest started_at
 // among the currently-active alerts of that type at this uid) - the whole point of showing this
 // screen is an alert that's happening right now, so how long THIS ONE has already run is the
-// first thing worth saying, ahead of the historical averages.
-function buildActiveDurationText(durationStats, language) {
+// first thing worth saying, ahead of the historical averages. Returns {text, level} pairs (not a
+// flat string) so a renderer that can color individual lines shows each threat line in ITS OWN
+// level's color - a yellow drone line and a red missile line for the same alert are two separate
+// lines, not one line tinted by the whole alert's worst level; `level` is null for every other line.
+function buildActiveDurationLines(durationStats, language) {
     // The probability/ETA forecast below is for the NEXT alert - meaningless while one is already
     // running, so say that up front instead of silently swapping it out for duration stats with no
     // explanation of why the usual forecast section is missing.
-    const lines = [t('forecastActiveDurationNotApplicable', language)];
+    const lines = [{ text: t('forecastActiveDurationNotApplicable', language), level: null }];
 
     durationStats.forEach((entry) => {
         const typeName = alertTypeName(entry.type, language);
@@ -269,29 +272,40 @@ function buildActiveDurationText(durationStats, language) {
                 ? t('forecastActiveDurationObservationDays', language).replace('{days}', days.toString()).replace('{daysWord}', daysWord(days, language))
                 : t('forecastActiveDurationAllTime', language);
 
-        lines.push(`${t('forecastActiveAlert', language)} ${t('alertTypeLabel', language)}: ${typeName}.`);
-        if (entry.threatDescription) lines.push(entry.threatDescription);
-        lines.push(
-            `${t('alertStartedAt', language)}: ${formatShortDateTime(entry.ongoingSinceMs, language)}. ${t('alertOngoingDuration', language)}: ${formatDuration(Date.now() - entry.ongoingSinceMs, language)}.`
-        );
-        lines.push(`${t('forecastActiveDurationHeader', language)}:`);
-        lines.push(
-            `  - ${t('forecastActiveDurationLast24h', language)}: ${
+        lines.push({ text: `${t('forecastActiveAlert', language)} ${t('alertTypeLabel', language)}: ${typeName}.`, level: null });
+        (entry.threatLines || []).forEach((threatLine) => lines.push({ text: threatLine.text, level: threatLine.level }));
+        lines.push({
+            text: `${t('alertStartedAt', language)}: ${formatShortDateTime(entry.ongoingSinceMs, language)}. ${t('alertOngoingDuration', language)}: ${formatDuration(Date.now() - entry.ongoingSinceMs, language)}.`,
+            level: null,
+        });
+        lines.push({ text: `${t('forecastActiveDurationHeader', language)}:`, level: null });
+        lines.push({
+            text: `  - ${t('forecastActiveDurationLast24h', language)}: ${
                 entry.avgDurationLast24hMs !== null
                     ? `${formatDuration(entry.avgDurationLast24hMs, language)} (${t('forecastActiveDurationSampleSize', language).replace('{count}', entry.countLast24h)})`
                     : t('forecastActiveDurationNoData', language)
-            }`
-        );
-        lines.push(
-            `  - ${allTimeLabel}: ${
+            }`,
+            level: null,
+        });
+        lines.push({
+            text: `  - ${allTimeLabel}: ${
                 entry.avgDurationAllTimeMs !== null
                     ? `${formatDuration(entry.avgDurationAllTimeMs, language)} (${t('forecastActiveDurationSampleSize', language).replace('{count}', entry.countAllTime)})`
                     : t('forecastActiveDurationNoData', language)
-            }`
-        );
+            }`,
+            level: null,
+        });
     });
 
-    return lines.join('\n');
+    return lines;
+}
+
+// Plain-text form for consumers that can't color individual lines anyway (the copy-to-clipboard
+// button).
+function buildActiveDurationText(durationStats, language) {
+    return buildActiveDurationLines(durationStats, language)
+        .map((line) => line.text)
+        .join('\n');
 }
 
 async function getAccumulatedAlerts(uid) {
@@ -372,6 +386,7 @@ module.exports = {
     getRegionSoonestPrediction,
     getRegionDurationStats,
     buildActiveDurationText,
+    buildActiveDurationLines,
     fetchHistoryAlerts,
     formatDuration,
 };

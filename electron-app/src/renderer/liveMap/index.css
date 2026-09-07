@@ -261,6 +261,26 @@ body {
         1px 1px 2px #d9d3c1;
 }
 
+/* Kyiv's own district labels, shown only in the live map's dedicated Kyiv view - centered fully
+   on their district (unlike .raion-label, which sits above its point) and sized to read as the
+   main label on screen at that zoom, not one of dozens at a country-wide view. */
+.kyiv-raion-label {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+    pointer-events: none;
+    font-size: 15px;
+    font-weight: 600;
+    color: #2e2a1f;
+    text-shadow:
+        -1px -1px 2px #d9d3c1,
+        1px -1px 2px #d9d3c1,
+        -1px 1px 2px #d9d3c1,
+        1px 1px 2px #d9d3c1;
+}
+
 .city-border {
     stroke: #7a3b2e;
     fill: #7a3b2e;
@@ -490,6 +510,15 @@ body {
 
     .raion-label {
         color: #9fc2b0;
+        text-shadow:
+            -1px -1px 2px #333a42,
+            1px -1px 2px #333a42,
+            -1px 1px 2px #333a42,
+            1px 1px 2px #333a42;
+    }
+
+    .kyiv-raion-label {
+        color: #e3e8ee;
         text-shadow:
             -1px -1px 2px #333a42,
             1px -1px 2px #333a42,

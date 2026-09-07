@@ -100,14 +100,20 @@ main {
     font-size: 11px;
 }
 
+/* Each threat line carries its OWN level class (see index.js) - a card whose overall/worst level
+   is red can still have an earlier yellow threat line alongside the red one, and each reads in its
+   own color rather than both being forced to the card's single worst-level color. */
 .alert-item .threat {
-    color: var(--threat-color-yellow);
+    color: var(--fg);
     font-size: 11px;
     font-weight: 600;
-    white-space: pre-line;
 }
 
-.alert-item.level-red .threat {
+.alert-item .threat.level-yellow {
+    color: var(--threat-color-yellow);
+}
+
+.alert-item .threat.level-red {
     color: var(--threat-color-red);
 }
 

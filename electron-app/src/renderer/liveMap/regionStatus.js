@@ -54,6 +54,15 @@ const RegionStatusLayer = L.LayerGroup.extend({
         L.LayerGroup.prototype.initialize.call(this);
         this._strings = strings;
         this._language = language;
+        this._kyivModeActive = false;
+    },
+
+    // While the live map's Kyiv toggle is on, this draws ONLY Kyiv's own 10 districts - not the
+    // rest of the country's oblast/raion fills, which would otherwise bleed into view around
+    // Kyiv's edges (Kyivska oblast's own raions border it directly).
+    setKyivMode: function (active) {
+        this._kyivModeActive = active;
+        this._render();
     },
 
     onAdd: function (map) {
@@ -96,10 +105,41 @@ const RegionStatusLayer = L.LayerGroup.extend({
             .addTo(this);
     },
 
+    _drawKyivRaions: function (isEnglish, now) {
+        const cityStartedAt = getOblastStartedAt('Київ');
+        const cityAlertTypeName = getOblastAlertTypeName('Київ');
+        const cityAlertLevel = getOblastAlertLevel('Київ');
+
+        Object.entries(KYIV_RAION_BORDERS).forEach(([name, ring]) => {
+            const ownStartedAt = getKyivRaionStartedAt(name);
+            const ownAlertLevel = getKyivRaionAlertLevel(name);
+            const inherited = !ownStartedAt;
+
+            this._drawRegion(
+                [ring],
+                isEnglish ? `${name} District` : `${name} район`,
+                ownStartedAt || (inherited ? cityStartedAt : null),
+                now,
+                ownStartedAt || (inherited ? cityStartedAt : null),
+                inherited ? cityAlertTypeName : null,
+                inherited && cityStartedAt ? oblastDisplayName('Київ', isEnglish) : null,
+                inherited ? cityAlertLevel : ownAlertLevel
+            );
+        });
+    },
+
     _render: function () {
         this.clearLayers();
         const now = Date.now();
         const isEnglish = this._language === 'English';
+
+        // Nothing outside Kyiv itself - no oblast fills, no other raions, no Kyiv-city blob - so
+        // nothing from the rest of the country bleeds into view around its edges.
+        if (this._kyivModeActive) {
+            this._drawKyivRaions(isEnglish, now);
+            return;
+        }
+
         const raionTier = this._map.getZoom() >= RAION_MIN_ZOOM;
 
         Object.entries(OBLAST_BORDERS).forEach(([name, rings]) => {
@@ -109,42 +149,17 @@ const RegionStatusLayer = L.LayerGroup.extend({
             this._drawRegion(rings, oblastDisplayName(name, isEnglish), startedAt, now, startedAt, alertTypeName, null, alertLevel);
         });
         // Kyiv city has no oblast-tier polygon of its own (folded into Kyiv oblast's shape in the
-        // source dataset), so its city outline stands in for it here - except at the raion zoom
-        // tier, where its own 10 districts are drawn individually instead (see below), the same way
-        // every other tracked oblast shows its raions once zoomed in enough.
-        if (CITY_BORDERS['Київ'] && !raionTier) {
+        // source dataset), so its city outline stands in for it here - always as one shape in the
+        // normal view, regardless of zoom. Its own 10 districts (see _drawKyivRaions) are a
+        // different, DEDICATED view of their own, only shown via the live map's Kyiv toggle - not
+        // just from zooming in far enough here, since there's nothing to key a per-district status
+        // off other than parsing free text, and the "district" resolution isn't meant to be this
+        // view's normal behavior for every other tracked city.
+        if (CITY_BORDERS['Київ']) {
             const startedAt = getOblastStartedAt('Київ');
             const alertTypeName = getOblastAlertTypeName('Київ');
             const alertLevel = getOblastAlertLevel('Київ');
             this._drawRegion([CITY_BORDERS['Київ']], oblastDisplayName('Київ', isEnglish), startedAt, now, startedAt, alertTypeName, null, alertLevel);
-        }
-
-        // Kyiv's own districts have no location_uid of their own in any live source - their status
-        // comes from parsing free text instead (see regionAlertStatus.js's
-        // computeKyivRaionStatuses), so there's no alertType to show for them specifically, only a
-        // level. A district with no status of its own inherits the whole city's, the same way an
-        // ordinary raion inherits its oblast's.
-        if (raionTier) {
-            const cityStartedAt = getOblastStartedAt('Київ');
-            const cityAlertTypeName = getOblastAlertTypeName('Київ');
-            const cityAlertLevel = getOblastAlertLevel('Київ');
-
-            Object.entries(KYIV_RAION_BORDERS).forEach(([name, ring]) => {
-                const ownStartedAt = getKyivRaionStartedAt(name);
-                const ownAlertLevel = getKyivRaionAlertLevel(name);
-                const inherited = !ownStartedAt;
-
-                this._drawRegion(
-                    [ring],
-                    isEnglish ? `${name} District` : `${name} район`,
-                    ownStartedAt || (inherited ? cityStartedAt : null),
-                    now,
-                    ownStartedAt || (inherited ? cityStartedAt : null),
-                    inherited ? cityAlertTypeName : null,
-                    inherited && cityStartedAt ? oblastDisplayName('Київ', isEnglish) : null,
-                    inherited ? cityAlertLevel : ownAlertLevel
-                );
-            });
         }
 
         Object.entries(RAION_BORDERS).forEach(([name, ring]) => {

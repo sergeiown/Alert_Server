@@ -93,12 +93,15 @@ async function render() {
         timing.textContent = alert.ongoingDuration ? `${startedAtText}. ${strings.alertOngoingDuration}: ${alert.ongoingDuration}.` : startedAtText;
         item.appendChild(timing);
 
-        if (alert.threatDescription) {
+        // Each threat line keeps its OWN level - a yellow drone line and a red missile line
+        // reported together for the same alert are two different lines, not one line tinted by
+        // the item's overall (worst) level.
+        (alert.threatLines || []).forEach((line) => {
             const threat = document.createElement('div');
-            threat.className = 'threat';
-            threat.textContent = alert.threatDescription;
+            threat.className = line.level === 'red' || line.level === 'yellow' ? `threat level-${line.level}` : 'threat';
+            threat.textContent = line.text;
             item.appendChild(threat);
-        }
+        });
 
         if (alert.avgDurationLast24h || alert.avgDurationAllTime) {
             const duration = document.createElement('div');

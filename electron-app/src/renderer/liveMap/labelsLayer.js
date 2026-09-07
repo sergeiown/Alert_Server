@@ -13,12 +13,9 @@ const LabelsLayer = L.LayerGroup.extend({
         L.LayerGroup.prototype.initialize.call(this);
         this._language = language;
         this._oblastGroup = buildOblastGroup(language);
-        this._raionGroup = L.layerGroup([
-            buildRaionBordersGroup(),
-            buildRaionGroup(language, CITIES),
-            buildKyivRaionGroup(language),
-            buildCityGroup(strings, language),
-        ]);
+        this._raionGroup = L.layerGroup([buildRaionBordersGroup(), buildRaionGroup(language, CITIES), buildCityGroup(strings, language)]);
+        this._kyivGroup = buildKyivRaionGroup(language);
+        this._kyivModeActive = false;
         this._active = null;
     },
 
@@ -34,7 +31,23 @@ const LabelsLayer = L.LayerGroup.extend({
         this._active = null;
     },
 
+    // While the live map's Kyiv toggle is on, only its own district labels show - not the
+    // nationwide oblast/raion/city labels that would otherwise still show for whatever's visible
+    // around Kyiv's edges (Kyivska oblast's own raions border it directly).
+    setKyivMode: function (active) {
+        this._kyivModeActive = active;
+        this._sync();
+    },
+
     _sync: function () {
+        if (this._kyivModeActive) {
+            if (this._active === this._kyivGroup) return;
+            if (this._active) this._map.removeLayer(this._active);
+            this._active = this._kyivGroup;
+            this._active.addTo(this._map);
+            return;
+        }
+
         const zoom = this._map.getZoom();
         const next = zoom < OBLAST_MIN_ZOOM ? null : zoom < RAION_MIN_ZOOM ? this._oblastGroup : this._raionGroup;
 

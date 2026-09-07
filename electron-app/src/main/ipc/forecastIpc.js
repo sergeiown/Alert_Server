@@ -11,12 +11,13 @@ const {
     getRegionSoonestEtaMs,
     getRegionDurationStats,
     buildActiveDurationText,
+    buildActiveDurationLines,
     fetchHistoryAlerts,
 } = require('../services/forecast');
 const historyStore = require('../services/forecastHistoryStore');
 const { logEvent } = require('../services/logger');
 const { alertTypeName } = require('../services/alertTypes');
-const { worstLevelAmong, describeThreats } = require('../services/alertLevels');
+const { worstLevelAmong, getThreatLines } = require('../services/alertLevels');
 const { t } = require('../../i18n/i18n');
 
 function registerForecastIpc() {
