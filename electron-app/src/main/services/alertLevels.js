@@ -22,15 +22,27 @@ function worstLevelAmong(alerts) {
     return null;
 }
 
+// A source_message for a whole oblast/city aggregation (e.g. Neptun's own entry for "м. Київ")
+// lists one line per affected district, all sharing the same threat description with only the
+// district name differing - "Ракетна загроза (червоний рівень) Дарницький район", "...
+// Печерський район", and so on, one per district. Trimmed down to just the part up to the closing
+// parenthesis so those all collapse into the one threat description they actually share, instead
+// of reading as a dozen near-identical entries strung together.
+function normalizeThreatMessage(message) {
+    const match = message.match(/^(.*?\))/);
+    return match ? match[1] : message;
+}
+
 // threats[] can carry more than one concurrent distinct threat (e.g. an ongoing drone alert that a
 // missile threat later joins), each with its own human-readable source_message already in the
 // source's own language - shown as-is rather than re-translated (same treatment alert.notes
-// already gets elsewhere). Deduplicated since sources sometimes echo the same message across
-// near-identical threat entries.
+// already gets elsewhere). One per line (not run together) since each is its own distinct threat,
+// deduplicated after normalization since sources sometimes echo the same description many times
+// over (once per district) for one wide-area alert.
 function describeThreats(threats) {
     if (!threats || !threats.length) return null;
-    const messages = [...new Set(threats.map((threat) => threat.source_message).filter(Boolean))];
-    return messages.length ? messages.join(' / ') : null;
+    const messages = [...new Set(threats.map((threat) => threat.source_message).filter(Boolean).map(normalizeThreatMessage))];
+    return messages.length ? messages.map((message) => `${message}:`).join('\n') : null;
 }
 
 module.exports = { levelColor, worstLevelAmong, describeThreats };
