@@ -83,7 +83,26 @@ async function renderRegionsList() {
         if (result.status === 'active') {
             const levelClass = result.alertLevel === 'red' ? ' level-red' : result.alertLevel === 'yellow' ? ' level-yellow' : '';
             card.className = `region-card active${levelClass}`;
-            pre.textContent = result.text || strings.forecastActiveAlert;
+
+            if (result.lines && result.lines.length) {
+                // Each line keeps its OWN level - a yellow drone line and a red missile line for
+                // the same alert are two different lines, not one line tinted by the card's overall
+                // (worst) level - so they're built as individual spans here instead of setting
+                // pre.textContent to the flat string version.
+                result.lines.forEach((line, i) => {
+                    if (i > 0) pre.appendChild(document.createTextNode('\n'));
+                    if (line.level === 'red' || line.level === 'yellow') {
+                        const span = document.createElement('span');
+                        span.className = `threat-line level-${line.level}`;
+                        span.textContent = line.text;
+                        pre.appendChild(span);
+                    } else {
+                        pre.appendChild(document.createTextNode(line.text));
+                    }
+                });
+            } else {
+                pre.textContent = result.text || strings.forecastActiveAlert;
+            }
         } else if (result.status === 'ok') {
             card.className = 'region-card';
             pre.textContent = result.text;
