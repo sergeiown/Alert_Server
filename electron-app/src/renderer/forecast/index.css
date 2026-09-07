@@ -6,6 +6,8 @@
     --card-bg: #ffffff;
     --active-border: #e0a020;
     --active-bg: #fff8ec;
+    --active-border-red: #dc2626;
+    --active-bg-red: #fdf0ef;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -17,6 +19,8 @@
         --card-bg: #262626;
         --active-border: #b98122;
         --active-bg: #3a2f18;
+        --active-border-red: #b94a4a;
+        --active-bg-red: #3a1f1f;
     }
 }
 
@@ -76,6 +80,13 @@ main {
 .region-card.active {
     border-color: var(--active-border);
     background: var(--active-bg);
+}
+
+/* Same red/yellow classification the live map, notifications, and tray popup use - "yellow" is
+   this project's existing default active-card styling, kept as-is; "red" gets its own tint. */
+.region-card.active.level-red {
+    border-color: var(--active-border-red);
+    background: var(--active-bg-red);
 }
 
 .region-card.loading pre,

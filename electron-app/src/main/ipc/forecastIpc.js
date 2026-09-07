@@ -16,6 +16,7 @@ const {
 const historyStore = require('../services/forecastHistoryStore');
 const { logEvent } = require('../services/logger');
 const { alertTypeName } = require('../services/alertTypes');
+const { worstLevelAmong, describeThreats } = require('../services/alertLevels');
 const { t } = require('../../i18n/i18n');
 
 function registerForecastIpc() {
@@ -46,19 +47,33 @@ function registerForecastIpc() {
             const durationStats = getRegionDurationStats(uid, activeTypes);
 
             // The earliest start among currently-active alerts of that type at this uid - how
-            // long THIS one has already been running, not derived from history.
+            // long THIS one has already been running, not derived from history. alertsByType
+            // additionally groups the raw alert records themselves (not just their start times) so
+            // the worst red/yellow level and threat description for that type can be derived below
+            // - a whole tracked region can have several underlying alerts of the same type (e.g.
+            // one per raion), each potentially at a different level.
             const earliestStartedAtByType = new Map();
+            const alertsByType = new Map();
             activeAlertsHere.forEach((alert) => {
                 const existing = earliestStartedAtByType.get(alert.alert_type);
                 if (!existing || new Date(alert.started_at) < new Date(existing)) {
                     earliestStartedAtByType.set(alert.alert_type, alert.started_at);
                 }
+                if (!alertsByType.has(alert.alert_type)) alertsByType.set(alert.alert_type, []);
+                alertsByType.get(alert.alert_type).push(alert);
             });
             durationStats.forEach((entry) => {
                 entry.ongoingSinceMs = new Date(earliestStartedAtByType.get(entry.type)).getTime();
+                const typeAlerts = alertsByType.get(entry.type) || [];
+                entry.alertLevel = worstLevelAmong(typeAlerts);
+                entry.threatDescription = describeThreats(typeAlerts.flatMap((alert) => alert.threats || []));
             });
 
-            return { status: 'active', text: buildActiveDurationText(durationStats, language) };
+            return {
+                status: 'active',
+                text: buildActiveDurationText(durationStats, language),
+                alertLevel: worstLevelAmong(activeAlertsHere),
+            };
         }
 
         const text = await getRegionForecastText(uid, language);
