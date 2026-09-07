@@ -213,7 +213,7 @@ function buildForecastText(stats, language, source) {
         lines.push(`  - ${typeName}: ${t('forecastProbabilityPrefix', language)} ${formatProbabilityPercent(entry.probabilityToday, language)}%${etaText}${rangeText}`);
         // A separate line, not folded into the probability bullet above - it's answering a
         // different question (how many today, not the odds of at least one soon) and doesn't
-        // saturate the way the 2-hour probability can, so it's worth reading on its own rather
+        // saturate the way the windowed probability can, so it's worth reading on its own rather
         // than as a parenthetical aside to a different number.
         lines.push(`  - ${t('forecastExpectedTodayLabel', language).replace('{count}', Math.round(entry.expectedToday).toString())}`);
     });
