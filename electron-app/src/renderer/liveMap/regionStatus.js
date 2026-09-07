@@ -10,6 +10,8 @@ import {
     getRaionStartedAt,
     getOblastAlertTypeName,
     getRaionAlertTypeName,
+    getOblastAlertLevel,
+    getRaionAlertLevel,
 } from './alertedRegionsStore.js';
 import { alertPopupHtml } from './alertPopup.js';
 import { RAION_OBLAST } from './raionOblastMap.js';
@@ -19,19 +21,29 @@ import { oblastDisplayName, raionDisplayName } from './regionNameUtils.js';
 const RESHADE_MS = 60000;
 const TIER_MS = 30 * 60 * 1000;
 
-const LIGHT_SHADES = ['#e6ac9f', '#e2a496', '#df9d8d', '#db9584', '#d68d7b', '#d18572'];
-const DARK_SHADES = ['#5c3934', '#603b35', '#653e37', '#6a4139', '#70443b', '#76483d'];
+// Two shade ladders, same "how long ago" tiering as before (lighter = just started, darker = has
+// been going a while) - which one applies is now the alert's own red/yellow level (see
+// regionAlertStatus.js's computeAlertedRegions, which now carries the worst level seen for that
+// region alongside startedAt). Red is the pre-existing palette; yellow/amber is new. A region with
+// no level reported at all (older cached source) falls back to the red ladder, matching the single
+// color this map used before the three live sources started tagging alerts with a level.
+const RED_LIGHT_SHADES = ['#e6ac9f', '#e2a496', '#df9d8d', '#db9584', '#d68d7b', '#d18572'];
+const RED_DARK_SHADES = ['#5c3934', '#603b35', '#653e37', '#6a4139', '#70443b', '#76483d'];
+const YELLOW_LIGHT_SHADES = ['#e8d59f', '#e6cf8f', '#e3c880', '#e0c270', '#ddbb61', '#dab551'];
+const YELLOW_DARK_SHADES = ['#5c5230', '#605432', '#655735', '#6a5a37', '#705d39', '#76603b'];
 
 const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-const SHADES = isDark ? DARK_SHADES : LIGHT_SHADES;
+const RED_SHADES = isDark ? RED_DARK_SHADES : RED_LIGHT_SHADES;
+const YELLOW_SHADES = isDark ? YELLOW_DARK_SHADES : YELLOW_LIGHT_SHADES;
 const ALERTED_FILL_OPACITY = isDark ? 0.5 : 0.32;
 const NEUTRAL_COLOR = isDark ? '#3a4650' : '#7a8a94';
 const NEUTRAL_FILL_OPACITY = isDark ? 0.06 : 0.05;
 
-function shadeFor(startedAt, now) {
+function shadeFor(startedAt, now, alertLevel) {
+    const shades = alertLevel === 'yellow' ? YELLOW_SHADES : RED_SHADES;
     const elapsed = now - new Date(startedAt).getTime();
-    const tier = Math.min(SHADES.length - 1, Math.max(0, Math.floor(elapsed / TIER_MS)));
-    return SHADES[tier];
+    const tier = Math.min(shades.length - 1, Math.max(0, Math.floor(elapsed / TIER_MS)));
+    return shades[tier];
 }
 
 const RegionStatusLayer = L.LayerGroup.extend({
@@ -62,9 +74,9 @@ const RegionStatusLayer = L.LayerGroup.extend({
     // `ownStartedAt` drives what's actually drawn; `popupStartedAt`/`popupAlertTypeName`/
     // `inheritedFromName` drive the popup text, which can differ (an inherited alert is shown in
     // the popup even when nothing is drawn to indicate it visually).
-    _drawRegion: function (rings, displayName, ownStartedAt, now, popupStartedAt, popupAlertTypeName, inheritedFromName) {
+    _drawRegion: function (rings, displayName, ownStartedAt, now, popupStartedAt, popupAlertTypeName, inheritedFromName, alertLevel) {
         const alerted = Boolean(ownStartedAt);
-        const color = alerted ? shadeFor(ownStartedAt, now) : NEUTRAL_COLOR;
+        const color = alerted ? shadeFor(ownStartedAt, now, alertLevel) : NEUTRAL_COLOR;
         const { _strings: strings, _language: language } = this;
 
         L.polygon(rings, {
@@ -76,7 +88,7 @@ const RegionStatusLayer = L.LayerGroup.extend({
             fillOpacity: alerted ? ALERTED_FILL_OPACITY : NEUTRAL_FILL_OPACITY,
         })
             .bindPopup(() =>
-                alertPopupHtml(displayName, popupStartedAt, popupAlertTypeName, strings, language, inheritedFromName)
+                alertPopupHtml(displayName, popupStartedAt, popupAlertTypeName, strings, language, inheritedFromName, alertLevel)
             )
             .addTo(this);
     },
@@ -90,22 +102,26 @@ const RegionStatusLayer = L.LayerGroup.extend({
         Object.entries(OBLAST_BORDERS).forEach(([name, rings]) => {
             const startedAt = getOblastStartedAt(name);
             const alertTypeName = getOblastAlertTypeName(name);
-            this._drawRegion(rings, oblastDisplayName(name, isEnglish), startedAt, now, startedAt, alertTypeName);
+            const alertLevel = getOblastAlertLevel(name);
+            this._drawRegion(rings, oblastDisplayName(name, isEnglish), startedAt, now, startedAt, alertTypeName, null, alertLevel);
         });
         // Kyiv city has no oblast-tier polygon of its own (folded into Kyiv oblast's shape in the
         // source dataset), so its city outline stands in for it here.
         if (CITY_BORDERS['Київ']) {
             const startedAt = getOblastStartedAt('Київ');
             const alertTypeName = getOblastAlertTypeName('Київ');
-            this._drawRegion([CITY_BORDERS['Київ']], oblastDisplayName('Київ', isEnglish), startedAt, now, startedAt, alertTypeName);
+            const alertLevel = getOblastAlertLevel('Київ');
+            this._drawRegion([CITY_BORDERS['Київ']], oblastDisplayName('Київ', isEnglish), startedAt, now, startedAt, alertTypeName, null, alertLevel);
         }
 
         Object.entries(RAION_BORDERS).forEach(([name, ring]) => {
             const ownStartedAt = getRaionStartedAt(name);
             const ownAlertTypeName = getRaionAlertTypeName(name);
+            const ownAlertLevel = getRaionAlertLevel(name);
             const oblastKey = RAION_OBLAST[name];
             const oblastStartedAt = oblastKey ? getOblastStartedAt(oblastKey) : null;
             const oblastAlertTypeName = oblastKey ? getOblastAlertTypeName(oblastKey) : null;
+            const oblastAlertLevel = oblastKey ? getOblastAlertLevel(oblastKey) : null;
 
             if (!raionTier) {
                 if (ownStartedAt) {
@@ -118,7 +134,9 @@ const RegionStatusLayer = L.LayerGroup.extend({
                             ownStartedAt,
                             now,
                             ownStartedAt,
-                            ownAlertTypeName
+                            ownAlertTypeName,
+                            null,
+                            ownAlertLevel
                         );
                     }
                 }
@@ -134,7 +152,8 @@ const RegionStatusLayer = L.LayerGroup.extend({
                 now,
                 ownStartedAt || inheritedStartedAt,
                 inherited ? oblastAlertTypeName : ownAlertTypeName,
-                inherited && inheritedStartedAt ? oblastDisplayName(oblastKey, isEnglish) : null
+                inherited && inheritedStartedAt ? oblastDisplayName(oblastKey, isEnglish) : null,
+                inherited ? oblastAlertLevel : ownAlertLevel
             );
         });
     },

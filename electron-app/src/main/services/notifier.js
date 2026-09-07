@@ -16,6 +16,36 @@ const { openLiveMapWindow } = require('../windows/liveMapWindow');
 
 const ALERT_COLOR = '#dc2626';
 const CANCEL_COLOR = '#16a34a';
+// All three live sources (alerts.in.ua natively, UkraineAlarm/Neptun normalized to match by
+// alert-proxy/neptunAlertsSource.js) now tag every alert with a red/yellow threat level - red
+// for the more severe classification (typically a missile threat), yellow for the lesser one
+// (typically drones). Falls back to the plain ALERT_COLOR when a record carries no level at all
+// (older cached data, or a source that hasn't backfilled it yet).
+const ALERT_COLOR_BY_LEVEL = { red: '#dc2626', yellow: '#eab308' };
+
+function levelColor(alertLevel) {
+    return ALERT_COLOR_BY_LEVEL[alertLevel] || ALERT_COLOR;
+}
+
+// Worst (most severe) level among a group of alerts - "red" beats "yellow" beats "no level
+// reported" - used to color a single notification/map render that represents several alerts at
+// once (mass-start), where there's no one single alert's level to point to.
+function worstLevelAmong(alerts) {
+    if (alerts.some((alert) => alert.alert_level === 'red')) return 'red';
+    if (alerts.some((alert) => alert.alert_level === 'yellow')) return 'yellow';
+    return null;
+}
+
+// threats[] can carry more than one concurrent distinct threat (e.g. an ongoing drone alert that
+// a missile threat later joins) - each with its own human-readable source_message already in the
+// source's own language, so shown as-is rather than re-translated (same treatment alert.notes
+// already gets elsewhere). Deduplicated since alerts.in.ua/UkraineAlarm both echo the same message
+// across near-identical threat entries in some cases.
+function describeThreats(threats) {
+    if (!threats || !threats.length) return null;
+    const messages = [...new Set(threats.map((threat) => threat.source_message).filter(Boolean))];
+    return messages.length ? messages.join(' / ') : null;
+}
 const MASS_ALERT_THRESHOLD = 2;
 // If an alert first appears as "new" (no prior record in displayedAlerts) but its own started_at
 // is already older than this, it didn't just start - the app (or the whole machine) was off or
@@ -170,7 +200,7 @@ function processAlerts(matchedAlerts, allAlerts) {
             title: t('massAlertStartTitle', language).replace('{count}', freshNewAlerts.length),
             bodyLines: [`${t('activeInMonitored', language)}: ${alertCount}`],
             iconName: 'alert.png',
-            color: ALERT_COLOR,
+            color: levelColor(worstLevelAmong(freshNewAlerts)),
         });
     }
 
@@ -189,10 +219,11 @@ function processAlerts(matchedAlerts, allAlerts) {
                     `${t('location', language)}: ${locationName}`,
                     `${t('activeInMonitored', language)}: ${alertCount}`,
                     startedAtText ? `${t('alertStartedAt', language)}: ${startedAtText}` : null,
+                    describeThreats(alert.threats),
                     alert.notes ? `${t('alertSource', language)}: ${alert.notes}` : null,
                 ].filter(Boolean),
                 iconName: 'alert.png',
-                color: ALERT_COLOR,
+                color: levelColor(alert.alert_level),
                 onClick: () => showAlertDetails(title, language, locationName, typeName, alert.started_at),
             });
         }

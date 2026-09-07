@@ -43,6 +43,16 @@ function getRaionAlertTypeName(key) {
     return match ? match.alertTypeName : null;
 }
 
+function getOblastAlertLevel(key) {
+    const match = latest.oblasts.find((o) => normalizeOblastName(o.name) === key);
+    return match ? match.alertLevel : null;
+}
+
+function getRaionAlertLevel(key) {
+    const match = latest.raions.find((r) => normalizeRaionName(r.name) === key);
+    return match ? match.alertLevel : null;
+}
+
 refresh();
 setInterval(refresh, REFRESH_MS);
 
@@ -53,5 +63,7 @@ export {
     getRaionStartedAt,
     getOblastAlertTypeName,
     getRaionAlertTypeName,
+    getOblastAlertLevel,
+    getRaionAlertLevel,
     REFRESH_MS,
 };
