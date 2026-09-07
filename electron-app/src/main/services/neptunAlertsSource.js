@@ -74,6 +74,19 @@ function logUnmatchedOnce(name, oblast) {
     logEvent(`Neptun alert source: no matching location in locations.json for "${name}" (${oblast})`, 'WARNING');
 }
 
+// Neptun's own red/yellow threat-level split (level + a plain reasons[] array of human-readable
+// messages, one per concurrent distinct threat - no structured threat_type or per-reason timestamp
+// the way alerts.in.ua's threats[] has). Mapped into that same {alert_level, threats[]} shape so
+// every downstream consumer can read one field name regardless of which live source is active.
+function mapNeptunThreats(entry) {
+    return (entry.reasons || []).map((message) => ({
+        threat_type: null,
+        level: entry.level || null,
+        started_at: entry.since,
+        source_message: message,
+    }));
+}
+
 function transformOblasts(oblasts) {
     return (oblasts || [])
         .map((entry) => {
@@ -87,6 +100,8 @@ function transformOblasts(oblasts) {
                     location_type: 'state',
                     alert_type: 'air_raid',
                     started_at: entry.since,
+                    alert_level: entry.level || null,
+                    threats: mapNeptunThreats(entry),
                 };
             }
 
@@ -103,6 +118,8 @@ function transformOblasts(oblasts) {
                     location_type: 'district',
                     alert_type: 'air_raid',
                     started_at: entry.since,
+                    alert_level: entry.level || null,
+                    threats: mapNeptunThreats(entry),
                 };
             }
 
@@ -128,6 +145,8 @@ function transformRaions(raions) {
                 location_type: 'district',
                 alert_type: 'air_raid',
                 started_at: entry.since,
+                alert_level: entry.level || null,
+                threats: mapNeptunThreats(entry),
             };
         })
         .filter(Boolean);
