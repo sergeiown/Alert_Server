@@ -1,9 +1,11 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
+const headerBar = document.getElementById('header');
 const headerText = document.getElementById('header-text');
 const appIcon = document.getElementById('app-icon');
 const list = document.getElementById('list');
+const forecastSection = document.getElementById('forecast-section');
 const forecastMore = document.getElementById('forecast-more');
 
 let strings = null;
@@ -17,6 +19,36 @@ function formatStartedAt(startedAt) {
         hour: '2-digit',
         minute: '2-digit',
     });
+}
+
+// The window itself has no fixed height - it's resized to fit whatever's actually on screen,
+// capped at the height of the TALLEST single alert card (not the whole list) so a region with many
+// simultaneous alerts still opens at a sane, predictable size and scrolls for the rest, rather than
+// growing without bound or (the previous fixed-height behavior) cutting a single detailed card off
+// entirely. Each item's own rendered height is measured directly (true regardless of the list
+// container's own overflow clipping) rather than assumed - cards can differ in height (not every
+// alert has a threat description or history to show an average duration for), so the tallest one
+// is what the cap has to fit, not just whichever happens to be first.
+function resizeToFitOneAlert() {
+    const items = Array.from(list.children);
+    let listHeight;
+
+    if (items.length) {
+        const tallestItemHeight = Math.max(
+            ...items.map((item) => item.getBoundingClientRect().height + (parseFloat(getComputedStyle(item).marginBottom) || 0))
+        );
+        const listStyle = getComputedStyle(list);
+        const listPadding = (parseFloat(listStyle.paddingTop) || 0) + (parseFloat(listStyle.paddingBottom) || 0);
+        listHeight = tallestItemHeight + listPadding;
+    } else {
+        listHeight = 0;
+    }
+
+    list.style.maxHeight = `${listHeight}px`;
+
+    const bodyBorder = 2; // 1px solid border on each side, per index.css
+    const totalHeight = headerBar.offsetHeight + listHeight + forecastSection.offsetHeight + bodyBorder;
+    window.alertServerTrayPopup.setContentHeight(totalHeight);
 }
 
 function renderForecast() {
@@ -83,16 +115,23 @@ async function render() {
     });
 }
 
+// render() itself is async (awaits the getAlerts() IPC round-trip) - resizeToFitOneAlert() has to
+// run after it actually finishes, not right after calling it, or it measures the DOM from before
+// the alert list was populated.
+async function renderAll() {
+    await render();
+    renderForecast();
+    resizeToFitOneAlert();
+}
+
 async function main() {
     strings = await window.alertServerTrayPopup.getStrings();
     appIcon.src = await window.alertServerTrayPopup.getIcon();
     forecastMore.addEventListener('click', () => window.alertServerTrayPopup.openForecast());
     window.alertServerTrayPopup.onRefresh(() => {
-        render();
-        renderForecast();
+        renderAll();
     });
-    render();
-    renderForecast();
+    renderAll();
 }
 
 main();
