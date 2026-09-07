@@ -128,8 +128,15 @@ async function main() {
         attributionControl: true,
         // The occupied-territory layer needs the SVG root to exist immediately (it injects a
         // <pattern> into its <defs>) - forcing the renderer here avoids Leaflet lazily creating
-        // that SVG only once the first vector layer is added.
-        renderer: L.svg(),
+        // that SVG only once the first vector layer is added. `padding` (extra rendered area beyond
+        // the viewport, as a multiple of its size - Leaflet's own default is a modest 0.1) raised
+        // well past default: Leaflet only repositions/redraws the whole SVG root once a drag moves
+        // past this padded margin, and the Kyiv mask's blur filter is expensive enough to redraw
+        // that a drag crossing that boundary visibly showed the mask "filling in" for an instant.
+        // Kyiv mode's own maxBounds already keeps the pannable area small, so a generous padding
+        // here comfortably covers the whole reachable area from one fit, without ever needing a
+        // mid-drag redraw there at all.
+        renderer: L.svg({ padding: 1 }),
     });
 
     // While Kyiv mode is on, EVERY re-fit (the center button, a fullscreen toggle, a window
