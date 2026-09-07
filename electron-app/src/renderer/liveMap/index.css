@@ -12,6 +12,29 @@ body {
     background: #aad3df;
 }
 
+/* Static per-theme default for the map's own chrome (buttons, legend, status bar, attribution) -
+   what Windows' own unaccented title bar looks like in each theme, since nothing in this app sets
+   its own titleBarStyle/backgroundColor. chromeTint.js overrides these three (not --map-chrome-text
+   independently - it derives that one too, from whichever accent color it sets) directly on this
+   element's own inline style when the user's real title bar is actually accent-colored instead
+   (Windows' "Show accent color on title bars" setting) - inline style beats both of these medialess
+   and @media rules regardless of which one would otherwise apply, so it always wins when present. */
+:root {
+    --map-chrome-bg: #f3f3f3;
+    --map-chrome-border: #d9d9d9;
+    --map-chrome-hover: #e6e6e6;
+    --map-chrome-text: #1f1f1f;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --map-chrome-bg: #202020;
+        --map-chrome-border: #3a3a3a;
+        --map-chrome-hover: #2b2b2b;
+        --map-chrome-text: #e6e6e6;
+    }
+}
+
 /* Leaflet's own default gives attribution links its container-wide link color (#0078A8, plain
    blue) while plain text (the Google tiles' own "&copy; Google Maps" credit, added with no link
    of its own, shown only while Kyiv mode's satellite tiles are active) stays whatever color the
@@ -26,14 +49,14 @@ body {
 .leaflet-control-attribution {
     /* Leaflet's own default attribution background is the same specificity as this - !important
        needed or whichever stylesheet loads later wins the tie and this silently does nothing. */
-    background: #f3f3f3 !important;
+    background: var(--map-chrome-bg) !important;
 }
 
 /* Font-size reduction stays Kyiv-only, though - normal (Ukraine) mode's attribution line is just
    the app's own links with nothing extra crowding it, so it keeps Leaflet's default size. */
 .kyiv-mode-active .leaflet-control-attribution,
 .kyiv-mode-active .leaflet-control-attribution a {
-    font-size: 9px;
+    font-size: 10px;
 }
 
 /* Leaflet's own popup/tooltip panes default to z-index 700/650 - lower than this app's own
@@ -109,10 +132,8 @@ body {
     box-shadow: none !important;
 }
 
-/* Light theme only: every button, the legend, and the status bar are tinted to match this app's
-   OWN window title bar (a plain native Windows one - nothing here sets titleBarStyle/backgroundColor,
-   so it's whatever color Windows 11 uses for an unaccented light-mode title bar) instead of plain
-   white/gray. Dark theme (further down) matches that same OS default for dark mode instead. */
+/* Every button, the legend, and the status bar are tinted to match this app's OWN window title bar
+   - see the --map-chrome-* variables above for what that actually resolves to in each theme/case. */
 .leaflet-bar a,
 .leaflet-control-fullscreen,
 .leaflet-control-layers-toggle {
@@ -120,8 +141,9 @@ body {
     width: 34px !important;
     height: 34px !important;
     line-height: 34px !important;
-    background-color: #f3f3f3 !important;
-    border: 1px solid #d9d9d9 !important;
+    background-color: var(--map-chrome-bg) !important;
+    color: var(--map-chrome-text);
+    border: 1px solid var(--map-chrome-border) !important;
     border-radius: 4px !important;
     /* Same shadow as .threat-legend, not Leaflet's own slightly different default, so every
        floating box on the map (buttons, legend, status bar) reads as one consistent style. */
@@ -136,7 +158,7 @@ body {
 .leaflet-bar a:hover,
 .leaflet-control-fullscreen:hover,
 .leaflet-control-layers-toggle:hover {
-    background-color: #e6e6e6 !important;
+    background-color: var(--map-chrome-hover) !important;
 }
 
 /* The toggle's white background used to come from its outer wrapper (".leaflet-control-layers"),
@@ -144,7 +166,7 @@ body {
    needs its own, or it's left showing whatever's behind it instead of white like every other
    button. */
 .leaflet-control-layers-toggle {
-    background-color: #f3f3f3 !important;
+    background-color: var(--map-chrome-bg) !important;
 }
 
 /* The center button's own outer wrapper div (bare ".leaflet-bar.leaflet-control", auto-created by
@@ -370,13 +392,13 @@ body {
     top: 10px;
     right: 10px;
     z-index: 1000;
-    background: #f3f3f3;
+    background: var(--map-chrome-bg);
     border-radius: 8px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
     padding: 8px 18px;
     text-align: center;
     font-family: 'Segoe UI', system-ui, sans-serif;
-    color: #1f1f1f;
+    color: var(--map-chrome-text);
     pointer-events: none;
 }
 
@@ -404,12 +426,12 @@ body {
 
 .threat-legend,
 .leaflet-control-layers-expanded {
-    background: #f3f3f3;
+    background: var(--map-chrome-bg);
     border-radius: 8px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
     padding: 10px 14px;
     font-size: 12px;
-    color: #1f1f1f;
+    color: var(--map-chrome-text);
 }
 
 .legend-title {
@@ -462,12 +484,6 @@ body {
         filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.7)) drop-shadow(2px 4px 4px rgba(0, 0, 0, 0.6));
     }
 
-    #statusBar {
-        background: #202020;
-        color: #e6e6e6;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-    }
-
     .leaflet-popup-content-wrapper,
     .leaflet-popup-tip {
         background: #262b33;
@@ -482,16 +498,6 @@ body {
         color: #ff6b60;
     }
 
-    .leaflet-bar a,
-    .leaflet-control-fullscreen,
-    .leaflet-control-layers-toggle,
-    .leaflet-control-layers,
-    .leaflet-control-layers-expanded {
-        background-color: #202020 !important;
-        color: #e6e6e6;
-        border-color: #3a3a3a !important;
-    }
-
     /* .threat-legend's own dark-mode shadow (further down in this file) is 0.6 alpha, not the
        0.4 the light-mode button rule above matches - re-matching it here so buttons still track
        the legend's actual shadow in this theme too, instead of freezing at the light-mode value. */
@@ -501,22 +507,10 @@ body {
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6) !important;
     }
 
-    .leaflet-bar a:hover,
-    .leaflet-control-fullscreen:hover,
-    .leaflet-control-layers-toggle:hover {
-        background-color: #2b2b2b !important;
-    }
-
     .leaflet-tooltip {
         background: #262b33 !important;
         border-color: #3a4048 !important;
         color: #e6e6e6 !important;
-    }
-
-    /* Matches the same title-bar-colored tint as the buttons/legend/status bar above - not the
-       plain #262b33 .leaflet-tooltip (unrelated - a threat's hover tooltip, not part of this). */
-    .leaflet-control-attribution {
-        background: #202020 !important;
     }
 
     .leaflet-tooltip-top:before {
@@ -532,8 +526,6 @@ body {
 
     .threat-legend,
     .leaflet-control-layers-expanded {
-        background: #202020 !important;
-        color: #e6e6e6 !important;
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
     }
 
