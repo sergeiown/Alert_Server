@@ -4,7 +4,6 @@
 import { buildOblastGroup } from './regionLabels.js';
 import { buildRaionGroup } from './raionLabels.js';
 import { buildRaionBordersGroup } from './raionBorders.js';
-import { buildKyivRaionGroup } from './kyivRaionLabels.js';
 import { buildCityGroup, CITIES } from './cityLabels.js';
 import { OBLAST_MIN_ZOOM, RAION_MIN_ZOOM } from './zoomTiers.js';
 
@@ -14,7 +13,6 @@ const LabelsLayer = L.LayerGroup.extend({
         this._language = language;
         this._oblastGroup = buildOblastGroup(language);
         this._raionGroup = L.layerGroup([buildRaionBordersGroup(), buildRaionGroup(language, CITIES), buildCityGroup(strings, language)]);
-        this._kyivGroup = buildKyivRaionGroup(language);
         this._kyivModeActive = false;
         this._active = null;
     },
@@ -31,9 +29,10 @@ const LabelsLayer = L.LayerGroup.extend({
         this._active = null;
     },
 
-    // While the live map's Kyiv toggle is on, only its own district labels show - not the
-    // nationwide oblast/raion/city labels that would otherwise still show for whatever's visible
-    // around Kyiv's edges (Kyivska oblast's own raions border it directly).
+    // While the live map's Kyiv toggle is on, no label group shows at all - not the nationwide
+    // oblast/raion/city labels (which would otherwise still show for whatever's visible around
+    // Kyiv's edges), and not Kyiv's own district names either: the real satellite/hybrid tiles
+    // shown in that mode (see index.js) already carry real place names of their own.
     setKyivMode: function (active) {
         this._kyivModeActive = active;
         this._sync();
@@ -41,10 +40,8 @@ const LabelsLayer = L.LayerGroup.extend({
 
     _sync: function () {
         if (this._kyivModeActive) {
-            if (this._active === this._kyivGroup) return;
             if (this._active) this._map.removeLayer(this._active);
-            this._active = this._kyivGroup;
-            this._active.addTo(this._map);
+            this._active = null;
             return;
         }
 
