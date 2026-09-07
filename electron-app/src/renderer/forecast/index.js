@@ -81,7 +81,8 @@ async function renderRegionsList() {
         card.appendChild(pre);
 
         if (result.status === 'active') {
-            card.className = result.alertLevel === 'red' ? 'region-card active level-red' : 'region-card active';
+            const levelClass = result.alertLevel === 'red' ? ' level-red' : result.alertLevel === 'yellow' ? ' level-yellow' : '';
+            card.className = `region-card active${levelClass}`;
             pre.textContent = result.text || strings.forecastActiveAlert;
         } else if (result.status === 'ok') {
             card.className = 'region-card';
