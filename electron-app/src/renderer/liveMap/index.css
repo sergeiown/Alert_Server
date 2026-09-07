@@ -14,12 +14,14 @@ body {
 
 /* Leaflet's own default gives attribution links its container-wide link color (#0078A8, plain
    blue) while plain text (the Google tiles' own "&copy; Google Maps" credit, added with no link
-   of its own) stays whatever color the attribution box itself uses (#333) - two different colors
-   in the very same line for no real reason. One color for both, and half Leaflet's own default
-   12px attribution font-size. */
-.leaflet-control-attribution,
-.leaflet-control-attribution a {
-    font-size: 6px;
+   of its own, shown only while Kyiv mode's satellite tiles are active) stays whatever color the
+   attribution box itself uses (#333) - two different colors in the very same line for no real
+   reason. Scoped to Kyiv mode (see the "kyiv-mode-active" class toggled in index.js) rather than
+   applied everywhere - normal (Ukraine) mode has no such plain-text credit to clash with anything,
+   so it keeps Leaflet's own default link color and font-size exactly as before this was touched. */
+.kyiv-mode-active .leaflet-control-attribution,
+.kyiv-mode-active .leaflet-control-attribution a {
+    font-size: 9px;
     color: #565656;
 }
 
@@ -43,10 +45,12 @@ body {
     filter: blur(24px);
 }
 
-/* Crossfade applied (from index.js) to whichever layer's DOM element is fading in or out on a
-   Kyiv-mode switch - the base map, the satellite tiles, and the mask all swap through this. */
+/* Applied (from index.js) to whichever layer's DOM element is fading out or in on a Kyiv-mode
+   switch - the base map, the satellite tiles, and the mask all swap through this. Duration must
+   match KYIV_SCENE_FADE_MS there (in milliseconds) - that's when the actual layer swap happens,
+   once the fade-out this drives has had time to finish. */
 .kyiv-fade-layer {
-    transition: opacity 0.35s ease;
+    transition: opacity 0.3s ease;
 }
 
 /* Leaflet's own default tooltip CSS sets white-space: nowrap with no width limit - fine for a
@@ -495,8 +499,15 @@ body {
         border-top-color: #262b33 !important;
     }
 
-    .leaflet-control-attribution,
     .leaflet-control-attribution a {
+        color: #c9a86a !important;
+    }
+
+    /* Only while Kyiv mode's satellite tiles add their own plain-text (non-link) Google credit
+       next to these does the link color clash with anything - unified there only; normal mode's
+       links keep their own gold above, same as before this was ever touched. */
+    .kyiv-mode-active .leaflet-control-attribution,
+    .kyiv-mode-active .leaflet-control-attribution a {
         color: #a8a8a8 !important;
     }
 
