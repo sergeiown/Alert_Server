@@ -74,6 +74,15 @@ function getKyivRaionHasBothLevels(name) {
     return match ? Boolean(match.hasBothLevels) : false;
 }
 
+// One entry per distinct level active for this district ({level, description}, worst level first) -
+// what the map popup shows instead of the single alertTypeName/alertLevel pair every other
+// oblast/raion popup uses, since a Kyiv district can genuinely have both a red and a yellow threat
+// live at once (see regionAlertStatus.js's computeKyivRaionStatuses).
+function getKyivRaionThreats(name) {
+    const match = latest.kyivRaions.find((r) => r.name === name);
+    return match && Array.isArray(match.threats) ? match.threats : [];
+}
+
 refresh();
 setInterval(refresh, REFRESH_MS);
 
@@ -89,5 +98,6 @@ export {
     getKyivRaionStartedAt,
     getKyivRaionAlertLevel,
     getKyivRaionHasBothLevels,
+    getKyivRaionThreats,
     REFRESH_MS,
 };
