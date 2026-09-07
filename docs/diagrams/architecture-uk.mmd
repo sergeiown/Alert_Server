@@ -52,6 +52,10 @@ flowchart LR
     neptun --> liveMapWin
     neptun --> altSource
 
+    levelNote(["alert_level / threats[]&#10;(червоний / жовтий), у всіх 3 джерелах"])
+    proxy -. додає .-> levelNote
+    altSource -. додає .-> levelNote
+
     stores -. пріоритетне джерело .-> sourceManager
     sourceManager -. ланцюжок відмовостійкості .-> uaSource
     sourceManager -. ланцюжок відмовостійкості .-> poller
@@ -95,10 +99,12 @@ flowchart LR
     classDef extNode fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
     classDef mainNode fill:#dcfce7,stroke:#16a34a,color:#14532d
     classDef winNode fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
+    classDef noteNode fill:#fef9c3,stroke:#ca8a04,color:#713f12,stroke-dasharray:3 3
 
     class ukrainealarm,api,proxy,neptun,deepstate,kaggle,gh extNode
     class sourceManager,uaSource,poller,altSource,activeData,notifier,regionStatus,todayStats,historyBackfill,occupied,forecast,watcher,weaponStats,tray,stores,updater mainNode
     class settingsWin,forecastWin,trendsWin,liveMapWin,popup,logWin,aboutWin winNode
+    class levelNote noteNode
 
     style ext fill:#eff6ff,stroke:#93c5fd
     style main fill:#f0fdf4,stroke:#86efac
