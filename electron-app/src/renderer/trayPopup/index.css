@@ -5,6 +5,10 @@
     --muted: #888;
     --item-bg: #fff8ec;
     --item-border: #e0a020;
+    --item-bg-red: #fdf0ef;
+    --item-border-red: #dc2626;
+    --threat-color-yellow: #a16207;
+    --threat-color-red: #b91c1c;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -15,6 +19,10 @@
         --muted: #999999;
         --item-bg: #3a2f18;
         --item-border: #b98122;
+        --item-bg-red: #3a1f1f;
+        --item-border-red: #b94a4a;
+        --threat-color-yellow: #d9b35c;
+        --threat-color-red: #e08a8a;
     }
 }
 
@@ -64,6 +72,14 @@ main {
     margin-bottom: 6px;
 }
 
+/* Matches the same red/yellow classification the live map and notifications use - "yellow"
+   happens to already be this project's default item styling, kept as-is; "red" gets its own tint
+   so a more severe active alert visibly stands out from a merely-active one. */
+.alert-item.level-red {
+    border-color: var(--item-border-red);
+    background: var(--item-bg-red);
+}
+
 .alert-item .type {
     font-weight: 600;
 }
@@ -72,6 +88,16 @@ main {
 .alert-item .duration {
     color: var(--muted);
     font-size: 11px;
+}
+
+.alert-item .threat {
+    color: var(--threat-color-yellow);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.alert-item.level-red .threat {
+    color: var(--threat-color-red);
 }
 
 #forecast-section {
