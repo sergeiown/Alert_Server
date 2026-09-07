@@ -15,6 +15,7 @@ import {
     getRaionAlertLevel,
     getKyivRaionStartedAt,
     getKyivRaionAlertLevel,
+    getKyivRaionHasBothLevels,
 } from './alertedRegionsStore.js';
 import { alertPopupHtml } from './alertPopup.js';
 import { RAION_OBLAST } from './raionOblastMap.js';
@@ -49,6 +50,47 @@ function shadeFor(startedAt, now, alertLevel) {
     return shades[tier];
 }
 
+// Currently only Kyiv's own per-district breakdown can have this (a drone threat that a missile
+// threat later joins, both still active for the same district at once) - collapsing straight to
+// the worst level would silently drop the fact that a lesser one is ALSO still live there. Same
+// injected-SVG-<pattern> technique occupiedTerritory.js already uses for its own hatching, just
+// with two colors (a mid-tier shade from each ladder, not the elapsed-time gradient - the point of
+// this fill is "both levels are active", not how long either one has been).
+const DUAL_LEVEL_PATTERN_ID = 'kyiv-dual-level-hatch';
+
+function ensureDualLevelPattern(map) {
+    const svg = map.getPane('overlayPane').querySelector('svg');
+    if (!svg || svg.querySelector(`#${DUAL_LEVEL_PATTERN_ID}`)) return;
+
+    let defs = svg.querySelector('defs');
+    if (!defs) {
+        defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        svg.insertBefore(defs, svg.firstChild);
+    }
+
+    const pattern = document.createElementNS('http://www.w3.org/2000/svg', 'pattern');
+    pattern.setAttribute('id', DUAL_LEVEL_PATTERN_ID);
+    pattern.setAttribute('width', '14');
+    pattern.setAttribute('height', '14');
+    pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+    pattern.setAttribute('patternTransform', 'rotate(45)');
+
+    const redRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    redRect.setAttribute('width', '7');
+    redRect.setAttribute('height', '14');
+    redRect.setAttribute('fill', RED_SHADES[2]);
+    pattern.appendChild(redRect);
+
+    const yellowRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    yellowRect.setAttribute('x', '7');
+    yellowRect.setAttribute('width', '7');
+    yellowRect.setAttribute('height', '14');
+    yellowRect.setAttribute('fill', YELLOW_SHADES[2]);
+    pattern.appendChild(yellowRect);
+
+    defs.appendChild(pattern);
+}
+
 const RegionStatusLayer = L.LayerGroup.extend({
     initialize: function (strings, language) {
         L.LayerGroup.prototype.initialize.call(this);
@@ -67,6 +109,7 @@ const RegionStatusLayer = L.LayerGroup.extend({
 
     onAdd: function (map) {
         this._map = map;
+        ensureDualLevelPattern(map);
         map.on('zoomend', this._render, this);
         this._unsubscribe = subscribeAlertedRegions(() => this._render());
         this._reshadeTimer = setInterval(() => this._render(), RESHADE_MS);
@@ -85,10 +128,14 @@ const RegionStatusLayer = L.LayerGroup.extend({
 
     // `ownStartedAt` drives what's actually drawn; `popupStartedAt`/`popupAlertTypeName`/
     // `inheritedFromName` drive the popup text, which can differ (an inherited alert is shown in
-    // the popup even when nothing is drawn to indicate it visually).
-    _drawRegion: function (rings, displayName, ownStartedAt, now, popupStartedAt, popupAlertTypeName, inheritedFromName, alertLevel) {
+    // the popup even when nothing is drawn to indicate it visually). `hasBothLevels` (Kyiv
+    // districts only, for now) swaps the fill for the red/yellow diagonal hatch instead of a solid
+    // shade - the border still uses the worst level's own color, so it still reads as "this is at
+    // least as bad as red" at a glance even where the hatch itself is hard to make out.
+    _drawRegion: function (rings, displayName, ownStartedAt, now, popupStartedAt, popupAlertTypeName, inheritedFromName, alertLevel, hasBothLevels) {
         const alerted = Boolean(ownStartedAt);
         const color = alerted ? shadeFor(ownStartedAt, now, alertLevel) : NEUTRAL_COLOR;
+        const fillColor = alerted && hasBothLevels ? `url(#${DUAL_LEVEL_PATTERN_ID})` : color;
         const { _strings: strings, _language: language } = this;
 
         L.polygon(rings, {
@@ -96,7 +143,7 @@ const RegionStatusLayer = L.LayerGroup.extend({
             color,
             weight: alerted ? 1 : 0,
             opacity: alerted ? 0.5 : 0,
-            fillColor: color,
+            fillColor,
             fillOpacity: alerted ? ALERTED_FILL_OPACITY : NEUTRAL_FILL_OPACITY,
         })
             .bindPopup(() =>
@@ -116,6 +163,7 @@ const RegionStatusLayer = L.LayerGroup.extend({
         Object.entries(KYIV_RAION_BORDERS).forEach(([name, ring]) => {
             const ownStartedAt = getKyivRaionStartedAt(name);
             const ownAlertLevel = getKyivRaionAlertLevel(name);
+            const hasBothLevels = getKyivRaionHasBothLevels(name);
 
             this._drawRegion(
                 [ring],
@@ -125,7 +173,8 @@ const RegionStatusLayer = L.LayerGroup.extend({
                 ownStartedAt,
                 null,
                 null,
-                ownAlertLevel
+                ownAlertLevel,
+                hasBothLevels
             );
         });
     },

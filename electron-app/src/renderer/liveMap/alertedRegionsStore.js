@@ -66,6 +66,14 @@ function getKyivRaionAlertLevel(name) {
     return match ? match.alertLevel : null;
 }
 
+// True when BOTH a red and a yellow threat are active for this district at once (e.g. a drone
+// threat that a missile threat later joined) - collapsing to just the worst level would silently
+// drop the fact that a lesser one is also still live there.
+function getKyivRaionHasBothLevels(name) {
+    const match = latest.kyivRaions.find((r) => r.name === name);
+    return match ? Boolean(match.hasBothLevels) : false;
+}
+
 refresh();
 setInterval(refresh, REFRESH_MS);
 
@@ -80,5 +88,6 @@ export {
     getRaionAlertLevel,
     getKyivRaionStartedAt,
     getKyivRaionAlertLevel,
+    getKyivRaionHasBothLevels,
     REFRESH_MS,
 };
