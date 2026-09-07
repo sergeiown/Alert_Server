@@ -43,6 +43,12 @@ body {
     filter: blur(24px);
 }
 
+/* Crossfade applied (from index.js) to whichever layer's DOM element is fading in or out on a
+   Kyiv-mode switch - the base map, the satellite tiles, and the mask all swap through this. */
+.kyiv-fade-layer {
+    transition: opacity 0.35s ease;
+}
+
 /* Leaflet's own default tooltip CSS sets white-space: nowrap with no width limit - fine for a
    short label, but a threat with an unusually long description (missile-carrier warnings run
    noticeably longer than a typical drone blip) would render as one giant unbroken line spanning
