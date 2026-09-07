@@ -22,9 +22,6 @@ function collectSelectedUids(locationsData) {
     return uids;
 }
 
-// "м. Київ" state-level uid in locations.json - the default single region for a genuinely fresh
-// install (no legacy config to migrate from), so the app has something meaningful to watch out of
-// the box instead of silently monitoring nothing until the user opens Settings.
 const DEFAULT_FRESH_INSTALL_UID = 31;
 
 function importLegacyConfig(oldDir, { settingsStore, regionsStore }) {

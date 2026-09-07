@@ -85,9 +85,6 @@ main {
     color: var(--fg);
 }
 
-/* Each threat line carries its OWN level class (see index.js) - a card whose overall/worst level
-   is red can still have an earlier yellow threat line alongside the red one, and each reads in its
-   own color rather than both being forced to the card's single worst-level color. */
 .threat-line {
     font-weight: 600;
 }
@@ -105,9 +102,6 @@ main {
     background: var(--active-bg);
 }
 
-/* Same red/yellow classification the live map, notifications, and tray popup use - each level gets
-   its own distinct tint; "no level reported at all" (older cached data) keeps the plain neutral
-   default above instead of looking like a third color of its own. */
 .region-card.active.level-yellow {
     border-color: var(--active-border-yellow);
     background: var(--active-bg-yellow);

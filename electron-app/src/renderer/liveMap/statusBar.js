@@ -15,9 +15,6 @@ function startStatusBar(strings, language) {
     const clockEl = document.getElementById('statusClock');
     const countEl = document.getElementById('statusAlertCount');
 
-    // Alert count and threat count come from two independent sources on two independent
-    // schedules (a periodic IPC poll here, a push from the Neptun layer whenever it re-renders)
-    // - both are kept so either one updating alone still redraws the combined line correctly.
     let alertCount = 0;
     let threatCount = 0;
 

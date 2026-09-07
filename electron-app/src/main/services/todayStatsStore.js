@@ -30,9 +30,6 @@ function kyivDateStr(dateStr) {
     }).format(new Date(dateStr));
 }
 
-// UkraineAlarm's dateHistory only gives location_uid/location_title, not the oblast name
-// alerts.in.ua's own today-stats already carries - resolved here via the same static/discovered
-// location lookup mergeIntoForecastHistory below already relies on.
 function resolveOblastName(locationUid) {
     const lookup = getLocationLookup();
     const info = lookup.get(String(locationUid));
@@ -41,17 +38,8 @@ function resolveOblastName(locationUid) {
     return state ? state.name : null;
 }
 
-// Builds the same {total, byHour, byOblast, alerts, complete, warmupEtaMinutes} shape the
-// alerts.in.ua-based /today-stats endpoint already returns server-side - UkraineAlarm's
-// dateHistory only needs this done client-side, once, since it isn't pre-aggregated by the proxy.
 function aggregateTodayStats(date, rawAlerts) {
-    // UkraineAlarm's dateHistory for a date includes alerts that started the PREVIOUS Kyiv day
-    // but are still ongoing into this one (confirmed on real data: a handful of late-evening
-    // entries with yesterday's own started_at, carried into today's response) - useful for them,
-    // but bucketed by raw started_at hour here it would show alerts in hours of today that
-    // haven't happened yet. Kept for forecast-history merging (mergeIntoForecastHistory uses the
-    // caller's own unfiltered list, not this one) - dropped only from what's actually displayed as
-    // "today".
+
     const alerts = rawAlerts.filter((alert) => kyivDateStr(alert.started_at) === date);
 
     const byHour = Array.from({ length: 24 }, () => 0);
@@ -75,15 +63,8 @@ function aggregateTodayStats(date, rawAlerts) {
     };
 }
 
-// The response already carries every alert nationwide for today - folded into the same local,
-// indefinitely-retained history forecast.js itself builds up, under both the oblast-level bucket
-// (matches what a whole-oblast tracked region reads) and each alert's own specific location_uid
-// (matches a city/raion/hromada tracked directly) - so a region added to monitoring later already
-// has today's data on day one, instead of only accumulating from whenever it was first tracked.
 function mergeIntoForecastHistory(alerts, source) {
-    // alerts.in.ua's own location_oblast_uid field just mirrors location_uid on these records
-    // (not the oblast's real uid) - the real one comes from the same static location lookup
-    // getHistoryFetchTarget() itself resolves through, keyed off the alert's own location_uid.
+
     const lookup = getLocationLookup();
     const byOblast = new Map();
     const byLocation = new Map();
@@ -107,9 +88,6 @@ function mergeIntoForecastHistory(alerts, source) {
     byLocation.forEach((list, uid) => historyStore.mergeAlerts(uid, list, { source }));
 }
 
-// Preferred source: one dateHistory request for the whole day, complete immediately - no
-// per-oblast warmup wait. Returns whether it actually got usable data, so refresh() knows whether
-// to fall back.
 async function refreshFromUkraineAlarm(clientKey) {
     try {
         const response = await fetch(`${PROXY_URL}/ukrainealarm-today-stats`, {
@@ -136,8 +114,6 @@ async function refreshFromUkraineAlarm(clientKey) {
     }
 }
 
-// Fallback: the existing alerts.in.ua-based nationwide backfill (slow per-oblast warmup, but
-// well-proven) - used only when UkraineAlarm's own today-stats couldn't be fetched.
 async function refreshFromAlertsInUa(clientKey) {
     try {
         const response = await fetch(`${PROXY_URL}/today-stats`, {
@@ -149,9 +125,7 @@ async function refreshFromAlertsInUa(clientKey) {
         }
 
         const data = await response.json();
-        // Before the Worker has this route deployed, /today-stats falls through to its default
-        // handler (the active-alerts endpoint) and still answers 200 with unrelated JSON - this
-        // guards against caching that as if it were real today-stats.
+
         if (!data || typeof data.total !== 'number' || !Array.isArray(data.byHour) || !Array.isArray(data.alerts)) {
             logEvent('Today-stats response missing expected fields (alert-proxy - Worker not deployed yet?)', 'WARNING');
             return;
@@ -173,8 +147,6 @@ async function refresh() {
     if (!gotUkraineAlarmData) await refreshFromAlertsInUa(alertProxyClientKey);
 }
 
-// null when never successfully fetched yet (fresh start, or the proxy currently unreachable) -
-// the renderer shows a "no data" state rather than a locally-tallied, silently-partial number.
 function getLatestTodayStats(monitoredUids) {
     if (!cached) return null;
 
@@ -201,9 +173,6 @@ function getLatestTodayStats(monitoredUids) {
     };
 }
 
-// A small buffer past midnight, not exactly on it - gives the proxy's own day rollover (which
-// only actually happens the moment something calls into it) a moment to have already landed by
-// the time this request arrives, rather than racing it.
 const MIDNIGHT_REFRESH_BUFFER_MS = 5000;
 
 function msUntilNextLocalMidnight() {
@@ -212,10 +181,6 @@ function msUntilNextLocalMidnight() {
     return next.getTime() - now.getTime() + MIDNIGHT_REFRESH_BUFFER_MS;
 }
 
-// The periodic interval alone left up to REFRESH_INTERVAL_MS of showing yesterday's total as
-// "today" right after midnight (proxy itself rolls over immediately - confirmed live - but the
-// client only finds out on its next scheduled poll). This forces a refresh right at the boundary
-// instead of waiting on that timer.
 function scheduleMidnightRefresh() {
     setTimeout(() => {
         refresh();

@@ -46,8 +46,7 @@ function notifyApproaching(uid, alertType, etaMs, language) {
         color: FORECAST_COLOR,
         onClick: () => openForecastWindow(),
     });
-    // Forced to English for the log regardless of the notification's own language above - the
-    // log is a developer-facing artifact, not part of the UI the language setting controls.
+
     logEvent(
         `Forecast notify: ${regionName(uid, 'English')} - ${alertTypeName(alertType, 'English')} (uid ${uid}, eta approximately ${formatDuration(etaMs, 'English')})`,
         'INFO'
@@ -79,8 +78,6 @@ async function evaluateRegion(uid, language) {
     const lookaheadMs = lookaheadMinutes * 60 * 1000;
     if (soonest.projectedNextMs > lookaheadMs) return null;
 
-    // A floor, not just half the ETA - for a near-term prediction (say 12 min out), half of that
-    // alone would let this repeat for the same region every 6 min, faster than genuinely useful.
     const cooldownMs = Math.max(MIN_RENOTIFY_COOLDOWN_MS, soonest.projectedNextMs / 2);
     if (state.lastNotifiedAt && now - state.lastNotifiedAt < cooldownMs) return null;
 

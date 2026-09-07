@@ -1,25 +1,14 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
-// Wraps the three live-alert pollers (ukraineAlarmSource.js, alertPoller.js, neptunAlertsSource.js)
-// in a single active-source chain with automatic failover: the user's chosen preferred source
-// (settingsStore's alertSourceProvider) runs first, and after a few consecutive failed polls this
-// switches to the next source in the chain instead of quietly serving stale cached data forever.
-// Only ever one source's interval runs at a time - both they and every downstream consumer
-// (notifications, live map, forecast) go through the same activeAlertData.js singleton, so two
-// pollers running concurrently would race each other writing to it.
-
 const { logEvent } = require('./logger');
 const { startPolling: startUkraineAlarmPolling } = require('./ukraineAlarmSource');
 const { startPolling: startAlertsInUaPolling } = require('./alertPoller');
 const { startPolling: startNeptunPolling } = require('./neptunAlertsSource');
 const { setActiveAlertSource } = require('./alertState');
 
-// A few bad polls in a row (not just one - a single transient blip shouldn't trigger a switch)
-// before treating a source as actually down.
 const FAILURE_THRESHOLD = 3;
-// How often to retry the preferred source once a fallback is active, so the app finds its way
-// back automatically rather than staying on a fallback forever once the preferred source recovers.
+
 const RECOVERY_RETRY_MS = 5 * 60 * 1000;
 
 const SOURCES = {
@@ -42,8 +31,6 @@ function buildChain(preferred) {
     return [preferred, ...rest];
 }
 
-// `onAlertsPolled(sourceLabel, alertData)` matches the shape index.js already used for its own
-// manual single-source dispatch - the manager takes over deciding WHICH source calls it and when.
 function startAlertSourceManager(preferredProvider, clientKey, onAlertsPolled) {
     const chain = buildChain(preferredProvider);
     let activeIndex = 0;
@@ -62,9 +49,6 @@ function startAlertSourceManager(preferredProvider, clientKey, onAlertsPolled) {
         const key = chain[index];
         const source = SOURCES[key];
 
-        // Both proxy-backed sources need a client key that might just not be configured - mirrors
-        // index.js's previous guard, skipping straight past them in the chain instead of polling
-        // with no key (Neptun is the only source that needs none).
         if ((key === 'ukrainealarm' || key === 'alerts.in.ua') && !clientKey) {
             logEvent(`alertProxyClientKey missing from config.local.json, skipping ${source.label} in the failover chain`, 'WARNING');
             if (index < chain.length - 1) activate(index + 1, `${source.label} unavailable (no client key)`);

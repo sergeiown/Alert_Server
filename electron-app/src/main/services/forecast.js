@@ -99,11 +99,6 @@ async function fetchOblastAlerts(stateUid) {
     return result;
 }
 
-// Preferred: UkraineAlarm's regionHistory, one direct request for this exact uid, no need to fetch
-// a whole oblast and filter it down. Not always available (see alert-proxy/src/index.js's own
-// comment - roughly half of regionHistory calls fail outright, a real reliability gap on
-// UkraineAlarm's own side) - null return means "couldn't get it", not "genuinely empty", so the
-// caller knows to fall back rather than treat that as a real answer.
 async function fetchUkraineAlarmHistory(uid) {
     try {
         const { alertProxyClientKey } = loadLocalConfig();
@@ -153,18 +148,11 @@ function formatDuration(ms, language) {
     return parts.length ? parts.join(' ') : `<1${t('unitMinute', language)}`;
 }
 
-// Display name per lastHistorySourceByUid's own vocabulary - same two possible sources as
-// elsewhere (Trends Today, live map attribution).
 const HISTORY_SOURCE_DISPLAY = {
     ukrainealarm: 'UkraineAlarm',
     'alerts.in.ua': 'alerts.in.ua',
 };
 
-// Below 99.5% a whole percent is precise enough. At or above it, 1-e^(-x) is so flat that most
-// currently-active regions land there anyway, often close enough to 1 that even two decimals
-// still just read "100.00%" - a falsely precise-looking number that isn't actually precise, and
-// isn't the number that tells regions apart anymore regardless (expectedToday, shown alongside
-// this, is). So instead of a number, this just says so plainly once it's saturated.
 function formatProbabilityPercent(fraction, language) {
     const percent = fraction * 100;
     return percent >= 99.5 ? t('forecastProbabilityNearCertain', language) : Math.round(percent).toString();
@@ -211,10 +199,7 @@ function buildForecastText(stats, language, source) {
             ? ` (${t('forecastRangeLabel', language)} ${formatDuration(entry.gapRange.low, language)} - ${formatDuration(entry.gapRange.high, language)})`
             : '';
         lines.push(`  - ${typeName}: ${t('forecastProbabilityPrefix', language)} ${formatProbabilityPercent(entry.probabilityToday, language)}%${etaText}${rangeText}`);
-        // A separate line, not folded into the probability bullet above - it's answering a
-        // different question (how many today, not the odds of at least one soon) and doesn't
-        // saturate the way the windowed probability can, so it's worth reading on its own rather
-        // than as a parenthetical aside to a different number.
+
         lines.push(`  - ${t('forecastExpectedTodayLabel', language).replace('{count}', Math.round(entry.expectedToday).toString())}`);
     });
 
@@ -231,15 +216,10 @@ function formatShortDateTime(dateValue, language) {
     return new Date(dateValue).toLocaleString(locale, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-// A plain date range ("24.07.2026 - 03.09.2026") reads as two dates to parse before it means
-// anything - how many days of data that actually is is the part worth knowing at a glance, so
-// "all-time" is reported as an observation-day count instead.
 function daysSince(dateValue) {
     return Math.max(1, Math.round((Date.now() - new Date(dateValue).getTime()) / MS_PER_DAY));
 }
 
-// Ukrainian counted nouns take a different form depending on the count (1 доба, 2-4 доби, 5+ діб,
-// with the usual "11-14 always діб" exception) - a flat "{count} діб" reads wrong for most values.
 function daysWord(count, language) {
     if (language === 'English') return count === 1 ? 'day' : 'days';
 
@@ -251,17 +231,8 @@ function daysWord(count, language) {
     return 'діб';
 }
 
-// `ongoingSinceMs`, added per entry by forecastIpc.js before calling this (the earliest started_at
-// among the currently-active alerts of that type at this uid) - the whole point of showing this
-// screen is an alert that's happening right now, so how long THIS ONE has already run is the
-// first thing worth saying, ahead of the historical averages. Returns {text, level} pairs (not a
-// flat string) so a renderer that can color individual lines shows each threat line in ITS OWN
-// level's color - a yellow drone line and a red missile line for the same alert are two separate
-// lines, not one line tinted by the whole alert's worst level; `level` is null for every other line.
 function buildActiveDurationLines(durationStats, language) {
-    // The probability/ETA forecast below is for the NEXT alert - meaningless while one is already
-    // running, so say that up front instead of silently swapping it out for duration stats with no
-    // explanation of why the usual forecast section is missing.
+
     const lines = [{ text: t('forecastActiveDurationNotApplicable', language), level: null }];
 
     durationStats.forEach((entry) => {
@@ -300,8 +271,6 @@ function buildActiveDurationLines(durationStats, language) {
     return lines;
 }
 
-// Plain-text form for consumers that can't color individual lines anyway (the copy-to-clipboard
-// button).
 function buildActiveDurationText(durationStats, language) {
     return buildActiveDurationLines(durationStats, language)
         .map((line) => line.text)
@@ -320,8 +289,6 @@ function getRegionForecastText(uid, language) {
     return buildForecastText(stats, language, historyStore.getRegionSource(uid));
 }
 
-// The soonest type entry, by the same median-grounded projectedNextMs shown in the Forecast
-// window - so any other surface quoting "soonest ETA" for a region always agrees with it.
 function soonestTypeEntry(typeBreakdown) {
     const candidates = typeBreakdown.filter((entry) => entry.projectedNextMs !== null);
     if (!candidates.length) return null;
@@ -337,10 +304,6 @@ function getRegionSoonestEtaMs(uid) {
     return soonest ? soonest.projectedNextMs : null;
 }
 
-// For an ACTIVE alert - how long it typically lasts is more immediately useful than the
-// probability/ETA of the next one. Grounded in the same locally accumulated history as everything
-// else; only alerts with a real recorded finished_at can contribute a duration (one that's still
-// active elsewhere with no end yet obviously can't).
 function getRegionDurationStats(uid, alertTypes) {
     const alerts = filterUsableAlerts(historyStore.getAllAlertsForRegion(uid));
     const now = Date.now();
@@ -353,8 +316,7 @@ function getRegionDurationStats(uid, alertTypes) {
             .filter((a) => a.alert_type === type && a.finished_at)
             .map((a) => ({ ...a, _durationMs: new Date(a.finished_at).getTime() - new Date(a.started_at).getTime() }));
         const last24h = finished.filter((a) => now - new Date(a.started_at).getTime() <= DAY_MS);
-        // "The whole period" needs its own start date spelled out - otherwise it reads as if it
-        // could mean anything from "since I installed this" to "since the war started".
+
         const oldestStartedAt = finished.length
             ? finished.reduce((oldest, a) => (new Date(a.started_at) < new Date(oldest) ? a.started_at : oldest), finished[0].started_at)
             : null;

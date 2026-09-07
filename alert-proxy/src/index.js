@@ -8,24 +8,13 @@ const ACTIVE_MIN_GAP_MS = 5 * 1000;
 const HISTORY_CACHE_TTL_MS = 15 * 60 * 1000;
 const HISTORY_MIN_GAP_MS = 35 * 1000;
 
-// All 26 oblast-level uids alerts.in.ua's /v1/regions/{uid}/alerts endpoint accepts (matches the
-// app's own locations.json state list). Cycled round-robin by the today-stats background refresh
-// below, one per alarm tick, so a full pass takes roughly 26 * TODAY_STATS_REFRESH_INTERVAL_MS.
 const ALL_OBLAST_UIDS = [
     3, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31,
 ];
-// This self-perpetuating alarm (ensureTodayStatsAlarmScheduled/alarm()) runs forever once first
-// scheduled by ANY client request - regardless of alertSourceProvider, so it kept hitting
-// alerts.in.ua continuously even for installs whose preferred source is UkraineAlarm and only
-// ever fall back to this data on the rare occasion UkraineAlarm's own today-stats fails. No
-// longer tied to HISTORY_MIN_GAP_MS (which forecast.js's on-demand per-region backfill still
-// needs to stay fast) - decoupled and slowed down substantially now that it's a backup path, not
-// the primary one, cutting its own request volume roughly 8x (35s -> 5min per oblast tick).
+
 const TODAY_STATS_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 const TODAY_STATS_TIMEZONE = 'Europe/Kyiv';
 
-// "Today" is always the alerts' own real-world (Kyiv) calendar day, regardless of which timezone
-// the Worker or a requesting client happens to run in.
 function kyivDateKey(date) {
     return new Intl.DateTimeFormat('en-CA', { timeZone: TODAY_STATS_TIMEZONE }).format(date);
 }
@@ -39,8 +28,6 @@ function kyivHour(dateStr) {
     return Number(formatted);
 }
 
-// One-way hash of the connecting IP - lets unique installs be counted (roughly; NAT/shared IPs
-// undercount, IP churn overcounts) without keeping raw addresses around in Durable Object storage.
 async function sha256Hex(text) {
     const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
     return Array.from(new Uint8Array(digest))
@@ -52,9 +39,6 @@ async function hashIp(ip) {
     return (await sha256Hex(ip)).slice(0, 16);
 }
 
-// PEM (SPKI, "-----BEGIN PUBLIC KEY-----...") -> a usable verification key. UkraineAlarm signs
-// webhook bodies with RSA-SHA256 (see tools/example/ukraine-alarm-api.md) - PKCS1 v1.5, not PSS,
-// per their own Node.js example (crypto.createVerify('RSA-SHA256'), the PKCS1 default).
 async function importUkraineAlarmWebhookPublicKey(pem) {
     const base64 = pem.replace(/-----BEGIN PUBLIC KEY-----/, '').replace(/-----END PUBLIC KEY-----/, '').replace(/\s+/g, '');
     const der = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
@@ -70,10 +54,6 @@ async function verifyUkraineAlarmWebhookSignature(publicKeyPem, signatureBase64,
 
 const LOAD_WINDOW_MS = 60 * 1000;
 
-// Drops timestamps older than the rolling window, then reports how many are left - the actual
-// "requests in the last minute" figure a known-per-minute limit can be compared against. A plain
-// "time since the last fetch" (already tracked elsewhere) can't answer that on its own: it says
-// nothing about how many fetches landed earlier in the same window.
 function pruneAndCount(timestamps, now) {
     while (timestamps.length && now - timestamps[0] > LOAD_WINDOW_MS) timestamps.shift();
     return timestamps.length;
@@ -83,40 +63,21 @@ const REGION_STATUSES_URL = 'https://api.alerts.in.ua/v1/iot/active_air_raid_ale
 const REGION_STATUSES_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const REGION_STATUSES_MIN_GAP_MS = 5 * 1000;
 
-// UkraineAlarm - the app's primary live-alert source (see data-flow-notes.txt). The webhook
-// (handleUkraineAlarmWebhook) now carries the real-time burden - a verified push forces an
-// immediate refetch regardless of these gaps - so this polling loop is a safety net for a missed
-// delivery, not the primary freshness mechanism anymore. Loosened accordingly from the pre-webhook
-// values (20s / 5min): still gentle either way given no published rate limit exists, but no
-// reason to keep checking every 20s when a real event pushes its own refresh already.
 const UKRAINEALARM_BASE_URL = 'https://api.ukrainealarm.com/api/v3';
 const UKRAINEALARM_MIN_GAP_MS = 3 * 60 * 1000;
 const UKRAINEALARM_FORCE_REFRESH_MS = 20 * 60 * 1000;
 const UKRAINEALARM_STALE_ALERT_THRESHOLD_MS = 24 * 60 * 60 * 1000;
 const UKRAINEALARM_MAX_OBSERVATIONS = 30;
 
-// Unpredictable path segment (in addition to signature verification below) - not a secret in
-// itself, just a shallow extra layer so the endpoint isn't sitting at an obvious guessable URL.
-// Fixed permanently once registered with UkraineAlarm (POST /api/v3/webhook) - changing it later
-// means re-registering.
 const UKRAINEALARM_WEBHOOK_PATH = '/webhook/ukrainealarm/x1fP-zwrLYGX0KsseCw_uB8CdR4cOjKU';
-// Vendor's own anti-replay recommendation (see tools/example/ukraine-alarm-api.md).
+
 const UKRAINEALARM_WEBHOOK_MAX_TIMESTAMP_AGE_MS = 5 * 60 * 1000;
 const UKRAINEALARM_WEBHOOK_DEDUPE_WINDOW_MS = 5 * 60 * 1000;
 
-// Trends "Today" via UkraineAlarm's dateHistory - one request for the whole day, replacing the
-// slow 26-oblast round-robin the alerts.in.ua-based today-stats mechanism needs (todayStatsState
-// below). Short TTL since a single request is cheap and this is meant to feel closer to
-// real-time than the old mechanism's up-to-roughly-15-minute warmup.
 const UKRAINEALARM_TODAY_CACHE_TTL_MS = 2 * 60 * 1000;
-// A single dateHistory record spans at most one Kyiv-local calendar day - anything claiming
-// longer than that within one day's response is implausible (same "stuck alert" caution as the
-// live /alerts endpoint, just checked via the duration UkraineAlarm itself computes here instead
-// of an age comparison).
+
 const UKRAINEALARM_TODAY_MAX_DURATION_MS = 24 * 60 * 60 * 1000;
 
-// .NET TimeSpan string, e.g. "00:29:40.1514750" or "1.02:30:00" (day.hours:minutes:seconds) for
-// anything past 24h - the "d." prefix is only present when there's at least one whole day.
 function parseDotNetDurationMs(duration) {
     const dotIndex = duration.indexOf('.');
     const hasDayPrefix = dotIndex !== -1 && duration.slice(0, dotIndex).match(/^\d+$/) && duration.includes(':');
@@ -127,9 +88,6 @@ function parseDotNetDurationMs(duration) {
     return (((days * 24 + Number(hours)) * 60 + Number(minutes)) * 60 + seconds) * 1000;
 }
 
-// UkraineAlarm's AlertType -> this app's own alert_type strings (alertPoller.js/
-// neptunAlertsSource.js's shared vocabulary). UNKNOWN/INFO/CUSTOM have no equivalent in the app's
-// existing type set and are dropped rather than guessed at.
 const UKRAINEALARM_TYPE_MAP = {
     AIR: 'air_raid',
     ARTILLERY: 'artillery_shelling',
@@ -138,15 +96,6 @@ const UKRAINEALARM_TYPE_MAP = {
     NUCLEAR: 'nuclear',
 };
 
-// UkraineAlarm's own red/yellow threat-level split (confirmed live on the /alerts polling
-// endpoint, not just the webhook - each activeAlerts[] item now carries an activeAlertLevels[]
-// array: [{alertLevel: "Red"|"Yellow", reason, createdAt}], one entry per concurrent distinct
-// threat - e.g. an ongoing drone (yellow) alert that a missile threat (red) later joins). Mapped
-// into the exact same {alert_level, threats[]} shape alerts.in.ua's active.json already carries
-// natively (alert_level + threats[].{threat_type, level, started_at, source_message}), so every
-// downstream consumer (notifier, tray, live map, forecast) can read one field name regardless of
-// which live source is currently active - threat_type has no UkraineAlarm equivalent (only a
-// human-readable `reason`), left null there rather than guessed at from the reason text.
 function worstUkraineAlarmLevel(activeAlertLevels) {
     if (activeAlertLevels.some((l) => l.alertLevel === 'Red')) return 'red';
     if (activeAlertLevels.length) return 'yellow';
@@ -162,9 +111,6 @@ function mapUkraineAlarmThreats(activeAlertLevels) {
     }));
 }
 
-// Kaggle's per-file download endpoint returns the plain CSV directly (no zip wrapper to unpack,
-// which a Worker has no built-in support for anyway). The dataset itself is only updated weekly,
-// so this is cached far longer than anything else here.
 const KAGGLE_DATASET = 'piterfm/massive-missile-attacks-on-ukraine';
 const KAGGLE_ATTACKS_FILE = 'missile_attacks_daily.csv';
 const KAGGLE_MODELS_FILE = 'missiles_and_uavs.csv';
@@ -175,10 +121,6 @@ function delay(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Minimal RFC 4180 CSV parser (handles quoted fields containing commas, embedded newlines, and
-// "" escaped quotes) - the two Kaggle files have exactly that in a few columns (e.g.
-// destroyed_details is a quoted "{'south': 110, ...}"-shaped string), so a naive split(',') would
-// silently misalign every field after the first quoted one.
 function parseCsv(text) {
     const rows = [];
     let row = [];
@@ -310,26 +252,18 @@ export class AlertsGateway {
         this.lastHistoryOriginFetchAt = 0;
         this.lastRegionStatusesOriginFetchAt = 0;
         this.lastWeaponStatsOriginFetchAt = 0;
-        // Rolling request timestamps for the /status load-percentage figures - alerts.in.ua's
-        // general limit is shared across active.json/region-statuses/history combined (from the
-        // same IP), so allAlertsInUaFetchTimestamps covers all three; historyFetchTimestamps is
-        // the same history subset again, checked separately against its own stricter 2/min cap.
+
         this.allAlertsInUaFetchTimestamps = [];
         this.historyFetchTimestamps = [];
         this.ukraineAlarmFetchTimestamps = [];
         this.ukraineAlarmOriginError = null;
         this.ukraineAlarmTodayCache = null;
         this.ukraineAlarmTodayOriginError = null;
-        // A genuinely past day's data never changes once fetched - keyed by date, kept for the
-        // Durable Object instance's lifetime (not persisted; a restart just means it's re-fetched
-        // once, cheap for the one-time backfill this serves).
+
         this.ukraineAlarmDateStatsCache = new Map();
         this.ukraineAlarmRegionHistoryCache = new Map();
         this.ukraineAlarmRegionHistoryOriginErrors = new Map();
-        // Recent webhook body hashes -> received-at ms, for anti-replay dedup (vendor's own
-        // recommendation). In-memory only - a DO restart just means the (short, 5-minute) replay
-        // window resets, not persisted since this is a low-stakes dataset (public alert status),
-        // not worth the extra storage complexity.
+
         this.ukraineAlarmWebhookSeenHashes = new Map();
         this.ukraineAlarmWebhookPublicKey = null;
         this.activeQueue = Promise.resolve();
@@ -341,8 +275,6 @@ export class AlertsGateway {
     async fetch(request) {
         const url = new URL(request.url);
 
-        // Routed before recordUniqueUser() - the connecting IP here is UkraineAlarm's own server,
-        // not a real install, and would otherwise pollute the unique-user counts.
         if (url.pathname === UKRAINEALARM_WEBHOOK_PATH) {
             return this.handleUkraineAlarmWebhook(request);
         }
@@ -496,9 +428,6 @@ export class AlertsGateway {
         return new Response(body, { headers });
     }
 
-    // Keeps a nationwide "today" picture warm continuously via a self-perpetuating alarm, one
-    // oblast per tick, so any client asking gets an already-built answer instead of each
-    // individual install having to watch the live feed itself from whenever it happened to start.
     async ensureTodayStatsAlarmScheduled() {
         const current = await this.state.storage.getAlarm();
         if (current === null) {
@@ -506,10 +435,6 @@ export class AlertsGateway {
         }
     }
 
-    // Rough usage/growth signal, not precise: every install shares the same client key, so the
-    // only distinguishing thing available here at all is the connecting IP - undercounts installs
-    // behind the same NAT/shared IP, overcounts a single install whose IP happens to change
-    // mid-day. Good enough to notice real growth, not meant as an exact user count.
     async recordUniqueUser(request) {
         const ip = request.headers.get('CF-Connecting-IP');
         if (!ip) return;
@@ -525,9 +450,6 @@ export class AlertsGateway {
             await this.state.storage.put('uniqueUsersState', daily);
         }
 
-        // Never reset (unlike the daily set above) - a running lifetime-unique count, not just
-        // today's. Same undercount/overcount caveats apply, just accumulated across every day
-        // this endpoint has been live instead of one calendar day at a time.
         let allTime = await this.state.storage.get('allTimeUniqueUsersState');
         if (!allTime) allTime = { hashedIps: [] };
         if (!allTime.hashedIps.includes(hashed)) {
@@ -540,14 +462,10 @@ export class AlertsGateway {
         try {
             await this.refreshOneOblastForToday();
         } finally {
-            // Always reschedule, even after a failed round, so a single bad fetch can't stall
-            // the loop for the rest of the day.
+
             await this.state.storage.setAlarm(Date.now() + TODAY_STATS_REFRESH_INTERVAL_MS);
         }
 
-        // Piggybacks on the same recurring tick - its own internal min-gap (loaded from storage,
-        // not memory, since this DO instance can be evicted and recreated between ticks) is what
-        // actually paces the real UkraineAlarm requests, not this outer interval.
         try {
             await this.pollUkraineAlarmIfDue();
         } catch (err) {
@@ -555,22 +473,6 @@ export class AlertsGateway {
         }
     }
 
-    // Shadow monitoring only (see UKRAINEALARM_* constants above) - never called from any
-    // client-facing route except the read-only /ukrainealarm-status introspection endpoint. Not
-    // part of the app's actual alert data path.
-    // `force: true` (from a verified webhook push - see handleUkraineAlarmWebhook) bypasses the
-    // MIN_GAP throttle and always does the full /alerts fetch, skipping the /alerts/status cheap
-    // check entirely - the whole point of a push is that we already know something changed,
-    // there's nothing to "check" first.
-    // UkraineAlarm's push notification (POST, routed here before the app's own client-key gate -
-    // see the default export below). Verifies the RSA-SHA256 signature over `{timestamp}.{body}`
-    // against UKRAINEALARM_WEBHOOK_PUBLIC_KEY (a Cloudflare secret - never trust an unverified
-    // push), checks the timestamp isn't stale, and dedupes by body hash - all per the vendor's own
-    // documented recommendations. Doesn't yet trust the payload's own exact shape (only ever
-    // described as "an AlertRegionModel example", never a precise wire format) - stores it for
-    // inspection and triggers an immediate authoritative /alerts refetch instead. Once real
-    // payloads have actually been seen, this can move to parsing them directly and skip that extra
-    // fetch - the main latency/request-count win either way is not polling BLIND every 20s.
     async handleUkraineAlarmWebhook(request) {
         const rawBody = await request.text();
         const signature = request.headers.get('X-Webhook-Signature');
@@ -612,8 +514,7 @@ export class AlertsGateway {
         }
         const bodyHash = await sha256Hex(rawBody);
         if (this.ukraineAlarmWebhookSeenHashes.has(bodyHash)) {
-            // Ack it (200) rather than error, so a legitimately-retrying sender doesn't keep
-            // hammering a delivery we've already processed.
+
             return new Response('Duplicate, already processed', { status: 200 });
         }
         this.ukraineAlarmWebhookSeenHashes.set(bodyHash, now);
@@ -623,11 +524,6 @@ export class AlertsGateway {
             body: rawBody.slice(0, 5000),
         });
 
-        // Real shape confirmed live 2026-09-01: {status:"Activate", regionId, alarmType,
-        // createdAt} - much more compact than the "AlertRegionModel example" the docs describe.
-        // Applied directly for this one confirmed case (skips a whole /alerts refetch); anything
-        // else - including "Deactivate", which hasn't actually been observed yet, or any future/
-        // unrecognized shape - falls back to a full authoritative refetch instead of guessing.
         let event = null;
         try {
             event = JSON.parse(rawBody);
@@ -644,11 +540,6 @@ export class AlertsGateway {
         return new Response('OK', { status: 200 });
     }
 
-    // Merges one confirmed-shape "Activate" webhook event directly into the cached alert list,
-    // instead of a full refetch - same UKRAINEALARM_TYPE_MAP-mapped shape getUkraineAlarmAlerts()
-    // already reads (region.regionId/activeAlerts[].type/lastUpdate). regionName is left unset
-    // for a region not already known - only used for observability (getUkraineAlarmStatus's
-    // observations), not by the actual client-facing alert data.
     async applyUkraineAlarmActivateEvent(event) {
         const saved = (await this.state.storage.get('ukraineAlarmState')) || {
             lastFetchAt: 0,
@@ -734,15 +625,6 @@ export class AlertsGateway {
         await this.state.storage.put('ukraineAlarmState', saved);
     }
 
-    // Flags entries whose activeAlerts look "stuck" (still reported active well past a plausible
-    // real duration) - a real anomaly spotted once already during manual testing (an ARTILLERY
-    // alert reported active for over a year). Recorded here, not acted on - Stage 1 is purely
-    // about collecting real evidence before any decision on trusting this source.
-    //
-    // Keyed by regionId+alertType (one slot per distinct stuck alert, not one per poll) - an
-    // unkeyed version fills the fixed-size buffer with repeats of the same handful of
-    // long-running problems on every poll, crowding out genuinely new/different ones over a
-    // multi-day observation window.
     recordUkraineAlarmObservations(saved, alerts, now) {
         const byKey = new Map(saved.observations.map((o) => [`${o.regionId}:${o.alertType}`, o]));
 
@@ -771,23 +653,8 @@ export class AlertsGateway {
             .slice(0, UKRAINEALARM_MAX_OBSERVATIONS);
     }
 
-    // Client-facing: the app's live alert source when alertSourceProvider is 'ukrainealarm'.
-    // Serves whatever pollUkraineAlarmIfDue() last cached (kept warm by the recurring alarm() -
-    // see above) rather than fetching on demand itself, since freshness here is the background
-    // loop's job, not this request's.
-    //
-    // Filters out any activeAlerts entry older than UKRAINEALARM_STALE_ALERT_THRESHOLD_MS - the
-    // real "stuck alert" bug found during evaluation (some entries never clear, one seen still
-    // "active" 1600+ days later) would otherwise show a permanently alerted region on the map and
-    // in notifications. Also drops any alert type with no equivalent in the app's own vocabulary
-    // (UNKNOWN/INFO/CUSTOM) rather than guessing a mapping for it.
     async getUkraineAlarmAlerts() {
-        // Was relying entirely on the background alarm() loop to keep ukraineAlarmState warm -
-        // real-world alarm scheduling isn't perfectly on-cadence (observed a 6+ minute gap once,
-        // long enough to miss a genuinely new alert entirely), so this now also forces a check
-        // itself, same as getActive()/getHistory() lazily refreshing on client read rather than
-        // trusting a background timer alone. pollUkraineAlarmIfDue() already self-throttles via
-        // UKRAINEALARM_MIN_GAP_MS, so calling it here on every request is cheap.
+
         try {
             await this.pollUkraineAlarmIfDue();
         } catch (err) {
@@ -809,16 +676,7 @@ export class AlertsGateway {
                 const activeAlertLevels = alert.activeAlertLevels || [];
 
                 alerts.push({
-                    // Keyed by region+type, NOT lastUpdate - electron-app's notifier.js diffs
-                    // live alerts strictly by `id` to decide what's newly started/cancelled.
-                    // UkraineAlarm periodically bumps lastUpdate on an alert that's still
-                    // genuinely ongoing (the same behavior behind the stale-alert filter above);
-                    // an id built from that value would then change under a continuing alert,
-                    // reading as "old id vanished, new id appeared" - a false cancel+restart pair
-                    // in the very same poll (observed in a user's real log, 2026-09-02). Since
-                    // this snapshot only ever lists alerts currently active, region+type alone is
-                    // enough to identify one - two genuinely separate alerts of the same type in
-                    // the same region can't both be "currently active" at once here.
+
                     id: `ukrainealarm-${region.regionId}-${mappedType}`,
                     location_uid: Number(region.regionId),
                     location_title: region.regionName,
@@ -833,9 +691,6 @@ export class AlertsGateway {
         return new Response(JSON.stringify({ alerts }), { headers: { 'Content-Type': 'application/json' } });
     }
 
-    // Shared by getUkraineAlarmTodayStats() and getUkraineAlarmDateStats() - dateHistory itself
-    // takes any date, not just today (confirmed by testing), so both are the same fetch+transform
-    // against a different `date` param.
     async fetchUkraineAlarmDateHistory(dateKey) {
         const response = await fetch(`${UKRAINEALARM_BASE_URL}/alerts/dateHistory?date=${dateKey.replace(/-/g, '')}`, {
             headers: { Authorization: this.env.UKRAINEALARM_TOKEN },
@@ -850,8 +705,7 @@ export class AlertsGateway {
             .filter((record) => UKRAINEALARM_TYPE_MAP[record.alertType])
             .filter((record) => parseDotNetDurationMs(record.duration) <= UKRAINEALARM_TODAY_MAX_DURATION_MS)
             .map((record) => ({
-                // Same stable-id requirement as getUkraineAlarmAlerts() above -
-                // forecastHistoryStore.js's mergeAlerts keys by `alert.id`.
+
                 id: `ukrainealarm-${record.regionId}-${record.startDate}`,
                 location_uid: Number(record.regionId),
                 location_title: record.regionName,
@@ -862,10 +716,6 @@ export class AlertsGateway {
         return { alerts };
     }
 
-    // Trends "Today" via UkraineAlarm - one dateHistory request for the whole Kyiv-local calendar
-    // day, client-facing (electron-app's todayStatsStore.js tries this first, falling back to the
-    // existing alerts.in.ua-based /today-stats on failure - the same preferred-source-with-
-    // automatic-fallback idea as the live alert chain, just for this analytics endpoint instead).
     async getUkraineAlarmTodayStats() {
         const todayKey = kyivDateKey(new Date());
         const now = Date.now();
@@ -891,8 +741,6 @@ export class AlertsGateway {
             });
         }
 
-        // Unlike the alerts.in.ua-based today-stats, this is a single request for the whole day -
-        // no partial-warmup state to report, it's complete from the first successful fetch.
         const body = JSON.stringify({
             date: this.ukraineAlarmTodayCache.date,
             alerts: this.ukraineAlarmTodayCache.alerts,
@@ -902,10 +750,6 @@ export class AlertsGateway {
         return new Response(body, { headers: { 'Content-Type': 'application/json' } });
     }
 
-    // One-time nationwide history backfill (electron-app's historyBackfillStore.js) - unlike
-    // today-stats, a genuinely PAST day's data never changes once fetched, so this caches
-    // indefinitely per date instead of on a TTL. `dateParam` is a plain YYYYMMDD/YYYY-MM-DD-ish
-    // Kyiv-local date, not necessarily today's.
     async getUkraineAlarmDateStats(dateParam) {
         const dateKey = `${dateParam.slice(0, 4)}-${dateParam.slice(4, 6)}-${dateParam.slice(6, 8)}`;
 
@@ -924,16 +768,6 @@ export class AlertsGateway {
         return new Response(body, { headers: { 'Content-Type': 'application/json' } });
     }
 
-    // Forecast backfill via UkraineAlarm - one regionHistory request gives a region's own most
-    // recent 20-25 alerts (roughly) directly, with durations already computed, instead of forecast.js's
-    // current approach (fetch the WHOLE oblast's month of alerts.in.ua history, then filter down
-    // to one location). electron-app's forecast.js tries this first, falling back to the existing
-    // alerts.in.ua oblast-history approach on failure - same pattern as Trends "Today" above.
-    //
-    // Not date-range filterable (confirmed by testing, see data-flow-notes.txt) - a fixed recent
-    // count, so this can end up with LESS depth than a month for a very busy region, or MORE for a
-    // quiet one. Cached fairly long (like alerts.in.ua's own HISTORY_CACHE_TTL_MS) since one
-    // region's history doesn't change every minute.
     async getUkraineAlarmRegionHistory(regionId) {
         const now = Date.now();
         const cached = this.ukraineAlarmRegionHistoryCache.get(regionId);
@@ -948,9 +782,7 @@ export class AlertsGateway {
                     this.ukraineAlarmRegionHistoryOriginErrors.set(regionId, { status: response.status, body: await response.text() });
                 } else {
                     const raw = await response.json();
-                    // regionHistory replies with an ARRAY of RegionAlarmsHistory objects
-                    // ({regionId, regionName, alarms: [...]}) - one element per queried regionId,
-                    // so exactly one here since only one is ever requested at a time.
+
                     const records = (raw && raw[0] && raw[0].alarms) || [];
                     const alerts = records
                         .filter((record) => UKRAINEALARM_TYPE_MAP[record.alertType])
@@ -985,9 +817,6 @@ export class AlertsGateway {
         return new Response(body, { headers: { 'Content-Type': 'application/json' } });
     }
 
-    // Read-only introspection for this Stage of the evaluation - not used by the app. Lets me
-    // check in on real accumulated evidence (index churn rate, stuck-alert observations) without
-    // costing any extra UkraineAlarm request itself.
     async getUkraineAlarmStatus() {
         const now = Date.now();
         const saved = (await this.state.storage.get('ukraineAlarmState')) || null;
@@ -1027,9 +856,6 @@ export class AlertsGateway {
         const uid = ALL_OBLAST_UIDS[todayState.cursor % ALL_OBLAST_UIDS.length];
         todayState.cursor += 1;
 
-        // Reuses the same rate-limited/cached fetch the client-facing /history/:uid endpoint
-        // uses - both draw from the same shared origin-request budget either way, and a recent
-        // forecast lookup for this uid means this call is a free cache hit.
         const response = await this.getHistory(String(uid));
         if (response.ok) {
             const data = await response.json();
@@ -1038,8 +864,6 @@ export class AlertsGateway {
             );
             todayState.byOblast[uid] = alerts;
         }
-        // On failure, leave whatever was previously stored for this uid untouched - a transient
-        // origin error shouldn't erase already-known data for that region; the next pass retries.
 
         await this.state.storage.put('todayStatsState', todayState);
     }
@@ -1057,9 +881,6 @@ export class AlertsGateway {
             }
         });
 
-        // cursor counts total refresh attempts since this Kyiv-local day started (never reset
-        // mid-day, only on date rollover), so cursor < the oblast count means at least one oblast
-        // has never been checked yet today - the total below is a known undercount until then.
         const oblastsRemaining = Math.max(0, ALL_OBLAST_UIDS.length - todayState.cursor);
         const complete = oblastsRemaining === 0;
         const warmupEtaMinutes = complete
@@ -1079,10 +900,6 @@ export class AlertsGateway {
         return new Response(body, { headers: { 'Content-Type': 'application/json' } });
     }
 
-    // Read-only introspection of this Worker's own internal state - never touches any origin
-    // itself, so checking it costs nothing against any rate limit. Meant for an external
-    // health-check tool to see how close each origin-facing endpoint is running to its own known
-    // limit, not just whether the proxy is up.
     async getStatus() {
         const now = Date.now();
         const ageOrNull = (ts) => (ts ? now - ts : null);
@@ -1093,16 +910,13 @@ export class AlertsGateway {
         const uniqueUsersState = await this.state.storage.get('uniqueUsersState');
         const allTimeUniqueUsersState = await this.state.storage.get('allTimeUniqueUsersState');
 
-        // Shared across active.json/region-statuses/history combined - same origin, same IP,
-        // one budget - so this single count is what each of those three below is measured against.
         const generalRequestsLastMinute = pruneAndCount(this.allAlertsInUaFetchTimestamps, now);
         const historyRequestsLastMinute = pruneAndCount(this.historyFetchTimestamps, now);
 
         const body = JSON.stringify({
             generatedAt: new Date(now).toISOString(),
             active: {
-                // alerts.in.ua overall soft/hard limit: 8-10 / 12 requests per minute per IP,
-                // shared with history and regionStatuses below (not its own separate budget).
+
                 softLimitPerMinute: 9,
                 hardLimitPerMinute: 12,
                 requestsLastMinute: generalRequestsLastMinute,
@@ -1115,10 +929,7 @@ export class AlertsGateway {
                 currentError: this.activeOriginError,
             },
             history: {
-                // alerts.in.ua's own documented limit for this specific endpoint: 2 requests per
-                // minute per IP, shared across every uid (one gate, not per-uid) - on top of
-                // (not instead of) the general limit above, since these same requests count
-                // toward both budgets at once.
+
                 limitPerMinute: 2,
                 requestsLastMinute: historyRequestsLastMinute,
                 percentOfLimit: percentOf(historyRequestsLastMinute, 2),
@@ -1129,8 +940,7 @@ export class AlertsGateway {
                 currentErrors: Object.fromEntries(this.historyOriginErrors),
             },
             regionStatuses: {
-                // No limit of its own - counts toward the same general alerts.in.ua budget as
-                // active.json above (see percentOfSoftLimit/percentOfHardLimit there).
+
                 minGapMs: REGION_STATUSES_MIN_GAP_MS,
                 cacheTtlMs: REGION_STATUSES_CACHE_TTL_MS,
                 lastOriginFetchAgeMs: ageOrNull(this.lastRegionStatusesOriginFetchAt),
@@ -1138,7 +948,7 @@ export class AlertsGateway {
                 currentError: this.regionStatusesOriginError,
             },
             weaponStats: {
-                // Kaggle publishes no numeric quota - no percentage to compute here.
+
                 cacheTtlMs: WEAPON_STATS_CACHE_TTL_MS,
                 lastOriginFetchAgeMs: ageOrNull(this.lastWeaponStatsOriginFetchAt),
                 cacheAgeMs: this.weaponStatsCache ? now - this.weaponStatsCache.fetchedAt : null,
@@ -1152,7 +962,7 @@ export class AlertsGateway {
                 refreshIntervalMs: TODAY_STATS_REFRESH_INTERVAL_MS,
             },
             uniqueUsers: {
-                // Rough approximation only - see recordUniqueUser()'s own comment for why.
+
                 date: uniqueUsersState ? uniqueUsersState.date : kyivDateKey(new Date()),
                 allTime: allTimeUniqueUsersState ? allTimeUniqueUsersState.hashedIps.length : 0,
                 today: uniqueUsersState ? uniqueUsersState.hashedIps.length : 0,
@@ -1203,9 +1013,6 @@ export class AlertsGateway {
         return new Response(this.regionStatusesCache.body, { headers });
     }
 
-    // Unlike every other endpoint here, this one caches the app's own aggregated summary, not a
-    // passthrough of the origin response - the raw CSVs (thousands of rows) are only ever fetched
-    // and parsed server-side, so the client only ever sees a small, ready-to-render JSON object.
     async getWeaponStats() {
         const now = Date.now();
 
@@ -1247,10 +1054,6 @@ export default {
     async fetch(request, env) {
         const url = new URL(request.url);
 
-        // UkraineAlarm pushes here directly (POST, no X-Client-Key of ours - it's their server,
-        // not our client) - routed before the GET-only/client-key gate below, which is only for
-        // this app's own client traffic. Signature verification happens inside the Durable Object
-        // itself (handleUkraineAlarmWebhook), not here.
         if (url.pathname === UKRAINEALARM_WEBHOOK_PATH) {
             if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
             const id = env.ALERTS_GATEWAY.idFromName('global');

@@ -7,10 +7,6 @@ const { ipcMain } = require('electron');
 const { getUserDataFile } = require('../services/appPaths');
 const { clearLog, LOG_FILE } = require('../services/logger');
 
-// The "App Paths" registry key is the standard, version-independent way Windows itself resolves
-// a well-known app by executable name (what ShellExecute/Start-Process use under the hood) - it
-// exists only if Excel is actually installed, and its default value is Excel's real exe path, so
-// one query serves both the "is it installed" check and the path needed to launch it.
 const EXCEL_APP_PATHS_KEY = 'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\EXCEL.EXE';
 
 function getExcelPath() {

@@ -15,8 +15,6 @@ const {
 
 autoUpdater.autoDownload = false;
 
-// Registered once at module load, not per check - checkForUpdates() is called repeatedly, and
-// re-registering these on every call would pile up duplicate listeners, each firing once per event.
 let lastDeclinedVersion = null;
 
 autoUpdater.on('checking-for-update', () => {
@@ -32,9 +30,6 @@ autoUpdater.on('update-available', (info) => {
 
     if (info.version === lastDeclinedVersion) return;
 
-    // Anchored to an always-on-top window (created hidden here) so the confirmation itself can't
-    // end up buried behind the live map or any other window the way an unparented dialog can -
-    // shown for real right away if the user confirms, closed again if they decline.
     const anchor = openUpdateProgressWindow({ visible: false });
 
     dialog
@@ -85,8 +80,6 @@ function checkForUpdates() {
     autoUpdater.checkForUpdates();
 }
 
-// Re-scheduled after every check (rather than one fixed setInterval) so a change to
-// updateCheckIntervalHours takes effect on the very next cycle, without needing an app restart.
 function scheduleNextCheck() {
     const hours = settingsStore.getSettings().updateCheckIntervalHours;
     const intervalMs = Math.max(1, hours) * 60 * 60 * 1000;

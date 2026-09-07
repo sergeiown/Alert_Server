@@ -34,8 +34,6 @@ const REGION_TO_ISO = {
     29: ['UA-43', 'UA-40'],
 };
 
-// Windows toast hero images are displayed at roughly 2.02:1 (364x180) and center-cropped to that
-// ratio, so the canvas itself must already match it - otherwise Windows crops our content.
 const OUTPUT_WIDTH = 480;
 const OUTPUT_HEIGHT = 238;
 
@@ -92,10 +90,7 @@ async function renderNow(stateUids, color) {
         height: OUTPUT_HEIGHT,
         show: false,
         frame: false,
-        // backgroundThrottling off - a never-shown window is exactly the case Chromium throttles
-        // hardest, which is also where capturePage() has been seen throwing "UnknownVizError"
-        // (a GPU-compositor error, not an app bug) - keeping it fully active avoids that class of
-        // failure rather than just catching it after the fact.
+
         webPreferences: { sandbox: true, backgroundThrottling: false },
     });
 
@@ -111,10 +106,6 @@ async function renderNow(stateUids, color) {
     }
 }
 
-// One retry on failure - "UnknownVizError" (Chromium's compositor) has been seen as a one-off
-// transient failure, not a persistent condition; a second attempt with a fresh BrowserWindow/GPU
-// state costs little and recovers most of the time, cheaper than letting the notification go out
-// without its map for something that would have worked a moment later.
 async function renderWithRetry(stateUids, color) {
     try {
         return await renderNow(stateUids, color);

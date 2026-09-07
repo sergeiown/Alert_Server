@@ -12,13 +12,6 @@ body {
     background: #aad3df;
 }
 
-/* Static per-theme default for the map's own chrome (buttons, legend, status bar, attribution) -
-   what Windows' own unaccented title bar looks like in each theme, since nothing in this app sets
-   its own titleBarStyle/backgroundColor. chromeTint.js overrides these three (not --map-chrome-text
-   independently - it derives that one too, from whichever accent color it sets) directly on this
-   element's own inline style when the user's real title bar is actually accent-colored instead
-   (Windows' "Show accent color on title bars" setting) - inline style beats both of these medialess
-   and @media rules regardless of which one would otherwise apply, so it always wins when present. */
 :root {
     --map-chrome-bg: #f3f3f3;
     --map-chrome-border: #d9d9d9;
@@ -35,34 +28,21 @@ body {
     }
 }
 
-/* Leaflet's own default gives attribution links its container-wide link color (#0078A8, plain
-   blue) while plain text (the Google tiles' own "&copy; Google Maps" credit, added with no link
-   of its own, shown only while Kyiv mode's satellite tiles are active) stays whatever color the
-   attribution box itself uses (#333) - two different colors in the very same line for no real
-   reason. One color for both, in both modes (not just while Kyiv's own plain-text credit is
-   there to clash with something) - kept the same regardless of which mode is active. */
 .leaflet-control-attribution,
 .leaflet-control-attribution a {
     color: #565656;
 }
 
 .leaflet-control-attribution {
-    /* Leaflet's own default attribution background is the same specificity as this - !important
-       needed or whichever stylesheet loads later wins the tie and this silently does nothing. */
+
     background: var(--map-chrome-bg) !important;
 }
 
-/* Font-size reduction stays Kyiv-only, though - normal (Ukraine) mode's attribution line is just
-   the app's own links with nothing extra crowding it, so it keeps Leaflet's default size. */
 .kyiv-mode-active .leaflet-control-attribution,
 .kyiv-mode-active .leaflet-control-attribution a {
     font-size: 10px;
 }
 
-/* Leaflet's own popup/tooltip panes default to z-index 700/650 - lower than this app's own
-   absolutely-positioned overlays (#statusBar, #screenshotToast, both 1000), so a threat marker's
-   popup opening near either of them would render BEHIND it instead of on top like a popup should.
-   Raised above every one of this app's own overlay z-indexes. */
 .leaflet-popup-pane {
     z-index: 1100;
 }
@@ -71,41 +51,19 @@ body {
     z-index: 1050;
 }
 
-/* The Kyiv view's own mask (see index.js) sits directly behind the district shapes, covering
-   everything else in view with the plain background color - its own inner edges are exactly
-   Kyiv's real outer boundary. Blurred so that boundary reads as a soft fade into the surrounding
-   background instead of a hard, ruler-straight cutoff. */
 .kyiv-mask-shape {
     filter: blur(24px);
 }
 
-/* Applied (from index.js) to whichever layer's DOM element is fading out or in on a Kyiv-mode
-   switch - the base map, the satellite tiles, and the mask all swap through this. Duration must
-   match KYIV_SCENE_FADE_MS there (in milliseconds) - that's when the actual layer swap happens,
-   once the fade-out this drives has had time to finish. */
 .kyiv-fade-layer {
     transition: opacity 0.3s ease;
 }
 
-/* Leaflet's own default tooltip CSS sets white-space: nowrap with no width limit - fine for a
-   short label, but a threat with an unusually long description (missile-carrier warnings run
-   noticeably longer than a typical drone blip) would render as one giant unbroken line spanning
-   most of the window. Actual sizing (adaptive to content, capped at a max) is done in JS -
-   neptun.js's tooltipopen handler - because neither a bare max-width nor width:auto/fit-content
-   size correctly here: .leaflet-tooltip-pane has no explicit width of its own, and every child
-   in it is position:absolute (out of flow), so CSS shrink-to-fit has nothing reliable to measure
-   against and collapses to far narrower than intended. white-space here just needs to allow
-   wrapping at all - the width itself is set per-tooltip once its real content is known. */
 .leaflet-tooltip {
     white-space: normal !important;
     overflow-wrap: break-word;
 }
 
-/* Three stacked drop-shadows: a tight dark contact outline right at the edge, a wider soft halo
-   around that, and a down-and-to-the-side offset blur for the floating-over-the-map look (an
-   overhead-only shadow reads as flat - the diagonal offset is what sells the elevation). The
-   light theme's washed-out blue background needs a noticeably stronger contact outline and halo
-   than the dark theme's already-dark background does, or the icons read as flat and hard to spot. */
 .threat-icon {
     width: 22px;
     height: 22px;
@@ -113,27 +71,15 @@ body {
         drop-shadow(3px 5px 3px rgba(0, 0, 0, 0.45));
 }
 
-/* The heading-rotation transform lives here, one level in from the shadow - rotating this inner
-   element turns the icon in place without dragging the shadow above around with it. */
 .threat-icon-rotate {
     width: 100%;
     height: 100%;
 }
 
-
-/* Every map control button (zoom, center, fullscreen, layer-toggle) forced to one explicit size
-   instead of relying on each control's own default - Leaflet's plain buttons, the fullscreen
-   plugin, and the layers toggle each ship a different built-in size (26/30/36px) that doesn't
-   agree with the others. !important because both the fullscreen plugin's and Leaflet's own layers
-   CSS are loaded after this stylesheet, so either would otherwise win a plain specificity tie. */
-/* The shadow belongs on each actual button, not on the ".leaflet-bar" wrapper around a stacked
-   group (zoom in/out) - a shadow on both would double up right where they meet. */
 .leaflet-bar {
     box-shadow: none !important;
 }
 
-/* Every button, the legend, and the status bar are tinted to match this app's OWN window title bar
-   - see the --map-chrome-* variables above for what that actually resolves to in each theme/case. */
 .leaflet-bar a,
 .leaflet-control-fullscreen,
 .leaflet-control-layers-toggle {
@@ -145,8 +91,7 @@ body {
     color: var(--map-chrome-text);
     border: 1px solid var(--map-chrome-border) !important;
     border-radius: 4px !important;
-    /* Same shadow as .threat-legend, not Leaflet's own slightly different default, so every
-       floating box on the map (buttons, legend, status bar) reads as one consistent style. */
+
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4) !important;
 }
 
@@ -161,29 +106,14 @@ body {
     background-color: var(--map-chrome-hover) !important;
 }
 
-/* The toggle's white background used to come from its outer wrapper (".leaflet-control-layers"),
-   but that wrapper's own background is now stripped below (see the comment there) - so the toggle
-   needs its own, or it's left showing whatever's behind it instead of white like every other
-   button. */
 .leaflet-control-layers-toggle {
     background-color: var(--map-chrome-bg) !important;
 }
 
-/* The center button's own outer wrapper div (bare ".leaflet-bar.leaflet-control", auto-created by
-   Leaflet for any single-button control) picks up a 2px border from somewhere in the platform's
-   own default styling, insetting the actual visible button 2px deeper than the fullscreen button
-   (which has no such wrapper - its own div IS the visible button) - that's the leftward
-   misalignment. Excluding fullscreen/layers-toggle so this doesn't strip their own real border. */
 .leaflet-bar.leaflet-control:not(.leaflet-control-fullscreen):not(.leaflet-control-layers-toggle) {
     border: none !important;
 }
 
-/* The layers toggle's own outer wrapper (".leaflet-control-layers") has its own 5px-rounded,
-   drop-shadowed box around it by default - a second, slightly different frame drawn right behind
-   the toggle's own now-square-cornered border, which is what actually read as "a different
-   border" next to the other buttons' plain single frame. Flattening the wrapper to fit the toggle
-   exactly removes that second frame instead of trying to make two frames match - only while
-   collapsed, though: expanded, this same element IS the dropdown panel and needs its real frame. */
 .leaflet-control-layers:not(.leaflet-control-layers-expanded) {
     background: none !important;
     box-shadow: none !important;
@@ -196,9 +126,6 @@ body {
     font-size: 20px !important;
 }
 
-/* Qualified with the element so this beats Leaflet's own ".leaflet-bar a" specificity - a bare
-   ".leaflet-control-center" rule loses to it and the icon silently keeps Leaflet's default
-   line-height-based (baseline-aligned) centering, which sits an inline SVG slightly off-center. */
 .leaflet-bar a.leaflet-control-center,
 .leaflet-bar a.leaflet-control-screenshot {
     display: flex;
@@ -206,8 +133,6 @@ body {
     justify-content: center;
 }
 
-/* A text label ("Київ"/"Україна"), not an icon, so it needs its own width instead of the other
-   buttons' fixed 34px square. */
 .leaflet-bar a.leaflet-control-kyiv-toggle {
     width: auto !important;
     padding: 0 10px;
@@ -220,10 +145,6 @@ body {
     color: #ffffff;
 }
 
-/* Toggled on #map for the moment of capture - hides only the interactive controls (zoom, center,
-   fullscreen, layer picker, this button itself), not the legend/attribution/status bar/threats,
-   which are the actual content a screenshot is for. visibility (not display:none) keeps their
-   layout space reserved, so nothing else on the map reflows for that one frame. */
 .screenshot-hide-controls .leaflet-control-zoom,
 .screenshot-hide-controls .leaflet-control-fullscreen,
 .screenshot-hide-controls .leaflet-control-layers,
@@ -274,10 +195,6 @@ body {
     fill: #3f8fc0;
 }
 
-/* The actual marker icon Leaflet creates and positions (via its own inline "transform" - nothing
-   here should ever set that property, it would silently lose to Leaflet's). Zero-sized, so its
-   top-left corner sits exactly on the label's geographic point; the visible text is the centered
-   inner span below. */
 .map-label-anchor {
     pointer-events: none;
 }
@@ -291,10 +208,6 @@ body {
     pointer-events: none;
 }
 
-/* Sits fully above its point rather than centered on it (unlike .region-label) - many raions'
-   centroids land within a few km of their own namesake city (most oblast capitals are the seat of
-   a small, city-shaped raion), which is close enough at this zoom tier that a centered label would
-   otherwise sit right on top of that city's own dot and label. */
 .raion-label {
     position: absolute;
     left: 0;
@@ -304,9 +217,6 @@ body {
     pointer-events: none;
 }
 
-/* Oblast, raion and city labels are deliberately styled with a different weight/style AND a
-   different hue each (not just a size step), so the three tiers stay tellable apart at a glance,
-   not only by the zoom level they show up at. Oblast: boldest, darkest, warm near-black. */
 .region-label {
     font-size: 11px;
     font-weight: 700;
@@ -331,8 +241,6 @@ body {
     stroke: #6b6349;
 }
 
-/* Raion: lightest weight, italic, and a cool slate-green - the odd one out among the three warm
-   (brown/near-black/maroon) tones, on purpose. */
 .raion-label {
     font-size: 9px;
     font-weight: 400;
@@ -364,8 +272,6 @@ body {
     pointer-events: none;
 }
 
-/* City: bold like the oblast tier (it's a landmark, not a subdivision), but a distinct maroon
-   matching its own dot, not sharing the oblast's near-black. */
 .city-label {
     position: absolute;
     left: 0;
@@ -384,9 +290,6 @@ body {
         1px 1px 2px #d9d3c1;
 }
 
-/* The actual top-right corner (not dead-center) so it doesn't sit on top of the country while
-   looking at the map. The layer-toggle control normally lives in this same corner, so it's pushed
-   down below this box instead (see ".leaflet-top.leaflet-right" below). */
 #statusBar {
     position: absolute;
     top: 10px;
@@ -407,7 +310,7 @@ body {
     font-weight: 600;
     letter-spacing: 0.02em;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
-    /* Equal-width digits, so the box doesn't subtly resize every second as the seconds tick. */
+
     font-variant-numeric: tabular-nums;
 }
 
@@ -418,8 +321,6 @@ body {
     margin-top: 2px;
 }
 
-/* Only the layer-toggle control lives in this corner, so pushing the whole corner down clears
-   space for #statusBar above it without touching the top-left controls (zoom/center/fullscreen). */
 .leaflet-top.leaflet-right {
     margin-top: 68px;
 }
@@ -452,10 +353,6 @@ body {
     flex-shrink: 0;
 }
 
-/* The real icon's inner <svg> carries its own fixed 22x22 width/height attributes (needed for its
-   on-map size) - inside this row's shrunk 18px box those bleed 2px past the edge on every side
-   unless resized to fill it exactly, which threw its apparent position off against the plain
-   (already exactly-18px) approx-radius swatch next to it. */
 .legend-row .threat-icon svg {
     width: 100%;
     height: 100%;
@@ -498,9 +395,6 @@ body {
         color: #ff6b60;
     }
 
-    /* .threat-legend's own dark-mode shadow (further down in this file) is 0.6 alpha, not the
-       0.4 the light-mode button rule above matches - re-matching it here so buttons still track
-       the legend's actual shadow in this theme too, instead of freezing at the light-mode value. */
     .leaflet-bar a,
     .leaflet-control-fullscreen,
     .leaflet-control-layers-toggle {
@@ -517,8 +411,6 @@ body {
         border-top-color: #262b33 !important;
     }
 
-    /* One color for both plain text and links, in both modes - same reasoning as the light-mode
-       rule above. */
     .leaflet-control-attribution,
     .leaflet-control-attribution a {
         color: #a8a8a8 !important;

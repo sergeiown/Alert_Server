@@ -21,14 +21,6 @@ function formatStartedAt(startedAt) {
     });
 }
 
-// The window itself has no fixed height - it's resized to fit whatever's actually on screen,
-// capped at the height of the TALLEST single alert card (not the whole list) so a region with many
-// simultaneous alerts still opens at a sane, predictable size and scrolls for the rest, rather than
-// growing without bound or (the previous fixed-height behavior) cutting a single detailed card off
-// entirely. Each item's own rendered height is measured directly (true regardless of the list
-// container's own overflow clipping) rather than assumed - cards can differ in height (not every
-// alert has a threat description or history to show an average duration for), so the tallest one
-// is what the cap has to fit, not just whichever happens to be first.
 function resizeToFitOneAlert() {
     const items = Array.from(list.children);
     let listHeight;
@@ -46,17 +38,13 @@ function resizeToFitOneAlert() {
 
     list.style.maxHeight = `${listHeight}px`;
 
-    const bodyBorder = 2; // 1px solid border on each side, per index.css
+    const bodyBorder = 2;
     const totalHeight = headerBar.offsetHeight + listHeight + forecastSection.offsetHeight + bodyBorder;
     window.alertServerTrayPopup.setContentHeight(totalHeight);
 }
 
 function renderForecast() {
-    // Always just a pointer to the Forecast window, not the per-region breakdown itself - the
-    // popup is meant for a quick glance at what's ACTIVE right now, and duplicating the forecast
-    // list (already one click away, and already shown in full in that window) just added clutter
-    // without adding information. Shown regardless of whether anything is upcoming soon right now
-    // - "where to look" doesn't stop being true just because nothing is imminent at this moment.
+
     forecastMore.textContent = strings.forecastMoreDetails;
 }
 
@@ -75,9 +63,6 @@ async function render() {
         const item = document.createElement('div');
         item.className = 'alert-item';
 
-        // "level-red"/"level-yellow" tint the item's border/background to match the same
-        // red/yellow classification the live map and notifications now use - unset (older cached
-        // data, or a source that hasn't reported a level) keeps the original neutral styling.
         if (alert.alertLevel === 'red' || alert.alertLevel === 'yellow') {
             item.classList.add(`level-${alert.alertLevel}`);
         }
@@ -93,9 +78,6 @@ async function render() {
         timing.textContent = alert.ongoingDuration ? `${startedAtText}. ${strings.alertOngoingDuration}: ${alert.ongoingDuration}.` : startedAtText;
         item.appendChild(timing);
 
-        // Each threat line keeps its OWN level - a yellow drone line and a red missile line
-        // reported together for the same alert are two different lines, not one line tinted by
-        // the item's overall (worst) level.
         (alert.threatLines || []).forEach((line) => {
             const threat = document.createElement('div');
             threat.className = line.level === 'red' || line.level === 'yellow' ? `threat level-${line.level}` : 'threat';
@@ -118,9 +100,6 @@ async function render() {
     });
 }
 
-// render() itself is async (awaits the getAlerts() IPC round-trip) - resizeToFitOneAlert() has to
-// run after it actually finishes, not right after calling it, or it measures the DOM from before
-// the alert list was populated.
 async function renderAll() {
     await render();
     renderForecast();

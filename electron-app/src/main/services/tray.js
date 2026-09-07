@@ -63,9 +63,6 @@ function currentTheme() {
     return nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
 }
 
-// The mass-attack variant is a real dedicated icon (its own art, its own outline), not a color
-// overlay on top of the normal one - so it's picked here, by filename, same as the alert/theme
-// variants, rather than post-processed at render time.
 function staticIconFile(activeCount, massAttack) {
     const alertPart = activeCount > 0 ? '_alert' : '';
     const massPart = massAttack ? '_mass' : '';
@@ -185,9 +182,6 @@ function clearTemporaryTooltip() {
     tooltipOverride = null;
 }
 
-// activeCount (monitored-region alerts) and totalCount (nationwide alerts, compared against
-// massAttackThreshold for the badge) are deliberately independent: a quiet monitored region can
-// still be badged during a nationwide mass attack, and vice versa.
 function updateTrayState(activeCount, totalCount) {
     if (!trayInstance) return;
 
@@ -199,8 +193,7 @@ function updateTrayState(activeCount, totalCount) {
     const massAttackChanged = massAttackActive !== wasMassAttackActive;
 
     if (activeCount > 0) {
-        // Also restarts the loop on a mass-attack change mid-alert, so the shake frames (and
-        // their color pulse direction) switch to match immediately, not just on the next alert.
+
         if (!alertLoopActive || massAttackChanged) startAlertLoop(massAttackActive);
     } else if (alertLoopActive) {
         stopAlertLoop();
@@ -208,8 +201,7 @@ function updateTrayState(activeCount, totalCount) {
     } else if (wasIdle && !animationTimer) {
         playIdlePulse(massAttackActive);
     } else if (massAttackChanged) {
-        // Neither branch above touches the icon (no animation running, not freshly idle) - the
-        // badge alone changed, so the static icon still needs a manual refresh to show/hide it.
+
         trayInstance.setImage(loadIcon(staticIconFile(activeCount, massAttackActive)));
     }
 
