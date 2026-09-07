@@ -8,6 +8,7 @@ import { addRegionStatusLayer } from './regionStatus.js';
 import { addOccupiedTerritoryLayer } from './occupiedTerritory.js';
 import { startStatusBar } from './statusBar.js';
 import { addScreenshotControl } from './screenshot.js';
+import { KYIV_RAION_BORDERS } from './kyivRaionBorders.js';
 
 // Must match ukraine_default.svg's own mapsvg:geoViewBox attribute (west north east south),
 // or the background image will no longer line up.
@@ -15,6 +16,31 @@ const UKRAINE_BOUNDS = [
     [44.387017, 22.138577],
     [52.380834, 40.220623],
 ];
+
+// Derived from the district borders themselves (not a separately hand-kept pair of numbers) so it
+// can never drift out of sync with what the "Kyiv" button is actually zooming to.
+function computeKyivBounds() {
+    let minLat = 90;
+    let maxLat = -90;
+    let minLng = 180;
+    let maxLng = -180;
+
+    Object.values(KYIV_RAION_BORDERS).forEach((ring) => {
+        ring.forEach(([lat, lng]) => {
+            minLat = Math.min(minLat, lat);
+            maxLat = Math.max(maxLat, lat);
+            minLng = Math.min(minLng, lng);
+            maxLng = Math.max(maxLng, lng);
+        });
+    });
+
+    return [
+        [minLat, minLng],
+        [maxLat, maxLng],
+    ];
+}
+
+const KYIV_BOUNDS = computeKyivBounds();
 
 const MAP_MIN_ZOOM = 5;
 
@@ -44,6 +70,35 @@ const CenterControl = L.Control.extend({
     },
 });
 
+// A two-state toggle, not a separate "zoom to Kyiv" one-shot action - while on, Kyiv stays
+// front-and-center (including across a fullscreen toggle or window resize, both of which would
+// otherwise silently snap back to the whole-country view); the label itself names what clicking it
+// does NEXT, swapping between the two on/off labels rather than showing a separate pressed state.
+const KyivToggleControl = L.Control.extend({
+    options: { position: 'topleft' },
+    onAdd: function () {
+        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-kyiv-toggle-wrapper');
+        const link = L.DomUtil.create('a', 'leaflet-control-kyiv-toggle', container);
+        link.href = '#';
+        this._link = link;
+        this._setLabel(false);
+
+        L.DomEvent.on(link, 'click', (event) => {
+            L.DomEvent.preventDefault(event);
+            this.options.onToggle();
+        });
+        return container;
+    },
+    _setLabel: function (active) {
+        this._link.textContent = active ? this.options.offLabel : this.options.onLabel;
+        this._link.title = active ? this.options.offTitle : this.options.onTitle;
+    },
+    setActive: function (active) {
+        this._setLabel(active);
+        this._link.classList.toggle('active', active);
+    },
+});
+
 async function main() {
     const strings = await window.alertServerLiveMap.getStrings();
     const settings = await window.alertServerLiveMap.getSettings();
@@ -69,12 +124,17 @@ async function main() {
         renderer: L.svg(),
     });
 
+    // While Kyiv mode is on, EVERY re-fit (the center button, a fullscreen toggle, a window
+    // resize) targets Kyiv instead of the whole country - not just the one click that turned it
+    // on - or leaving Kyiv mode on through any of those would silently snap back out to Ukraine.
+    let kyivModeActive = false;
+
     // fitBounds clamps to the CURRENT minZoom, so the floor is always lifted back to the map's
     // absolute minimum first - otherwise a stale floor from an earlier call (e.g. a mid-animation
     // fullscreen-exit size read) could block the correct, lower zoom the real final size needs.
     function fitAndLockMinZoom() {
         map.setMinZoom(MAP_MIN_ZOOM);
-        map.fitBounds(UKRAINE_BOUNDS);
+        map.fitBounds(kyivModeActive ? KYIV_BOUNDS : UKRAINE_BOUNDS);
         map.setMinZoom(map.getZoom());
     }
 
@@ -105,6 +165,18 @@ async function main() {
     });
 
     new CenterControl({ title: strings.liveMapCenterButtonTitle, onClick: fitAndLockMinZoom }).addTo(map);
+
+    const kyivToggle = new KyivToggleControl({
+        onLabel: strings.liveMapKyivButtonLabel,
+        offLabel: strings.liveMapUkraineButtonLabel,
+        onTitle: strings.liveMapKyivButtonTitle,
+        offTitle: strings.liveMapUkraineButtonTitle,
+        onToggle: () => {
+            kyivModeActive = !kyivModeActive;
+            kyivToggle.setActive(kyivModeActive);
+            fitAndLockMinZoom();
+        },
+    }).addTo(map);
     addScreenshotControl(map, strings);
 
     const isDarkMap = window.matchMedia('(prefers-color-scheme: dark)').matches;
