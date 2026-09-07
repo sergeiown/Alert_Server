@@ -105,25 +105,27 @@ const RegionStatusLayer = L.LayerGroup.extend({
             .addTo(this);
     },
 
+    // Deliberately does NOT fall back to the whole city's own status for a district with none of
+    // its own - unlike an ordinary raion inheriting its oblast's (a coarse, whole-oblast alert
+    // plausibly does cover every raion in it), Kyiv's OWN per-district status is already about as
+    // granular as the data gets (parsed from the city alert's own threat text - see
+    // regionAlertStatus.js's computeKyivRaionStatuses), so a district the parse didn't confirm is
+    // left genuinely neutral rather than painted with the city's blanket color, which would read as
+    // confirming something about that specific district that isn't actually known.
     _drawKyivRaions: function (isEnglish, now) {
-        const cityStartedAt = getOblastStartedAt('Київ');
-        const cityAlertTypeName = getOblastAlertTypeName('Київ');
-        const cityAlertLevel = getOblastAlertLevel('Київ');
-
         Object.entries(KYIV_RAION_BORDERS).forEach(([name, ring]) => {
             const ownStartedAt = getKyivRaionStartedAt(name);
             const ownAlertLevel = getKyivRaionAlertLevel(name);
-            const inherited = !ownStartedAt;
 
             this._drawRegion(
                 [ring],
                 isEnglish ? `${name} District` : `${name} район`,
-                ownStartedAt || (inherited ? cityStartedAt : null),
+                ownStartedAt,
                 now,
-                ownStartedAt || (inherited ? cityStartedAt : null),
-                inherited ? cityAlertTypeName : null,
-                inherited && cityStartedAt ? oblastDisplayName('Київ', isEnglish) : null,
-                inherited ? cityAlertLevel : ownAlertLevel
+                ownStartedAt,
+                null,
+                null,
+                ownAlertLevel
             );
         });
     },

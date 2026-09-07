@@ -142,19 +142,50 @@ async function main() {
 
     const baseMapOverlay = L.imageOverlay(baseMapUrl, UKRAINE_BOUNDS).addTo(map);
 
+    const isDarkMap = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
     // A real street/building-level tile layer, shown ONLY in Kyiv mode - the app's own base map is
     // one flat-color abstract SVG of the whole country, fine at a national view but not something
     // that gets more detailed no matter how far in this zooms, so it reads as a blown-up blur at
-    // Kyiv's own scale. Not added to the map until Kyiv mode actually turns on.
-    const kyivTileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
-    });
+    // Kyiv's own scale. CARTO's own basemaps (built on OpenStreetMap data, clean and uncluttered
+    // rather than default OSM's busy, ad-hoc-colored styling) - Voyager in light mode, Dark Matter
+    // in dark, matching the same light/dark-aware treatment the rest of this app already gets. Not
+    // added to the map until Kyiv mode actually turns on.
+    const kyivTileLayer = L.tileLayer(
+        isDarkMap
+            ? 'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+            : 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+        {
+            attribution:
+                '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            maxZoom: 20,
+            detectRetina: true,
+        }
+    );
 
     // Kept so leaving Kyiv mode restores each to whatever state it was actually in before entering
     // it (a layer the user had already turned off via the layers control shouldn't reappear).
     let riverLayerWasOn = true;
     let occupiedTerritoryLayerWasOn = true;
+
+    // maxBounds (set below) only stops PANNING past Kyiv's edges - it doesn't stop the tile layer
+    // itself from rendering real streets for whatever's still visible in the margin around Kyiv's
+    // own (non-rectangular) shape within the current viewport. This masks that margin instead: one
+    // polygon whose outer ring is the whole world and whose holes are Kyiv's own 10 districts -
+    // everywhere outside those holes paints over the tiles in the same color the map already uses
+    // for "nothing here" (matches #map's own background), leaving only Kyiv's actual shape visible.
+    const WORLD_RING = [
+        [-85, -180],
+        [-85, 180],
+        [85, 180],
+        [85, -180],
+    ];
+    const kyivMask = L.polygon([WORLD_RING, ...Object.values(KYIV_RAION_BORDERS)], {
+        stroke: false,
+        fillColor: '#aad3df',
+        fillOpacity: 1,
+        interactive: false,
+    });
 
     fitAndLockMinZoom();
     map.attributionControl.setPrefix(false);
@@ -191,8 +222,6 @@ async function main() {
         onToggle: () => {
             kyivModeActive = !kyivModeActive;
             kyivToggle.setActive(kyivModeActive);
-            regionStatusLayer.setKyivMode(kyivModeActive);
-            labelsLayer.setKyivMode(kyivModeActive);
 
             if (kyivModeActive) {
                 riverLayerWasOn = map.hasLayer(riverLayer);
@@ -201,23 +230,34 @@ async function main() {
                 if (riverLayerWasOn) map.removeLayer(riverLayer);
                 if (occupiedTerritoryLayerWasOn) map.removeLayer(occupiedTerritoryLayer);
                 kyivTileLayer.addTo(map);
+                // Added (and pushed behind everything else already in the shared vector-overlay
+                // pane) BEFORE the district layers re-render just below - so their freshly (re)drawn
+                // shapes land after the mask in the DOM and paint on top of it, not the other way
+                // around.
+                kyivMask.addTo(map);
+                kyivMask.bringToBack();
                 // Padded slightly past the district borders themselves - a bare fit would let the
                 // user pan just enough to reveal a sliver of the country outside Kyiv at the edge.
                 map.setMaxBounds(L.latLngBounds(KYIV_BOUNDS).pad(0.05));
             } else {
                 map.removeLayer(kyivTileLayer);
+                map.removeLayer(kyivMask);
                 baseMapOverlay.addTo(map);
                 if (riverLayerWasOn) riverLayer.addTo(map);
                 if (occupiedTerritoryLayerWasOn) occupiedTerritoryLayer.addTo(map);
                 map.setMaxBounds(null);
             }
 
+            // After the mask (if any) is already placed and pushed to the back - so their own
+            // freshly-drawn district shapes land on top of it, not the other way around.
+            regionStatusLayer.setKyivMode(kyivModeActive);
+            labelsLayer.setKyivMode(kyivModeActive);
+
             fitAndLockMinZoom();
         },
     }).addTo(map);
     addScreenshotControl(map, strings);
 
-    const isDarkMap = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const fullScreenIconOptions = isDarkMap
         ? {
               enterFullScreenIcon: `data:image/svg+xml;base64,${btoa(
