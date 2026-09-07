@@ -178,6 +178,20 @@ async function main() {
         }
     }
 
+    // A district near Kyiv's own outer edge (its polygon sits right against maxBounds) has no room
+    // left for Leaflet's own popup autoPan to pan the view toward when its popup opens above/beside
+    // the click point - maxBounds simply won't let the map go any further that way, so the popup's
+    // own top (its district name, its threat lines) stayed clipped by the window edge instead of
+    // panning into view like a popup normally would. Lifting the bounds restriction just while a
+    // popup is open (only in Kyiv mode - elsewhere there's no maxBounds set to begin with) lets
+    // autoPan actually reach wherever it needs to; reinstated the moment the popup closes.
+    map.on('popupopen', () => {
+        if (kyivModeActive) map.setMaxBounds(null);
+    });
+    map.on('popupclose', () => {
+        if (kyivModeActive) map.setMaxBounds(L.latLngBounds(KYIV_BOUNDS).pad(0.05));
+    });
+
     const baseMapOverlay = L.imageOverlay(baseMapUrl, UKRAINE_BOUNDS).addTo(map);
 
     const isDarkMap = window.matchMedia('(prefers-color-scheme: dark)').matches;
