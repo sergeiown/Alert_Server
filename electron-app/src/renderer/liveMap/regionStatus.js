@@ -4,6 +4,7 @@
 import { OBLAST_BORDERS } from './oblastBorders.js';
 import { RAION_BORDERS } from './raionBorders.js';
 import { CITY_BORDERS } from './cityBorders.js';
+import { KYIV_RAION_BORDERS } from './kyivRaionBorders.js';
 import {
     subscribe as subscribeAlertedRegions,
     getOblastStartedAt,
@@ -12,6 +13,8 @@ import {
     getRaionAlertTypeName,
     getOblastAlertLevel,
     getRaionAlertLevel,
+    getKyivRaionStartedAt,
+    getKyivRaionAlertLevel,
 } from './alertedRegionsStore.js';
 import { alertPopupHtml } from './alertPopup.js';
 import { RAION_OBLAST } from './raionOblastMap.js';
@@ -106,12 +109,42 @@ const RegionStatusLayer = L.LayerGroup.extend({
             this._drawRegion(rings, oblastDisplayName(name, isEnglish), startedAt, now, startedAt, alertTypeName, null, alertLevel);
         });
         // Kyiv city has no oblast-tier polygon of its own (folded into Kyiv oblast's shape in the
-        // source dataset), so its city outline stands in for it here.
-        if (CITY_BORDERS['Київ']) {
+        // source dataset), so its city outline stands in for it here - except at the raion zoom
+        // tier, where its own 10 districts are drawn individually instead (see below), the same way
+        // every other tracked oblast shows its raions once zoomed in enough.
+        if (CITY_BORDERS['Київ'] && !raionTier) {
             const startedAt = getOblastStartedAt('Київ');
             const alertTypeName = getOblastAlertTypeName('Київ');
             const alertLevel = getOblastAlertLevel('Київ');
             this._drawRegion([CITY_BORDERS['Київ']], oblastDisplayName('Київ', isEnglish), startedAt, now, startedAt, alertTypeName, null, alertLevel);
+        }
+
+        // Kyiv's own districts have no location_uid of their own in any live source - their status
+        // comes from parsing free text instead (see regionAlertStatus.js's
+        // computeKyivRaionStatuses), so there's no alertType to show for them specifically, only a
+        // level. A district with no status of its own inherits the whole city's, the same way an
+        // ordinary raion inherits its oblast's.
+        if (raionTier) {
+            const cityStartedAt = getOblastStartedAt('Київ');
+            const cityAlertTypeName = getOblastAlertTypeName('Київ');
+            const cityAlertLevel = getOblastAlertLevel('Київ');
+
+            Object.entries(KYIV_RAION_BORDERS).forEach(([name, ring]) => {
+                const ownStartedAt = getKyivRaionStartedAt(name);
+                const ownAlertLevel = getKyivRaionAlertLevel(name);
+                const inherited = !ownStartedAt;
+
+                this._drawRegion(
+                    [ring],
+                    isEnglish ? `${name} District` : `${name} район`,
+                    ownStartedAt || (inherited ? cityStartedAt : null),
+                    now,
+                    ownStartedAt || (inherited ? cityStartedAt : null),
+                    inherited ? cityAlertTypeName : null,
+                    inherited && cityStartedAt ? oblastDisplayName('Київ', isEnglish) : null,
+                    inherited ? cityAlertLevel : ownAlertLevel
+                );
+            });
         }
 
         Object.entries(RAION_BORDERS).forEach(([name, ring]) => {

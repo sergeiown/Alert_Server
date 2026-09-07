@@ -20,7 +20,7 @@ function getLatestTotalAlertCount() {
     return latestTotalAlertCount;
 }
 
-let latestAlertedRegions = { oblasts: [], raions: [] };
+let latestAlertedRegions = { oblasts: [], raions: [], kyivRaions: [] };
 
 function setLatestAlertedRegions(regions) {
     latestAlertedRegions = regions;
