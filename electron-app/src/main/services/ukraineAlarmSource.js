@@ -1,14 +1,6 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
-// The app's primary live-alert source (selectable in Settings, settingsStore's
-// alertSourceProvider) - community-level granularity like alerts.in.ua, plus native English
-// region names and a richer alert-type set, via UkraineAlarm (api.ukrainealarm.com) through
-// alert-proxy. The proxy does its own filtering (drops "stuck" alerts and unmapped types) before
-// this ever sees the data - see alert-proxy/src/index.js's getUkraineAlarmAlerts(). Produces the
-// same alertData.alerts shape alertPoller.js/neptunAlertsSource.js do, so every downstream
-// consumer works unmodified regardless of which source is actually polling.
-
 const { logEvent } = require('./logger');
 const { setLatestAlertData, getLatestAlertData } = require('./activeAlertData');
 

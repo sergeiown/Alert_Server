@@ -1,13 +1,6 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
-// A token-free alternative to alertPoller.js's alerts.in.ua feed, selectable in Settings
-// (settingsStore's alertSourceProvider) - not a like-for-like replacement, since Neptun only
-// tracks oblast/raion-level siren status (no community-level granularity, no weapon-type
-// tagging), hence alerts.in.ua staying the default. Produces the exact same alertData.alerts
-// shape alertPoller.js does, so every downstream consumer (filtering, notifications, forecast,
-// tray, daily stats) works unmodified regardless of which source is actually polling.
-
 const { getResourcePath } = require('./appPaths');
 const { logEvent } = require('./logger');
 const { setLatestAlertData, getLatestAlertData } = require('./activeAlertData');
@@ -18,14 +11,9 @@ const ALERTS_URL = 'https://neptun.in.ua/api/v1/alerts';
 const POLL_INTERVAL_MS = 30000;
 const UNMATCHED_LOG_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
-// locations.json's own names for Crimea and Sevastopol are these exact mixed Latin/Cyrillic
-// strings (see CRIMEA_RAW_NAME documented in renderer/liveMap/regionNameUtils.js) - Neptun's own
-// plain-Cyrillic names would never exact-match either one.
 const CRIMEA_RAW_NAME = 'Aвmoнoмнa Pecпублiкa Kpuм';
 const CRIMEA_NEPTUN_NAME = 'Автономна Республіка Крим';
-// locations.json has no separate state entry for Sevastopol at all - it's filed as Crimea's own
-// (sole) district instead, so a Neptun "oblast" entry for it has to resolve into districtByName,
-// not stateByName, and comes out with location_type 'district' rather than 'state'.
+
 const SEVASTOPOL_RAW_NAME = 'м. Ceвacmoпoль';
 const SEVASTOPOL_NEPTUN_NAME = 'Севастополь';
 
@@ -61,11 +49,6 @@ function buildLookups() {
     });
 }
 
-// Not every Neptun entry has a home in locations.json (e.g. Sevastopol has no separate entry
-// there at all, folded into occupied-Crimea reporting elsewhere) - these simply aren't
-// selectable in this app's own region tree, so silently skipping them is correct, not a bug to
-// paper over. Logged once a day per name (not every 30-second poll) purely so it isn't a total
-// mystery why a name never turns into a monitorable alert.
 function logUnmatchedOnce(name, oblast) {
     const now = Date.now();
     const lastLogged = loggedUnmatchedAt.get(name) || 0;
@@ -74,10 +57,6 @@ function logUnmatchedOnce(name, oblast) {
     logEvent(`Neptun alert source: no matching location in locations.json for "${name}" (${oblast})`, 'WARNING');
 }
 
-// Neptun's own red/yellow threat-level split (level + a plain reasons[] array of human-readable
-// messages, one per concurrent distinct threat - no structured threat_type or per-reason timestamp
-// the way alerts.in.ua's threats[] has). Mapped into that same {alert_level, threats[]} shape so
-// every downstream consumer can read one field name regardless of which live source is active.
 function mapNeptunThreats(entry) {
     return (entry.reasons || []).map((message) => ({
         threat_type: null,
@@ -105,9 +84,6 @@ function transformOblasts(oblasts) {
                 };
             }
 
-            // Sevastopol (and only Sevastopol, currently) is an "oblast" in Neptun's own model but
-            // only exists in locations.json as Crimea's one district - falls back here instead of
-            // being dropped.
             const district = districtByName.get(entry.name);
             if (district) {
                 return {
@@ -152,12 +128,6 @@ function transformRaions(raions) {
         .filter(Boolean);
 }
 
-// Community-level monitoring (a specific city/hromada, not its whole raion or oblast) is a
-// structural gap in Neptun's own data model, not a naming mismatch like Sevastopol's was - no
-// amount of name-matching fixes it, since Neptun never reports anything more granular than a
-// raion. Warning about every such gap in general would mostly be noise about places nobody here
-// is even watching; this only speaks up about the ones actually in the user's own monitored list,
-// once per app start (not per poll) since the monitored list itself doesn't change that often.
 function warnAboutUncoveredMonitoredRegions() {
     const lookup = getLocationLookup();
     const uncovered = regionsStore

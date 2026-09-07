@@ -30,10 +30,6 @@ function getLatestAlertedRegions() {
     return latestAlertedRegions;
 }
 
-// Which of the alertSourceManager.js chain is actually serving live data right now - can differ
-// from settingsStore's alertSourceProvider (the preferred choice) during a failover. Read by the
-// live map's attribution line, which would otherwise always claim alerts.in.ua regardless of what
-// source (UkraineAlarm, Neptun) is genuinely active.
 let activeAlertSource = null;
 
 function setActiveAlertSource(key) {

@@ -1,15 +1,6 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
-// One-time (well, one-per-missing-day) nationwide history import via UkraineAlarm's dateHistory -
-// forecastHistoryStore.js's own spanDays only reflects how long THIS install has been locally
-// accumulating data (days since _localFirstSeenAt), not how far back real alert data actually
-// goes; without this, a fresh install (or one that just added todayStatsStore's nationwide
-// backfill) starts the forecast model off with only a few days of real history, even though a
-// month of real data is available for the asking. Merged into the exact same historyStore
-// forecast.js/todayStatsStore.js already read from - no separate wiring needed for the forecast
-// model to actually use it.
-
 const fs = require('fs');
 const { logEvent } = require('./logger');
 const { loadLocalConfig } = require('./localConfig');
@@ -20,9 +11,7 @@ const historyStore = require('./forecastHistoryStore');
 const PROXY_URL = 'https://alert-proxy.alert-proxy-ua.workers.dev';
 const BACKFILL_DAYS = 30;
 const TIMEZONE = 'Europe/Kyiv';
-// Gentle pacing between the up-to-30 one-time requests - regionHistory's own real, roughly 50% failure
-// rate (see data-flow-notes.txt) suggests this API can be flaky under any load; no reason to rush
-// a one-time background job that isn't blocking anything the user is looking at.
+
 const REQUEST_GAP_MS = 3000;
 const STARTUP_DELAY_MS = 15000;
 const STATE_FILE = 'historical_backfill_state.json';
@@ -61,8 +50,6 @@ function saveState(state) {
     fs.writeFileSync(getUserDataFile(STATE_FILE), JSON.stringify(state, null, 2), 'utf-8');
 }
 
-// Same nationwide uid+oblast fan-out todayStatsStore.js's mergeIntoForecastHistory already does -
-// duplicated rather than imported since backfill:true only belongs here, never on the live path.
 function mergeNationwide(alerts) {
     const lookup = getLocationLookup();
     const byOblast = new Map();
@@ -116,8 +103,7 @@ async function runBackfill() {
                 }
             }
         } catch (err) {
-            // Left out of `completed` - retried on a future app start along with any other
-            // still-missing day, no special handling needed here.
+
         }
 
         await delay(REQUEST_GAP_MS);

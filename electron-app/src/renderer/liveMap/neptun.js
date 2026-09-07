@@ -8,8 +8,7 @@ const THREATS_URL = 'https://neptun.in.ua/api/v1/threats';
 const STREAM_URL = 'wss://neptun.in.ua/api/v1/stream';
 const RECONNECT_DELAY_MS = 5000;
 const HEARTBEAT_TIMEOUT_MS = 30000;
-// The WebSocket stream is the primary live feed; this is just a safety-net re-fetch in case a
-// stream update is ever missed, so the map can't drift stale for long without hammering the API.
+
 const SNAPSHOT_REFRESH_MS = 60000;
 
 const TOOLTIP_MAX_WIDTH_PX = 410;
@@ -19,44 +18,23 @@ const TOOLTIP_WIDTH_PADDING_PX = 14;
 const MISSILE_TYPE_ALIASES = ['missile', 'rocket', 'cruise_missile', 'ballistic'];
 const RECON_TITLE_PATTERN = /розвід/i;
 
-// A dedicated pane so threat icons always render above every other map layer (region shading,
-// labels, occupied-territory hatching), regardless of which order those layers happen to redraw
-// in - relying on DOM insertion order across layers that redraw at different times is what let
-// icons intermittently end up hidden behind a same-pane layer that just happened to redraw after
-// them. Sits above the default markerPane (600) but below tooltipPane (650), so a hovered
-// threat's own tooltip still shows above its icon as usual.
 const THREATS_PANE = 'threatsPane';
 const THREATS_PANE_Z = 620;
-// The uncertainty-radius circles get their own lower pane so they stay a background ring under
-// every icon and label, never on top of one, while still sitting above the region-status shading
-// (overlayPane, 400).
+
 const UNCERTAINTY_PANE = 'threatsUncertaintyPane';
 const UNCERTAINTY_PANE_Z = 410;
 const UNCERTAINTY_CIRCLE_COLOR = '#6b7280';
 const UNCERTAIN_ICON_COLOR = '#9ca3af';
 
-// Minimum on-screen center-to-center spacing kept between threat icons - still comfortably more
-// than the 22px icon itself, so nudged-apart icons never end up touching, let alone one covering
-// another. Randomized per pair within MARKER_MIN_GAP_JITTER_PX on top of the base (rather than one
-// fixed distance for every pair) so a cluster of icons doesn't look mechanically evenly spaced.
 const MARKER_MIN_GAP_BASE_PX = 18;
 const MARKER_MIN_GAP_JITTER_PX = 6;
 const DECLUTTER_ITERATIONS = 40;
 
-// Deterministic pseudo-random value in [0, 1) for a given pair of indices - same trick as the
-// exact-overlap angle below, just fractional. Deliberately NOT Math.random(): points get
-// redeclutterred on every data refresh, and a truly random gap would make already-settled icons
-// visibly hop around each time even though nothing about them actually changed.
 function pairFraction(i, j) {
     const seed = Math.sin(i * 12.9898 + j * 78.233) * 43758.5453;
     return seed - Math.floor(seed);
 }
 
-// Nudges icons apart in screen-pixel space only (never changes which real-world spot a marker is
-// tooltip-anchored near by more than a fraction of the map view) - pure relaxation: as long as any
-// pair is closer than its minimum gap, push both away from each other by half the shortfall.
-// Two threats reported at the exact same point start at zero distance, which has no direction to
-// push along - resolved with a deterministic per-pair angle so they don't stay stacked.
 function declutterPoints(points) {
     const out = points.map((p) => ({ x: p.x, y: p.y }));
 
@@ -97,17 +75,6 @@ function declutterPoints(points) {
     return out;
 }
 
-// Nose/front points up = 0 deg = north, so rotating the wrapper by `heading` degrees points the
-// icon the right way.
-// Each shape below was hand-drawn against its own part of the 24x24 canvas, with no shared
-// convention for how big or how centered the result would end up - "uav"'s own ink center sits
-// at (12,9), not (12,12), and its bounding box is barely 2/3 the size of "mig31k"'s. Centering the
-// 22x22 *container* (which every icon already gets) does nothing about either problem: two icons
-// can sit in identically-centered boxes and still look different heights and different sizes.
-// Each entry's `align` transform (computed once, from each shape's real bounding box - see the
-// bbox script referenced in the neptun.js commit that added this) recenters that icon's own ink
-// on (12,12) and rescales it so its longest side is roughly 20 units, before the shared wrapper ever
-// gets to it - only after that does every icon share one actual, not just nominal, size and center.
 const TYPE_ICONS = {
     uav: {
         color: '#f5a623',
@@ -126,9 +93,7 @@ const TYPE_ICONS = {
     fpv: {
         color: '#ff6b35',
         align: 'translate(12,12) scale(1.087) translate(-12,-11.2)',
-        // The plain quad-rotor frame is symmetric under a 90-degree turn (a `heading` rotation
-        // would look identical at four different headings) - the nose triangle breaks that
-        // symmetry so the rotation actually reads as a direction.
+
         svg:
             '<line x1="12" y1="12" x2="7" y2="7" stroke="currentColor" stroke-width="2.4" />' +
             '<line x1="12" y1="12" x2="17" y2="7" stroke="currentColor" stroke-width="2.4" />' +
@@ -165,8 +130,7 @@ const TYPE_ICONS = {
 };
 
 function resolveTypeKey(threat) {
-    // The real API sends reconnaissance drones as type "recon", not "uav" - not a key in
-    // TYPE_ICONS, so without this check they fell through to "unknown" every time.
+
     if (threat.type === 'recon') return 'uav_recon';
     if (threat.type === 'uav' && RECON_TITLE_PATTERN.test(`${threat.title} ${threat.explanationShort}`)) {
         return 'uav_recon';
@@ -180,20 +144,8 @@ function escapeHtml(text) {
     return String(text ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// The heading rotation lives on an inner wrapper, not on .threat-icon itself - a CSS filter (the
-// drop-shadow) is computed before its element's own transform is applied, so a shadow set on the
-// same element that rotates would spin along with the icon instead of staying cast in one fixed
-// direction.
-// `uncertain` swaps the icon's own type color for a flat gray instead - distinct from any real
-// type color (including the "unknown" type's own gray) so it never reads as "this is an unknown-
-// type threat" - a quick visual cue that Neptun itself hasn't confirmed this one yet, without
-// needing to open the tooltip to find out. Only lifecycle drives this, not `status` - every threat
-// in the feed is "active" by definition of being in it, so that field never actually varies.
 const DEFAULT_ICON_SIZE_PX = 22;
-// Smaller on the map specifically for "uav" and "fpv" (confirmed and uncertain both share the same
-// entry per type, only the fill color differs) - the legend keeps the normalized default size,
-// since it's meant to show every type at one consistent scale for comparison, not the map's own
-// per-type sizing.
+
 const MAP_ICON_SIZE_OVERRIDES = { uav: 18, fpv: 18, missile: 26 };
 
 function iconHtml(typeKey, rotationDeg, lifecycle, sizePx = DEFAULT_ICON_SIZE_PX) {
@@ -227,12 +179,6 @@ function confidenceLabel(threat, strings) {
     return strings[key] || threat.displayConfidence || threat.confidenceLevel || '';
 }
 
-// threat.title/explanationShort/locality/region are Neptun's own free text, always in Ukrainian -
-// there is no English variant of any of them. In English mode the explanation is rebuilt as a
-// "locality, oblast" line instead, and the locality is transliterated (it has no real translation
-// source anywhere in this app) so the line doesn't mix an English oblast with a Cyrillic locality.
-// Ukrainian mode is built from the same raw fields too, rather than shown verbatim, so it doesn't
-// just repeat the type name already shown in the title line above it.
 function tooltipContent(threat, strings, isEnglish) {
     const typeKey = resolveTypeKey(threat);
     const locale = isEnglish ? 'en-US' : 'uk-UA';
@@ -249,8 +195,7 @@ function tooltipContent(threat, strings, isEnglish) {
         : localityRegion
           ? `${strings.liveMapDirectionLabel} - ${localityRegion}.`
           : threat.explanationShort || '';
-    // Its own line, not tacked onto the end of locationLine - keeping it separate is what lets the
-    // location sentence itself get the tooltip's full width instead of a bit less.
+
     const confirmationsLine =
         !isEnglish && typeof threat.sourceCount === 'number'
             ? `${strings.liveMapConfirmations}: ${threat.sourceCount}.`
@@ -265,12 +210,6 @@ function tooltipContent(threat, strings, isEnglish) {
     return lines.filter(Boolean).join('<br>');
 }
 
-// Sizes a tooltip to its own content, capped at a max width - can't be done in plain CSS here (see
-// the comment on .leaflet-tooltip in index.css for why). Measured via canvas rather than by
-// reading the DOM element's own offsetWidth: Leaflet's tooltip pane has no definite width of its
-// own for an absolutely-positioned child to shrink-to-fit against, so DOM-based measurements
-// (even the temporarily-forced-nowrap trick Leaflet's own Popup uses) come back unreliably small
-// here - a fresh canvas measurement of the actual text is unaffected by that.
 let measureCanvas = null;
 function measureTooltipWidth(el) {
     if (!measureCanvas) measureCanvas = document.createElement('canvas');
@@ -293,22 +232,10 @@ function measureTooltipWidth(el) {
 
 const ALL_TYPE_KEYS = ['uav', 'uav_recon', 'fpv', 'kab', 'missile', 'mig31k', 'unknown'];
 
-// Standalone swatch (not a real threat icon) explaining the dashed uncertainty-radius circle -
-// not a "threat type" with its own row otherwise, and looks like unexplained noise without one.
-// The gray-icon convention doesn't need an equivalent generic swatch - see the uncertain rows
-// built below, which reuse each type's own real icon shape instead of a fake stand-in for it.
 const APPROX_SWATCH_HTML =
     `<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${UNCERTAINTY_CIRCLE_COLOR}" ` +
     'stroke-width="1.2" stroke-opacity="0.45" stroke-dasharray="3 2.5"><circle cx="12" cy="12" r="10"/></svg></span>';
 
-// Only lists the threat types actually on the map right now, not the full fixed set - a legend
-// entry for a type nothing currently shows is a row explaining nothing. Confirmed and uncertain
-// sightings of the same type get their OWN separate rows (rather than one row per type, shown in
-// whichever color happened to be picked) - otherwise a type seen only as uncertain would still
-// show its confirmed-color swatch, which then matches nothing actually on the map. The "approx"
-// row is just as conditional, shown only while at least one visible threat has that trait.
-// update() is called on every render; the legend hides itself entirely during a fully quiet
-// stretch rather than show an empty box.
 function buildLegend(strings) {
     const legend = L.control({ position: 'bottomleft' });
     let container = null;
@@ -385,11 +312,6 @@ function startNeptunLayer(map, strings, language, onCountChange) {
         });
         if (typeof onCountChange === 'function') onCountChange(valid.length);
 
-        // Drawn at the threat's true coordinates, not the decluttered on-screen spread below -
-        // the circle is a statement about where the real position uncertainty is, so nudging it
-        // to follow a marker that only moved to avoid overlapping a neighbor would make it lie.
-        // Kept faint (low opacity, thin line) - it's background context for the icon sitting on
-        // top of it, not something that should compete with it for attention.
         valid
             .filter((t) => t.positionQuality === 'approx' && typeof t.uncertaintyKm === 'number')
             .forEach((threat) => {
@@ -417,9 +339,6 @@ function startNeptunLayer(map, strings, language, onCountChange) {
         });
     }
 
-    // The on-screen gap between two threats changes with zoom even though nothing about the
-    // threats themselves changed - re-run the same declutter pass against the last known data
-    // instead of waiting for the next snapshot/stream update.
     map.on('zoomend', () => renderThreats(lastThreats));
 
     async function fetchSnapshot() {

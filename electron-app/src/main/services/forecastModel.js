@@ -4,15 +4,6 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MIN_MEANINGFUL_LAMBDA = 1 / (10 * 365);
 
-// Multiple raions within a tracked whole oblast can each report the very same real-world wave (one
-// mass attack) within seconds of one another - UkraineAlarm reports per-raion, so an oblast-level
-// rollup sees these as several "different" alerts of the same type, mere seconds apart. Left
-// uncollapsed, this both inflates the region's estimated intensity (lambda) and, worse, swamps the
-// gap-based ETA's median/percentile range with a cluster of near-zero gaps that says nothing about
-// how often the region actually gets hit (confirmed on real Odesa oblast data: two thirds of all
-// recorded gaps were under a minute, purely from this). Collapsing same-type alerts that start
-// within SIMULTANEOUS_WAVE_WINDOW_MS of the earliest alert in their own cluster down to that one
-// earliest occurrence fixes both, without needing to know which raion originated which record.
 const SIMULTANEOUS_WAVE_WINDOW_MS = 3 * 60 * 1000;
 
 function collapseSimultaneousWaves(alerts) {
@@ -98,8 +89,6 @@ function hourOfDayMultiplier(alerts, nowMs, config) {
     const currentHourCount = times.filter((t) => new Date(t).getHours() === currentHour).length;
     const currentHourRate = currentHourCount / Math.max(1, hourOccurrences);
 
-    // overallRate is per-day across all 24 hours; divide by 24 for the expected rate of one hour
-    // bucket, to compare like with like against currentHourRate.
     const expectedHourRate = overallRate / 24;
     const rawMultiplier = currentHourRate / expectedHourRate;
     const shrinkageWeight = hourOccurrences / (hourOccurrences + config.HOUR_OF_DAY_PRIOR_OCCURRENCES);
@@ -115,8 +104,6 @@ function estimateRegionLambda(alerts, nowMs, config) {
     const recentLambda = weightedCount(usableAlerts, nowMs, config.HALF_LIFE_DAYS) / exposure;
     const baselineLambda = baselineLambdaOf(usableAlerts, nowMs, config);
 
-    // max(), not a sum or blend: both terms estimate the same quantity (summing would double
-    // count), and max() is provably monotonic during a silence, where a blend was not.
     const baseLambda = Math.max(recentLambda, baselineLambda);
     const seasonality = seasonalityMultiplier(usableAlerts, nowMs, config);
     const hourOfDay = hourOfDayMultiplier(usableAlerts, nowMs, config);
@@ -124,8 +111,6 @@ function estimateRegionLambda(alerts, nowMs, config) {
     return { lambda, baseLambda, recentLambda, baselineLambda, seasonality, hourOfDay, exposure, usableAlerts };
 }
 
-// regionLambda must be the region's baseLambda (pre-seasonality) - this function applies its own
-// seasonality afterward, and applying it twice would compound it.
 function estimateTypeLambda(typeAlerts, totalCount, regionLambda, nowMs, config) {
     const exposure = exposureDays(config.WINDOW_DAYS, config.HALF_LIFE_DAYS);
     const roughShare = typeAlerts.length / totalCount;
@@ -139,10 +124,6 @@ function estimateTypeLambda(typeAlerts, totalCount, regionLambda, nowMs, config)
     return Math.max(recentLambda, baselineLambda) * seasonality * hourOfDay;
 }
 
-// The ETA is grounded in the empirical median gap (not the model's 1/lambda mean) because real
-// alert timing is heavy-tailed, and the mean can land outside the very "typically" range meant to
-// describe it. Range is a narrow band around the median (not a full IQR), dropped entirely when
-// too wide to be useful.
 function gapStats(alerts, config) {
     if (alerts.length < config.MIN_GAP_SAMPLES_FOR_RANGE + 1) return null;
 
@@ -231,17 +212,9 @@ function computeStats(alerts, nowMs, config) {
             const lambdaType = estimateTypeLambda(typeAlertsFull, usableAlerts.length, baseLambda, nowMs, config);
 
             const percent = Math.round((typeCount / count) * 100);
-            // A short, fixed window (see PROBABILITY_WINDOW_HOURS) instead of a full day - "at
-            // least one TODAY" saturates to an uninformative ~100% for any region much above
-            // roughly 5/day, which the current pace of the war makes common; scaling lambda down
-            // to this shorter window keeps the probability genuinely differentiated across the
-            // whole range of regions instead of flattening the busy ones together, and it lines up
-            // with the ETA shown right next to it. Kept as a raw fraction (0-1), not rounded to a
-            // whole percent here - display decides how to present it (buildForecastText).
+
             const probabilityToday = 1 - Math.exp(-lambdaType * (config.PROBABILITY_WINDOW_HOURS / 24));
-            // lambdaType itself (expected count over a full day, not clamped to a 0-1 probability)
-            // still doesn't saturate - it keeps telling a very active region (say 14/day) apart
-            // from a merely active one (4/day) even once both round to a similar short-window %.
+
             const expectedToday = lambdaType;
             const gaps = gapStats(typeAlertsFull, config);
             const projectedNextMs = gaps ? gaps.median : lambdaType > MIN_MEANINGFUL_LAMBDA ? (1 / lambdaType) * DAY_MS : null;

@@ -6,7 +6,7 @@ const SIMPLE = {
     к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f',
     х: 'kh', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'shch', ь: '', ъ: '', "'": '', '’': '', ʼ: '',
 };
-// є/ї/й/ю/я transliterate differently at the start of a word than in the middle of one.
+
 const WORD_INITIAL = { є: 'ye', ї: 'yi', й: 'y', ю: 'yu', я: 'ya' };
 const MEDIAL = { є: 'ie', ї: 'i', й: 'i', ю: 'iu', я: 'ia' };
 
@@ -28,8 +28,7 @@ function transliterateWord(word) {
 }
 
 function transliterate(text) {
-    // The capturing group keeps the whitespace/hyphen delimiters in the split result, so each
-    // side of "Кам'янець-Подільський" gets its own word-initial treatment.
+
     return text
         .split(/([\s-]+)/)
         .map((part) => (/^[\s-]+$/.test(part) ? part : transliterateWord(part)))

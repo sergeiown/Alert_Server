@@ -23,9 +23,7 @@ async function refresh() {
         }
 
         const data = await response.json();
-        // Before the Worker has this route deployed, /weapon-stats falls through to its default
-        // handler (the active-alerts endpoint) and still answers 200 with unrelated JSON - this
-        // guards against caching that as if it were real weapon stats.
+
         if (!data || !data.dateRange || !data.totals || !Array.isArray(data.byCategory) || !Array.isArray(data.monthly)) {
             logEvent('Weapon-stats response missing expected fields (Kaggle via alert-proxy - Worker not deployed yet?)', 'WARNING');
             return;

@@ -158,8 +158,7 @@ function buildRaionGroup(language, cities) {
 
     RAIONS.filter((raion) => !isNearACity(raion, cities)).forEach((raion) => {
         L.marker([raion.lat, raion.lng], {
-            // Leaflet sets its own inline "transform" on this element, which would clobber a
-            // centering transform applied here too - so the text lives in an inner span instead.
+
             icon: L.divIcon({
                 className: 'map-label-anchor',
                 html: `<span class="raion-label">${isEnglish ? `${raion.en} District` : `${raion.uk} район`}</span>`,

@@ -26,12 +26,6 @@ import { oblastDisplayName, raionDisplayName } from './regionNameUtils.js';
 const RESHADE_MS = 60000;
 const TIER_MS = 30 * 60 * 1000;
 
-// Two shade ladders, same "how long ago" tiering as before (lighter = just started, darker = has
-// been going a while) - which one applies is now the alert's own red/yellow level (see
-// regionAlertStatus.js's computeAlertedRegions, which now carries the worst level seen for that
-// region alongside startedAt). Red is the pre-existing palette; yellow/amber is new. A region with
-// no level reported at all (older cached source) falls back to the red ladder, matching the single
-// color this map used before the three live sources started tagging alerts with a level.
 const RED_LIGHT_SHADES = ['#e6ac9f', '#e2a496', '#df9d8d', '#db9584', '#d68d7b', '#d18572'];
 const RED_DARK_SHADES = ['#5c3934', '#603b35', '#653e37', '#6a4139', '#70443b', '#76483d'];
 const YELLOW_LIGHT_SHADES = ['#e8d59f', '#e6cf8f', '#e3c880', '#e0c270', '#ddbb61', '#dab551'];
@@ -51,16 +45,6 @@ function shadeFor(startedAt, now, alertLevel) {
     return shades[tier];
 }
 
-// Currently only Kyiv's own per-district breakdown can have this (a drone threat that a missile
-// threat later joins, both still active for the same district at once) - collapsing straight to
-// the worst level would silently drop the fact that a lesser one is ALSO still live there. A
-// plain geometric half-split (tried in between) read as an arbitrary, uneven cut depending on each
-// district's own shape - a diagonal two-color hatch instead, via an injected SVG <pattern> (the
-// same technique occupiedTerritory.js already uses for its own hatching). Re-created on every
-// render (not just once) - toggling Kyiv mode removes/re-adds several OTHER vector layers
-// (occupied territory, rivers), and if that ever causes Leaflet's shared SVG renderer to tear down
-// and recreate its root, a pattern only ever created once at startup would be gone from the (new)
-// document with nothing to notice or recreate it.
 const DUAL_LEVEL_PATTERN_ID = 'kyiv-dual-level-hatch';
 
 function ensureDualLevelPattern(map) {
@@ -104,9 +88,6 @@ const RegionStatusLayer = L.LayerGroup.extend({
         this._kyivModeActive = false;
     },
 
-    // While the live map's Kyiv toggle is on, this draws ONLY Kyiv's own 10 districts - not the
-    // rest of the country's oblast/raion fills, which would otherwise bleed into view around
-    // Kyiv's edges (Kyivska oblast's own raions border it directly).
     setKyivMode: function (active) {
         this._kyivModeActive = active;
         this._render();
@@ -124,21 +105,10 @@ const RegionStatusLayer = L.LayerGroup.extend({
         map.off('zoomend', this._render, this);
         if (this._unsubscribe) this._unsubscribe();
         if (this._reshadeTimer) clearInterval(this._reshadeTimer);
-        // Overriding onRemove replaces L.LayerGroup's own version entirely rather than extending
-        // it - this call is required or the base class's own "remove every child shape" behavior
-        // never runs.
+
         L.LayerGroup.prototype.onRemove.call(this, map);
     },
 
-    // `ownStartedAt` drives what's actually drawn; `popupStartedAt`/`popupAlertTypeName`/
-    // `inheritedFromName` drive the popup text, which can differ (an inherited alert is shown in
-    // the popup even when nothing is drawn to indicate it visually). `hasBothLevels` (Kyiv
-    // districts only, for now) swaps the fill for the red/yellow diagonal hatch instead of a solid
-    // shade - the border still uses the worst level's own color. `forceBorder` (also Kyiv districts
-    // only) keeps the outline visible even with no active alert at all - real imagery underneath
-    // means the district shape itself needs its own outline to read as a district, unlike the plain
-    // abstract background elsewhere, where an unalerted region is already legible from the
-    // underlying map art alone.
     _drawRegion: function (
         rings,
         displayName,
@@ -180,13 +150,6 @@ const RegionStatusLayer = L.LayerGroup.extend({
             .addTo(this);
     },
 
-    // Deliberately does NOT fall back to the whole city's own status for a district with none of
-    // its own - unlike an ordinary raion inheriting its oblast's (a coarse, whole-oblast alert
-    // plausibly does cover every raion in it), Kyiv's OWN per-district status is already about as
-    // granular as the data gets (parsed from the city alert's own threat text - see
-    // regionAlertStatus.js's computeKyivRaionStatuses), so a district the parse didn't confirm is
-    // left genuinely neutral rather than painted with the city's blanket color, which would read as
-    // confirming something about that specific district that isn't actually known.
     _drawKyivRaions: function (isEnglish, now) {
         Object.entries(KYIV_RAION_BORDERS).forEach(([name, ring]) => {
             const ownStartedAt = getKyivRaionStartedAt(name);
@@ -217,8 +180,6 @@ const RegionStatusLayer = L.LayerGroup.extend({
         const now = Date.now();
         const isEnglish = this._language === 'English';
 
-        // Nothing outside Kyiv itself - no oblast fills, no other raions, no Kyiv-city blob - so
-        // nothing from the rest of the country bleeds into view around its edges.
         if (this._kyivModeActive) {
             this._drawKyivRaions(isEnglish, now);
             return;
@@ -232,13 +193,7 @@ const RegionStatusLayer = L.LayerGroup.extend({
             const alertLevel = getOblastAlertLevel(name);
             this._drawRegion(rings, oblastDisplayName(name, isEnglish), startedAt, now, startedAt, alertTypeName, null, alertLevel);
         });
-        // Kyiv city has no oblast-tier polygon of its own (folded into Kyiv oblast's shape in the
-        // source dataset), so its city outline stands in for it here - always as one shape in the
-        // normal view, regardless of zoom. Its own 10 districts (see _drawKyivRaions) are a
-        // different, DEDICATED view of their own, only shown via the live map's Kyiv toggle - not
-        // just from zooming in far enough here, since there's nothing to key a per-district status
-        // off other than parsing free text, and the "district" resolution isn't meant to be this
-        // view's normal behavior for every other tracked city.
+
         if (CITY_BORDERS['Київ']) {
             const startedAt = getOblastStartedAt('Київ');
             const alertTypeName = getOblastAlertTypeName('Київ');
@@ -257,8 +212,7 @@ const RegionStatusLayer = L.LayerGroup.extend({
 
             if (!raionTier) {
                 if (ownStartedAt) {
-                    // Skipped when the oblast is also alerted: the oblast's own fill already
-                    // covers this ground while zoomed out, so drawing the raion too would double up.
+
                     if (!oblastStartedAt) {
                         this._drawRegion(
                             [ring],

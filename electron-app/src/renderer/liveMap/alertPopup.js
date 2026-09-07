@@ -31,9 +31,6 @@ function capitalize(text) {
     return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
 }
 
-// Same red/yellow level the shape's own fill color already reflects (see shadeFor in
-// regionStatus.js) - spelled out here too since color alone isn't accessible to everyone reading
-// the map, and a badge next to the type name is a natural place for it.
 const LEVEL_COLOR = { red: '#dc2626', yellow: '#ca8a04' };
 
 function levelBadge(alertLevel, strings) {
@@ -42,11 +39,6 @@ function levelBadge(alertLevel, strings) {
     return ` <span style="color:${LEVEL_COLOR[alertLevel]};font-weight:600">(${label})</span>`;
 }
 
-// The description is Neptun/alerts.in.ua's own free text with no general translation source, but
-// the couple of phrases actually observed in Kyiv's own per-district breakdown specifically are a
-// small, bounded, known set - confirmed live, not guessed (same table notifier.js's own
-// describeThreats uses on the main-process side for notifications/tray popup/Forecast). Anything
-// not in here falls back to the untranslated Ukrainian text.
 const KNOWN_DESCRIPTION_EN = {
     'Дронова загроза': 'Drone threat',
     'Ракетна загроза': 'Missile threat',
@@ -56,11 +48,6 @@ function translateDescription(description, isEnglish) {
     return isEnglish ? KNOWN_DESCRIPTION_EN[description] || description : description;
 }
 
-// `threatLines` ({level, description}[], worst first) is Kyiv districts' own thing - unlike every
-// other oblast/raion (one alertTypeName + one alertLevel is always enough), a district can
-// genuinely have a red AND a yellow threat live at once (see regionAlertStatus.js's
-// computeKyivRaionStatuses), so it needs to show one line per level instead of collapsing to just
-// the worst one. Takes over from the plain alertTypeName/alertLevel pair when given.
 function alertPopupHtml(displayName, startedAt, alertTypeName, strings, language, inheritedFromName, alertLevel, threatLines) {
     const locale = language === 'English' ? 'en-US' : 'uk-UA';
     const isEnglish = language === 'English';

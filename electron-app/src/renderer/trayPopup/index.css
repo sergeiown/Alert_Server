@@ -76,10 +76,6 @@ main {
     margin-bottom: 6px;
 }
 
-/* Matches the same red/yellow classification the live map and notifications use - each level gets
-   its own distinct tint (neither reuses the plain neutral default) so a more severe active alert
-   visibly stands out from a merely-active one, and "no level reported at all" (older cached data)
-   reads as genuinely neutral rather than looking like a third color of its own. */
 .alert-item.level-yellow {
     border-color: var(--item-border-yellow);
     background: var(--item-bg-yellow);
@@ -100,9 +96,6 @@ main {
     font-size: 11px;
 }
 
-/* Each threat line carries its OWN level class (see index.js) - a card whose overall/worst level
-   is red can still have an earlier yellow threat line alongside the red one, and each reads in its
-   own color rather than both being forced to the card's single worst-level color. */
 .alert-item .threat {
     color: var(--fg);
     font-size: 11px;

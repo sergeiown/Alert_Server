@@ -91,7 +91,7 @@ function trainSlice(sortedTimes, dayStart) {
         if (sortedTimes[mid] < dayStart) lo = mid + 1;
         else hi = mid;
     }
-    // estimateRegionLambda only reads started_at (and an absent deleted_at) off each entry.
+
     return sortedTimes.slice(0, lo).map((ms) => ({ started_at: new Date(ms).toISOString() }));
 }
 

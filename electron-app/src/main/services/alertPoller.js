@@ -36,10 +36,6 @@ function noteOriginHealthy() {
     lastLoggedStatus = null;
 }
 
-// `onHealthChange(healthy)` - optional, used by alertSourceManager.js to decide when this source
-// is unreliable enough to fail over away from. 304/200 (even one carrying X-Origin-Error-Status,
-// since that's alerts.in.ua's own origin having trouble, not the proxy) count as healthy - the
-// proxy is still serving us something valid; a 429/other bad status or a network error don't.
 async function pollOnce(clientKey, onHealthChange) {
     if (Date.now() < backoffUntil) {
         return getLatestAlertData();
