@@ -36,6 +36,12 @@ function splitThreatMessage(message) {
     return { description: match[1], district: match[2] || null };
 }
 
+// "Дарницький район" -> "Дарницький" - the word "район" itself is only worth saying once, after
+// the whole list, not repeated after every single name in it.
+function stripDistrictSuffix(district) {
+    return district.replace(/\s*район(?:у|і)?$/i, '').trim();
+}
+
 // threats[] can carry more than one concurrent distinct threat (e.g. an ongoing drone alert that a
 // missile threat later joins), each with its own human-readable source_message already in the
 // source's own language - shown as-is rather than re-translated (same treatment alert.notes
@@ -53,9 +59,12 @@ function describeThreats(threats) {
         if (district) districtsByDescription.get(description).add(district);
     });
 
-    const lines = [...districtsByDescription.entries()].map(([description, districts]) =>
-        districts.size ? `${description}: ${[...districts].join(', ')}` : `${description}:`
-    );
+    const lines = [...districtsByDescription.entries()].map(([description, districts]) => {
+        if (!districts.size) return `${description}:`;
+        const names = [...districts].map(stripDistrictSuffix);
+        const word = names.length === 1 ? 'район' : 'райони';
+        return `${description}: ${names.join(', ')} ${word}`;
+    });
     return lines.length ? lines.join('\n') : null;
 }
 
