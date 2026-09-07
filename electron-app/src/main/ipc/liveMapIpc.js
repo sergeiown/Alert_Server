@@ -1,11 +1,13 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
-const { ipcMain, clipboard, BrowserWindow } = require('electron');
+const { ipcMain, clipboard, BrowserWindow, systemPreferences } = require('electron');
 const { getResourcePath } = require('../services/appPaths');
 const { getLatestTotalAlertCount, getLatestAlertedRegions, getActiveAlertSource } = require('../services/alertState');
 const { getLatestOccupiedTerritory } = require('../services/occupiedTerritoryStore');
 const { alertTypeName } = require('../services/alertTypes');
+const { getTitleBarAccentColor } = require('../services/accentColor');
+const { getLiveMapWindow } = require('../windows/liveMapWindow');
 const settingsStore = require('../services/settingsStore');
 const { logEvent } = require('../services/logger');
 
@@ -43,6 +45,19 @@ function registerLiveMapIpc() {
     });
 
     ipcMain.handle('liveMap:getOccupiedTerritory', () => getLatestOccupiedTerritory());
+
+    ipcMain.handle('liveMap:getTitleBarAccentColor', () => getTitleBarAccentColor());
+
+    // Windows/Linux only (see accentColor.js) - fires when the user changes their system accent
+    // color while the window is already open, so the tint updates live instead of only on the next
+    // reload. ColorPrevalence itself (whether the title bar even uses the accent at all) has no
+    // equivalent change event to listen for, so that half only gets re-checked on reload/reopen.
+    if (typeof systemPreferences.on === 'function') {
+        systemPreferences.on('accent-color-changed', () => {
+            const win = getLiveMapWindow();
+            if (win) win.webContents.send('liveMap:titleBarAccentColorChanged', getTitleBarAccentColor());
+        });
+    }
 
     ipcMain.handle('liveMap:takeScreenshot', async (event) => {
         const win = BrowserWindow.fromWebContents(event.sender);

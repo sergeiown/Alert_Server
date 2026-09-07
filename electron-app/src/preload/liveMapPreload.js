@@ -13,4 +13,7 @@ contextBridge.exposeInMainWorld('alertServerLiveMap', {
     getOccupiedTerritory: () => ipcRenderer.invoke('liveMap:getOccupiedTerritory'),
     takeScreenshot: () => ipcRenderer.invoke('liveMap:takeScreenshot'),
     openExternal: (url) => ipcRenderer.invoke('system:openExternal', url),
+    getTitleBarAccentColor: () => ipcRenderer.invoke('liveMap:getTitleBarAccentColor'),
+    onTitleBarAccentColorChanged: (callback) =>
+        ipcRenderer.on('liveMap:titleBarAccentColorChanged', (event, color) => callback(color)),
 });
