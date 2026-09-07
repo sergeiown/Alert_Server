@@ -23,6 +23,10 @@ body {
     color: #565656;
 }
 
+.leaflet-control-attribution {
+    background: #faf3e4;
+}
+
 /* Font-size reduction stays Kyiv-only, though - normal (Ukraine) mode's attribution line is just
    the app's own links with nothing extra crowding it, so it keeps Leaflet's default size. */
 .kyiv-mode-active .leaflet-control-attribution,
@@ -103,6 +107,9 @@ body {
     box-shadow: none !important;
 }
 
+/* Light theme only: every button, the legend, and the status bar get a slight warm brownish-gold
+   tint instead of plain white/gray, rather than the neutral gray a straight "darken it a bit" would
+   normally reach for. Dark theme (further down) is untouched by this. */
 .leaflet-bar a,
 .leaflet-control-fullscreen,
 .leaflet-control-layers-toggle {
@@ -110,7 +117,8 @@ body {
     width: 34px !important;
     height: 34px !important;
     line-height: 34px !important;
-    border: 1px solid #d6d6d6 !important;
+    background-color: #faf3e4 !important;
+    border: 1px solid #d9c8a3 !important;
     border-radius: 4px !important;
     /* Same shadow as .threat-legend, not Leaflet's own slightly different default, so every
        floating box on the map (buttons, legend, status bar) reads as one consistent style. */
@@ -122,12 +130,18 @@ body {
     background-size: 22px 22px !important;
 }
 
+.leaflet-bar a:hover,
+.leaflet-control-fullscreen:hover,
+.leaflet-control-layers-toggle:hover {
+    background-color: #f2e4c4 !important;
+}
+
 /* The toggle's white background used to come from its outer wrapper (".leaflet-control-layers"),
    but that wrapper's own background is now stripped below (see the comment there) - so the toggle
    needs its own, or it's left showing whatever's behind it instead of white like every other
    button. */
 .leaflet-control-layers-toggle {
-    background-color: #ffffff !important;
+    background-color: #faf3e4 !important;
 }
 
 /* The center button's own outer wrapper div (bare ".leaflet-bar.leaflet-control", auto-created by
@@ -353,7 +367,7 @@ body {
     top: 10px;
     right: 10px;
     z-index: 1000;
-    background: #ffffff;
+    background: #faf3e4;
     border-radius: 8px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
     padding: 8px 18px;
@@ -387,7 +401,7 @@ body {
 
 .threat-legend,
 .leaflet-control-layers-expanded {
-    background: #ffffff;
+    background: #faf3e4;
     border-radius: 8px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
     padding: 10px 14px;
