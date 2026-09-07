@@ -6,9 +6,13 @@ const { BrowserWindow } = require('electron');
 
 let updateProgressWindow = null;
 
-function openUpdateProgressWindow() {
+// `visible: false` creates the window hidden - used to get an always-on-top native handle to
+// anchor the "install now?" confirmation dialog to (see updater.js) before there's anything to
+// actually show in it yet, so that dialog inherits the same topmost behavior instead of being
+// left free to end up buried behind the live map or any other window.
+function openUpdateProgressWindow({ visible = true } = {}) {
     if (updateProgressWindow) {
-        updateProgressWindow.show();
+        if (visible) updateProgressWindow.show();
         return updateProgressWindow;
     }
 
@@ -17,6 +21,7 @@ function openUpdateProgressWindow() {
         height: 210,
         resizable: false,
         alwaysOnTop: true,
+        show: visible,
         title: 'Alert Server - Update',
         icon: path.join(__dirname, '..', '..', '..', 'resources', 'icons', 'app-icon-256.png'),
         webPreferences: {
