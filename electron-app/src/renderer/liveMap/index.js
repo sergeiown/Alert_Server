@@ -75,7 +75,7 @@ const CenterControl = L.Control.extend({
 // otherwise silently snap back to the whole-country view); the label itself names what clicking it
 // does NEXT, swapping between the two on/off labels rather than showing a separate pressed state.
 const KyivToggleControl = L.Control.extend({
-    options: { position: 'bottomleft' },
+    options: { position: 'topleft' },
     onAdd: function () {
         const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-kyiv-toggle-wrapper');
         const link = L.DomUtil.create('a', 'leaflet-control-kyiv-toggle', container);
@@ -147,14 +147,18 @@ async function main() {
     // A real street/building-level tile layer, shown ONLY in Kyiv mode - the app's own base map is
     // one flat-color abstract SVG of the whole country, fine at a national view but not something
     // that gets more detailed no matter how far in this zooms, so it reads as a blown-up blur at
-    // Kyiv's own scale. Plain OpenStreetMap tiles - genuinely free and keyless (CARTO's own basemap
-    // tiles, tried first, turned out to require a paid API key now and rendered a giant "API KEY
-    // REQUIRED" watermark instead - confirmed live, not assumed). No dark-mode variant exists
-    // without registering for a key with any provider, so this stays the same in both themes - a
-    // worthwhile trade for not requiring one. Not added to the map until Kyiv mode actually turns on.
-    const kyivTileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // Kyiv's own scale. Wikimedia's own OSM-based tiles - genuinely free and keyless (CARTO's
+    // basemap tiles, tried first, turned out to require a paid API key now and rendered a giant
+    // "API KEY REQUIRED" watermark instead - confirmed live, not assumed), and a cleaner, less
+    // ad-hoc-colored style than raw OSM Mapnik tiles. No free keyless provider publishes an actual
+    // dark-styled tile set, so dark mode is faked with a CSS filter on the same light tiles instead
+    // (invert + hue-rotate a full 180° roughly restores natural hue while flipping the lightness -
+    // water stays blue-ish, land stays neutral, just dark instead of light) - not as clean as a
+    // purpose-made dark style, but a real difference between the two themes rather than none at all.
+    const kyivTileLayer = L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19,
+        className: isDarkMap ? 'kyiv-tiles-dark' : '',
     });
 
     // Kept so leaving Kyiv mode restores each to whatever state it was actually in before entering
@@ -208,6 +212,36 @@ async function main() {
 
     new CenterControl({ title: strings.liveMapCenterButtonTitle, onClick: fitAndLockMinZoom }).addTo(map);
 
+    addScreenshotControl(map, strings);
+
+    const fullScreenIconOptions = isDarkMap
+        ? {
+              enterFullScreenIcon: `data:image/svg+xml;base64,${btoa(
+                  '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 6a1 1 0 011-1h2a1 1 0 000-2H6a3 3 0 00-3 3v2a1 1 0 002 0V6zM5 18a1 1 0 001 1h2a1 1 0 110 2H6a3 3 0 01-3-3v-2a1 1 0 112 0v2zM18 5a1 1 0 011 1v2a1 1 0 102 0V6a3 3 0 00-3-3h-2a1 1 0 100 2h2zM19 18a1 1 0 01-1 1h-2a1 1 0 100 2h2a3 3 0 003-3v-2a1 1 0 10-2 0v2z" fill="#fff"/></svg>'
+              )}`,
+              exitFullScreenIcon: `data:image/svg+xml;base64,${btoa(
+                  '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 4a1 1 0 00-2 0v2.5a.5.5 0 01-.5.5H4a1 1 0 000 2h2.5A2.5 2.5 0 009 6.5V4zM9 20a1 1 0 11-2 0v-2.5a.5.5 0 00-.5-.5H4a1 1 0 110-2h2.5A2.5 2.5 0 019 17.5V20zM16 3a1 1 0 00-1 1v2.5A2.5 2.5 0 0017.5 9H20a1 1 0 100-2h-2.5a.5.5 0 01-.5-.5V4a1 1 0 00-1-1zM15 20a1 1 0 102 0v-2.5a.5.5 0 01.5-.5H20a1 1 0 100-2h-2.5a2.5 2.5 0 00-2.5 2.5V20z" fill="#fff"/></svg>'
+              )}`,
+          }
+        : {};
+
+    L.control
+        .fullScreenButton({
+            title: strings.liveMapFullScreenTitle,
+            enterFullScreenTitle: strings.liveMapEnterFullScreenTitle,
+            exitFullScreenTitle: strings.liveMapExitFullScreenTitle,
+            showNotification: false,
+            ...fullScreenIconOptions,
+            onFullScreenChange: () => {
+                map.invalidateSize();
+                fitAndLockMinZoom();
+            },
+        })
+        .addTo(map);
+
+    // Added last (not right after CenterControl) so it lands directly under the fullscreen button
+    // in the topleft stack - Leaflet stacks same-corner controls in add order, each new one further
+    // from the corner than the last.
     const kyivToggle = new KyivToggleControl({
         onLabel: strings.liveMapKyivButtonLabel,
         offLabel: strings.liveMapUkraineButtonLabel,
@@ -250,32 +284,6 @@ async function main() {
             fitAndLockMinZoom();
         },
     }).addTo(map);
-    addScreenshotControl(map, strings);
-
-    const fullScreenIconOptions = isDarkMap
-        ? {
-              enterFullScreenIcon: `data:image/svg+xml;base64,${btoa(
-                  '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 6a1 1 0 011-1h2a1 1 0 000-2H6a3 3 0 00-3 3v2a1 1 0 002 0V6zM5 18a1 1 0 001 1h2a1 1 0 110 2H6a3 3 0 01-3-3v-2a1 1 0 112 0v2zM18 5a1 1 0 011 1v2a1 1 0 102 0V6a3 3 0 00-3-3h-2a1 1 0 100 2h2zM19 18a1 1 0 01-1 1h-2a1 1 0 100 2h2a3 3 0 003-3v-2a1 1 0 10-2 0v2z" fill="#fff"/></svg>'
-              )}`,
-              exitFullScreenIcon: `data:image/svg+xml;base64,${btoa(
-                  '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 4a1 1 0 00-2 0v2.5a.5.5 0 01-.5.5H4a1 1 0 000 2h2.5A2.5 2.5 0 009 6.5V4zM9 20a1 1 0 11-2 0v-2.5a.5.5 0 00-.5-.5H4a1 1 0 110-2h2.5A2.5 2.5 0 019 17.5V20zM16 3a1 1 0 00-1 1v2.5A2.5 2.5 0 0017.5 9H20a1 1 0 100-2h-2.5a.5.5 0 01-.5-.5V4a1 1 0 00-1-1zM15 20a1 1 0 102 0v-2.5a.5.5 0 01.5-.5H20a1 1 0 100-2h-2.5a2.5 2.5 0 00-2.5 2.5V20z" fill="#fff"/></svg>'
-              )}`,
-          }
-        : {};
-
-    L.control
-        .fullScreenButton({
-            title: strings.liveMapFullScreenTitle,
-            enterFullScreenTitle: strings.liveMapEnterFullScreenTitle,
-            exitFullScreenTitle: strings.liveMapExitFullScreenTitle,
-            showNotification: false,
-            ...fullScreenIconOptions,
-            onFullScreenChange: () => {
-                map.invalidateSize();
-                fitAndLockMinZoom();
-            },
-        })
-        .addTo(map);
 
     // The DOM "resize" event only fires reliably for viewport/zoom changes, not for every case a
     // BrowserWindow's content area changes size - a ResizeObserver reacts to any actual size change

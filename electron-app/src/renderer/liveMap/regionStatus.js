@@ -109,7 +109,6 @@ const RegionStatusLayer = L.LayerGroup.extend({
 
     onAdd: function (map) {
         this._map = map;
-        ensureDualLevelPattern(map);
         map.on('zoomend', this._render, this);
         this._unsubscribe = subscribeAlertedRegions(() => this._render());
         this._reshadeTimer = setInterval(() => this._render(), RESHADE_MS);
@@ -181,6 +180,12 @@ const RegionStatusLayer = L.LayerGroup.extend({
 
     _render: function () {
         this.clearLayers();
+        // Re-checked (cheap, idempotent - see its own guard) on every render rather than once in
+        // onAdd - toggling Kyiv mode removes/re-adds several OTHER vector layers (occupied
+        // territory, rivers), and if that ever causes Leaflet's shared SVG renderer to tear down
+        // and recreate its root, a pattern only ever created once at startup would be gone from the
+        // (new) document with nothing to notice or recreate it.
+        ensureDualLevelPattern(this._map);
         const now = Date.now();
         const isEnglish = this._language === 'English';
 
