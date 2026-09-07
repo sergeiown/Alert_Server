@@ -9,6 +9,8 @@
     "alertStartedAt": "Started at",
     "alertOngoingDuration": "Ongoing for",
     "alertTypeLabel": "Type",
+    "alertLevelRed": "red level",
+    "alertLevelYellow": "yellow level",
     "alertSource": "Source",
     "alertDuration": "Duration",
     "trayPopupNoAlerts": "No active alerts in your regions",

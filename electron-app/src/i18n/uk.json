@@ -9,6 +9,8 @@
     "alertStartedAt": "Розпочалась",
     "alertOngoingDuration": "Триває",
     "alertTypeLabel": "Тип",
+    "alertLevelRed": "червоний рівень",
+    "alertLevelYellow": "жовтий рівень",
     "alertSource": "Джерело",
     "alertDuration": "Тривалість",
     "trayPopupNoAlerts": "Немає активних тривог у ваших регіонах",

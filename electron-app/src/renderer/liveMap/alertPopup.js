@@ -31,7 +31,18 @@ function capitalize(text) {
     return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
 }
 
-function alertPopupHtml(displayName, startedAt, alertTypeName, strings, language, inheritedFromName) {
+// Same red/yellow level the shape's own fill color already reflects (see shadeFor in
+// regionStatus.js) - spelled out here too since color alone isn't accessible to everyone reading
+// the map, and a badge next to the type name is a natural place for it.
+const LEVEL_COLOR = { red: '#dc2626', yellow: '#ca8a04' };
+
+function levelBadge(alertLevel, strings) {
+    if (!alertLevel) return '';
+    const label = alertLevel === 'red' ? strings.alertLevelRed : strings.alertLevelYellow;
+    return ` <span style="color:${LEVEL_COLOR[alertLevel]};font-weight:600">(${label})</span>`;
+}
+
+function alertPopupHtml(displayName, startedAt, alertTypeName, strings, language, inheritedFromName, alertLevel) {
     const locale = language === 'English' ? 'en-US' : 'uk-UA';
 
     if (!startedAt) {
@@ -40,7 +51,7 @@ function alertPopupHtml(displayName, startedAt, alertTypeName, strings, language
 
     const startedTime = formatStartedAt(startedAt, locale);
     const duration = formatDuration(Date.now() - new Date(startedAt).getTime(), strings);
-    const typeLine = alertTypeName ? `${capitalize(alertTypeName)}<br>` : '';
+    const typeLine = alertTypeName ? `${capitalize(alertTypeName)}${levelBadge(alertLevel, strings)}<br>` : '';
     const note = inheritedFromName
         ? `<br><small>${strings.liveMapAlertAcrossRegion.replace('{name}', inheritedFromName)}</small>`
         : '';
