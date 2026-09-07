@@ -9,6 +9,7 @@ const { getResourcePath } = require('../services/appPaths');
 const { getRegionDurationStats, formatDuration } = require('../services/forecast');
 const { describeThreats } = require('../services/alertLevels');
 const { openForecastWindow } = require('../windows/forecastWindow');
+const { setContentHeight } = require('../windows/trayPopupWindow');
 
 function registerTrayPopupIpc() {
     ipcMain.handle('trayPopup:getIcon', () =>
@@ -35,6 +36,10 @@ function registerTrayPopupIpc() {
 
     ipcMain.handle('trayPopup:openForecast', () => {
         openForecastWindow();
+    });
+
+    ipcMain.on('trayPopup:setContentHeight', (event, height) => {
+        if (typeof height === 'number' && Number.isFinite(height)) setContentHeight(height);
     });
 }
 
