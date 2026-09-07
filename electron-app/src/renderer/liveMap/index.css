@@ -121,6 +121,20 @@ body {
     justify-content: center;
 }
 
+/* A text label ("Київ"/"Україна"), not an icon, so it needs its own width instead of the other
+   buttons' fixed 34px square. */
+.leaflet-bar a.leaflet-control-kyiv-toggle {
+    width: auto !important;
+    padding: 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.leaflet-bar a.leaflet-control-kyiv-toggle.active {
+    background-color: #2563eb !important;
+    color: #ffffff;
+}
+
 /* Toggled on #map for the moment of capture - hides only the interactive controls (zoom, center,
    fullscreen, layer picker, this button itself), not the legend/attribution/status bar/threats,
    which are the actual content a screenshot is for. visibility (not display:none) keeps their
@@ -129,6 +143,7 @@ body {
 .screenshot-hide-controls .leaflet-control-fullscreen,
 .screenshot-hide-controls .leaflet-control-layers,
 .screenshot-hide-controls .leaflet-control-center-wrapper,
+.screenshot-hide-controls .leaflet-control-kyiv-toggle-wrapper,
 .screenshot-hide-controls .leaflet-control-screenshot-wrapper {
     visibility: hidden !important;
 }
