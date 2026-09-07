@@ -10,6 +10,8 @@
     --active-bg-yellow: #fff4cc;
     --active-border-red: #dc2626;
     --active-bg-red: #fdf0ef;
+    --threat-color-yellow: #a16207;
+    --threat-color-red: #b91c1c;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -25,6 +27,8 @@
         --active-bg-yellow: #4a3a10;
         --active-border-red: #b94a4a;
         --active-bg-red: #3a1f1f;
+        --threat-color-yellow: #d9b35c;
+        --threat-color-red: #e08a8a;
     }
 }
 
@@ -79,6 +83,21 @@ main {
     margin: 0;
     font-size: 12px;
     color: var(--fg);
+}
+
+/* Each threat line carries its OWN level class (see index.js) - a card whose overall/worst level
+   is red can still have an earlier yellow threat line alongside the red one, and each reads in its
+   own color rather than both being forced to the card's single worst-level color. */
+.threat-line {
+    font-weight: 600;
+}
+
+.threat-line.level-yellow {
+    color: var(--threat-color-yellow);
+}
+
+.threat-line.level-red {
+    color: var(--threat-color-red);
 }
 
 .region-card.active {
