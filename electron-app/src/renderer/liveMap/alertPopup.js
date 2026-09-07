@@ -42,7 +42,12 @@ function levelBadge(alertLevel, strings) {
     return ` <span style="color:${LEVEL_COLOR[alertLevel]};font-weight:600">(${label})</span>`;
 }
 
-function alertPopupHtml(displayName, startedAt, alertTypeName, strings, language, inheritedFromName, alertLevel) {
+// `threatLines` ({level, description}[], worst first) is Kyiv districts' own thing - unlike every
+// other oblast/raion (one alertTypeName + one alertLevel is always enough), a district can
+// genuinely have a red AND a yellow threat live at once (see regionAlertStatus.js's
+// computeKyivRaionStatuses), so it needs to show one line per level instead of collapsing to just
+// the worst one. Takes over from the plain alertTypeName/alertLevel pair when given.
+function alertPopupHtml(displayName, startedAt, alertTypeName, strings, language, inheritedFromName, alertLevel, threatLines) {
     const locale = language === 'English' ? 'en-US' : 'uk-UA';
 
     if (!startedAt) {
@@ -51,7 +56,12 @@ function alertPopupHtml(displayName, startedAt, alertTypeName, strings, language
 
     const startedTime = formatStartedAt(startedAt, locale);
     const duration = formatDuration(Date.now() - new Date(startedAt).getTime(), strings);
-    const typeLine = alertTypeName ? `${capitalize(alertTypeName)}${levelBadge(alertLevel, strings)}<br>` : '';
+    const typeLine =
+        threatLines && threatLines.length
+            ? threatLines.map((line) => `${capitalize(line.description)}${levelBadge(line.level, strings)}<br>`).join('')
+            : alertTypeName
+              ? `${capitalize(alertTypeName)}${levelBadge(alertLevel, strings)}<br>`
+              : '';
     const note = inheritedFromName
         ? `<br><small>${strings.liveMapAlertAcrossRegion.replace('{name}', inheritedFromName)}</small>`
         : '';
