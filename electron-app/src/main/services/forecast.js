@@ -270,6 +270,7 @@ function buildActiveDurationText(durationStats, language) {
                 : t('forecastActiveDurationAllTime', language);
 
         lines.push(`${t('forecastActiveAlert', language)} ${t('alertTypeLabel', language)}: ${typeName}.`);
+        if (entry.threatDescription) lines.push(entry.threatDescription);
         lines.push(
             `${t('alertStartedAt', language)}: ${formatShortDateTime(entry.ongoingSinceMs, language)}. ${t('alertOngoingDuration', language)}: ${formatDuration(Date.now() - entry.ongoingSinceMs, language)}.`
         );
