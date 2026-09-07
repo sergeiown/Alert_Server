@@ -7,7 +7,7 @@ const { getLatestMatchedAlerts } = require('../services/alertState');
 const { alertTypeName } = require('../services/alertTypes');
 const { getResourcePath } = require('../services/appPaths');
 const { getRegionDurationStats, formatDuration } = require('../services/forecast');
-const { describeThreats } = require('../services/alertLevels');
+const { getThreatLines } = require('../services/alertLevels');
 const { openForecastWindow } = require('../windows/forecastWindow');
 const { setContentHeight } = require('../windows/trayPopupWindow');
 
@@ -29,7 +29,7 @@ function registerTrayPopupIpc() {
                 avgDurationLast24h: duration.avgDurationLast24hMs !== null ? formatDuration(duration.avgDurationLast24hMs, language) : null,
                 avgDurationAllTime: duration.avgDurationAllTimeMs !== null ? formatDuration(duration.avgDurationAllTimeMs, language) : null,
                 alertLevel: alert.alert_level || null,
-                threatDescription: describeThreats(alert.threats),
+                threatLines: getThreatLines(alert.threats),
             };
         });
     });
