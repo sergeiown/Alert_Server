@@ -4,8 +4,10 @@
     --border: #ddd;
     --muted: #888;
     --card-bg: #ffffff;
-    --active-border: #e0a020;
-    --active-bg: #fff8ec;
+    --active-border: #bbbbbb;
+    --active-bg: #f4f4f4;
+    --active-border-yellow: #eab308;
+    --active-bg-yellow: #fff4cc;
     --active-border-red: #dc2626;
     --active-bg-red: #fdf0ef;
 }
@@ -17,8 +19,10 @@
         --border: #3a3a3a;
         --muted: #999999;
         --card-bg: #262626;
-        --active-border: #b98122;
-        --active-bg: #3a2f18;
+        --active-border: #555555;
+        --active-bg: #2e2e2e;
+        --active-border-yellow: #eab308;
+        --active-bg-yellow: #4a3a10;
         --active-border-red: #b94a4a;
         --active-bg-red: #3a1f1f;
     }
@@ -82,8 +86,14 @@ main {
     background: var(--active-bg);
 }
 
-/* Same red/yellow classification the live map, notifications, and tray popup use - "yellow" is
-   this project's existing default active-card styling, kept as-is; "red" gets its own tint. */
+/* Same red/yellow classification the live map, notifications, and tray popup use - each level gets
+   its own distinct tint; "no level reported at all" (older cached data) keeps the plain neutral
+   default above instead of looking like a third color of its own. */
+.region-card.active.level-yellow {
+    border-color: var(--active-border-yellow);
+    background: var(--active-bg-yellow);
+}
+
 .region-card.active.level-red {
     border-color: var(--active-border-red);
     background: var(--active-bg-red);
