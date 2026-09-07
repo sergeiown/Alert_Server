@@ -61,7 +61,16 @@ function computeAlertedRegions(alerts) {
 // is purely for the live map's Kyiv view; it has no bearing on alerting/notifications, which stay
 // anchored to the whole city record exactly as before.
 const KYIV_CITY_UID = 31;
-const THREAT_DISTRICT_PATTERN = /^.*?\)\s+(.+?)\s+район$/iu;
+// Captures the threat's own description too now (group 1, up to and including the closing paren),
+// not just the district name (group 2) - the map popup needs to say WHAT the threat is, not just
+// draw a colored shape (see computeKyivRaionStatuses's own `threats` field below).
+const THREAT_DISTRICT_PATTERN = /^(.*?\))\s+(.+?)\s+район$/iu;
+// The description as captured still ends in its own "(червоний рівень)"-style annotation (same
+// text alertLevels.js's describeThreats shows verbatim in the tray popup/notifications) - but the
+// live map's own district popup already shows a separate colored level badge next to it (see
+// alertPopup.js), so repeating the level in the text itself right next to that badge would just
+// say the same thing twice.
+const DESCRIPTION_LEVEL_SUFFIX_PATTERN = /\s*\([^)]*\)\s*$/u;
 
 function computeKyivRaionStatuses(alerts) {
     const statusByDistrict = new Map();
@@ -74,12 +83,16 @@ function computeKyivRaionStatuses(alerts) {
                 const match = threat.source_message.match(THREAT_DISTRICT_PATTERN);
                 if (!match) return;
 
-                const district = match[1].trim();
+                const description = match[1].replace(DESCRIPTION_LEVEL_SUFFIX_PATTERN, '').trim();
+                const district = match[2].trim();
                 if (!statusByDistrict.has(district)) {
-                    statusByDistrict.set(district, { startedAt: threat.started_at, levels: new Set() });
+                    statusByDistrict.set(district, { startedAt: threat.started_at, levels: new Set(), descriptionByLevel: new Map() });
                 }
                 const entry = statusByDistrict.get(district);
                 entry.levels.add(threat.level);
+                // First description seen for a given level wins - same "first wins" convention
+                // alertLevels.js's getThreatLines already uses for grouping by description.
+                if (!entry.descriptionByLevel.has(threat.level)) entry.descriptionByLevel.set(threat.level, description);
                 if (new Date(threat.started_at) < new Date(entry.startedAt)) entry.startedAt = threat.started_at;
             });
         });
@@ -90,7 +103,11 @@ function computeKyivRaionStatuses(alerts) {
     return Array.from(statusByDistrict, ([name, v]) => {
         const levels = [...v.levels];
         const worstLevel = levels.reduce((worst, level) => (levelRank(level) > levelRank(worst) ? level : worst), null);
-        return { name, startedAt: v.startedAt, alertLevel: worstLevel, hasBothLevels: levels.length > 1 };
+        // Worst level first, so a district with both active leads its popup with the more urgent one.
+        const threats = [...v.descriptionByLevel.entries()]
+            .sort(([levelA], [levelB]) => levelRank(levelB) - levelRank(levelA))
+            .map(([level, description]) => ({ level, description }));
+        return { name, startedAt: v.startedAt, alertLevel: worstLevel, hasBothLevels: levels.length > 1, threats };
     });
 }
 

@@ -16,6 +16,7 @@ import {
     getKyivRaionStartedAt,
     getKyivRaionAlertLevel,
     getKyivRaionHasBothLevels,
+    getKyivRaionThreats,
 } from './alertedRegionsStore.js';
 import { alertPopupHtml } from './alertPopup.js';
 import { RAION_OBLAST } from './raionOblastMap.js';
@@ -138,7 +139,19 @@ const RegionStatusLayer = L.LayerGroup.extend({
     // means the district shape itself needs its own outline to read as a district, unlike the plain
     // abstract background elsewhere, where an unalerted region is already legible from the
     // underlying map art alone.
-    _drawRegion: function (rings, displayName, ownStartedAt, now, popupStartedAt, popupAlertTypeName, inheritedFromName, alertLevel, hasBothLevels, forceBorder) {
+    _drawRegion: function (
+        rings,
+        displayName,
+        ownStartedAt,
+        now,
+        popupStartedAt,
+        popupAlertTypeName,
+        inheritedFromName,
+        alertLevel,
+        hasBothLevels,
+        forceBorder,
+        popupThreatLines
+    ) {
         const alerted = Boolean(ownStartedAt);
         const color = alerted ? shadeFor(ownStartedAt, now, alertLevel) : NEUTRAL_COLOR;
         const fillColor = alerted && hasBothLevels ? `url(#${DUAL_LEVEL_PATTERN_ID})` : color;
@@ -153,7 +166,16 @@ const RegionStatusLayer = L.LayerGroup.extend({
             fillOpacity: alerted ? ALERTED_FILL_OPACITY : NEUTRAL_FILL_OPACITY,
         })
             .bindPopup(() =>
-                alertPopupHtml(displayName, popupStartedAt, popupAlertTypeName, strings, language, inheritedFromName, alertLevel)
+                alertPopupHtml(
+                    displayName,
+                    popupStartedAt,
+                    popupAlertTypeName,
+                    strings,
+                    language,
+                    inheritedFromName,
+                    alertLevel,
+                    popupThreatLines
+                )
             )
             .addTo(this);
     },
@@ -170,9 +192,22 @@ const RegionStatusLayer = L.LayerGroup.extend({
             const ownStartedAt = getKyivRaionStartedAt(name);
             const ownAlertLevel = getKyivRaionAlertLevel(name);
             const hasBothLevels = getKyivRaionHasBothLevels(name);
+            const threats = getKyivRaionThreats(name);
             const displayName = isEnglish ? `${name} District` : `${name} район`;
 
-            this._drawRegion([ring], displayName, ownStartedAt, now, ownStartedAt, null, null, ownAlertLevel, hasBothLevels, true);
+            this._drawRegion(
+                [ring],
+                displayName,
+                ownStartedAt,
+                now,
+                ownStartedAt,
+                null,
+                null,
+                ownAlertLevel,
+                hasBothLevels,
+                true,
+                threats
+            );
         });
     },
 
