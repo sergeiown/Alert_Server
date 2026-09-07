@@ -6,9 +6,7 @@ const { BrowserWindow, screen } = require('electron');
 
 const DEFAULT_WIDTH = 320;
 const DEFAULT_HEIGHT = 260;
-// Real content can range from "no alerts, one line of text" to several full alert cards -
-// clamped so a measurement glitch (or a genuinely huge amount of text) can't shrink the window to
-// nothing or grow it off-screen.
+
 const MIN_HEIGHT = 90;
 const MAX_HEIGHT = 500;
 
@@ -73,12 +71,6 @@ function toggleTrayPopup(trayBounds) {
     popupWindow.webContents.send('refresh');
 }
 
-// Called by the renderer once it knows its own real content height (measured from the actual
-// rendered DOM - header + exactly one alert card's height + the forecast footer, capped there even
-// if several alerts are active, so the popup stays "one alert tall" and scrolls for the rest
-// rather than growing without bound). Height only - width stays fixed - and repositioned against
-// the same tray click that opened it, since the anchor position depends on the window's own height
-// (see the taskbar-at-bottom case above).
 function setContentHeight(height) {
     if (!popupWindow) return;
     const clamped = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, Math.round(height)));

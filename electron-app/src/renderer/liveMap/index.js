@@ -11,15 +11,11 @@ import { addScreenshotControl } from './screenshot.js';
 import { KYIV_RAION_BORDERS } from './kyivRaionBorders.js';
 import { applyTitleBarAccentColor } from './chromeTint.js';
 
-// Must match ukraine_default.svg's own mapsvg:geoViewBox attribute (west north east south),
-// or the background image will no longer line up.
 const UKRAINE_BOUNDS = [
     [44.387017, 22.138577],
     [52.380834, 40.220623],
 ];
 
-// Derived from the district borders themselves (not a separately hand-kept pair of numbers) so it
-// can never drift out of sync with what the "Kyiv" button is actually zooming to.
 function computeKyivBounds() {
     let minLat = 90;
     let maxLat = -90;
@@ -45,9 +41,6 @@ const KYIV_BOUNDS = computeKyivBounds();
 
 const MAP_MIN_ZOOM = 5;
 
-// Display name + external link per alertSourceManager.js chain key - kept here (not fetched from
-// main) since these are just presentation details for the attribution line, same as neptunAttribution/
-// deepStateAttribution's own static labels below.
 const ALERT_SOURCE_DISPLAY = {
     ukrainealarm: { name: 'UkraineAlarm', url: 'https://api.ukrainealarm.com' },
     'alerts.in.ua': { name: 'alerts.in.ua', url: 'https://alerts.in.ua' },
@@ -71,10 +64,6 @@ const CenterControl = L.Control.extend({
     },
 });
 
-// A two-state toggle, not a separate "zoom to Kyiv" one-shot action - while on, Kyiv stays
-// front-and-center (including across a fullscreen toggle or window resize, both of which would
-// otherwise silently snap back to the whole-country view); the label itself names what clicking it
-// does NEXT, swapping between the two on/off labels rather than showing a separate pressed state.
 const KyivToggleControl = L.Control.extend({
     options: { position: 'topleft' },
     onAdd: function () {
@@ -104,17 +93,11 @@ async function main() {
     const strings = await window.alertServerLiveMap.getStrings();
     const settings = await window.alertServerLiveMap.getSettings();
     const baseMapUrl = await window.alertServerLiveMap.getBaseMapUrl();
-    // Which source is genuinely serving live data right now (can differ from settings.
-    // alertSourceProvider during an automatic failover) - falls back to the preferred setting on
-    // the rare chance the source manager hasn't reported one yet.
+
     const activeAlertSourceKey = (await window.alertServerLiveMap.getActiveAlertSource()) || settings.alertSourceProvider;
     const alertSourceDisplay = ALERT_SOURCE_DISPLAY[activeAlertSourceKey] || ALERT_SOURCE_DISPLAY['alerts.in.ua'];
     document.title = strings.appName;
 
-    // Tints the map's own chrome to match the window's REAL title bar - only actually different
-    // from index.css's own static default when the user has Windows' "Show accent color on title
-    // bars" setting on (see accentColor.js on the main-process side); null otherwise, and the CSS
-    // default already looks like the title bar in that (more common) case.
     applyTitleBarAccentColor(await window.alertServerLiveMap.getTitleBarAccentColor());
     window.alertServerLiveMap.onTitleBarAccentColorChanged(applyTitleBarAccentColor);
 
@@ -126,41 +109,12 @@ async function main() {
         zoomSnap: 0.25,
         zoomDelta: 0.5,
         attributionControl: true,
-        // The occupied-territory layer needs the SVG root to exist immediately (it injects a
-        // <pattern> into its <defs>) - forcing the renderer here avoids Leaflet lazily creating
-        // that SVG only once the first vector layer is added. `padding` (extra rendered area beyond
-        // the viewport, as a multiple of its size - Leaflet's own default is a modest 0.1) raised
-        // well past default: Leaflet only repositions/redraws the whole SVG root once a drag moves
-        // past this padded margin, and the Kyiv mask's blur filter is expensive enough to redraw
-        // that a drag crossing that boundary visibly showed the mask "filling in" for an instant.
-        // Kyiv mode's own maxBounds already keeps the pannable area small, so a generous padding
-        // here comfortably covers the whole reachable area from one fit, without ever needing a
-        // mid-drag redraw there at all.
+
         renderer: L.svg({ padding: 1 }),
     });
 
-    // While Kyiv mode is on, EVERY re-fit (the center button, a fullscreen toggle, a window
-    // resize) targets Kyiv instead of the whole country - not just the one click that turned it
-    // on - or leaving Kyiv mode on through any of those would silently snap back out to Ukraine.
-    // Not persisted across a reload or a window close - always starts in Ukraine mode, on the
-    // user to turn back on each time.
     let kyivModeActive = false;
 
-    // fitBounds/flyToBounds both clamp to the CURRENT minZoom, so the floor is always lifted back
-    // to the map's absolute minimum first - otherwise a stale floor from an earlier call (e.g. a
-    // mid-animation fullscreen-exit size read) could block the correct, lower zoom the real final
-    // size needs. The floor stays at the fitted zoom itself in Kyiv mode - together with maxBounds
-    // below, that pins the view to Kyiv: no zooming out past it, no panning past its edges either.
-    // `animate` is only true for a deliberate user action worth the fly (the Center button, toggling
-    // Kyiv mode itself) - a plain fitBounds stays the default everywhere else (initial load, a
-    // fullscreen toggle, a window resize), where an animated fly would just be an odd delay.
-    // maxBounds is always cleared before the fit/fly and only reapplied once the camera has
-    // actually arrived (in lockAfterMove, on 'moveend') - setting it beforehand while the current
-    // view is still the whole-country one (well outside Kyiv's own bounds) makes Leaflet snap the
-    // view to fit inside it immediately, which looked exactly like a broken/wrong zoom happening
-    // before the real animated fly even got to run. Locking minZoom has the same reason to wait for
-    // 'moveend' rather than fire immediately: doing it right away would clamp the zoom mid-flight to
-    // whatever it happened to be at that instant.
     function fitAndLockMinZoom(animate) {
         map.setMinZoom(MAP_MIN_ZOOM);
         map.setMaxBounds(null);
@@ -173,11 +127,7 @@ async function main() {
 
         if (animate) {
             map.once('moveend', lockAfterMove);
-            // A plain flyToBounds swoops out to a much lower zoom mid-flight before coming back in
-            // on any large enough zoom change (its default easing curve) - fine for a modest pan,
-            // but between the whole-country view and Kyiv's own scale that swoop was wide enough to
-            // look like the zoom had broken rather than like a deliberate camera move.
-            // easeLinearity near 1 flattens that curve down to close to a straight pan+zoom.
+
             map.flyToBounds(bounds, { duration: 0.9, easeLinearity: 1 });
         } else {
             map.fitBounds(bounds);
@@ -185,13 +135,6 @@ async function main() {
         }
     }
 
-    // A district near Kyiv's own outer edge (its polygon sits right against maxBounds) has no room
-    // left for Leaflet's own popup autoPan to pan the view toward when its popup opens above/beside
-    // the click point - maxBounds simply won't let the map go any further that way, so the popup's
-    // own top (its district name, its threat lines) stayed clipped by the window edge instead of
-    // panning into view like a popup normally would. Lifting the bounds restriction just while a
-    // popup is open (only in Kyiv mode - elsewhere there's no maxBounds set to begin with) lets
-    // autoPan actually reach wherever it needs to; reinstated the moment the popup closes.
     map.on('popupopen', () => {
         if (kyivModeActive) map.setMaxBounds(null);
     });
@@ -203,32 +146,15 @@ async function main() {
 
     const isDarkMap = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    // A real satellite/street-level tile layer, shown ONLY in Kyiv mode - the app's own base map is
-    // one flat-color abstract SVG of the whole country, fine at a national view but not something
-    // that gets more detailed no matter how far in this zooms, so it reads as a blown-up blur at
-    // Kyiv's own scale. Google's own satellite+hybrid tiles (real imagery, with roads/place labels
-    // overlaid) - already carries real place names on its own, so Kyiv's own district name labels
-    // (kyivRaionLabels.js) are skipped entirely in this mode rather than doubling up on it. Not an
-    // officially published tile API (no key, but also no formal terms covering this exact endpoint
-    // the way the Maps JavaScript API's billed access does) - fine for this app's actual scale, but
-    // worth knowing if it ever needs revisiting.
     const kyivTileLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
         attribution: '&copy; Google Maps',
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
         maxZoom: 20,
     });
 
-    // Kept so leaving Kyiv mode restores each to whatever state it was actually in before entering
-    // it (a layer the user had already turned off via the layers control shouldn't reappear).
     let riverLayerWasOn = true;
     let occupiedTerritoryLayerWasOn = true;
 
-    // maxBounds (set below) only stops PANNING past Kyiv's edges - it doesn't stop the tile layer
-    // itself from rendering real streets for whatever's still visible in the margin around Kyiv's
-    // own (non-rectangular) shape within the current viewport. This masks that margin instead: one
-    // polygon whose outer ring is the whole world and whose holes are Kyiv's own 10 districts -
-    // everywhere outside those holes paints over the tiles in the same color the map already uses
-    // for "nothing here" (matches #map's own background), leaving only Kyiv's actual shape visible.
     const WORLD_RING = [
         [-85, -180],
         [-85, 180],
@@ -238,22 +164,12 @@ async function main() {
     const kyivMask = L.polygon([WORLD_RING, ...Object.values(KYIV_RAION_BORDERS)], {
         className: 'kyiv-mask-shape',
         stroke: false,
-        // Same background #map itself already uses outside Ukraine's own shape in the normal view
-        // (see index.css) - light or dark, matching whichever theme is active, not fixed to one.
+
         fillColor: isDarkMap ? '#10151c' : '#aad3df',
         fillOpacity: 1,
         interactive: false,
     });
 
-    // Swaps the base map / satellite tiles / Kyiv mask on a mode switch by fading whatever's
-    // currently shown fully OUT first, only THEN adding and fading the new scene IN - not a true
-    // crossfade (both partially visible at once), which could show the old map flashing on top of
-    // the new one for that instant depending on which Leaflet pane/DOM position each layer's
-    // element happened to land in (baseMapOverlay and the Kyiv mask share the vector overlay pane;
-    // the satellite tiles sit in the tile pane underneath it - not a fixed, guaranteed stacking
-    // order between the two once both are visible with partial opacity at once). Fading to nothing
-    // before anything new appears removes that ambiguity outright. `sceneToken` guards a rapid
-    // re-toggle mid-fade: only the transition that's still current gets to swap the actual layers.
     const KYIV_SCENE_FADE_MS = 300;
     let sceneToken = 0;
 
@@ -266,7 +182,7 @@ async function main() {
     function fadeIn(el) {
         if (!el) return;
         setOpacity(el, 0);
-        void el.offsetWidth; // Force a reflow so the browser registers 0 before animating to 1.
+        void el.offsetWidth;
         setOpacity(el, 1);
     }
 
@@ -281,17 +197,14 @@ async function main() {
         }
 
         setTimeout(() => {
-            if (token !== sceneToken) return; // superseded by a later toggle mid-fade
+            if (token !== sceneToken) return;
 
             if (active) {
                 map.removeLayer(baseMapOverlay);
                 if (riverLayerWasOn) map.removeLayer(riverLayer);
                 if (occupiedTerritoryLayerWasOn) map.removeLayer(occupiedTerritoryLayer);
                 kyivTileLayer.addTo(map);
-                // Added (and pushed behind everything else already in the shared vector-overlay
-                // pane) BEFORE the district layers re-render just below - so their freshly
-                // (re)drawn shapes land after the mask in the DOM and paint on top of it, not the
-                // other way around.
+
                 kyivMask.addTo(map);
                 kyivMask.bringToBack();
                 fadeIn(kyivTileLayer.getContainer());
@@ -316,9 +229,6 @@ async function main() {
     map.attributionControl.addAttribution(`<a href="#" id="neptunAttribution">${strings.liveMapNeptunAttribution}</a>`);
     map.attributionControl.addAttribution(`<a href="#" id="deepStateAttribution">${strings.liveMapDeepStateAttribution}</a>`);
 
-    // Each addAttribution call rebuilds the whole control's innerHTML from scratch (Leaflet's own
-    // _update()), tearing down any earlier of these anchors - listeners must be wired up only
-    // once, after every addAttribution call is done.
     const attributionLinks = [
         ['appAttribution', 'https://github.com/sergeiown/Alert_Server'],
         ['alertsAttribution', alertSourceDisplay.url],
@@ -361,13 +271,10 @@ async function main() {
         })
         .addTo(map);
 
-    // Single entry point for entering/leaving Kyiv mode, used by the toggle button.
     function applyKyivMode(active) {
         kyivModeActive = active;
         kyivToggle.setActive(active);
-        // Scopes the attribution font-size/color tweak (index.css) to Kyiv mode only - normal
-        // (Ukraine) mode has no plain-text Google credit next to the other links to clash with, so
-        // it should keep Leaflet's own default attribution styling untouched.
+
         map.getContainer().classList.toggle('kyiv-mode-active', active);
 
         if (active) {
@@ -379,14 +286,9 @@ async function main() {
         regionStatusLayer.setKyivMode(active);
         labelsLayer.setKyivMode(active);
 
-        // maxBounds itself is handled inside fitAndLockMinZoom (cleared before the fly, reapplied
-        // once it lands) - see the comment there for why the order matters.
         fitAndLockMinZoom(true);
     }
 
-    // Added last (not right after CenterControl) so it lands directly under the fullscreen button
-    // in the topleft stack - Leaflet stacks same-corner controls in add order, each new one further
-    // from the corner than the last.
     const kyivToggle = new KyivToggleControl({
         onLabel: strings.liveMapKyivButtonLabel,
         offLabel: strings.liveMapUkraineButtonLabel,
@@ -395,9 +297,6 @@ async function main() {
         onToggle: () => applyKyivMode(!kyivModeActive),
     }).addTo(map);
 
-    // The DOM "resize" event only fires reliably for viewport/zoom changes, not for every case a
-    // BrowserWindow's content area changes size - a ResizeObserver reacts to any actual size change
-    // regardless of cause.
     new ResizeObserver(() => {
         map.invalidateSize();
         fitAndLockMinZoom();

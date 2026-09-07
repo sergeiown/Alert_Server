@@ -12,13 +12,6 @@ import {
 import { alertPopupHtml } from './alertPopup.js';
 import { oblastDisplayName } from './regionNameUtils.js';
 
-// `oblast`/`raion` are keys into the same alert-status data the oblast/raion-coloring layer uses
-// (already normalized - see regionNameUtils.js). alerts.in.ua does not track most of these cities
-// as their own entity, so a city shows its containing raion's status where it has one, falling
-// back to its oblast's - Kyiv (no raion tier of its own) and Sevastopol (folded into Crimea) are
-// the only two with `raion: null`, found to have no containing polygon in raionBorders.js's own
-// data (tools/example/city-raion-lookup.js - point-in-polygon against the real raion shapes, not
-// guessed from city/raion name similarity).
 const CITIES = [
     { lat: 50.4501, lng: 30.5234, uk: 'Київ', en: 'Kyiv', oblast: 'Київ', raion: null },
     { lat: 49.9935, lng: 36.2304, uk: 'Харків', en: 'Kharkiv', oblast: 'Харківська', raion: 'Харківський' },
@@ -63,9 +56,6 @@ const CITIES = [
     { lat: 48.5111, lng: 34.6023, uk: "Кам'янське", en: 'Kamianske', oblast: 'Дніпропетровська', raion: "Кам'янський" },
 ];
 
-// A city is alerted if either its own raion or its oblast currently is - checking the oblast
-// alone missed a raion-level-only alert entirely (e.g. Білоцерківський район on alert while the
-// rest of Kyivska oblast isn't), leaving a genuinely alerted city showing no fill at all.
 function resolveCityAlert(city) {
     const raionStartedAt = city.raion ? getRaionStartedAt(city.raion) : null;
     const oblastStartedAt = getOblastStartedAt(city.oblast);
@@ -84,10 +74,6 @@ function resolveCityAlert(city) {
     return { startedAt: null, alertTypeName: null, fromOblast: false };
 }
 
-// The outline itself stays visible always (it's the city's landmark boundary, same idea as the
-// dot/label) - only the fill is conditional on alert state. Zeroing weight/opacity together with
-// fillOpacity (an earlier version of this fix) made the whole border vanish whenever a city had
-// no active alert, instead of just clearing the red tint.
 function borderStyle(color, alerted) {
     return {
         color,
@@ -103,10 +89,7 @@ function buildCityGroup(strings, language) {
     const color = isDark ? '#e2836f' : '#7a3b2e';
     const layer = L.layerGroup();
     const isEnglish = language === 'English';
-    // Tracked so the alert-state subscription below can restyle each border in place - this
-    // group is built once by labelsLayer.js and reused for the window's lifetime (only shown/
-    // hidden by zoom level, never rebuilt), so without this the fill would freeze at whatever
-    // alert state happened to be live at map-open time.
+
     const borderPolygons = [];
 
     CITIES.forEach((city) => {
@@ -114,18 +97,14 @@ function buildCityGroup(strings, language) {
         const displayName = isEnglish ? city.en : city.uk;
         const popupContent = () => {
             const { startedAt, alertTypeName, fromOblast } = resolveCityAlert(city);
-            // Only note "alert across the region" when the shown status came from the whole
-            // oblast, not the city's own raion - a raion alert (Kyiv has none of its own, hence
-            // the extra check) is already local to the city, nothing to disambiguate.
+
             const inheritedFromName =
                 fromOblast && city.oblast !== 'Київ' ? oblastDisplayName(city.oblast, isEnglish) : null;
             return alertPopupHtml(displayName, startedAt, alertTypeName, strings, language, inheritedFromName);
         };
 
         if (border) {
-            // Fill/stroke reflect the city's actual alert state (same on/off idea as
-            // regionStatus.js's oblast/raion shading) - previously drawn with the alerted tint
-            // unconditionally, making every city with a border shape look permanently alerted.
+
             const polygon = L.polygon(border, borderStyle(color, Boolean(resolveCityAlert(city).startedAt)))
                 .bindPopup(popupContent)
                 .addTo(layer);

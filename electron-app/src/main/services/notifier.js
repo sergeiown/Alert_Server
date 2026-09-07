@@ -18,12 +18,7 @@ const { openLiveMapWindow } = require('../windows/liveMapWindow');
 const ALERT_COLOR = '#dc2626';
 const CANCEL_COLOR = '#16a34a';
 const MASS_ALERT_THRESHOLD = 2;
-// If an alert first appears as "new" (no prior record in displayedAlerts) but its own started_at
-// is already older than this, it didn't just start - the app (or the whole machine) was off or
-// asleep while it began, and this is just catching up on startup/reconnect/source failover. A
-// "started" notification for something that's actually been running for a while would be
-// misleading, so it's skipped; the alert is still tracked normally (still logged, still eligible
-// for a real cancellation notice later).
+
 const STALE_ON_FIRST_SIGHT_MS = 5 * 60 * 1000;
 
 let displayedAlerts = null;
@@ -205,11 +200,6 @@ function processAlerts(matchedAlerts, allAlerts) {
             playRepeated(playAlertSound, settings.alertSoundMode, language, settings.alertSoundCount, 8000);
         }
 
-        // The log is for reading later regardless of whatever UI language happens to be set right
-        // now, so it always uses the Latin name (falling back to the original only for a
-        // discovered location with no Latin variant on file at all) rather than locationName,
-        // which follows the user's own display language above. Still logged even when stale (no
-        // notification/sound) - the log is a complete record, the notification is what's muted.
         const levelSuffix = alert.alert_level ? ` [${alert.alert_level}]` : '';
         logEvent(`Alert ${alert.alert_type}${levelSuffix}: ${alert.location_lat || alert.location_title}${stale ? ' (already active before this check)' : ''}`, 'ALERT');
 

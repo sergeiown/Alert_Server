@@ -47,12 +47,6 @@ function registerForecastIpc() {
             const activeTypes = [...new Set(activeAlertsHere.map((alert) => alert.alert_type))];
             const durationStats = getRegionDurationStats(uid, activeTypes);
 
-            // The earliest start among currently-active alerts of that type at this uid - how
-            // long THIS one has already been running, not derived from history. alertsByType
-            // additionally groups the raw alert records themselves (not just their start times) so
-            // the worst red/yellow level and threat description for that type can be derived below
-            // - a whole tracked region can have several underlying alerts of the same type (e.g.
-            // one per raion), each potentially at a different level.
             const earliestStartedAtByType = new Map();
             const alertsByType = new Map();
             activeAlertsHere.forEach((alert) => {
@@ -80,11 +74,7 @@ function registerForecastIpc() {
 
         const text = await getRegionForecastText(uid, language);
         if (!text) {
-            // Only fire-and-forget when there's genuinely nothing local yet - historyStore is
-            // otherwise already kept fresh passively (todayStatsStore.js's nationwide merge every
-            // 5 min, the one-time historyBackfillStore.js pass), and the "Джерело: ..." line
-            // itself now reads from data already in historyStore (_localSource, tagged at merge
-            // time) rather than needing a dedicated live query to stay accurate.
+
             fetchHistoryAlerts(uid).catch((err) => logEvent(`Forecast prefetch failed for uid ${uid} (alert-proxy): ${err.message}`, 'NETWORK'));
             return { status: 'empty' };
         }

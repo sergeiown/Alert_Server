@@ -3,11 +3,6 @@
 
 const TOAST_VISIBLE_MS = 2500;
 
-// Which controls get hidden for the capture (the .screenshot-hide-controls class on #map, toggled
-// below, is what actually hides them - see index.css) - only the interactive Leaflet controls
-// (zoom, the center button, the fullscreen toggle, the layer picker, this button itself). The
-// legend, attribution, status bar, threats, and every map layer stay, since those are the actual
-// content someone screenshots the map for.
 const ScreenshotControl = L.Control.extend({
     options: { position: 'topleft' },
     onAdd: function (map) {
@@ -43,9 +38,6 @@ async function captureAndCopy(strings) {
     const mapEl = document.getElementById('map');
     mapEl.classList.add('screenshot-hide-controls');
 
-    // Give the browser a frame to actually apply the visibility change before the main process
-    // captures the window's current pixels - capturing in the same tick could still catch the
-    // controls mid-repaint.
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
     let success = false;

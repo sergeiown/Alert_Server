@@ -32,8 +32,6 @@ const REGIONS = [
 
 const OBLAST_EN_BY_UK = new Map(REGIONS.map((region) => [region.uk, region.en]));
 
-// Kept as its own copy rather than importing oblastDisplayName from regionNameUtils.js, since that
-// module imports OBLAST_EN_BY_UK from this file - importing back would create a cycle.
 function regionLabelText(region, isEnglish) {
     if (!isEnglish) return region.uk;
     if (region.uk === 'Крим' || region.uk === 'Київ') return region.en;
@@ -46,8 +44,7 @@ function buildOblastGroup(language) {
 
     REGIONS.forEach((region) => {
         const sizeClass = region.size ? ` region-label-${region.size}` : '';
-        // Leaflet sets its own inline "transform" on this element, which would clobber a
-        // centering transform applied here too - so the text lives in an inner span instead.
+
         L.marker([region.lat, region.lng], {
             icon: L.divIcon({
                 className: 'map-label-anchor',

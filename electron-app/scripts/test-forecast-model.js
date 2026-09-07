@@ -26,14 +26,9 @@ function run(name, fn) {
 }
 
 const lastAlertMs = Date.parse('2026-01-01T00:00:00.000Z');
-// 63 days = exactly 9 full weeks, so every weekday is equally represented and the seasonality
-// multiplier is neutral (=1) throughout - these tests are about the recent/baseline mixture, not
-// seasonality, which gets its own dedicated tests below.
+
 const alerts = buildUniformAlerts(63, 1, lastAlertMs);
 
-// buildUniformAlerts puts every alert at the same time of day, so hour-of-day would be heavily
-// skewed for this dataset too - neutralize it here the same way, since these tests are about the
-// recent/baseline mixture, not the hour-of-day adjustment (which gets its own tests below).
 const configNoHourOfDay = { ...forecastConfig, HOUR_OF_DAY_MAX_MULTIPLIER: 1 };
 
 run('plateaus at baseline instead of unbounded growth after 5 days of silence', () => {
@@ -80,8 +75,6 @@ run('no history at all still returns lambda 0 (no meaningful signal)', () => {
     assert.strictEqual(lambda, 0);
 });
 
-// --- Seasonality ---
-
 function buildWeekdayOnlyAlerts(weeks, targetWeekday, endMs) {
     const alerts = [];
     const endWeekday = new Date(endMs).getUTCDay();
@@ -95,7 +88,7 @@ function buildWeekdayOnlyAlerts(weeks, targetWeekday, endMs) {
 
 run('seasonality: a region that only ever alerts on Fridays gets boosted on a Friday query', () => {
     const friday = 5;
-    const endMs = Date.parse('2026-01-02T00:00:00.000Z'); // a Friday
+    const endMs = Date.parse('2026-01-02T00:00:00.000Z');
     const weekdayAlerts = buildWeekdayOnlyAlerts(12, friday, endMs);
 
     const nowFriday = endMs;
@@ -140,8 +133,6 @@ run('seasonality: shrinks toward neutral (1) with only a couple of same-weekday 
         `with only 2 same-weekday occurrences, the adjustment should be heavily shrunk, got ${seasonality}`
     );
 });
-
-// --- Hour of day ---
 
 function buildHourOnlyAlerts(days, targetHour, endMs) {
     const alerts = [];
@@ -198,8 +189,6 @@ run('hour-of-day: shrinks toward neutral (1) with only a couple of same-hour occ
         `with only 2 same-hour occurrences, the adjustment should be heavily shrunk, got ${hourOfDay}`
     );
 });
-
-// --- Uncertainty range (gapRange) ---
 
 run('gapRange: omitted when there are fewer gaps than MIN_GAP_SAMPLES_FOR_RANGE', () => {
     const fewAlerts = buildUniformAlerts(forecastConfig.MIN_GAP_SAMPLES_FOR_RANGE, 1, lastAlertMs);

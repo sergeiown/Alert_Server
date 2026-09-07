@@ -85,10 +85,7 @@ async function renderRegionsList() {
             card.className = `region-card active${levelClass}`;
 
             if (result.lines && result.lines.length) {
-                // Each line keeps its OWN level - a yellow drone line and a red missile line for
-                // the same alert are two different lines, not one line tinted by the card's overall
-                // (worst) level - so they're built as individual spans here instead of setting
-                // pre.textContent to the flat string version.
+
                 result.lines.forEach((line, i) => {
                     if (i > 0) pre.appendChild(document.createTextNode('\n'));
                     if (line.level === 'red' || line.level === 'yellow') {

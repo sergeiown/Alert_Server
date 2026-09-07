@@ -29,10 +29,6 @@ const LabelsLayer = L.LayerGroup.extend({
         this._active = null;
     },
 
-    // While the live map's Kyiv toggle is on, no label group shows at all - not the nationwide
-    // oblast/raion/city labels (which would otherwise still show for whatever's visible around
-    // Kyiv's edges), and not Kyiv's own district names either: the real satellite/hybrid tiles
-    // shown in that mode (see index.js) already carry real place names of their own.
     setKyivMode: function (active) {
         this._kyivModeActive = active;
         this._sync();

@@ -73,8 +73,7 @@ function getLocationLookup() {
 function getHistoryFetchTarget(uid) {
     const info = getLocationLookup().get(String(uid));
     if (!info || !info.stateUid) return null;
-    // Real alerts are tagged at raion/hromada/city granularity, never with an oblast's own uid,
-    // so tracking a whole oblast means "everything in it" rather than a (nonexistent) direct match.
+
     return { stateUid: info.stateUid, matchUid: info.type === 'state' ? null : uid };
 }
 
@@ -125,12 +124,7 @@ function filterAlerts(alertData) {
             return {
                 ...alert,
                 location_lat: info ? info.lat : null,
-                // Resolved from the same static lookup as location_lat above, not trusted from
-                // the source - alerts.in.ua/Neptun both happen to already provide this natively,
-                // but UkraineAlarm's own alert shape doesn't carry a Ukrainian display name at
-                // all, which showed up as a literal "undefined" location in notifications. Falls
-                // back to whatever the source itself sent for a genuinely unknown uid (not in the
-                // static lookup), same case discoverUnknownLocations() already handles.
+
                 location_title: info ? info.name : alert.location_title,
             };
         });

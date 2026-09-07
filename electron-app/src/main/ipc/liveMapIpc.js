@@ -11,9 +11,6 @@ const { getLiveMapWindow } = require('../windows/liveMapWindow');
 const settingsStore = require('../services/settingsStore');
 const { logEvent } = require('../services/logger');
 
-// Resolved to a display name here, at request time, using whatever language is current right now
-// - so a language change takes effect immediately without needing computeAlertedRegions to redo
-// its work, and the renderer never needs its own copy of the alert-type catalog.
 function withAlertTypeName(entries, language) {
     return entries.map((entry) => ({
         ...entry,
@@ -37,9 +34,7 @@ function registerLiveMapIpc() {
         return {
             oblasts: withAlertTypeName(oblasts, language),
             raions: withAlertTypeName(raions, language),
-            // No alertType here - Kyiv's own district breakdown only ever carries a level, parsed
-            // from free text rather than a real per-district alert record (see
-            // regionAlertStatus.js's computeKyivRaionStatuses).
+
             kyivRaions: kyivRaions || [],
         };
     });
@@ -48,10 +43,6 @@ function registerLiveMapIpc() {
 
     ipcMain.handle('liveMap:getTitleBarAccentColor', () => getTitleBarAccentColor());
 
-    // Windows/Linux only (see accentColor.js) - fires when the user changes their system accent
-    // color while the window is already open, so the tint updates live instead of only on the next
-    // reload. ColorPrevalence itself (whether the title bar even uses the accent at all) has no
-    // equivalent change event to listen for, so that half only gets re-checked on reload/reopen.
     if (typeof systemPreferences.on === 'function') {
         systemPreferences.on('accent-color-changed', () => {
             const win = getLiveMapWindow();
