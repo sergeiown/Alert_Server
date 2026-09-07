@@ -75,7 +75,7 @@ const CenterControl = L.Control.extend({
 // otherwise silently snap back to the whole-country view); the label itself names what clicking it
 // does NEXT, swapping between the two on/off labels rather than showing a separate pressed state.
 const KyivToggleControl = L.Control.extend({
-    options: { position: 'topleft' },
+    options: { position: 'bottomleft' },
     onAdd: function () {
         const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-kyiv-toggle-wrapper');
         const link = L.DomUtil.create('a', 'leaflet-control-kyiv-toggle', container);

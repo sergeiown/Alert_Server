@@ -67,12 +67,13 @@ function registerForecastIpc() {
                 entry.ongoingSinceMs = new Date(earliestStartedAtByType.get(entry.type)).getTime();
                 const typeAlerts = alertsByType.get(entry.type) || [];
                 entry.alertLevel = worstLevelAmong(typeAlerts);
-                entry.threatDescription = describeThreats(typeAlerts.flatMap((alert) => alert.threats || []));
+                entry.threatLines = getThreatLines(typeAlerts.flatMap((alert) => alert.threats || []));
             });
 
             return {
                 status: 'active',
                 text: buildActiveDurationText(durationStats, language),
+                lines: buildActiveDurationLines(durationStats, language),
                 alertLevel: worstLevelAmong(activeAlertsHere),
             };
         }
