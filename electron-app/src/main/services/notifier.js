@@ -192,7 +192,9 @@ function processAlerts(matchedAlerts, allAlerts) {
                     startedAtText ? `${t('alertStartedAt', language)}: ${startedAtText}` : null,
                     describeThreats(alert.threats),
                     alert.notes ? `${t('alertSource', language)}: ${alert.notes}` : null,
-                ].filter(Boolean),
+                ]
+                    .filter(Boolean)
+                    .flatMap((line) => line.split('\n')),
                 iconName: 'alert.png',
                 color: levelColor(alert.alert_level),
                 onClick: () => showAlertDetails(title, language, locationName, typeName, alert.started_at),
