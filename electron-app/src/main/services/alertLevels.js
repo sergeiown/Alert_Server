@@ -44,20 +44,36 @@ function stripDistrictSuffix(district) {
     return district.replace(/\s*район(?:у|і)?$/i, '').trim();
 }
 
+// The description is open-ended free text from the source in general (no full translation source
+// for it exists), but the couple of phrases actually observed in Kyiv's own per-district breakdown
+// specifically are a small, bounded, known set - confirmed live, not guessed - so those get a real
+// translation. Anything not in here (any other alert's own description, or a phrasing not seen
+// yet) falls back to the untranslated Ukrainian text, same as before.
+const KNOWN_DESCRIPTION_EN = {
+    'Дронова загроза': 'Drone threat',
+    'Ракетна загроза': 'Missile threat',
+};
+const LEVEL_LABEL_EN = { red: 'red level', yellow: 'yellow level' };
+
+// The level word inside the description's own trailing "(жовтий рівень)"/"(червоний рівень)" is
+// rebuilt from the threat's own structured `level` field rather than translated as text - it's
+// already known precisely, no need to also recognize it inside free text.
+function translateDescription(description, level) {
+    const match = description.match(/^(.*?)\s*\(([^)]*)\)\s*$/u);
+    const base = match ? match[1].trim() : description;
+    const translatedBase = KNOWN_DESCRIPTION_EN[base] || base;
+    const levelLabel = LEVEL_LABEL_EN[level];
+    return levelLabel ? `${translatedBase} (${levelLabel})` : translatedBase;
+}
+
 // threats[] can carry more than one concurrent distinct threat (e.g. an ongoing drone alert that a
 // missile threat later joins), each with its own human-readable source_message already in the
-// source's own language - shown as-is rather than re-translated (same treatment alert.notes
-// already gets elsewhere, and there's no translation source for open-ended free text like this
-// anyway). Grouped by description, one per line, with the specific districts named alongside it
-// when the source broke them out (a wide-area alert covering many districts would otherwise repeat
-// the same description once per district, unreadable as one run-together string). Each line keeps
-// its OWN level (a yellow drone line and a red missile line reported together for the same alert
-// are two different lines, not one line at the alert's overall worst level) so a UI that can color
-// per line - unlike a single flat string - shows each threat as its own color.
-// The district names/word ARE translated in English mode though (unlike the free-text description
-// itself) - a small, fully known vocabulary (this is the same "район"/"District" swap the live
-// map's own Kyiv district popups already do), transliterated the same way place names elsewhere in
-// English mode are (see transliterate.js).
+// source's own language. Grouped by description, one per line, with the specific districts named
+// alongside it when the source broke them out (a wide-area alert covering many districts would
+// otherwise repeat the same description once per district, unreadable as one run-together string).
+// Each line keeps its OWN level (a yellow drone line and a red missile line reported together for
+// the same alert are two different lines, not one line at the alert's overall worst level) so a UI
+// that can color per line - unlike a single flat string - shows each threat as its own color.
 function getThreatLines(threats, language) {
     if (!threats || !threats.length) return [];
     const isEnglish = language === 'English';
@@ -74,10 +90,11 @@ function getThreatLines(threats, language) {
 
     return [...districtsByDescription.entries()].map(([description, districts]) => {
         const level = levelByDescription.get(description);
-        if (!districts.size) return { level, text: `${description}:` };
+        const displayDescription = isEnglish ? translateDescription(description, level) : description;
+        if (!districts.size) return { level, text: `${displayDescription}:` };
         const names = [...districts].map(stripDistrictSuffix).map((name) => (isEnglish ? transliterate(name) : name));
         const word = isEnglish ? (names.length === 1 ? 'district' : 'districts') : names.length === 1 ? 'район' : 'райони';
-        return { level, text: `${description}: ${names.join(', ')} ${word}` };
+        return { level, text: `${displayDescription}: ${names.join(', ')} ${word}` };
     });
 }
 
