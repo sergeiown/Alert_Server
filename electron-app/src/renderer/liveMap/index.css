@@ -24,7 +24,9 @@ body {
 }
 
 .leaflet-control-attribution {
-    background: #faf3e4;
+    /* Leaflet's own default attribution background is the same specificity as this - !important
+       needed or whichever stylesheet loads later wins the tie and this silently does nothing. */
+    background: #ede6d8 !important;
 }
 
 /* Font-size reduction stays Kyiv-only, though - normal (Ukraine) mode's attribution line is just
@@ -117,8 +119,8 @@ body {
     width: 34px !important;
     height: 34px !important;
     line-height: 34px !important;
-    background-color: #faf3e4 !important;
-    border: 1px solid #d9c8a3 !important;
+    background-color: #ede6d8 !important;
+    border: 1px solid #c9bea8 !important;
     border-radius: 4px !important;
     /* Same shadow as .threat-legend, not Leaflet's own slightly different default, so every
        floating box on the map (buttons, legend, status bar) reads as one consistent style. */
@@ -133,7 +135,7 @@ body {
 .leaflet-bar a:hover,
 .leaflet-control-fullscreen:hover,
 .leaflet-control-layers-toggle:hover {
-    background-color: #f2e4c4 !important;
+    background-color: #e2d8c2 !important;
 }
 
 /* The toggle's white background used to come from its outer wrapper (".leaflet-control-layers"),
@@ -141,7 +143,7 @@ body {
    needs its own, or it's left showing whatever's behind it instead of white like every other
    button. */
 .leaflet-control-layers-toggle {
-    background-color: #faf3e4 !important;
+    background-color: #ede6d8 !important;
 }
 
 /* The center button's own outer wrapper div (bare ".leaflet-bar.leaflet-control", auto-created by
@@ -367,7 +369,7 @@ body {
     top: 10px;
     right: 10px;
     z-index: 1000;
-    background: #faf3e4;
+    background: #ede6d8;
     border-radius: 8px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
     padding: 8px 18px;
@@ -401,7 +403,7 @@ body {
 
 .threat-legend,
 .leaflet-control-layers-expanded {
-    background: #faf3e4;
+    background: #ede6d8;
     border-radius: 8px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
     padding: 10px 14px;
