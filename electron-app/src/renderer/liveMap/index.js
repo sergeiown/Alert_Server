@@ -147,21 +147,15 @@ async function main() {
     // A real street/building-level tile layer, shown ONLY in Kyiv mode - the app's own base map is
     // one flat-color abstract SVG of the whole country, fine at a national view but not something
     // that gets more detailed no matter how far in this zooms, so it reads as a blown-up blur at
-    // Kyiv's own scale. CARTO's own basemaps (built on OpenStreetMap data, clean and uncluttered
-    // rather than default OSM's busy, ad-hoc-colored styling) - Voyager in light mode, Dark Matter
-    // in dark, matching the same light/dark-aware treatment the rest of this app already gets. Not
-    // added to the map until Kyiv mode actually turns on.
-    const kyivTileLayer = L.tileLayer(
-        isDarkMap
-            ? 'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-            : 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-        {
-            attribution:
-                '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            maxZoom: 20,
-            detectRetina: true,
-        }
-    );
+    // Kyiv's own scale. Plain OpenStreetMap tiles - genuinely free and keyless (CARTO's own basemap
+    // tiles, tried first, turned out to require a paid API key now and rendered a giant "API KEY
+    // REQUIRED" watermark instead - confirmed live, not assumed). No dark-mode variant exists
+    // without registering for a key with any provider, so this stays the same in both themes - a
+    // worthwhile trade for not requiring one. Not added to the map until Kyiv mode actually turns on.
+    const kyivTileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+    });
 
     // Kept so leaving Kyiv mode restores each to whatever state it was actually in before entering
     // it (a layer the user had already turned off via the layers control shouldn't reappear).
