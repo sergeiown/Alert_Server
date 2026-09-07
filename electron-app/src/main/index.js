@@ -19,7 +19,7 @@ const { filterAlerts, discoverUnknownLocations } = require('./services/locationF
 const { loadLocalConfig } = require('./services/localConfig');
 const { processAlerts, getActiveCount } = require('./services/notifier');
 const { setLatestMatchedAlerts, setLatestTotalAlertCount, setLatestAlertedRegions } = require('./services/alertState');
-const { computeAlertedRegions } = require('./services/regionAlertStatus');
+const { computeAlertedRegions, computeKyivRaionStatuses } = require('./services/regionAlertStatus');
 const { createTray, updateTrayState } = require('./services/tray');
 const { startForecastWatcher } = require('./services/forecastWatcher');
 const { startOccupiedTerritoryRefresh } = require('./services/occupiedTerritoryStore');
@@ -72,7 +72,10 @@ app.whenReady().then(() => {
         logEvent(`Poll (${sourceLabel}): ${alertData.alerts.length} active alerts, ${matched.length} in monitored regions`, 'NETWORK');
         setLatestMatchedAlerts(matched);
         setLatestTotalAlertCount(alertData.alerts.length);
-        setLatestAlertedRegions(computeAlertedRegions(alertData.alerts));
+        setLatestAlertedRegions({
+            ...computeAlertedRegions(alertData.alerts),
+            kyivRaions: computeKyivRaionStatuses(alertData.alerts),
+        });
         processAlerts(matched, alertData.alerts);
         updateTrayState(getActiveCount(), alertData.alerts.length);
 

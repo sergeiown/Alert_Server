@@ -31,8 +31,15 @@ function registerLiveMapIpc() {
 
     ipcMain.handle('liveMap:getAlertedRegions', () => {
         const { language } = settingsStore.getSettings();
-        const { oblasts, raions } = getLatestAlertedRegions();
-        return { oblasts: withAlertTypeName(oblasts, language), raions: withAlertTypeName(raions, language) };
+        const { oblasts, raions, kyivRaions } = getLatestAlertedRegions();
+        return {
+            oblasts: withAlertTypeName(oblasts, language),
+            raions: withAlertTypeName(raions, language),
+            // No alertType here - Kyiv's own district breakdown only ever carries a level, parsed
+            // from free text rather than a real per-district alert record (see
+            // regionAlertStatus.js's computeKyivRaionStatuses).
+            kyivRaions: kyivRaions || [],
+        };
     });
 
     ipcMain.handle('liveMap:getOccupiedTerritory', () => getLatestOccupiedTerritory());
