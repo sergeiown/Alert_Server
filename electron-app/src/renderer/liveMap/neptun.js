@@ -194,7 +194,7 @@ const DEFAULT_ICON_SIZE_PX = 22;
 // entry per type, only the fill color differs) - the legend keeps the normalized default size,
 // since it's meant to show every type at one consistent scale for comparison, not the map's own
 // per-type sizing.
-const MAP_ICON_SIZE_OVERRIDES = { uav: 18, fpv: 18 };
+const MAP_ICON_SIZE_OVERRIDES = { uav: 18, fpv: 18, missile: 26 };
 
 function iconHtml(typeKey, rotationDeg, lifecycle, sizePx = DEFAULT_ICON_SIZE_PX) {
     const { color, svg, align } = TYPE_ICONS[typeKey];
