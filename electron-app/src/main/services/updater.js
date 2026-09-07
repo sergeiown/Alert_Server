@@ -32,8 +32,13 @@ autoUpdater.on('update-available', (info) => {
 
     if (info.version === lastDeclinedVersion) return;
 
+    // Anchored to an always-on-top window (created hidden here) so the confirmation itself can't
+    // end up buried behind the live map or any other window the way an unparented dialog can -
+    // shown for real right away if the user confirms, closed again if they decline.
+    const anchor = openUpdateProgressWindow({ visible: false });
+
     dialog
-        .showMessageBox({
+        .showMessageBox(anchor, {
             type: 'question',
             buttons: ['Так', 'Ні'],
             defaultId: 0,
@@ -43,11 +48,12 @@ autoUpdater.on('update-available', (info) => {
         .then((result) => {
             if (result.response === 0) {
                 logEvent(`Update ${info.version} confirmed, downloading`, 'INFO');
-                openUpdateProgressWindow();
+                anchor.show();
                 autoUpdater.downloadUpdate();
             } else {
                 logEvent(`Update ${info.version} declined by user`, 'INFO');
                 lastDeclinedVersion = info.version;
+                closeUpdateProgressWindow();
             }
         });
 });
