@@ -90,6 +90,20 @@ function backfillFirstSeen() {
     return changed;
 }
 
+function correctFirstSeenToStartedAt() {
+    let changed = false;
+    Object.values(store).forEach((region) => {
+        Object.values(region).forEach((alert) => {
+            const startedAtMs = new Date(alert.started_at).getTime();
+            if (Number.isFinite(startedAtMs) && alert._localFirstSeenAt > startedAtMs) {
+                alert._localFirstSeenAt = startedAtMs;
+                changed = true;
+            }
+        });
+    });
+    return changed;
+}
+
 function pruneRegion(region, now) {
     let changed = false;
     Object.keys(region).forEach((id) => {
@@ -125,9 +139,10 @@ function load() {
     }
 
     const backfilled = backfillFirstSeen();
+    const corrected = correctFirstSeenToStartedAt();
     const pruned = pruneAll();
     const deduped = dedupeCrossSourceAll();
-    if (backfilled || pruned || deduped) writeNow();
+    if (backfilled || corrected || pruned || deduped) writeNow();
 
     return store;
 }
