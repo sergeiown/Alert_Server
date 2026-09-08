@@ -352,12 +352,11 @@ async function main() {
             exitFullScreenTitle: strings.liveMapExitFullScreenTitle,
             showNotification: false,
             ...fullScreenIconOptions,
-            onFullScreenChange: () => {
+            onFullScreenChange: () =>
                 transitionRefit(() => {
                     map.invalidateSize();
                     fitAndLockMinZoom();
-                });
-            },
+                }),
         })
         .addTo(map);
 
