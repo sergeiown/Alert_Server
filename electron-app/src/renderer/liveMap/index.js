@@ -6,6 +6,7 @@ import { addRiversLayer } from './rivers.js';
 import { addLabelsLayer } from './labelsLayer.js';
 import { addRegionStatusLayer } from './regionStatus.js';
 import { addOccupiedTerritoryLayer } from './occupiedTerritory.js';
+import { ready as alertedRegionsReady } from './alertedRegionsStore.js';
 import { startStatusBar } from './statusBar.js';
 import { addScreenshotControl } from './screenshot.js';
 import { KYIV_RAION_BORDERS } from './kyivRaionBorders.js';
@@ -375,6 +376,7 @@ async function main() {
 
         riverLayer.options.minZoom = active ? Infinity : undefined;
         occupiedTerritoryLayer.options.minZoom = active ? Infinity : undefined;
+        labelsLayer.options.minZoom = active ? Infinity : undefined;
         layersControl._checkDisabledLayers();
 
         swapScene(active);
@@ -415,7 +417,7 @@ async function main() {
         })
         .addTo(map);
 
-    await waitForSceneReady(kyivModeActive);
+    await Promise.all([waitForSceneReady(kyivModeActive), alertedRegionsReady, occupiedTerritoryLayer.ready]);
     fadeIn(baseMapOverlay.getElement());
     resolveMapRevealed();
 }
