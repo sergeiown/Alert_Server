@@ -142,7 +142,7 @@ async function main() {
 
     const isDarkMap = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    const ESRI_ATTRIBUTION_HTML = '<a href="#" id="esriAttribution">Esri</a>';
+    const ESRI_ATTRIBUTION_HTML = `<a href="#" id="esriAttribution">${strings.liveMapEsriAttribution}</a>`;
     const kyivImageryLayer = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         {

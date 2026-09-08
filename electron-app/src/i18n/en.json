@@ -28,6 +28,7 @@
     "liveMapExitFullScreenTitle": "Exit fullscreen mode",
     "liveMapAlertsAttributionPrefix": "Alerts:",
     "liveMapNeptunAttribution": "Threat data: Neptun",
+    "liveMapEsriAttribution": "Satellite imagery: Esri",
     "liveMapDeepStateAttribution": "Front line: DeepState",
     "liveMapUpdated": "Updated",
     "liveMapConfidenceHigh": "high",
