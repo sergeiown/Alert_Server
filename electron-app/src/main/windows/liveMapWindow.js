@@ -40,4 +40,17 @@ function getLiveMapWindow() {
     return liveMapWindow;
 }
 
-module.exports = { openLiveMapWindow, getLiveMapWindow };
+function openLiveMapWindowInKyivMode() {
+    const win = openLiveMapWindow();
+    const send = () => win.webContents.send('liveMap:forceKyivMode');
+
+    if (win.webContents.isLoading()) {
+        win.webContents.once('did-finish-load', send);
+    } else {
+        send();
+    }
+
+    return win;
+}
+
+module.exports = { openLiveMapWindow, getLiveMapWindow, openLiveMapWindowInKyivMode };
