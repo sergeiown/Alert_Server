@@ -56,7 +56,7 @@ body {
 }
 
 .kyiv-fade-layer {
-    transition: opacity 0.3s ease;
+    transition: opacity 0.45s ease;
 }
 
 .map-transitioning .alert-status-shape {
