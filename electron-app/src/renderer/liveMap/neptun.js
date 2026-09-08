@@ -275,7 +275,7 @@ function buildLegend(strings) {
     return legend;
 }
 
-function startNeptunLayer(map, strings, language, onCountChange) {
+function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     if (!map.getPane(THREATS_PANE)) {
         map.createPane(THREATS_PANE).style.zIndex = THREATS_PANE_Z;
     }
@@ -366,10 +366,14 @@ function startNeptunLayer(map, strings, language, onCountChange) {
         valid.forEach((threat, i) => {
             const displayLatLng = map.containerPointToLatLng([spread[i].x, spread[i].y]);
             const existing = activeMarkers.get(threat.id);
+            const iconSig = `${resolveTypeKey(threat)}|${threat.heading ?? ''}|${threat.lifecycle}`;
 
             if (existing) {
                 existing.setLatLng(displayLatLng);
-                existing.setIcon(threatIcon(threat));
+                if (existing._iconSig !== iconSig) {
+                    existing.setIcon(threatIcon(threat));
+                    existing._iconSig = iconSig;
+                }
                 existing.setTooltipContent(tooltipContent(threat, strings, isEnglish));
                 return;
             }
@@ -378,6 +382,7 @@ function startNeptunLayer(map, strings, language, onCountChange) {
                 .bindTooltip(tooltipContent(threat, strings, isEnglish))
                 .on('mouseover', () => map.closePopup())
                 .addTo(layer);
+            marker._iconSig = iconSig;
             activeMarkers.set(threat.id, marker);
             fadeInMarker(marker);
         });
@@ -443,9 +448,14 @@ function startNeptunLayer(map, strings, language, onCountChange) {
         });
     }
 
-    fetchSnapshot();
-    connect();
-    setInterval(fetchSnapshot, SNAPSHOT_REFRESH_MS);
+    function begin() {
+        fetchSnapshot();
+        connect();
+        setInterval(fetchSnapshot, SNAPSHOT_REFRESH_MS);
+    }
+
+    if (readyPromise) readyPromise.then(begin);
+    else begin();
 
     return layer;
 }

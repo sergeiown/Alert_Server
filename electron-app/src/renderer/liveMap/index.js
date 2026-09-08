@@ -113,6 +113,11 @@ async function main() {
         renderer: L.svg({ padding: 1 }),
     });
 
+    let resolveMapRevealed;
+    const mapRevealedPromise = new Promise((resolve) => {
+        resolveMapRevealed = resolve;
+    });
+
     let kyivModeActive = false;
 
     function fitAndLockMinZoom() {
@@ -387,7 +392,7 @@ async function main() {
 
     const regionStatusLayer = addRegionStatusLayer(map, strings, settings.language);
     const occupiedTerritoryLayer = addOccupiedTerritoryLayer(map);
-    const threatsLayer = startNeptunLayer(map, strings, settings.language, statusBar.setThreatCount);
+    const threatsLayer = startNeptunLayer(map, strings, settings.language, statusBar.setThreatCount, mapRevealedPromise);
     const riverLayer = addRiversLayer(map);
     const labelsLayer = addLabelsLayer(map, strings, settings.language);
 
@@ -403,6 +408,8 @@ async function main() {
 
     await waitForSceneReady(kyivModeActive);
     fadeIn(baseMapOverlay.getElement());
+    await sleep(KYIV_SCENE_FADE_MS);
+    resolveMapRevealed();
 }
 
 main();
