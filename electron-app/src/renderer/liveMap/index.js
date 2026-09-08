@@ -383,6 +383,10 @@ async function main() {
         onToggle: () => applyKyivMode(!kyivModeActive),
     }).addTo(map);
 
+    window.alertServerLiveMap.onForceKyivMode(() => {
+        if (!kyivModeActive) applyKyivMode(true);
+    });
+
     new ResizeObserver(() => {
         map.invalidateSize();
         fitAndLockMinZoom();

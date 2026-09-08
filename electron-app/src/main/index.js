@@ -17,7 +17,7 @@ const { logEvent } = require('./services/logger');
 const { startAlertSourceManager } = require('./services/alertSourceManager');
 const { filterAlerts, discoverUnknownLocations } = require('./services/locationFilter');
 const { loadLocalConfig } = require('./services/localConfig');
-const { processAlerts, getActiveCount } = require('./services/notifier');
+const { processAlerts, processKyivDistricts, getActiveCount } = require('./services/notifier');
 const { setLatestMatchedAlerts, setLatestTotalAlertCount, setLatestAlertedRegions } = require('./services/alertState');
 const { computeAlertedRegions, computeKyivRaionStatuses } = require('./services/regionAlertStatus');
 const { createTray, updateTrayState } = require('./services/tray');
@@ -72,11 +72,10 @@ app.whenReady().then(() => {
         logEvent(`Poll (${sourceLabel}): ${alertData.alerts.length} active alerts, ${matched.length} in monitored regions`, 'NETWORK');
         setLatestMatchedAlerts(matched);
         setLatestTotalAlertCount(alertData.alerts.length);
-        setLatestAlertedRegions({
-            ...computeAlertedRegions(alertData.alerts),
-            kyivRaions: computeKyivRaionStatuses(alertData.alerts),
-        });
+        const kyivRaions = computeKyivRaionStatuses(alertData.alerts);
+        setLatestAlertedRegions({ ...computeAlertedRegions(alertData.alerts), kyivRaions });
         processAlerts(matched, alertData.alerts);
+        processKyivDistricts(kyivRaions);
         updateTrayState(getActiveCount(), alertData.alerts.length);
 
         if (!forecastWatcherStarted) {

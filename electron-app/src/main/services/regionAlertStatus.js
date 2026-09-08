@@ -86,4 +86,4 @@ function computeKyivRaionStatuses(alerts) {
     });
 }
 
-module.exports = { computeAlertedRegions, computeKyivRaionStatuses };
+module.exports = { computeAlertedRegions, computeKyivRaionStatuses, KYIV_CITY_UID };
