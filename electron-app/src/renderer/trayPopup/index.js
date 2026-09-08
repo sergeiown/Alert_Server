@@ -21,7 +21,7 @@ function formatStartedAt(startedAt) {
     });
 }
 
-function resizeToFitOneAlert() {
+async function resizeToFitOneAlert() {
     const items = Array.from(list.children);
     let listHeight;
 
@@ -36,11 +36,12 @@ function resizeToFitOneAlert() {
         listHeight = 0;
     }
 
-    list.style.maxHeight = `${listHeight}px`;
-
     const bodyBorder = 2;
     const totalHeight = headerBar.offsetHeight + listHeight + forecastSection.offsetHeight + bodyBorder;
-    window.alertServerTrayPopup.setContentHeight(totalHeight);
+    const appliedHeight = await window.alertServerTrayPopup.setContentHeight(totalHeight);
+    const slack = Math.max(0, (appliedHeight || totalHeight) - totalHeight);
+
+    list.style.height = `${listHeight + slack}px`;
 }
 
 function renderForecast() {
