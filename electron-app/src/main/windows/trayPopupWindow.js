@@ -72,10 +72,11 @@ function toggleTrayPopup(trayBounds) {
 }
 
 function setContentHeight(height) {
-    if (!popupWindow) return;
+    if (!popupWindow) return height;
     const clamped = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, Math.round(height)));
     popupWindow.setSize(DEFAULT_WIDTH, clamped);
     if (lastTrayBounds) positionNearTray(lastTrayBounds);
+    return clamped;
 }
 
 module.exports = { toggleTrayPopup, setContentHeight };

@@ -9,5 +9,5 @@ contextBridge.exposeInMainWorld('alertServerTrayPopup', {
     getIcon: () => ipcRenderer.invoke('trayPopup:getIcon'),
     getStrings: () => ipcRenderer.invoke('i18n:getStrings'),
     onRefresh: (callback) => ipcRenderer.on('refresh', callback),
-    setContentHeight: (height) => ipcRenderer.send('trayPopup:setContentHeight', height),
+    setContentHeight: (height) => ipcRenderer.invoke('trayPopup:setContentHeight', height),
 });
