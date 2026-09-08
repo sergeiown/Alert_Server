@@ -41,10 +41,6 @@ function load() {
         delete settings.alertSound;
 
         settings.massAttackThreshold = Math.max(50, Math.min(100, settings.massAttackThreshold));
-
-        if (parsed.alertSourceProvider === 'alerts.in.ua') {
-            settings.alertSourceProvider = 'ukrainealarm';
-        }
     } catch (err) {
         settings = { ...defaultSettings };
         save();
