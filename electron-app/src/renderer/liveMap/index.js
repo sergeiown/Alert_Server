@@ -115,24 +115,14 @@ async function main() {
 
     let kyivModeActive = false;
 
-    function fitAndLockMinZoom(animate) {
+    function fitAndLockMinZoom() {
         map.setMinZoom(MAP_MIN_ZOOM);
         map.setMaxBounds(null);
         const bounds = kyivModeActive ? KYIV_BOUNDS : UKRAINE_BOUNDS;
 
-        function lockAfterMove() {
-            map.setMinZoom(map.getZoom());
-            if (kyivModeActive) map.setMaxBounds(L.latLngBounds(KYIV_BOUNDS).pad(0.05));
-        }
-
-        if (animate) {
-            map.once('moveend', lockAfterMove);
-
-            map.flyToBounds(bounds, { duration: 0.9, easeLinearity: 1 });
-        } else {
-            map.fitBounds(bounds);
-            lockAfterMove();
-        }
+        map.fitBounds(bounds);
+        map.setMinZoom(map.getZoom());
+        if (kyivModeActive) map.setMaxBounds(L.latLngBounds(KYIV_BOUNDS).pad(0.05));
     }
 
     map.on('popupopen', () => {
@@ -146,11 +136,20 @@ async function main() {
 
     const isDarkMap = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    const kyivTileLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
-        attribution: '&copy; Google Maps',
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        maxZoom: 20,
-    });
+    const kyivImageryLayer = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {
+            attribution: 'Esri, Vantor, Earthstar Geographics, and the GIS User Community',
+            maxZoom: 19,
+        }
+    );
+    const kyivLabelsLayer = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+        {
+            attribution: 'Esri, HERE, Garmin, OpenStreetMap contributors, and the GIS User Community',
+            maxZoom: 19,
+        }
+    );
 
     let riverLayerWasOn = true;
     let occupiedTerritoryLayerWasOn = true;
@@ -192,7 +191,8 @@ async function main() {
         if (active) {
             setOpacity(baseMapOverlay.getElement(), 0);
         } else {
-            setOpacity(kyivTileLayer.getContainer(), 0);
+            setOpacity(kyivImageryLayer.getContainer(), 0);
+            setOpacity(kyivLabelsLayer.getContainer(), 0);
             setOpacity(kyivMask.getElement(), 0);
         }
 
@@ -203,46 +203,63 @@ async function main() {
                 map.removeLayer(baseMapOverlay);
                 if (riverLayerWasOn) map.removeLayer(riverLayer);
                 if (occupiedTerritoryLayerWasOn) map.removeLayer(occupiedTerritoryLayer);
-                kyivTileLayer.addTo(map);
+                kyivImageryLayer.addTo(map);
+                kyivLabelsLayer.addTo(map);
 
                 kyivMask.addTo(map);
                 kyivMask.bringToBack();
-                fadeIn(kyivTileLayer.getContainer());
-                fadeIn(kyivMask.getElement());
             } else {
-                map.removeLayer(kyivTileLayer);
+                map.removeLayer(kyivImageryLayer);
+                map.removeLayer(kyivLabelsLayer);
                 map.removeLayer(kyivMask);
                 baseMapOverlay.addTo(map);
                 if (riverLayerWasOn) riverLayer.addTo(map);
                 if (occupiedTerritoryLayerWasOn) occupiedTerritoryLayer.addTo(map);
-                fadeIn(baseMapOverlay.getElement());
             }
+
+            regionStatusLayer.setKyivMode(active);
+            labelsLayer.setKyivMode(active);
+            fitAndLockMinZoom();
+
+            requestAnimationFrame(() => {
+                if (active) {
+                    fadeIn(kyivImageryLayer.getContainer());
+                    fadeIn(kyivLabelsLayer.getContainer());
+                    fadeIn(kyivMask.getElement());
+                } else {
+                    fadeIn(baseMapOverlay.getElement());
+                }
+            });
         }, KYIV_SCENE_FADE_MS);
     }
 
     fitAndLockMinZoom();
     map.attributionControl.setPrefix(false);
+
+    function bindAttributionLink(id, url) {
+        document.getElementById(id)?.addEventListener('click', (event) => {
+            event.preventDefault();
+            window.alertServerLiveMap.openExternal(url);
+        });
+    }
+
     map.attributionControl.addAttribution(`<a href="#" id="appAttribution">${strings.appName}</a>`);
     map.attributionControl.addAttribution(
         `<a href="#" id="alertsAttribution">${strings.liveMapAlertsAttributionPrefix} ${alertSourceDisplay.name}</a>`
     );
     map.attributionControl.addAttribution(`<a href="#" id="neptunAttribution">${strings.liveMapNeptunAttribution}</a>`);
-    map.attributionControl.addAttribution(`<a href="#" id="deepStateAttribution">${strings.liveMapDeepStateAttribution}</a>`);
 
-    const attributionLinks = [
+    const deepStateAttributionHtml = `<a href="#" id="deepStateAttribution">${strings.liveMapDeepStateAttribution}</a>`;
+    map.attributionControl.addAttribution(deepStateAttributionHtml);
+
+    [
         ['appAttribution', 'https://github.com/sergeiown/Alert_Server'],
         ['alertsAttribution', alertSourceDisplay.url],
         ['neptunAttribution', 'https://neptun.in.ua'],
         ['deepStateAttribution', 'https://deepstatemap.live/'],
-    ];
-    attributionLinks.forEach(([id, url]) => {
-        document.getElementById(id).addEventListener('click', (event) => {
-            event.preventDefault();
-            window.alertServerLiveMap.openExternal(url);
-        });
-    });
+    ].forEach(([id, url]) => bindAttributionLink(id, url));
 
-    new CenterControl({ title: strings.liveMapCenterButtonTitle, onClick: () => fitAndLockMinZoom(true) }).addTo(map);
+    new CenterControl({ title: strings.liveMapCenterButtonTitle, onClick: fitAndLockMinZoom }).addTo(map);
 
     addScreenshotControl(map, strings);
 
@@ -280,13 +297,12 @@ async function main() {
         if (active) {
             riverLayerWasOn = map.hasLayer(riverLayer);
             occupiedTerritoryLayerWasOn = map.hasLayer(occupiedTerritoryLayer);
+            map.attributionControl.removeAttribution(deepStateAttributionHtml);
+        } else {
+            map.attributionControl.addAttribution(deepStateAttributionHtml);
+            bindAttributionLink('deepStateAttribution', 'https://deepstatemap.live/');
         }
         swapScene(active);
-
-        regionStatusLayer.setKyivMode(active);
-        labelsLayer.setKyivMode(active);
-
-        fitAndLockMinZoom(true);
     }
 
     const kyivToggle = new KyivToggleControl({
