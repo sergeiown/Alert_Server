@@ -59,7 +59,25 @@ body {
     transition: opacity 0.45s ease;
 }
 
-.map-transitioning .alert-status-shape {
+.alert-status-shape,
+.region-label,
+.raion-label,
+.city-label,
+.city-dot,
+.river-line,
+.river-area,
+.threat-icon-wrapper {
+    transition: opacity 0.45s ease;
+}
+
+.map-transitioning .alert-status-shape,
+.map-transitioning .region-label,
+.map-transitioning .raion-label,
+.map-transitioning .city-label,
+.map-transitioning .city-dot,
+.map-transitioning .river-line,
+.map-transitioning .river-area,
+.map-transitioning .threat-icon-wrapper {
     opacity: 0 !important;
 }
 
