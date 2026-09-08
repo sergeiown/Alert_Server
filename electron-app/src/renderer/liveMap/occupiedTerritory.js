@@ -56,7 +56,7 @@ function addOccupiedTerritoryLayer(map) {
         }).addTo(layer);
     }
 
-    refresh();
+    layer.ready = refresh();
     setInterval(refresh, REFRESH_MS);
 
     return layer.addTo(map);

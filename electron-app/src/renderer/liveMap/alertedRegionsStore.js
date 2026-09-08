@@ -73,7 +73,7 @@ function getKyivRaionThreats(name) {
     return match && Array.isArray(match.threats) ? match.threats : [];
 }
 
-refresh();
+const ready = refresh();
 setInterval(refresh, REFRESH_MS);
 
 export {
@@ -90,4 +90,5 @@ export {
     getKyivRaionHasBothLevels,
     getKyivRaionThreats,
     REFRESH_MS,
+    ready,
 };
