@@ -114,6 +114,8 @@ async function main() {
         renderer: L.svg({ padding: 1 }),
     });
 
+    map.getContainer().classList.add('map-transitioning');
+
     let resolveMapRevealed;
     const mapRevealedPromise = new Promise((resolve) => {
         resolveMapRevealed = resolve;
@@ -417,8 +419,14 @@ async function main() {
         })
         .addTo(map);
 
+    const initialRevealToken = sceneToken;
     await Promise.all([waitForSceneReady(kyivModeActive), alertedRegionsReady, occupiedTerritoryLayer.ready]);
-    fadeIn(baseMapOverlay.getElement());
+    await sleep(50);
+
+    if (sceneToken === initialRevealToken) {
+        map.getContainer().classList.remove('map-transitioning');
+        fadeIn(baseMapOverlay.getElement());
+    }
     resolveMapRevealed();
 }
 
