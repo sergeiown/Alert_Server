@@ -284,6 +284,8 @@ function startNeptunLayer(map, strings, language, onCountChange) {
     }
 
     const layer = L.layerGroup().addTo(map);
+    const circlesGroup = L.layerGroup().addTo(layer);
+    const activeMarkers = new Map();
     const isEnglish = language === 'English';
     let reconnectTimer = null;
     let heartbeatTimer = null;
@@ -299,8 +301,30 @@ function startNeptunLayer(map, strings, language, onCountChange) {
         e.tooltip.update();
     });
 
+    const MARKER_FADE_MS = 600;
+
+    function fadeInMarker(marker) {
+        marker.setOpacity(0);
+        const el = marker.getElement();
+        if (el) {
+            el.style.transition = `opacity ${MARKER_FADE_MS}ms ease`;
+            void el.offsetWidth;
+        }
+        marker.setOpacity(1);
+    }
+
+    function fadeOutAndRemove(marker) {
+        const el = marker.getElement();
+        if (!el) {
+            layer.removeLayer(marker);
+            return;
+        }
+        el.style.transition = `opacity ${MARKER_FADE_MS}ms ease`;
+        marker.setOpacity(0);
+        setTimeout(() => layer.removeLayer(marker), MARKER_FADE_MS);
+    }
+
     function renderThreats(threats) {
-        layer.clearLayers();
         if (!Array.isArray(threats)) return;
         lastThreats = threats;
 
@@ -312,6 +336,7 @@ function startNeptunLayer(map, strings, language, onCountChange) {
         });
         if (typeof onCountChange === 'function') onCountChange(valid.length);
 
+        circlesGroup.clearLayers();
         valid
             .filter((t) => t.positionQuality === 'approx' && typeof t.uncertaintyKm === 'number')
             .forEach((threat) => {
@@ -324,18 +349,37 @@ function startNeptunLayer(map, strings, language, onCountChange) {
                     dashArray: '4 5',
                     fill: false,
                     interactive: false,
-                }).addTo(layer);
+                }).addTo(circlesGroup);
             });
+
+        const currentIds = new Set(valid.map((t) => t.id));
+        activeMarkers.forEach((marker, id) => {
+            if (!currentIds.has(id)) {
+                fadeOutAndRemove(marker);
+                activeMarkers.delete(id);
+            }
+        });
 
         const points = valid.map((t) => map.latLngToContainerPoint([t.lat, t.lon]));
         const spread = declutterPoints(points);
 
         valid.forEach((threat, i) => {
             const displayLatLng = map.containerPointToLatLng([spread[i].x, spread[i].y]);
-            L.marker(displayLatLng, { icon: threatIcon(threat), pane: THREATS_PANE })
+            const existing = activeMarkers.get(threat.id);
+
+            if (existing) {
+                existing.setLatLng(displayLatLng);
+                existing.setIcon(threatIcon(threat));
+                existing.setTooltipContent(tooltipContent(threat, strings, isEnglish));
+                return;
+            }
+
+            const marker = L.marker(displayLatLng, { icon: threatIcon(threat), pane: THREATS_PANE })
                 .bindTooltip(tooltipContent(threat, strings, isEnglish))
                 .on('mouseover', () => map.closePopup())
                 .addTo(layer);
+            activeMarkers.set(threat.id, marker);
+            fadeInMarker(marker);
         });
     }
 
