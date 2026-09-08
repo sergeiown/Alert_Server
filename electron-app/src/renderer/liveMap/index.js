@@ -412,7 +412,6 @@ async function main() {
 
     await waitForSceneReady(kyivModeActive);
     fadeIn(baseMapOverlay.getElement());
-    await sleep(KYIV_SCENE_FADE_MS);
     resolveMapRevealed();
 }
 

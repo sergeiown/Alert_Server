@@ -286,6 +286,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const layer = L.layerGroup().addTo(map);
     const circlesGroup = L.layerGroup().addTo(layer);
     const activeMarkers = new Map();
+    const activeCircles = new Map();
     const isEnglish = language === 'English';
     let reconnectTimer = null;
     let heartbeatTimer = null;
@@ -303,14 +304,20 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
 
     const MARKER_FADE_MS = 600;
 
+    function revealWhenReady(reveal) {
+        if (readyPromise) readyPromise.then(reveal);
+        else reveal();
+    }
+
     function fadeInMarker(marker) {
         marker.setOpacity(0);
         const el = marker.getElement();
-        if (el) {
-            el.style.transition = `opacity ${MARKER_FADE_MS}ms ease`;
-            void el.offsetWidth;
-        }
-        marker.setOpacity(1);
+        if (el) el.style.transition = `opacity ${MARKER_FADE_MS}ms ease`;
+
+        revealWhenReady(() => {
+            if (el) void el.offsetWidth;
+            marker.setOpacity(1);
+        });
     }
 
     function fadeOutAndRemove(marker) {
@@ -322,6 +329,32 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         el.style.transition = `opacity ${MARKER_FADE_MS}ms ease`;
         marker.setOpacity(0);
         setTimeout(() => layer.removeLayer(marker), MARKER_FADE_MS);
+    }
+
+    function fadeInCircle(circle) {
+        const el = circle.getElement();
+        if (el) {
+            el.style.transition = `opacity ${MARKER_FADE_MS}ms ease`;
+            el.style.opacity = '0';
+        }
+
+        revealWhenReady(() => {
+            if (el) {
+                void el.offsetWidth;
+                el.style.opacity = '1';
+            }
+        });
+    }
+
+    function fadeOutAndRemoveCircle(circle) {
+        const el = circle.getElement();
+        if (!el) {
+            circlesGroup.removeLayer(circle);
+            return;
+        }
+        el.style.transition = `opacity ${MARKER_FADE_MS}ms ease`;
+        el.style.opacity = '0';
+        setTimeout(() => circlesGroup.removeLayer(circle), MARKER_FADE_MS);
     }
 
     function renderThreats(threats) {
@@ -336,21 +369,38 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         });
         if (typeof onCountChange === 'function') onCountChange(valid.length);
 
-        circlesGroup.clearLayers();
-        valid
-            .filter((t) => t.positionQuality === 'approx' && typeof t.uncertaintyKm === 'number')
-            .forEach((threat) => {
-                L.circle([threat.lat, threat.lon], {
-                    pane: UNCERTAINTY_PANE,
-                    radius: threat.uncertaintyKm * 1000,
-                    color: UNCERTAINTY_CIRCLE_COLOR,
-                    weight: 1,
-                    opacity: 0.45,
-                    dashArray: '4 5',
-                    fill: false,
-                    interactive: false,
-                }).addTo(circlesGroup);
-            });
+        const approxThreats = valid.filter((t) => t.positionQuality === 'approx' && typeof t.uncertaintyKm === 'number');
+        const currentCircleIds = new Set(approxThreats.map((t) => t.id));
+
+        activeCircles.forEach((circle, id) => {
+            if (!currentCircleIds.has(id)) {
+                fadeOutAndRemoveCircle(circle);
+                activeCircles.delete(id);
+            }
+        });
+
+        approxThreats.forEach((threat) => {
+            const existing = activeCircles.get(threat.id);
+            if (existing) {
+                existing.setLatLng([threat.lat, threat.lon]);
+                existing.setRadius(threat.uncertaintyKm * 1000);
+                return;
+            }
+
+            const circle = L.circle([threat.lat, threat.lon], {
+                pane: UNCERTAINTY_PANE,
+                radius: threat.uncertaintyKm * 1000,
+                color: UNCERTAINTY_CIRCLE_COLOR,
+                weight: 1,
+                opacity: 0.45,
+                dashArray: '4 5',
+                fill: false,
+                interactive: false,
+                className: 'threat-uncertainty-circle',
+            }).addTo(circlesGroup);
+            activeCircles.set(threat.id, circle);
+            fadeInCircle(circle);
+        });
 
         const currentIds = new Set(valid.map((t) => t.id));
         activeMarkers.forEach((marker, id) => {
@@ -454,8 +504,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         setInterval(fetchSnapshot, SNAPSHOT_REFRESH_MS);
     }
 
-    if (readyPromise) readyPromise.then(begin);
-    else begin();
+    begin();
 
     return layer;
 }
