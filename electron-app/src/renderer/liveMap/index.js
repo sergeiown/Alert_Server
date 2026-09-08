@@ -181,6 +181,9 @@ async function main() {
 
     const KYIV_SCENE_FADE_MS = 450;
     const TILE_LOAD_TIMEOUT_MS = 5000;
+    const RESIZE_SETTLE_POLL_MS = 50;
+    const RESIZE_SETTLE_STABLE_TICKS = 3;
+    const RESIZE_SETTLE_TIMEOUT_MS = 1500;
     let sceneToken = 0;
 
     function setOpacity(el, value) {
@@ -233,6 +236,30 @@ async function main() {
         });
     }
 
+    function waitForSizeSettled(container) {
+        return new Promise((resolve) => {
+            const start = Date.now();
+            let lastWidth = container.clientWidth;
+            let lastHeight = container.clientHeight;
+            let stableTicks = 0;
+
+            function check() {
+                const width = container.clientWidth;
+                const height = container.clientHeight;
+                stableTicks = width === lastWidth && height === lastHeight ? stableTicks + 1 : 0;
+                lastWidth = width;
+                lastHeight = height;
+
+                if (stableTicks >= RESIZE_SETTLE_STABLE_TICKS || Date.now() - start > RESIZE_SETTLE_TIMEOUT_MS) {
+                    resolve();
+                    return;
+                }
+                setTimeout(check, RESIZE_SETTLE_POLL_MS);
+            }
+            check();
+        });
+    }
+
     function sceneLayersFor(active) {
         return active ? [kyivImageryLayer, kyivLabelsLayer, kyivMask] : [baseMapOverlay];
     }
@@ -254,6 +281,9 @@ async function main() {
         container.classList.add('map-transitioning');
         sceneLayersFor(active).forEach((layer) => setOpacity(elementOf(layer), 0));
         await sleep(KYIV_SCENE_FADE_MS);
+        if (token !== sceneToken) return;
+
+        await waitForSizeSettled(container);
         if (token !== sceneToken) return;
 
         mutate();
