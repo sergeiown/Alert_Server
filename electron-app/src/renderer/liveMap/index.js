@@ -171,7 +171,7 @@ async function main() {
         interactive: false,
     });
 
-    const KYIV_SCENE_FADE_MS = 300;
+    const KYIV_SCENE_FADE_MS = 450;
     const TILE_LOAD_TIMEOUT_MS = 5000;
     let sceneToken = 0;
 
