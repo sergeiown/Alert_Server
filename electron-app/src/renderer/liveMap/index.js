@@ -42,7 +42,7 @@ const KYIV_BOUNDS = computeKyivBounds();
 
 const MAP_MIN_ZOOM = 5;
 const UKRAINE_MAX_ZOOM = 12;
-const KYIV_MAX_ZOOM = 19;
+const KYIV_MAX_ZOOM = 16;
 
 const ALERT_SOURCE_DISPLAY = {
     ukrainealarm: { name: 'UkraineAlarm', url: 'https://api.ukrainealarm.com' },
