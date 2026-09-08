@@ -133,6 +133,7 @@ async function main() {
     });
 
     const baseMapOverlay = L.imageOverlay(baseMapUrl, UKRAINE_BOUNDS).addTo(map);
+    setOpacity(baseMapOverlay.getElement(), 0);
 
     const isDarkMap = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
@@ -170,6 +171,7 @@ async function main() {
     });
 
     const KYIV_SCENE_FADE_MS = 300;
+    const TILE_LOAD_TIMEOUT_MS = 5000;
     let sceneToken = 0;
 
     function setOpacity(el, value) {
@@ -185,52 +187,103 @@ async function main() {
         setOpacity(el, 1);
     }
 
-    function swapScene(active) {
+    function sleep(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    function nextFrame() {
+        return new Promise((resolve) => requestAnimationFrame(resolve));
+    }
+
+    function elementOf(layer) {
+        return typeof layer.getContainer === 'function' ? layer.getContainer() : layer.getElement();
+    }
+
+    function waitForTilesLoaded(layer) {
+        if (!layer._loading) return Promise.resolve();
+        return new Promise((resolve) => layer.once('load', resolve));
+    }
+
+    function waitForImageLoaded(imgEl) {
+        if (!imgEl || imgEl.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+            imgEl.addEventListener('load', resolve, { once: true });
+            imgEl.addEventListener('error', resolve, { once: true });
+        });
+    }
+
+    function sceneLayersFor(active) {
+        return active ? [kyivImageryLayer, kyivLabelsLayer, kyivMask] : [baseMapOverlay];
+    }
+
+    async function waitForSceneReady(active) {
+        if (active) {
+            await Promise.race([
+                Promise.all([waitForTilesLoaded(kyivImageryLayer), waitForTilesLoaded(kyivLabelsLayer)]),
+                sleep(TILE_LOAD_TIMEOUT_MS),
+            ]);
+        } else {
+            await waitForImageLoaded(baseMapOverlay.getElement());
+        }
+        await nextFrame();
+        await nextFrame();
+    }
+
+    async function transitionRefit(mutate) {
         const token = ++sceneToken;
+        const active = kyivModeActive;
+        const container = map.getContainer();
+
+        container.classList.add('map-transitioning');
+        sceneLayersFor(active).forEach((layer) => setOpacity(elementOf(layer), 0));
+        await sleep(KYIV_SCENE_FADE_MS);
+        if (token !== sceneToken) return;
+
+        mutate();
+
+        await waitForSceneReady(active);
+        if (token !== sceneToken) return;
+
+        container.classList.remove('map-transitioning');
+        sceneLayersFor(active).forEach((layer) => fadeIn(elementOf(layer)));
+    }
+
+    async function swapScene(active) {
+        const token = ++sceneToken;
+        const container = map.getContainer();
+
+        container.classList.add('map-transitioning');
+        sceneLayersFor(!active).forEach((layer) => setOpacity(elementOf(layer), 0));
+        await sleep(KYIV_SCENE_FADE_MS);
+        if (token !== sceneToken) return;
 
         if (active) {
-            setOpacity(baseMapOverlay.getElement(), 0);
+            map.removeLayer(baseMapOverlay);
+            if (riverLayerWasOn) map.removeLayer(riverLayer);
+            if (occupiedTerritoryLayerWasOn) map.removeLayer(occupiedTerritoryLayer);
+            kyivImageryLayer.addTo(map);
+            kyivLabelsLayer.addTo(map);
+
+            kyivMask.addTo(map);
+            kyivMask.bringToBack();
         } else {
-            setOpacity(kyivImageryLayer.getContainer(), 0);
-            setOpacity(kyivLabelsLayer.getContainer(), 0);
-            setOpacity(kyivMask.getElement(), 0);
+            map.removeLayer(kyivImageryLayer);
+            map.removeLayer(kyivLabelsLayer);
+            map.removeLayer(kyivMask);
+            baseMapOverlay.addTo(map);
+            if (riverLayerWasOn) riverLayer.addTo(map);
+            if (occupiedTerritoryLayerWasOn) occupiedTerritoryLayer.addTo(map);
         }
 
-        setTimeout(() => {
-            if (token !== sceneToken) return;
+        regionStatusLayer.setKyivMode(active);
+        labelsLayer.setKyivMode(active);
+        fitAndLockMinZoom();
 
-            if (active) {
-                map.removeLayer(baseMapOverlay);
-                if (riverLayerWasOn) map.removeLayer(riverLayer);
-                if (occupiedTerritoryLayerWasOn) map.removeLayer(occupiedTerritoryLayer);
-                kyivImageryLayer.addTo(map);
-                kyivLabelsLayer.addTo(map);
+        await waitForSceneReady(active);
+        if (token !== sceneToken) return;
 
-                kyivMask.addTo(map);
-                kyivMask.bringToBack();
-            } else {
-                map.removeLayer(kyivImageryLayer);
-                map.removeLayer(kyivLabelsLayer);
-                map.removeLayer(kyivMask);
-                baseMapOverlay.addTo(map);
-                if (riverLayerWasOn) riverLayer.addTo(map);
-                if (occupiedTerritoryLayerWasOn) occupiedTerritoryLayer.addTo(map);
-            }
-
-            regionStatusLayer.setKyivMode(active);
-            labelsLayer.setKyivMode(active);
-            fitAndLockMinZoom();
-
-            requestAnimationFrame(() => {
-                if (active) {
-                    fadeIn(kyivImageryLayer.getContainer());
-                    fadeIn(kyivLabelsLayer.getContainer());
-                    fadeIn(kyivMask.getElement());
-                } else {
-                    fadeIn(baseMapOverlay.getElement());
-                }
-            });
-        }, KYIV_SCENE_FADE_MS);
+        container.classList.remove('map-transitioning');
+        sceneLayersFor(active).forEach((layer) => fadeIn(elementOf(layer)));
     }
 
     fitAndLockMinZoom();
@@ -282,8 +335,10 @@ async function main() {
             showNotification: false,
             ...fullScreenIconOptions,
             onFullScreenChange: () => {
-                map.invalidateSize();
-                fitAndLockMinZoom();
+                transitionRefit(() => {
+                    map.invalidateSize();
+                    fitAndLockMinZoom();
+                });
             },
         })
         .addTo(map);
@@ -335,6 +390,9 @@ async function main() {
             [strings.liveMapLayerLabels]: labelsLayer,
         })
         .addTo(map);
+
+    await waitForSceneReady(kyivModeActive);
+    fadeIn(baseMapOverlay.getElement());
 }
 
 main();

@@ -59,6 +59,10 @@ body {
     transition: opacity 0.3s ease;
 }
 
+.map-transitioning .alert-status-shape {
+    opacity: 0 !important;
+}
+
 .leaflet-tooltip {
     white-space: normal !important;
     overflow-wrap: break-word;
