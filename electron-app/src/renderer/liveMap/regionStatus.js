@@ -151,13 +151,34 @@ const RegionStatusLayer = L.LayerGroup.extend({
     },
 
     _drawKyivRaions: function (isEnglish, now) {
+        const cityStartedAt = getOblastStartedAt('Київ');
+        const cityAlertTypeName = getOblastAlertTypeName('Київ');
+        const cityAlertLevel = getOblastAlertLevel('Київ');
+        const cityDisplayName = oblastDisplayName('Київ', isEnglish);
+
         Object.entries(KYIV_RAION_BORDERS).forEach(([name, ring]) => {
             const ownStartedAt = getKyivRaionStartedAt(name);
+            const displayName = isEnglish ? `${name} District` : `${name} район`;
+
+            if (!ownStartedAt) {
+                this._drawRegion(
+                    [ring],
+                    displayName,
+                    cityStartedAt,
+                    now,
+                    cityStartedAt,
+                    cityAlertTypeName,
+                    cityStartedAt ? cityDisplayName : null,
+                    cityAlertLevel,
+                    false,
+                    true
+                );
+                return;
+            }
+
             const ownAlertLevel = getKyivRaionAlertLevel(name);
             const hasBothLevels = getKyivRaionHasBothLevels(name);
             const threats = getKyivRaionThreats(name);
-            const displayName = isEnglish ? `${name} District` : `${name} район`;
-
             this._drawRegion(
                 [ring],
                 displayName,
