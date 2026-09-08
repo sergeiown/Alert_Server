@@ -217,24 +217,20 @@ async function main() {
         return typeof layer.getContainer === 'function' ? layer.getContainer() : layer.getElement();
     }
 
-    function allTilesLoaded(layer) {
-        const container = layer.getContainer();
-        if (!container) return true;
-        const tiles = container.querySelectorAll('.leaflet-tile');
-        return [...tiles].every((tile) => tile.classList.contains('leaflet-tile-loaded'));
-    }
-
     function waitForTilesLoaded(layer) {
+        if (typeof layer.isLoading !== 'function' || !layer.isLoading()) return Promise.resolve();
+
         return new Promise((resolve) => {
-            const start = Date.now();
-            function check() {
-                if (allTilesLoaded(layer) || Date.now() - start > TILE_LOAD_TIMEOUT_MS) {
-                    resolve();
-                    return;
-                }
-                setTimeout(check, 50);
+            const timeoutId = setTimeout(() => {
+                layer.off('load', onLoad);
+                resolve();
+            }, TILE_LOAD_TIMEOUT_MS);
+
+            function onLoad() {
+                clearTimeout(timeoutId);
+                resolve();
             }
-            check();
+            layer.once('load', onLoad);
         });
     }
 
