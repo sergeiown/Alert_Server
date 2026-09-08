@@ -137,17 +137,18 @@ async function main() {
 
     const isDarkMap = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
+    const ESRI_ATTRIBUTION_HTML = '<a href="#" id="esriAttribution">Esri</a>';
     const kyivImageryLayer = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         {
-            attribution: 'Esri, Vantor, Earthstar Geographics, and the GIS User Community',
+            attribution: ESRI_ATTRIBUTION_HTML,
             maxZoom: 19,
         }
     );
     const kyivLabelsLayer = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
         {
-            attribution: 'Esri, HERE, Garmin, OpenStreetMap contributors, and the GIS User Community',
+            attribution: ESRI_ATTRIBUTION_HTML,
             maxZoom: 19,
         }
     );
@@ -191,17 +192,29 @@ async function main() {
         return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
-    function nextFrame() {
-        return new Promise((resolve) => requestAnimationFrame(resolve));
-    }
-
     function elementOf(layer) {
         return typeof layer.getContainer === 'function' ? layer.getContainer() : layer.getElement();
     }
 
+    function allTilesLoaded(layer) {
+        const container = layer.getContainer();
+        if (!container) return true;
+        const tiles = container.querySelectorAll('.leaflet-tile');
+        return [...tiles].every((tile) => tile.classList.contains('leaflet-tile-loaded'));
+    }
+
     function waitForTilesLoaded(layer) {
-        if (!layer._loading) return Promise.resolve();
-        return new Promise((resolve) => layer.once('load', resolve));
+        return new Promise((resolve) => {
+            const start = Date.now();
+            function check() {
+                if (allTilesLoaded(layer) || Date.now() - start > TILE_LOAD_TIMEOUT_MS) {
+                    resolve();
+                    return;
+                }
+                setTimeout(check, 50);
+            }
+            check();
+        });
     }
 
     function waitForImageLoaded(imgEl) {
@@ -218,15 +231,11 @@ async function main() {
 
     async function waitForSceneReady(active) {
         if (active) {
-            await Promise.race([
-                Promise.all([waitForTilesLoaded(kyivImageryLayer), waitForTilesLoaded(kyivLabelsLayer)]),
-                sleep(TILE_LOAD_TIMEOUT_MS),
-            ]);
+            await Promise.all([waitForTilesLoaded(kyivImageryLayer), waitForTilesLoaded(kyivLabelsLayer)]);
         } else {
             await waitForImageLoaded(baseMapOverlay.getElement());
         }
-        await nextFrame();
-        await nextFrame();
+        await sleep(50);
     }
 
     async function transitionRefit(mutate) {
@@ -263,6 +272,7 @@ async function main() {
             if (occupiedTerritoryLayerWasOn) map.removeLayer(occupiedTerritoryLayer);
             kyivImageryLayer.addTo(map);
             kyivLabelsLayer.addTo(map);
+            bindAttributionLink('esriAttribution', 'https://www.esri.com/');
 
             kyivMask.addTo(map);
             kyivMask.bringToBack();
