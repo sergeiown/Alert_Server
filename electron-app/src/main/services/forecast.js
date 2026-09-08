@@ -118,7 +118,7 @@ async function fetchUkraineAlarmHistory(uid) {
 async function fetchHistoryAlerts(uid) {
     const ukraineAlarmAlerts = await fetchUkraineAlarmHistory(uid);
     if (ukraineAlarmAlerts) {
-        historyStore.mergeAlerts(uid, ukraineAlarmAlerts, { source: 'ukrainealarm' });
+        historyStore.mergeAlerts(uid, ukraineAlarmAlerts, { source: 'ukrainealarm', backfill: true });
         return ukraineAlarmAlerts;
     }
 
@@ -130,7 +130,7 @@ async function fetchHistoryAlerts(uid) {
         target.matchUid === null
             ? oblastAlerts
             : oblastAlerts.filter((alert) => String(alert.location_uid) === String(target.matchUid));
-    historyStore.mergeAlerts(uid, matched, { source: 'alerts.in.ua' });
+    historyStore.mergeAlerts(uid, matched, { source: 'alerts.in.ua', backfill: true });
     return matched;
 }
 
