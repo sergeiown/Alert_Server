@@ -41,6 +41,8 @@ function computeKyivBounds() {
 const KYIV_BOUNDS = computeKyivBounds();
 
 const MAP_MIN_ZOOM = 5;
+const UKRAINE_MAX_ZOOM = 12;
+const KYIV_MAX_ZOOM = 19;
 
 const ALERT_SOURCE_DISPLAY = {
     ukrainealarm: { name: 'UkraineAlarm', url: 'https://api.ukrainealarm.com' },
@@ -106,7 +108,7 @@ async function main() {
         center: [48.4, 31.2],
         zoom: 6,
         minZoom: MAP_MIN_ZOOM,
-        maxZoom: 12,
+        maxZoom: UKRAINE_MAX_ZOOM,
         zoomSnap: 0.25,
         zoomDelta: 0.5,
         attributionControl: true,
@@ -125,6 +127,7 @@ async function main() {
 
     function fitAndLockMinZoom() {
         map.setMinZoom(MAP_MIN_ZOOM);
+        map.setMaxZoom(kyivModeActive ? KYIV_MAX_ZOOM : UKRAINE_MAX_ZOOM);
         map.setMaxBounds(null);
         const bounds = kyivModeActive ? KYIV_BOUNDS : UKRAINE_BOUNDS;
 
