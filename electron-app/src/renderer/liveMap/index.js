@@ -192,6 +192,16 @@ async function main() {
         el.style.opacity = String(value);
     }
 
+    function setOpacityInstant(el, value) {
+        if (!el) return;
+        const prevTransition = el.style.transition;
+        el.style.transition = 'none';
+        el.classList.add('kyiv-fade-layer');
+        el.style.opacity = String(value);
+        void el.offsetWidth;
+        el.style.transition = prevTransition;
+    }
+
     function fadeIn(el) {
         if (!el) return;
         setOpacity(el, 0);
@@ -278,9 +288,10 @@ async function main() {
         const active = kyivModeActive;
         const container = map.getContainer();
 
-        container.classList.add('map-transitioning');
-        sceneLayersFor(active).forEach((layer) => setOpacity(elementOf(layer), 0));
-        await sleep(KYIV_SCENE_FADE_MS);
+        container.classList.add('map-transitioning', 'map-transitioning-instant');
+        sceneLayersFor(active).forEach((layer) => setOpacityInstant(elementOf(layer), 0));
+        void container.offsetWidth;
+        container.classList.remove('map-transitioning-instant');
         if (token !== sceneToken) return;
 
         await waitForSizeSettled(container);

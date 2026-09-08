@@ -88,6 +88,19 @@ body {
     opacity: 0 !important;
 }
 
+.map-transitioning-instant .alert-status-shape,
+.map-transitioning-instant .occupied-territory-shape,
+.map-transitioning-instant .region-label,
+.map-transitioning-instant .raion-label,
+.map-transitioning-instant .city-label,
+.map-transitioning-instant .city-dot,
+.map-transitioning-instant .river-line,
+.map-transitioning-instant .river-area,
+.map-transitioning-instant .threat-icon-wrapper,
+.map-transitioning-instant .threat-uncertainty-circle {
+    transition: none !important;
+}
+
 .leaflet-tooltip {
     white-space: normal !important;
     overflow-wrap: break-word;
