@@ -6,6 +6,8 @@
     "activeInMonitored": "Active alerts in monitored regions",
     "massAlertStartTitle": "Alert in {count} regions at once",
     "massAlertCancelTitle": "Alert cancelled in {count} regions at once",
+    "massKyivDistrictAlertStartTitle": "Alert in {count} Kyiv districts at once",
+    "massKyivDistrictAlertCancelTitle": "Alert cancelled in {count} Kyiv districts at once",
     "alertStartedAt": "Started at",
     "alertOngoingDuration": "Ongoing for",
     "alertTypeLabel": "Type",

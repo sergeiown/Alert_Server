@@ -6,6 +6,8 @@
     "activeInMonitored": "Активних тривог у регіонах з моніторингом",
     "massAlertStartTitle": "Тривога одночасно в {count} регіонах",
     "massAlertCancelTitle": "Відбій тривоги одночасно в {count} регіонах",
+    "massKyivDistrictAlertStartTitle": "Тривога одночасно в {count} районах Києва",
+    "massKyivDistrictAlertCancelTitle": "Відбій тривоги одночасно в {count} районах Києва",
     "alertStartedAt": "Розпочалась",
     "alertOngoingDuration": "Триває",
     "alertTypeLabel": "Тип",

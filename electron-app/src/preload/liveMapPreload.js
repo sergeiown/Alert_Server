@@ -16,4 +16,5 @@ contextBridge.exposeInMainWorld('alertServerLiveMap', {
     getTitleBarAccentColor: () => ipcRenderer.invoke('liveMap:getTitleBarAccentColor'),
     onTitleBarAccentColorChanged: (callback) =>
         ipcRenderer.on('liveMap:titleBarAccentColorChanged', (event, color) => callback(color)),
+    onForceKyivMode: (callback) => ipcRenderer.on('liveMap:forceKyivMode', () => callback()),
 });
