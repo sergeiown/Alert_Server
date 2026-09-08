@@ -82,8 +82,12 @@ L.Control.FullScreenButton = L.Control.extend({
             this._isHandlingFullScreenChange = true;
 
             requestAnimationFrame(() => {
-                this.options.onFullScreenChange(isFullScreen);
-                this._isHandlingFullScreenChange = false;
+                const result = this.options.onFullScreenChange(isFullScreen);
+                if (result && typeof result.then === 'function') {
+                    result.then(() => (this._isHandlingFullScreenChange = false));
+                } else {
+                    this._isHandlingFullScreenChange = false;
+                }
             });
         }
 
