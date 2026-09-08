@@ -38,8 +38,9 @@ function registerTrayPopupIpc() {
         openForecastWindow();
     });
 
-    ipcMain.on('trayPopup:setContentHeight', (event, height) => {
-        if (typeof height === 'number' && Number.isFinite(height)) setContentHeight(height);
+    ipcMain.handle('trayPopup:setContentHeight', (event, height) => {
+        if (typeof height !== 'number' || !Number.isFinite(height)) return height;
+        return setContentHeight(height);
     });
 }
 
