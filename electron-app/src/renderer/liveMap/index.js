@@ -126,7 +126,7 @@ async function main() {
         map.setMaxBounds(null);
         const bounds = kyivModeActive ? KYIV_BOUNDS : UKRAINE_BOUNDS;
 
-        map.fitBounds(bounds);
+        map.fitBounds(bounds, { animate: false });
         map.setMinZoom(map.getZoom());
         if (kyivModeActive) map.setMaxBounds(L.latLngBounds(KYIV_BOUNDS).pad(0.05));
     }
