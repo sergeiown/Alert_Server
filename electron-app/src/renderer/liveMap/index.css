@@ -364,6 +364,10 @@ body {
     color: var(--map-chrome-text);
 }
 
+.leaflet-control-layers label:has(input:disabled) {
+    opacity: 0.5;
+}
+
 .legend-title {
     font-weight: 600;
     margin-bottom: 8px;

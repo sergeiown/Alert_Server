@@ -372,6 +372,11 @@ async function main() {
             map.attributionControl.addAttribution(deepStateAttributionHtml);
             bindAttributionLink('deepStateAttribution', 'https://deepstatemap.live/');
         }
+
+        riverLayer.options.minZoom = active ? Infinity : undefined;
+        occupiedTerritoryLayer.options.minZoom = active ? Infinity : undefined;
+        layersControl._checkDisabledLayers();
+
         swapScene(active);
     }
 
@@ -400,7 +405,7 @@ async function main() {
     const riverLayer = addRiversLayer(map);
     const labelsLayer = addLabelsLayer(map, strings, settings.language);
 
-    L.control
+    const layersControl = L.control
         .layers(null, {
             [strings.liveMapLayerAlertStatus]: regionStatusLayer,
             [strings.liveMapLayerOccupiedTerritory]: occupiedTerritoryLayer,
