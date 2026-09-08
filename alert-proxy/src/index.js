@@ -711,6 +711,7 @@ export class AlertsGateway {
                 location_title: record.regionName,
                 alert_type: UKRAINEALARM_TYPE_MAP[record.alertType],
                 started_at: record.startDate,
+                finished_at: new Date(new Date(record.startDate).getTime() + parseDotNetDurationMs(record.duration)).toISOString(),
             }));
 
         return { alerts };
@@ -793,6 +794,7 @@ export class AlertsGateway {
                             location_title: record.regionName,
                             alert_type: UKRAINEALARM_TYPE_MAP[record.alertType],
                             started_at: record.startDate,
+                            finished_at: new Date(new Date(record.startDate).getTime() + parseDotNetDurationMs(record.duration)).toISOString(),
                         }));
 
                     this.ukraineAlarmRegionHistoryOriginErrors.delete(regionId);
