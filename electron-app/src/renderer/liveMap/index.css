@@ -60,24 +60,31 @@ body {
 }
 
 .alert-status-shape,
+.occupied-territory-shape,
 .region-label,
 .raion-label,
 .city-label,
 .city-dot,
 .river-line,
-.river-area,
-.threat-icon-wrapper {
+.river-area {
     transition: opacity 0.45s ease;
 }
 
+.threat-icon-wrapper,
+.threat-uncertainty-circle {
+    transition: opacity 0.6s ease;
+}
+
 .map-transitioning .alert-status-shape,
+.map-transitioning .occupied-territory-shape,
 .map-transitioning .region-label,
 .map-transitioning .raion-label,
 .map-transitioning .city-label,
 .map-transitioning .city-dot,
 .map-transitioning .river-line,
 .map-transitioning .river-area,
-.map-transitioning .threat-icon-wrapper {
+.map-transitioning .threat-icon-wrapper,
+.map-transitioning .threat-uncertainty-circle {
     opacity: 0 !important;
 }
 
