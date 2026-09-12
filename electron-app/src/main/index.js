@@ -77,7 +77,7 @@ app.whenReady().then(() => {
         const matched = filterAlerts(alertData);
         discoverUnknownLocations(alertData.alerts);
         if (!meta.heartbeat) {
-            logEvent(`Update (${sourceLabel}): ${alertData.alerts.length} active alerts, ${matched.length} in monitored regions`, 'NETWORK');
+            logEvent(`Update (${sourceLabel}): ${alertData.alerts.length} active alerts (${matched.length} in monitored regions)`, 'NETWORK');
         }
         setLatestMatchedAlerts(matched);
         setLatestTotalAlertCount(alertData.alerts.length);

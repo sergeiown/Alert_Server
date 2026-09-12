@@ -106,7 +106,7 @@ async function refreshFromUkraineAlarm(clientKey) {
 
         cached = aggregateTodayStats(data.date, data.alerts);
         mergeIntoForecastHistory(data.alerts, 'ukrainealarm');
-        logEvent(`Today stats updated (UkraineAlarm, ${data.date}): ${cached.total} nationwide`, 'NETWORK');
+        logEvent(`Today stats updated (UkraineAlarm): ${cached.total} nationwide (${data.date})`, 'NETWORK');
         return true;
     } catch (err) {
         logEvent(`Today stats fetch error (UkraineAlarm via alert-proxy): ${err.message}`, 'NETWORK');
@@ -133,7 +133,7 @@ async function refreshFromAlertsInUa(clientKey) {
 
         cached = { ...data, source: 'alerts.in.ua' };
         mergeIntoForecastHistory(data.alerts, 'alerts.in.ua');
-        logEvent(`Today stats updated (alerts.in.ua, ${data.date}): ${data.total} nationwide`, 'NETWORK');
+        logEvent(`Today stats updated (alerts.in.ua): ${data.total} nationwide (${data.date})`, 'NETWORK');
     } catch (err) {
         logEvent(`Today stats fetch error (alerts.in.ua via alert-proxy): ${err.message}`, 'NETWORK');
     }
