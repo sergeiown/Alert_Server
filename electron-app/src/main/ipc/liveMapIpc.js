@@ -7,7 +7,7 @@ const { getLatestTotalAlertCount, getLatestAlertedRegions, getActiveAlertSource 
 const { getLatestOccupiedTerritory } = require('../services/occupiedTerritoryStore');
 const { alertTypeName } = require('../services/alertTypes');
 const { getTitleBarAccentColor } = require('../services/accentColor');
-const { getLiveMapWindow } = require('../windows/liveMapWindow');
+const { getLiveMapWindow, consumePendingKyivMode } = require('../windows/liveMapWindow');
 const settingsStore = require('../services/settingsStore');
 const { logEvent } = require('../services/logger');
 
@@ -46,6 +46,8 @@ function registerLiveMapIpc() {
     ipcMain.handle('liveMap:getOccupiedTerritory', () => getLatestOccupiedTerritory());
 
     ipcMain.handle('liveMap:getTitleBarAccentColor', () => getTitleBarAccentColor());
+
+    ipcMain.handle('liveMap:consumePendingKyivMode', () => consumePendingKyivMode());
 
     if (typeof systemPreferences.on === 'function') {
         systemPreferences.on('accent-color-changed', () => {
