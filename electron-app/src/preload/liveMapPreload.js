@@ -18,4 +18,5 @@ contextBridge.exposeInMainWorld('alertServerLiveMap', {
         ipcRenderer.on('liveMap:titleBarAccentColorChanged', (event, color) => callback(color)),
     onForceKyivMode: (callback) => ipcRenderer.on('liveMap:forceKyivMode', () => callback()),
     consumePendingKyivMode: () => ipcRenderer.invoke('liveMap:consumePendingKyivMode'),
+    logNetworkEvent: (message) => ipcRenderer.send('liveMap:logNetworkEvent', message),
 });
