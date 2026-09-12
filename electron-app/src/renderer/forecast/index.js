@@ -6,6 +6,8 @@ const list = document.getElementById('regionsList');
 let strings = null;
 let renderToken = 0;
 
+const REGIONS_REFRESH_MS = 60000;
+
 function addCopyButton(card, pre, strings) {
     const button = document.createElement('button');
     button.className = 'copy-button';
@@ -39,21 +41,24 @@ function sortRank({ result }) {
 
 async function renderRegionsList() {
     const token = ++renderToken;
-    list.innerHTML = '';
+    const isFirstRender = list.children.length === 0;
+    let loading = null;
+    if (isFirstRender) {
+        loading = document.createElement('p');
+        loading.textContent = strings.forecastLoading;
+        list.appendChild(loading);
+    }
 
     const regions = await window.alertServerForecast.getRegions();
     if (token !== renderToken) return;
 
     if (!regions.length) {
+        list.innerHTML = '';
         const p = document.createElement('p');
         p.textContent = strings.forecastNoRegions;
         list.appendChild(p);
         return;
     }
-
-    const loading = document.createElement('p');
-    loading.textContent = strings.forecastLoading;
-    list.appendChild(loading);
 
     const entries = await Promise.all(
         regions.map(async (region) => {
@@ -68,7 +73,7 @@ async function renderRegionsList() {
 
     entries.sort((a, b) => sortRank(a) - sortRank(b));
 
-    list.removeChild(loading);
+    const fragment = document.createDocumentFragment();
 
     entries.forEach(({ region, result }) => {
         const card = document.createElement('div');
@@ -109,8 +114,11 @@ async function renderRegionsList() {
             pre.textContent = strings.forecastNoHistory;
         }
 
-        list.appendChild(card);
+        fragment.appendChild(card);
     });
+
+    list.innerHTML = '';
+    list.appendChild(fragment);
 }
 
 async function main() {
@@ -132,6 +140,8 @@ async function main() {
     window.alertServerForecast.onRegionsChanged(() => {
         renderRegionsList();
     });
+
+    setInterval(renderRegionsList, REGIONS_REFRESH_MS);
 }
 
 main();
