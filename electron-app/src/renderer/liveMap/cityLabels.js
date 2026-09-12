@@ -6,8 +6,14 @@ import {
     subscribe as subscribeAlertedRegions,
     getOblastStartedAt,
     getOblastAlertTypeName,
+    getOblastAlertLevel,
+    getOblastHasBothLevels,
+    getOblastThreats,
     getRaionStartedAt,
     getRaionAlertTypeName,
+    getRaionAlertLevel,
+    getRaionHasBothLevels,
+    getRaionThreats,
 } from './alertedRegionsStore.js';
 import { alertPopupHtml } from './alertPopup.js';
 import { oblastDisplayName } from './regionNameUtils.js';
@@ -56,22 +62,40 @@ const CITIES = [
     { lat: 48.5111, lng: 34.6023, uk: "Кам'янське", en: 'Kamianske', oblast: 'Дніпропетровська', raion: "Кам'янський" },
 ];
 
+function fromRaion(city) {
+    const hasBothLevels = getRaionHasBothLevels(city.raion);
+    return {
+        startedAt: getRaionStartedAt(city.raion),
+        alertTypeName: getRaionAlertTypeName(city.raion),
+        alertLevel: getRaionAlertLevel(city.raion),
+        hasBothLevels,
+        threats: hasBothLevels ? getRaionThreats(city.raion) : null,
+        fromOblast: false,
+    };
+}
+
+function fromOblast(city) {
+    const hasBothLevels = getOblastHasBothLevels(city.oblast);
+    return {
+        startedAt: getOblastStartedAt(city.oblast),
+        alertTypeName: getOblastAlertTypeName(city.oblast),
+        alertLevel: getOblastAlertLevel(city.oblast),
+        hasBothLevels,
+        threats: hasBothLevels ? getOblastThreats(city.oblast) : null,
+        fromOblast: true,
+    };
+}
+
 function resolveCityAlert(city) {
     const raionStartedAt = city.raion ? getRaionStartedAt(city.raion) : null;
     const oblastStartedAt = getOblastStartedAt(city.oblast);
 
     if (raionStartedAt && oblastStartedAt) {
-        return new Date(raionStartedAt) <= new Date(oblastStartedAt)
-            ? { startedAt: raionStartedAt, alertTypeName: getRaionAlertTypeName(city.raion), fromOblast: false }
-            : { startedAt: oblastStartedAt, alertTypeName: getOblastAlertTypeName(city.oblast), fromOblast: true };
+        return new Date(raionStartedAt) <= new Date(oblastStartedAt) ? fromRaion(city) : fromOblast(city);
     }
-    if (raionStartedAt) {
-        return { startedAt: raionStartedAt, alertTypeName: getRaionAlertTypeName(city.raion), fromOblast: false };
-    }
-    if (oblastStartedAt) {
-        return { startedAt: oblastStartedAt, alertTypeName: getOblastAlertTypeName(city.oblast), fromOblast: true };
-    }
-    return { startedAt: null, alertTypeName: null, fromOblast: false };
+    if (raionStartedAt) return fromRaion(city);
+    if (oblastStartedAt) return fromOblast(city);
+    return { startedAt: null, alertTypeName: null, alertLevel: null, hasBothLevels: false, threats: null, fromOblast: false };
 }
 
 function borderStyle(color, alerted) {
@@ -96,11 +120,11 @@ function buildCityGroup(strings, language) {
         const border = CITY_BORDERS[city.uk];
         const displayName = isEnglish ? city.en : city.uk;
         const popupContent = () => {
-            const { startedAt, alertTypeName, fromOblast } = resolveCityAlert(city);
+            const { startedAt, alertTypeName, alertLevel, threats, fromOblast } = resolveCityAlert(city);
 
             const inheritedFromName =
                 fromOblast && city.oblast !== 'Київ' ? oblastDisplayName(city.oblast, isEnglish) : null;
-            return alertPopupHtml(displayName, startedAt, alertTypeName, strings, language, inheritedFromName);
+            return alertPopupHtml(displayName, startedAt, alertTypeName, strings, language, inheritedFromName, alertLevel, threats);
         };
 
         if (border) {
