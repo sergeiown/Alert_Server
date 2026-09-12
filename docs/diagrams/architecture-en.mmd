@@ -14,6 +14,7 @@ flowchart LR
         uaSource[ukraineAlarmSource]
         poller[alertPoller]
         altSource[neptunAlertsSource]
+        threatsStore[neptunThreatsStore]
         activeData[(activeAlertData)]
         notifier[notifier]
         regionStatus[regionAlertStatus]
@@ -42,15 +43,21 @@ flowchart LR
     ukrainealarm -. webhook push .-> proxy
     api --> proxy
     kaggle --> proxy
-    proxy --> uaSource
-    proxy --> poller
+    proxy -->|WebSocket push| uaSource
+    proxy -->|WebSocket push| poller
     proxy --> forecast
     proxy --> weaponStats
     proxy --> todayStats
     proxy --> historyBackfill
     deepstate --> occupied
-    neptun --> liveMapWin
+    neptun -->|WebSocket stream| threatsStore
     neptun --> altSource
+
+    pushNote(["persistent connection, kept alive&#10;for the whole app session;&#10;falls back to polling only while down"])
+    proxy -. pushes via .-> pushNote
+    pushNote -. explains .-> uaSource
+    pushNote -. explains .-> poller
+    pushNote -. explains .-> threatsStore
 
     levelNote(["alert_level / threats[]&#10;(red / yellow), all 3 sources"])
     proxy -. adds .-> levelNote
@@ -79,6 +86,7 @@ flowchart LR
     watcher --> popup
 
     regionStatus --> liveMapWin
+    threatsStore --> liveMapWin
     occupied --> liveMapWin
     weaponStats --> trendsWin
     todayStats --> trendsWin
@@ -102,9 +110,9 @@ flowchart LR
     classDef noteNode fill:#fef9c3,stroke:#ca8a04,color:#713f12,stroke-dasharray:3 3
 
     class ukrainealarm,api,proxy,neptun,deepstate,kaggle,gh extNode
-    class sourceManager,uaSource,poller,altSource,activeData,notifier,regionStatus,todayStats,historyBackfill,occupied,forecast,watcher,weaponStats,tray,stores,updater mainNode
+    class sourceManager,uaSource,poller,altSource,threatsStore,activeData,notifier,regionStatus,todayStats,historyBackfill,occupied,forecast,watcher,weaponStats,tray,stores,updater mainNode
     class settingsWin,forecastWin,trendsWin,liveMapWin,popup,logWin,aboutWin winNode
-    class levelNote noteNode
+    class levelNote,pushNote noteNode
 
     style ext fill:#eff6ff,stroke:#93c5fd
     style main fill:#f0fdf4,stroke:#86efac
