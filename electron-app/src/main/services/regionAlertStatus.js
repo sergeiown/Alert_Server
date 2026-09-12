@@ -9,19 +9,10 @@ function levelRank(level) {
     return 0;
 }
 
-function alertLevels(alert) {
-    const levels = new Set();
-    if (alert.alert_level) levels.add(alert.alert_level);
-    (alert.threats || []).forEach((threat) => {
-        if (threat.level) levels.add(threat.level);
-    });
-    return levels;
-}
-
 function upsertEarliest(map, name, alert) {
     const existing = map.get(name);
     const levels = existing ? new Set(existing.levels) : new Set();
-    alertLevels(alert).forEach((level) => levels.add(level));
+    if (alert.alert_level) levels.add(alert.alert_level);
     const worstLevel = [...levels].reduce((worst, level) => (levelRank(level) > levelRank(worst) ? level : worst), null);
 
     if (!existing || new Date(alert.started_at) < new Date(existing.startedAt)) {
