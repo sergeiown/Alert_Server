@@ -9,16 +9,16 @@ function levelRank(level) {
     return 0;
 }
 
-function upsertEarliest(map, name, alert) {
+function upsertEarliest(map, name, alert, isDirect) {
     const existing = map.get(name);
-    const levels = existing ? new Set(existing.levels) : new Set();
-    if (alert.alert_level) levels.add(alert.alert_level);
-    const worstLevel = [...levels].reduce((worst, level) => (levelRank(level) > levelRank(worst) ? level : worst), null);
+    const worstLevel = existing && levelRank(existing.alertLevel) > levelRank(alert.alert_level) ? existing.alertLevel : alert.alert_level;
+    const directLevels = existing ? new Set(existing.directLevels) : new Set();
+    if (isDirect && alert.alert_level) directLevels.add(alert.alert_level);
 
     if (!existing || new Date(alert.started_at) < new Date(existing.startedAt)) {
-        map.set(name, { startedAt: alert.started_at, alertType: alert.alert_type, alertLevel: worstLevel, levels });
+        map.set(name, { startedAt: alert.started_at, alertType: alert.alert_type, alertLevel: worstLevel, directLevels });
     } else {
-        map.set(name, { ...existing, alertLevel: worstLevel, levels });
+        map.set(name, { ...existing, alertLevel: worstLevel, directLevels });
     }
 }
 
@@ -32,12 +32,12 @@ function computeAlertedRegions(alerts) {
         if (!info) return;
 
         if (info.type === 'state') {
-            upsertEarliest(oblasts, info.name, alert);
+            upsertEarliest(oblasts, info.name, alert, true);
         } else if (info.type === 'district') {
-            upsertEarliest(raions, info.name, alert);
+            upsertEarliest(raions, info.name, alert, true);
         } else if (info.districtUid !== undefined) {
             const districtInfo = lookup.get(String(info.districtUid));
-            if (districtInfo) upsertEarliest(raions, districtInfo.name, alert);
+            if (districtInfo) upsertEarliest(raions, districtInfo.name, alert, false);
         }
     });
 
@@ -47,14 +47,14 @@ function computeAlertedRegions(alerts) {
             startedAt: v.startedAt,
             alertType: v.alertType,
             alertLevel: v.alertLevel,
-            hasBothLevels: v.levels.size > 1,
+            hasBothLevels: v.directLevels.size > 1,
         })),
         raions: Array.from(raions, ([name, v]) => ({
             name,
             startedAt: v.startedAt,
             alertType: v.alertType,
             alertLevel: v.alertLevel,
-            hasBothLevels: v.levels.size > 1,
+            hasBothLevels: v.directLevels.size > 1,
         })),
     };
 }
