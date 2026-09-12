@@ -4,27 +4,28 @@ Cloudflare Worker (a single global Durable Object) that hides upstream API token
 
 ## Usage against Cloudflare limits
 
+The dominant feed (active alerts) is now pushed over a WebSocket (`GET /ws`, upgraded via the Durable Object's WebSocket Hibernation API) instead of polled - the client opens one connection at startup and the Object sends a fresh snapshot only when the underlying data actually changes (from the UkraineAlarm webhook or the Object's own periodic poll). A WebSocket message doesn't count as a Workers request the way an HTTP call does, so this feed no longer scales with how often the client would otherwise have polled.
+
 Per always-on client instance, steady-state requests against this Worker:
 
-| Feed | Interval | Requests/day |
+| Feed | Mechanism | Requests/day |
 |---|---|---|
-| Alerts poll | 30s | 2880 |
-| Today-stats | 5 min, 1 call/cycle in steady state (the alerts.in.ua fallback call only fires during a genuine transient UkraineAlarm hiccup, confirmed 2026-09-12) | ~288 |
-| Weapon-stats | 24h | 1 |
-| **Total** | | **~3169/day/user** |
+| Alerts | WebSocket push (`/ws`), one connection per session; falls back to polling `/ukrainealarm-alerts` every 30s only while the socket is down | ~1 (handshake) + occasional reconnects |
+| Today-stats | Polled every 5 min, 1 call/cycle in steady state (the alerts.in.ua fallback call only fires during a genuine transient UkraineAlarm hiccup, confirmed 2026-09-12) | ~288 |
+| Weapon-stats | Polled every 24h | 1 |
+| **Total** | | **~289/day/user** (was ~3169/day before the push migration) |
 
 Occupied-territory (DeepState) and update checks (GitHub Releases) bypass this Worker entirely - the app fetches those directly.
 
 ### Headroom
 
-- **Workers Free** ([limits](https://developers.cloudflare.com/workers/platform/limits/)): 100,000 requests/day, account-wide - shared by every user, since all traffic hits the one global Durable Object. That's roughly **31 concurrent always-on users** before the whole account starts failing for everyone for the rest of that day.
-- **Workers Paid** ([pricing](https://developers.cloudflare.com/workers/platform/pricing/)): $5/month, 10,000,000 requests included per month (~333k/day equivalent), then $0.30 per additional million. About 105 users fit inside the included allowance alone; ~1,000 always-on users costs roughly $31/month total; ~10,000 roughly $287/month.
-- Durable Objects have a soft limit of 1,000 requests/second per object ([limits](https://developers.cloudflare.com/durable-objects/platform/limits/)) - far above anything this traffic pattern would reach.
+- **Workers Free** ([limits](https://developers.cloudflare.com/workers/platform/limits/)): 100,000 requests/day, account-wide - shared by every user, since all traffic hits the one global Durable Object. That's roughly **~346 concurrent always-on users** before the whole account starts failing for everyone for the rest of that day (up from ~31 before the push migration).
+- **Workers Paid** ([pricing](https://developers.cloudflare.com/workers/platform/pricing/)): $5/month, 10,000,000 requests included per month (~333k/day equivalent), then $0.30 per additional million. About 1,150 users fit inside the included allowance alone.
+- Durable Objects have a soft limit of 1,000 requests/second per object ([limits](https://developers.cloudflare.com/durable-objects/platform/limits/)) - far above anything this traffic pattern would reach. A hibernating WebSocket also doesn't hold the Object awake or billed while idle.
 
-### Options to raise the ceiling, roughly in order of effort
+### Remaining options to raise the ceiling further, roughly in order of effort
 
-1. Lengthen the alerts poll interval (30s -> 60s roughly halves the dominant cost), at the expense of alert latency.
-2. Upgrade to Workers Paid ($5/month) - removes the hard daily cap outright and is by far the cheapest fix per additional user.
-3. Replace polling with a push model (WebSocket from the Durable Object, using its WebSocket Hibernation API), so an idle client holds one open connection instead of firing a request every 30 seconds - the most scalable option, but a real architecture change on both the Worker and the client.
+1. Lengthen the today-stats poll interval, or push it over the same WebSocket alongside alerts - it's already cheap (~288/day), so low priority.
+2. Upgrade to Workers Paid ($5/month) - removes the hard daily cap outright.
 
 _Numbers last checked against the current Cloudflare docs: 2026-09-12._
