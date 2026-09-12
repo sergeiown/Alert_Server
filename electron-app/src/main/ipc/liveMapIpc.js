@@ -49,6 +49,8 @@ function registerLiveMapIpc() {
 
     ipcMain.handle('liveMap:consumePendingKyivMode', () => consumePendingKyivMode());
 
+    ipcMain.on('liveMap:logNetworkEvent', (event, message) => logEvent(message, 'NETWORK'));
+
     if (typeof systemPreferences.on === 'function') {
         systemPreferences.on('accent-color-changed', () => {
             const win = getLiveMapWindow();
