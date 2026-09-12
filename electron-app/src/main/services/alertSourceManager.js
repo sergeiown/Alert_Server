@@ -60,7 +60,11 @@ function startAlertSourceManager(preferredProvider, clientKey, onAlertsUpdated) 
 
         logEvent(`Alert source active: ${source.label}${reason ? ` (${reason})` : ''}`, 'NETWORK');
         setActiveAlertSource(key);
-        activeHandle = source.start(clientKey, (alertData) => onAlertsUpdated(source.label, alertData), onHealthChange);
+        activeHandle = source.start(
+            clientKey,
+            (alertData, meta) => onAlertsUpdated(source.label, alertData, meta),
+            onHealthChange
+        );
     }
 
     function onHealthChange(healthy) {
