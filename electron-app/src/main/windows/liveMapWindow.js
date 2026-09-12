@@ -5,6 +5,7 @@ const path = require('path');
 const { BrowserWindow } = require('electron');
 
 let liveMapWindow = null;
+let pendingKyivMode = false;
 
 function openLiveMapWindow() {
     if (liveMapWindow) {
@@ -42,15 +43,20 @@ function getLiveMapWindow() {
 
 function openLiveMapWindowInKyivMode() {
     const win = openLiveMapWindow();
-    const send = () => win.webContents.send('liveMap:forceKyivMode');
 
     if (win.webContents.isLoading()) {
-        win.webContents.once('did-finish-load', send);
+        pendingKyivMode = true;
     } else {
-        send();
+        win.webContents.send('liveMap:forceKyivMode');
     }
 
     return win;
 }
 
-module.exports = { openLiveMapWindow, getLiveMapWindow, openLiveMapWindowInKyivMode };
+function consumePendingKyivMode() {
+    const value = pendingKyivMode;
+    pendingKyivMode = false;
+    return value;
+}
+
+module.exports = { openLiveMapWindow, getLiveMapWindow, openLiveMapWindowInKyivMode, consumePendingKyivMode };
