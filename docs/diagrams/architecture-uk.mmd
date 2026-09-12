@@ -53,13 +53,13 @@ flowchart LR
     neptun -->|WebSocket-стрім| threatsStore
     neptun --> altSource
 
-    pushNote(["постійне з'єднання, живе всю сесію;застосунку; відкат на опитування;лише поки з'єднання недоступне"])
+    pushNote(["постійне з'єднання, живе всю сесію астосунку, відкат на опитування лише поки з'єднання недоступне"])
     proxy -. надсилає через .-> pushNote
     pushNote -. пояснює .-> uaSource
     pushNote -. пояснює .-> poller
     pushNote -. пояснює .-> threatsStore
 
-    levelNote(["alert_level / threats[]&#10;(червоний / жовтий), у всіх 3 джерелах"])
+    levelNote(["alert_level / threats (червоний / жовтий), у всіх 3 джерелах"])
     proxy -. додає .-> levelNote
     altSource -. додає .-> levelNote
 
