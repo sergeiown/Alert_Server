@@ -97,7 +97,7 @@ const UKRAINEALARM_TYPE_MAP = {
 };
 
 function worstUkraineAlarmLevel(activeAlertLevels) {
-    if (activeAlertLevels.some((l) => l.alertLevel === 'Red')) return 'red';
+    if (activeAlertLevels.some((l) => (l.alertLevel || '').toLowerCase() === 'red')) return 'red';
     if (activeAlertLevels.length) return 'yellow';
     return null;
 }
