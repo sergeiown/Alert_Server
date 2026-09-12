@@ -47,7 +47,7 @@ function schedulePublish() {
     publishDebounceTimer = setTimeout(() => {
         publishDebounceTimer = null;
         const threats = Array.from(threatsById.values());
-        logEvent(`Neptun threats updated (stream): ${threats.length} active`, 'NETWORK');
+        logEvent(`Update (Neptun threats): ${threats.length} active threats`, 'NETWORK');
         publishThreats(threats);
     }, PUBLISH_DEBOUNCE_MS);
 }
@@ -56,22 +56,22 @@ async function fetchSnapshot() {
     try {
         const response = await fetch(THREATS_URL);
         if (!response.ok) {
-            logEvent(`Neptun snapshot fetch failed: ${response.status}`, 'NETWORK');
+            logEvent(`Neptun threats fallback fetch failed: ${response.status}`, 'NETWORK');
             return;
         }
         const data = await response.json();
         applySnapshot(data.threats);
-        logEvent(`Neptun threats updated (snapshot): ${threatsById.size} active`, 'NETWORK');
+        logEvent(`Update (Neptun threats): ${threatsById.size} active threats`, 'NETWORK');
         publishThreats(Array.from(threatsById.values()));
     } catch (err) {
-        logEvent(`Neptun snapshot fetch error: ${err.message}`, 'NETWORK');
+        logEvent(`Neptun threats fallback request error: ${err.message}`, 'NETWORK');
     }
 }
 
 function startFallbackPolling() {
     if (usingFallback) return;
     usingFallback = true;
-    logEvent('Neptun: stream unavailable, falling back to polling', 'NETWORK');
+    logEvent('Neptun threats: unavailable, falling back to polling', 'NETWORK');
     fetchSnapshot();
     fallbackTimer = setInterval(fetchSnapshot, SNAPSHOT_REFRESH_MS);
 }
@@ -81,13 +81,13 @@ function stopFallbackPolling() {
     usingFallback = false;
     if (fallbackTimer) clearInterval(fallbackTimer);
     fallbackTimer = null;
-    logEvent('Neptun: stream recovered, stopping fallback polling', 'NETWORK');
+    logEvent('Neptun threats: recovered, stopping fallback polling', 'NETWORK');
 }
 
 function resetHeartbeatWatch() {
     if (heartbeatTimer) clearTimeout(heartbeatTimer);
     heartbeatTimer = setTimeout(() => {
-        logEvent('Neptun stream: no messages received, reconnecting', 'NETWORK');
+        logEvent('Neptun threats: no messages received, reconnecting', 'NETWORK');
         connect();
     }, HEARTBEAT_TIMEOUT_MS);
 }
@@ -107,14 +107,14 @@ function connect() {
     try {
         ws = new WebSocket(STREAM_URL);
     } catch (err) {
-        logEvent(`Neptun stream connection failed: ${err.message}`, 'NETWORK');
+        logEvent(`Neptun threats connection failed: ${err.message}`, 'NETWORK');
         reconnectTimer = setTimeout(connect, RECONNECT_DELAY_MS);
         return;
     }
     socket = ws;
 
     ws.addEventListener('open', () => {
-        logEvent('Neptun stream connected', 'NETWORK');
+        logEvent('Neptun threats connected', 'NETWORK');
         resetHeartbeatWatch();
     });
 
@@ -124,7 +124,7 @@ function connect() {
         try {
             message = JSON.parse(event.data);
         } catch (err) {
-            logEvent(`Neptun stream message parse failed: ${err.message}`, 'NETWORK');
+            logEvent(`Neptun threats message parse failed: ${err.message}`, 'NETWORK');
             return;
         }
 
@@ -155,7 +155,7 @@ function connect() {
     });
 
     ws.addEventListener('error', (event) => {
-        logEvent(`Neptun stream error: ${event.message || 'unknown error'}`, 'NETWORK');
+        logEvent(`Neptun threats error: ${event.message || 'unknown error'}`, 'NETWORK');
     });
 }
 

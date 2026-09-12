@@ -18,21 +18,21 @@ async function refresh() {
             headers: { 'X-Client-Key': alertProxyClientKey },
         });
         if (!response.ok) {
-            logEvent(`Weapon-stats fetch failed (Kaggle via alert-proxy): ${response.status}`, 'NETWORK');
+            logEvent(`Weapon stats fetch failed (Kaggle via alert-proxy): ${response.status}`, 'NETWORK');
             return;
         }
 
         const data = await response.json();
 
         if (!data || !data.dateRange || !data.totals || !Array.isArray(data.byCategory) || !Array.isArray(data.monthly)) {
-            logEvent('Weapon-stats response missing expected fields (Kaggle via alert-proxy - Worker not deployed yet?)', 'WARNING');
+            logEvent('Weapon stats response missing expected fields (Kaggle via alert-proxy - Worker not deployed yet?)', 'WARNING');
             return;
         }
 
         cached = data;
-        logEvent(`Weapon-stats updated (Kaggle, through ${cached.dateRange.to})`, 'NETWORK');
+        logEvent(`Weapon stats updated (Kaggle): through ${cached.dateRange.to}`, 'NETWORK');
     } catch (err) {
-        logEvent(`Weapon-stats fetch error (Kaggle via alert-proxy): ${err.message}`, 'NETWORK');
+        logEvent(`Weapon stats fetch error (Kaggle via alert-proxy): ${err.message}`, 'NETWORK');
     }
 }
 
