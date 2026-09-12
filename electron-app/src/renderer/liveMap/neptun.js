@@ -444,6 +444,9 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
 
     map.on('zoomend', () => renderThreats(lastThreats));
 
+    let fallbackTimer = null;
+    let usingFallback = false;
+
     async function fetchSnapshot() {
         try {
             const response = await fetch(THREATS_URL);
@@ -452,11 +455,27 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                 return;
             }
             const data = await response.json();
-            logNetwork(`Neptun threats snapshot: ${(data.threats || []).length} active`);
+            logNetwork(`Neptun threats updated (snapshot): ${(data.threats || []).length} active`);
             renderThreats(data.threats);
         } catch (err) {
             logNetwork(`Neptun snapshot fetch error: ${err.message}`);
         }
+    }
+
+    function startFallbackPolling() {
+        if (usingFallback) return;
+        usingFallback = true;
+        logNetwork('Neptun: stream unavailable, falling back to polling');
+        fetchSnapshot();
+        fallbackTimer = setInterval(fetchSnapshot, SNAPSHOT_REFRESH_MS);
+    }
+
+    function stopFallbackPolling() {
+        if (!usingFallback) return;
+        usingFallback = false;
+        if (fallbackTimer) clearInterval(fallbackTimer);
+        fallbackTimer = null;
+        logNetwork('Neptun: stream recovered, stopping fallback polling');
     }
 
     function resetHeartbeatWatch() {
@@ -487,6 +506,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             try {
                 const message = JSON.parse(event.data);
                 if (message.type === 'snapshot') {
+                    stopFallbackPolling();
                     logNetwork(`Neptun threats updated (stream): ${(message.data?.threats || []).length} active`);
                     renderThreats(message.data?.threats);
                 }
@@ -502,7 +522,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
 
         socket.addEventListener('close', () => {
             if (heartbeatTimer) clearTimeout(heartbeatTimer);
-            logNetwork('Neptun stream closed, reconnecting');
+            startFallbackPolling();
             reconnectTimer = setTimeout(connect, RECONNECT_DELAY_MS);
         });
 
@@ -512,9 +532,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     }
 
     function begin() {
-        fetchSnapshot();
         connect();
-        setInterval(fetchSnapshot, SNAPSHOT_REFRESH_MS);
     }
 
     begin();
