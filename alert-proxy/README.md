@@ -10,7 +10,7 @@ Per always-on client instance, steady-state requests against this Worker:
 
 | Feed | Mechanism | Requests/day |
 |---|---|---|
-| Alerts | WebSocket push (`/ws`), one connection per session; falls back to polling `/ukrainealarm-alerts` every 30s only while the socket is down | ~1 (handshake) + occasional reconnects |
+| Alerts | WebSocket push (`/ws` for UkraineAlarm, `/ws-alerts-in-ua` for its alerts.in.ua failover - same mechanism, same cost either way), one connection per session; falls back to polling every 30s only while the socket is down | ~1 (handshake) + occasional reconnects |
 | Today-stats | Polled every 5 min, 1 call/cycle in steady state (the alerts.in.ua fallback call only fires during a genuine transient UkraineAlarm hiccup, confirmed 2026-09-12) | ~288 |
 | Weapon-stats | Polled every 24h | 1 |
 | **Total** | | **~289/day/user** (was ~3169/day before the push migration) |
