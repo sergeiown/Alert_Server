@@ -103,6 +103,7 @@ function borderStyle(neutralColor, alert) {
     const alerted = Boolean(alert.startedAt);
     const fillColor = alerted ? shadeFor(alert.startedAt, Date.now(), alert.alertLevel) : neutralColor;
     return {
+        className: 'alert-status-shape',
         color: neutralColor,
         weight: 1.5,
         opacity: 0.7,

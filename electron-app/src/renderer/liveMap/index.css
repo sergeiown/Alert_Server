@@ -59,7 +59,6 @@ body {
     transition: opacity 0.45s ease;
 }
 
-.alert-status-shape,
 .occupied-territory-shape,
 .region-label,
 .raion-label,
@@ -68,6 +67,16 @@ body {
 .river-line,
 .river-area {
     transition: opacity 0.45s ease;
+}
+
+.alert-status-shape {
+    transition:
+        opacity 0.45s ease,
+        fill 0.45s ease,
+        fill-opacity 0.45s ease,
+        stroke 0.45s ease,
+        stroke-opacity 0.45s ease,
+        stroke-width 0.45s ease;
 }
 
 .threat-icon-wrapper,
