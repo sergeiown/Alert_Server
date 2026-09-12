@@ -22,7 +22,7 @@ autoUpdater.on('checking-for-update', () => {
 });
 
 autoUpdater.on('update-not-available', () => {
-    logEvent('No update available', 'NETWORK');
+    logEvent('No app update available (GitHub Releases)', 'NETWORK');
 });
 
 autoUpdater.on('update-available', (info) => {
