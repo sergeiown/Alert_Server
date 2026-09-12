@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 import { CITY_BORDERS } from './cityBorders.js';
+import { shadeFor } from './regionStatus.js';
 import {
     subscribe as subscribeAlertedRegions,
     getOblastStartedAt,
@@ -98,7 +99,9 @@ function resolveCityAlert(city) {
     return { startedAt: null, alertTypeName: null, alertLevel: null, hasBothLevels: false, threats: null, fromOblast: false };
 }
 
-function borderStyle(color, alerted) {
+function borderStyle(neutralColor, alert) {
+    const alerted = Boolean(alert.startedAt);
+    const color = alerted ? shadeFor(alert.startedAt, Date.now(), alert.alertLevel) : neutralColor;
     return {
         color,
         weight: 1.5,
@@ -129,7 +132,7 @@ function buildCityGroup(strings, language) {
 
         if (border) {
 
-            const polygon = L.polygon(border, borderStyle(color, Boolean(resolveCityAlert(city).startedAt)))
+            const polygon = L.polygon(border, borderStyle(color, resolveCityAlert(city)))
                 .bindPopup(popupContent)
                 .addTo(layer);
             borderPolygons.push({ polygon, city });
@@ -152,7 +155,7 @@ function buildCityGroup(strings, language) {
 
     subscribeAlertedRegions(() => {
         borderPolygons.forEach(({ polygon, city }) => {
-            polygon.setStyle(borderStyle(color, Boolean(resolveCityAlert(city).startedAt)));
+            polygon.setStyle(borderStyle(color, resolveCityAlert(city)));
         });
     });
 
