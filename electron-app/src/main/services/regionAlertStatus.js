@@ -12,14 +12,22 @@ function levelRank(level) {
 function upsertEarliest(map, name, alert, isDirect) {
     const existing = map.get(name);
     const worstLevel = existing && levelRank(existing.alertLevel) > levelRank(alert.alert_level) ? existing.alertLevel : alert.alert_level;
-    const directLevels = existing ? new Set(existing.directLevels) : new Set();
-    if (isDirect && alert.alert_level) directLevels.add(alert.alert_level);
+    const directByLevel = existing ? new Map(existing.directByLevel) : new Map();
+    if (isDirect && alert.alert_level && !directByLevel.has(alert.alert_level)) {
+        directByLevel.set(alert.alert_level, alert.alert_type);
+    }
 
     if (!existing || new Date(alert.started_at) < new Date(existing.startedAt)) {
-        map.set(name, { startedAt: alert.started_at, alertType: alert.alert_type, alertLevel: worstLevel, directLevels });
+        map.set(name, { startedAt: alert.started_at, alertType: alert.alert_type, alertLevel: worstLevel, directByLevel });
     } else {
-        map.set(name, { ...existing, alertLevel: worstLevel, directLevels });
+        map.set(name, { ...existing, alertLevel: worstLevel, directByLevel });
     }
+}
+
+function directThreats(directByLevel) {
+    return Array.from(directByLevel, ([level, alertType]) => ({ level, alertType })).sort(
+        (a, b) => levelRank(b.level) - levelRank(a.level)
+    );
 }
 
 function computeAlertedRegions(alerts) {
@@ -47,14 +55,16 @@ function computeAlertedRegions(alerts) {
             startedAt: v.startedAt,
             alertType: v.alertType,
             alertLevel: v.alertLevel,
-            hasBothLevels: v.directLevels.size > 1,
+            hasBothLevels: v.directByLevel.size > 1,
+            threats: directThreats(v.directByLevel),
         })),
         raions: Array.from(raions, ([name, v]) => ({
             name,
             startedAt: v.startedAt,
             alertType: v.alertType,
             alertLevel: v.alertLevel,
-            hasBothLevels: v.directLevels.size > 1,
+            hasBothLevels: v.directByLevel.size > 1,
+            threats: directThreats(v.directByLevel),
         })),
     };
 }

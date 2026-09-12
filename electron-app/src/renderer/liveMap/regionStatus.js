@@ -15,6 +15,8 @@ import {
     getRaionAlertLevel,
     getOblastHasBothLevels,
     getRaionHasBothLevels,
+    getOblastThreats,
+    getRaionThreats,
     getKyivRaionStartedAt,
     getKyivRaionAlertLevel,
     getKyivRaionHasBothLevels,
@@ -215,7 +217,20 @@ const RegionStatusLayer = L.LayerGroup.extend({
             const alertTypeName = getOblastAlertTypeName(name);
             const alertLevel = getOblastAlertLevel(name);
             const hasBothLevels = getOblastHasBothLevels(name);
-            this._drawRegion(rings, oblastDisplayName(name, isEnglish), startedAt, now, startedAt, alertTypeName, null, alertLevel, hasBothLevels);
+            const threats = hasBothLevels ? getOblastThreats(name) : null;
+            this._drawRegion(
+                rings,
+                oblastDisplayName(name, isEnglish),
+                startedAt,
+                now,
+                startedAt,
+                alertTypeName,
+                null,
+                alertLevel,
+                hasBothLevels,
+                false,
+                threats
+            );
         });
 
         if (CITY_BORDERS['Київ']) {
@@ -223,6 +238,7 @@ const RegionStatusLayer = L.LayerGroup.extend({
             const alertTypeName = getOblastAlertTypeName('Київ');
             const alertLevel = getOblastAlertLevel('Київ');
             const hasBothLevels = getOblastHasBothLevels('Київ');
+            const threats = hasBothLevels ? getOblastThreats('Київ') : null;
             this._drawRegion(
                 [CITY_BORDERS['Київ']],
                 oblastDisplayName('Київ', isEnglish),
@@ -232,7 +248,9 @@ const RegionStatusLayer = L.LayerGroup.extend({
                 alertTypeName,
                 null,
                 alertLevel,
-                hasBothLevels
+                hasBothLevels,
+                false,
+                threats
             );
         }
 
@@ -260,7 +278,9 @@ const RegionStatusLayer = L.LayerGroup.extend({
                             ownAlertTypeName,
                             null,
                             ownAlertLevel,
-                            ownHasBothLevels
+                            ownHasBothLevels,
+                            false,
+                            ownHasBothLevels ? getRaionThreats(name) : null
                         );
                     }
                 }
@@ -269,6 +289,8 @@ const RegionStatusLayer = L.LayerGroup.extend({
 
             const inherited = !ownStartedAt;
             const inheritedStartedAt = inherited ? oblastStartedAt : null;
+            const hasBothLevels = inherited ? oblastHasBothLevels : ownHasBothLevels;
+            const threats = hasBothLevels ? (inherited ? getOblastThreats(oblastKey) : getRaionThreats(name)) : null;
             this._drawRegion(
                 [ring],
                 raionDisplayName(name, isEnglish),
@@ -278,7 +300,9 @@ const RegionStatusLayer = L.LayerGroup.extend({
                 inherited ? oblastAlertTypeName : ownAlertTypeName,
                 inherited && inheritedStartedAt ? oblastDisplayName(oblastKey, isEnglish) : null,
                 inherited ? oblastAlertLevel : ownAlertLevel,
-                inherited ? oblastHasBothLevels : ownHasBothLevels
+                hasBothLevels,
+                false,
+                threats
             );
         });
     },
