@@ -5,6 +5,7 @@ const { ipcMain, clipboard, BrowserWindow, systemPreferences } = require('electr
 const { getResourcePath } = require('../services/appPaths');
 const { getLatestTotalAlertCount, getLatestAlertedRegions, getActiveAlertSource } = require('../services/alertState');
 const { getLatestOccupiedTerritory } = require('../services/occupiedTerritoryStore');
+const { getLatestThreats } = require('../services/neptunThreatsStore');
 const { alertTypeName } = require('../services/alertTypes');
 const { getTitleBarAccentColor } = require('../services/accentColor');
 const { getLiveMapWindow, consumePendingKyivMode } = require('../windows/liveMapWindow');
@@ -45,11 +46,11 @@ function registerLiveMapIpc() {
 
     ipcMain.handle('liveMap:getOccupiedTerritory', () => getLatestOccupiedTerritory());
 
+    ipcMain.handle('liveMap:getThreats', () => getLatestThreats());
+
     ipcMain.handle('liveMap:getTitleBarAccentColor', () => getTitleBarAccentColor());
 
     ipcMain.handle('liveMap:consumePendingKyivMode', () => consumePendingKyivMode());
-
-    ipcMain.on('liveMap:logNetworkEvent', (event, message) => logEvent(message, 'NETWORK'));
 
     if (typeof systemPreferences.on === 'function') {
         systemPreferences.on('accent-color-changed', () => {
