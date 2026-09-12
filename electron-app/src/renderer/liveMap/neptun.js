@@ -11,6 +11,10 @@ const HEARTBEAT_TIMEOUT_MS = 30000;
 
 const SNAPSHOT_REFRESH_MS = 60000;
 
+function logNetwork(message) {
+    window.alertServerLiveMap.logNetworkEvent(message);
+}
+
 const TOOLTIP_MAX_WIDTH_PX = 410;
 const TOOLTIP_MIN_WIDTH_PX = 90;
 const TOOLTIP_WIDTH_PADDING_PX = 14;
@@ -443,18 +447,22 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     async function fetchSnapshot() {
         try {
             const response = await fetch(THREATS_URL);
-            if (!response.ok) return;
+            if (!response.ok) {
+                logNetwork(`Neptun snapshot fetch failed: ${response.status}`);
+                return;
+            }
             const data = await response.json();
+            logNetwork(`Neptun threats snapshot: ${(data.threats || []).length} active`);
             renderThreats(data.threats);
         } catch (err) {
-            console.error('Neptun snapshot fetch failed:', err.message);
+            logNetwork(`Neptun snapshot fetch error: ${err.message}`);
         }
     }
 
     function resetHeartbeatWatch() {
         if (heartbeatTimer) clearTimeout(heartbeatTimer);
         heartbeatTimer = setTimeout(() => {
-            console.error('Neptun stream: no messages received, reconnecting');
+            logNetwork('Neptun stream: no messages received, reconnecting');
             connect();
         }, HEARTBEAT_TIMEOUT_MS);
     }
@@ -469,7 +477,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         try {
             socket = new WebSocket(STREAM_URL);
         } catch (err) {
-            console.error('Neptun stream connection failed:', err.message);
+            logNetwork(`Neptun stream connection failed: ${err.message}`);
             reconnectTimer = setTimeout(connect, RECONNECT_DELAY_MS);
             return;
         }
@@ -479,22 +487,27 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             try {
                 const message = JSON.parse(event.data);
                 if (message.type === 'snapshot') {
+                    logNetwork(`Neptun threats updated (stream): ${(message.data?.threats || []).length} active`);
                     renderThreats(message.data?.threats);
                 }
             } catch (err) {
-                console.error('Neptun stream message parse failed:', err.message);
+                logNetwork(`Neptun stream message parse failed: ${err.message}`);
             }
         });
 
-        socket.addEventListener('open', resetHeartbeatWatch);
+        socket.addEventListener('open', () => {
+            logNetwork('Neptun stream connected');
+            resetHeartbeatWatch();
+        });
 
         socket.addEventListener('close', () => {
             if (heartbeatTimer) clearTimeout(heartbeatTimer);
+            logNetwork('Neptun stream closed, reconnecting');
             reconnectTimer = setTimeout(connect, RECONNECT_DELAY_MS);
         });
 
         socket.addEventListener('error', (event) => {
-            console.error('Neptun stream error:', event.message || 'unknown error');
+            logNetwork(`Neptun stream error: ${event.message || 'unknown error'}`);
         });
     }
 
