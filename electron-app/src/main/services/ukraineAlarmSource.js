@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const { logEvent } = require('./logger');
-const { setLatestAlertData } = require('./activeAlertData');
+const { setLatestAlertData, getLatestAlertData } = require('./activeAlertData');
 
 const WS_URL = 'wss://alert-proxy.alert-proxy-ua.workers.dev/ws';
 const FALLBACK_POLL_URL = 'https://alert-proxy.alert-proxy-ua.workers.dev/ukrainealarm-alerts';
@@ -99,7 +99,11 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
 
             try {
                 const data = JSON.parse(event.data);
-                if (data && data.type === 'heartbeat') return;
+                if (data && data.type === 'heartbeat') {
+                    const cached = getLatestAlertData();
+                    if (cached) onUpdate(cached);
+                    return;
+                }
                 setLatestAlertData(data);
                 onUpdate(data);
             } catch (err) {
