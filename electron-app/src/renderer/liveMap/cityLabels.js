@@ -101,13 +101,13 @@ function resolveCityAlert(city) {
 
 function borderStyle(neutralColor, alert) {
     const alerted = Boolean(alert.startedAt);
-    const color = alerted ? shadeFor(alert.startedAt, Date.now(), alert.alertLevel) : neutralColor;
+    const fillColor = alerted ? shadeFor(alert.startedAt, Date.now(), alert.alertLevel) : neutralColor;
     return {
-        color,
+        color: neutralColor,
         weight: 1.5,
         opacity: 0.7,
-        fillColor: color,
-        fillOpacity: alerted ? 0.12 : 0,
+        fillColor,
+        fillOpacity: alerted ? 0.35 : 0,
     };
 }
 
