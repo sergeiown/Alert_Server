@@ -31,7 +31,7 @@ function buildChain(preferred) {
     return [preferred, ...rest];
 }
 
-function startAlertSourceManager(preferredProvider, clientKey, onAlertsPolled) {
+function startAlertSourceManager(preferredProvider, clientKey, onAlertsUpdated) {
     const chain = buildChain(preferredProvider);
     let activeIndex = 0;
     let consecutiveFailures = 0;
@@ -60,7 +60,7 @@ function startAlertSourceManager(preferredProvider, clientKey, onAlertsPolled) {
 
         logEvent(`Alert source active: ${source.label}${reason ? ` (${reason})` : ''}`, 'NETWORK');
         setActiveAlertSource(key);
-        activeHandle = source.start(clientKey, (alertData) => onAlertsPolled(source.label, alertData), onHealthChange);
+        activeHandle = source.start(clientKey, (alertData) => onAlertsUpdated(source.label, alertData), onHealthChange);
     }
 
     function onHealthChange(healthy) {
