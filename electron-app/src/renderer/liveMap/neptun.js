@@ -294,6 +294,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     });
 
     const MARKER_FADE_MS = 600;
+    const ICON_POP_SCALE = 0.35;
+    const ICON_POP_IN_EASING = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
 
     function revealWhenReady(reveal) {
         if (readyPromise) readyPromise.then(reveal);
@@ -303,11 +305,17 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     function fadeInMarker(marker) {
         marker.setOpacity(0);
         const el = marker.getElement();
+        const inner = el ? el.querySelector('.threat-icon') : null;
         if (el) el.style.transition = `opacity ${MARKER_FADE_MS}ms ease`;
+        if (inner) {
+            inner.style.transition = `transform ${MARKER_FADE_MS}ms ${ICON_POP_IN_EASING}`;
+            inner.style.transform = `scale(${ICON_POP_SCALE})`;
+        }
 
         revealWhenReady(() => {
             if (el) void el.offsetWidth;
             marker.setOpacity(1);
+            if (inner) inner.style.transform = 'scale(1)';
         });
     }
 
@@ -317,7 +325,12 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             layer.removeLayer(marker);
             return;
         }
+        const inner = el.querySelector('.threat-icon');
         el.style.transition = `opacity ${MARKER_FADE_MS}ms ease`;
+        if (inner) {
+            inner.style.transition = `transform ${MARKER_FADE_MS}ms ease`;
+            inner.style.transform = `scale(${ICON_POP_SCALE})`;
+        }
         marker.setOpacity(0);
         setTimeout(() => layer.removeLayer(marker), MARKER_FADE_MS);
     }

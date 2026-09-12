@@ -29,6 +29,7 @@ import { oblastDisplayName, raionDisplayName } from './regionNameUtils.js';
 
 const RESHADE_MS = 60000;
 const TIER_MS = 30 * 60 * 1000;
+const FILL_TRANSITION_MS = 450;
 
 const RED_LIGHT_SHADES = ['#e6ac9f', '#e2a496', '#df9d8d', '#db9584', '#d68d7b', '#d18572'];
 const RED_DARK_SHADES = ['#5c3934', '#603b35', '#653e37', '#6a4139', '#70443b', '#76483d'];
@@ -90,10 +91,14 @@ const RegionStatusLayer = L.LayerGroup.extend({
         this._strings = strings;
         this._language = language;
         this._kyivModeActive = false;
+        this._shapes = new Map();
+        this._wantedKeys = null;
     },
 
     setKyivMode: function (active) {
+        if (this._kyivModeActive === active) return;
         this._kyivModeActive = active;
+        this._hardClear();
         this._render();
     },
 
@@ -109,11 +114,74 @@ const RegionStatusLayer = L.LayerGroup.extend({
         map.off('zoomend', this._render, this);
         if (this._unsubscribe) this._unsubscribe();
         if (this._reshadeTimer) clearInterval(this._reshadeTimer);
+        this._hardClear();
 
         L.LayerGroup.prototype.onRemove.call(this, map);
     },
 
-    _drawRegion: function (
+    _hardClear: function () {
+        this._shapes.forEach((shape) => {
+            if (shape.fadeOutTimer) clearTimeout(shape.fadeOutTimer);
+            this.removeLayer(shape.layer);
+        });
+        this._shapes.clear();
+    },
+
+    _upsertShape: function (key, rings, style, popupArgs) {
+        this._wantedKeys.add(key);
+        const shape = this._shapes.get(key);
+
+        if (shape) {
+            if (shape.fadeOutTimer) {
+                clearTimeout(shape.fadeOutTimer);
+                shape.fadeOutTimer = null;
+            }
+            shape.popupArgs = popupArgs;
+            shape.layer.setStyle(style);
+            return;
+        }
+
+        const newShape = { layer: null, popupArgs, fadeOutTimer: null };
+        const layer = L.polygon(rings, {
+            className: 'alert-status-shape',
+            ...style,
+            opacity: 0,
+            fillOpacity: 0,
+        }).bindPopup(() => {
+            const args = newShape.popupArgs;
+            return alertPopupHtml(
+                args.displayName,
+                args.startedAt,
+                args.alertTypeName,
+                this._strings,
+                this._language,
+                args.inheritedFromName,
+                args.alertLevel,
+                args.threatLines
+            );
+        });
+        newShape.layer = layer;
+        this._shapes.set(key, newShape);
+        layer.addTo(this);
+
+        const el = layer.getElement();
+        if (el) void el.offsetWidth;
+        layer.setStyle(style);
+    },
+
+    _pruneUnwanted: function () {
+        this._shapes.forEach((shape, key) => {
+            if (this._wantedKeys.has(key) || shape.fadeOutTimer) return;
+            shape.layer.setStyle({ opacity: 0, fillOpacity: 0 });
+            shape.fadeOutTimer = setTimeout(() => {
+                this.removeLayer(shape.layer);
+                this._shapes.delete(key);
+            }, FILL_TRANSITION_MS);
+        });
+    },
+
+    _renderShape: function (
+        key,
         rings,
         displayName,
         ownStartedAt,
@@ -129,29 +197,26 @@ const RegionStatusLayer = L.LayerGroup.extend({
         const alerted = Boolean(ownStartedAt);
         const color = alerted ? shadeFor(ownStartedAt, now, alertLevel) : NEUTRAL_COLOR;
         const fillColor = alerted && hasBothLevels ? `url(#${DUAL_LEVEL_PATTERN_ID})` : color;
-        const { _strings: strings, _language: language } = this;
 
-        L.polygon(rings, {
-            className: 'alert-status-shape',
-            color,
-            weight: alerted || forceBorder ? 1 : 0,
-            opacity: alerted ? 0.5 : forceBorder ? 0.35 : 0,
-            fillColor,
-            fillOpacity: alerted ? ALERTED_FILL_OPACITY : NEUTRAL_FILL_OPACITY,
-        })
-            .bindPopup(() =>
-                alertPopupHtml(
-                    displayName,
-                    popupStartedAt,
-                    popupAlertTypeName,
-                    strings,
-                    language,
-                    inheritedFromName,
-                    alertLevel,
-                    popupThreatLines
-                )
-            )
-            .addTo(this);
+        this._upsertShape(
+            key,
+            rings,
+            {
+                color,
+                weight: alerted || forceBorder ? 1 : 0,
+                opacity: alerted ? 0.5 : forceBorder ? 0.35 : 0,
+                fillColor,
+                fillOpacity: alerted ? ALERTED_FILL_OPACITY : NEUTRAL_FILL_OPACITY,
+            },
+            {
+                displayName,
+                startedAt: popupStartedAt,
+                alertTypeName: popupAlertTypeName,
+                inheritedFromName,
+                alertLevel,
+                threatLines: popupThreatLines,
+            }
+        );
     },
 
     _drawKyivRaions: function (isEnglish, now) {
@@ -163,9 +228,11 @@ const RegionStatusLayer = L.LayerGroup.extend({
         Object.entries(KYIV_RAION_BORDERS).forEach(([name, ring]) => {
             const ownStartedAt = getKyivRaionStartedAt(name);
             const displayName = isEnglish ? `${name} District` : `${name} район`;
+            const key = `kyivRaion:${name}`;
 
             if (!ownStartedAt) {
-                this._drawRegion(
+                this._renderShape(
+                    key,
                     [ring],
                     displayName,
                     cityStartedAt,
@@ -183,7 +250,8 @@ const RegionStatusLayer = L.LayerGroup.extend({
             const ownAlertLevel = getKyivRaionAlertLevel(name);
             const hasBothLevels = getKyivRaionHasBothLevels(name);
             const threats = getKyivRaionThreats(name);
-            this._drawRegion(
+            this._renderShape(
+                key,
                 [ring],
                 displayName,
                 ownStartedAt,
@@ -200,13 +268,15 @@ const RegionStatusLayer = L.LayerGroup.extend({
     },
 
     _render: function () {
-        this.clearLayers();
+        this._wantedKeys = new Set();
         if (this._map) ensureDualLevelPattern(this._map);
         const now = Date.now();
         const isEnglish = this._language === 'English';
 
         if (this._kyivModeActive) {
             this._drawKyivRaions(isEnglish, now);
+            this._pruneUnwanted();
+            this._wantedKeys = null;
             return;
         }
 
@@ -218,7 +288,8 @@ const RegionStatusLayer = L.LayerGroup.extend({
             const alertLevel = getOblastAlertLevel(name);
             const hasBothLevels = getOblastHasBothLevels(name);
             const threats = hasBothLevels ? getOblastThreats(name) : null;
-            this._drawRegion(
+            this._renderShape(
+                `oblast:${name}`,
                 rings,
                 oblastDisplayName(name, isEnglish),
                 startedAt,
@@ -239,7 +310,8 @@ const RegionStatusLayer = L.LayerGroup.extend({
             const alertLevel = getOblastAlertLevel('Київ');
             const hasBothLevels = getOblastHasBothLevels('Київ');
             const threats = hasBothLevels ? getOblastThreats('Київ') : null;
-            this._drawRegion(
+            this._renderShape(
+                'city:Kyiv',
                 [CITY_BORDERS['Київ']],
                 oblastDisplayName('Київ', isEnglish),
                 startedAt,
@@ -264,25 +336,24 @@ const RegionStatusLayer = L.LayerGroup.extend({
             const oblastAlertTypeName = oblastKey ? getOblastAlertTypeName(oblastKey) : null;
             const oblastAlertLevel = oblastKey ? getOblastAlertLevel(oblastKey) : null;
             const oblastHasBothLevels = oblastKey ? getOblastHasBothLevels(oblastKey) : false;
+            const key = `raion:${name}`;
 
             if (!raionTier) {
-                if (ownStartedAt) {
-
-                    if (!oblastStartedAt) {
-                        this._drawRegion(
-                            [ring],
-                            raionDisplayName(name, isEnglish),
-                            ownStartedAt,
-                            now,
-                            ownStartedAt,
-                            ownAlertTypeName,
-                            null,
-                            ownAlertLevel,
-                            ownHasBothLevels,
-                            false,
-                            ownHasBothLevels ? getRaionThreats(name) : null
-                        );
-                    }
+                if (ownStartedAt && !oblastStartedAt) {
+                    this._renderShape(
+                        key,
+                        [ring],
+                        raionDisplayName(name, isEnglish),
+                        ownStartedAt,
+                        now,
+                        ownStartedAt,
+                        ownAlertTypeName,
+                        null,
+                        ownAlertLevel,
+                        ownHasBothLevels,
+                        false,
+                        ownHasBothLevels ? getRaionThreats(name) : null
+                    );
                 }
                 return;
             }
@@ -291,7 +362,8 @@ const RegionStatusLayer = L.LayerGroup.extend({
             const inheritedStartedAt = inherited ? oblastStartedAt : null;
             const hasBothLevels = inherited ? oblastHasBothLevels : ownHasBothLevels;
             const threats = hasBothLevels ? (inherited ? getOblastThreats(oblastKey) : getRaionThreats(name)) : null;
-            this._drawRegion(
+            this._renderShape(
+                key,
                 [ring],
                 raionDisplayName(name, isEnglish),
                 ownStartedAt || inheritedStartedAt,
@@ -305,6 +377,9 @@ const RegionStatusLayer = L.LayerGroup.extend({
                 threats
             );
         });
+
+        this._pruneUnwanted();
+        this._wantedKeys = null;
     },
 });
 
