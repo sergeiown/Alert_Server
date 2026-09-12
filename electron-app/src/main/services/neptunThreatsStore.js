@@ -9,13 +9,16 @@ const STREAM_URL = 'wss://neptun.in.ua/api/v1/stream';
 const RECONNECT_DELAY_MS = 5000;
 const HEARTBEAT_TIMEOUT_MS = 30000;
 const SNAPSHOT_REFRESH_MS = 60000;
+const PUBLISH_DEBOUNCE_MS = 500;
 
 let latestThreats = [];
+let threatsById = new Map();
 let socket = null;
 let reconnectTimer = null;
 let heartbeatTimer = null;
 let fallbackTimer = null;
 let usingFallback = false;
+let publishDebounceTimer = null;
 
 function getLatestThreats() {
     return latestThreats;
@@ -27,6 +30,28 @@ function publishThreats(threats) {
     if (win) win.webContents.send('liveMap:threatsUpdated', latestThreats);
 }
 
+function applySnapshot(threats) {
+    threatsById = new Map((threats || []).filter((t) => t && t.id).map((t) => [t.id, t]));
+}
+
+function applyUpsert(threat) {
+    if (threat && threat.id) threatsById.set(threat.id, threat);
+}
+
+function applyRemove(id) {
+    if (id) threatsById.delete(id);
+}
+
+function schedulePublish() {
+    if (publishDebounceTimer) clearTimeout(publishDebounceTimer);
+    publishDebounceTimer = setTimeout(() => {
+        publishDebounceTimer = null;
+        const threats = Array.from(threatsById.values());
+        logEvent(`Neptun threats updated (stream): ${threats.length} active`, 'NETWORK');
+        publishThreats(threats);
+    }, PUBLISH_DEBOUNCE_MS);
+}
+
 async function fetchSnapshot() {
     try {
         const response = await fetch(THREATS_URL);
@@ -35,8 +60,9 @@ async function fetchSnapshot() {
             return;
         }
         const data = await response.json();
-        logEvent(`Neptun threats updated (snapshot): ${(data.threats || []).length} active`, 'NETWORK');
-        publishThreats(data.threats);
+        applySnapshot(data.threats);
+        logEvent(`Neptun threats updated (snapshot): ${threatsById.size} active`, 'NETWORK');
+        publishThreats(Array.from(threatsById.values()));
     } catch (err) {
         logEvent(`Neptun snapshot fetch error: ${err.message}`, 'NETWORK');
     }
@@ -94,15 +120,30 @@ function connect() {
 
     ws.addEventListener('message', (event) => {
         resetHeartbeatWatch();
+        let message;
         try {
-            const message = JSON.parse(event.data);
-            if (message.type === 'snapshot') {
-                stopFallbackPolling();
-                logEvent(`Neptun threats updated (stream): ${(message.data?.threats || []).length} active`, 'NETWORK');
-                publishThreats(message.data?.threats);
-            }
+            message = JSON.parse(event.data);
         } catch (err) {
             logEvent(`Neptun stream message parse failed: ${err.message}`, 'NETWORK');
+            return;
+        }
+
+        switch (message.type) {
+            case 'snapshot':
+                stopFallbackPolling();
+                applySnapshot(message.data?.threats);
+                schedulePublish();
+                break;
+            case 'upsert':
+                applyUpsert(message.data);
+                schedulePublish();
+                break;
+            case 'remove':
+                applyRemove(message.data?.id);
+                schedulePublish();
+                break;
+            default:
+                break;
         }
     });
 
