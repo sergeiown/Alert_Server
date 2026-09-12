@@ -31,6 +31,14 @@ const activeNotifications = new Set();
 let displayedKyivDistricts = null;
 let isKyivDistrictInitialSync = false;
 
+function openConfiguredLiveMap() {
+    const selectedUids = regionsStore.getSelectedUids().map(String);
+    const kyivOnly = selectedUids.length === 1 && selectedUids[0] === String(KYIV_CITY_UID);
+
+    if (kyivOnly) openLiveMapWindowInKyivMode();
+    else openLiveMapWindow();
+}
+
 function ensureDisplayedAlertsLoaded() {
     if (displayedAlerts) return;
 
@@ -180,7 +188,7 @@ function processAlerts(matchedAlerts, allAlerts) {
     const massStart = freshNewAlerts.length > MASS_ALERT_THRESHOLD;
 
     if (freshNewAlerts.length && canNotify && settings.showLiveMapOnAlert) {
-        openLiveMapWindow();
+        openConfiguredLiveMap();
     }
 
     if (massStart && canNotify) {
@@ -327,7 +335,7 @@ function processKyivDistricts(kyivRaions) {
     const massStart = freshNewDistricts.length > MASS_ALERT_THRESHOLD;
 
     if (freshNewDistricts.length && canNotify && settings.showLiveMapOnAlert) {
-        openLiveMapWindowInKyivMode();
+        openConfiguredLiveMap();
     }
 
     if (massStart && canNotify) {
