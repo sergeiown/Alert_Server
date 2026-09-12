@@ -6,12 +6,13 @@ const { getUserDataFile } = require('./appPaths');
 const { logEvent } = require('./logger');
 const { setLatestAlertData, getLatestAlertData } = require('./activeAlertData');
 
-const PROXY_URL = 'https://alert-proxy.alert-proxy-ua.workers.dev';
-const POLL_INTERVAL_MS = 30000;
+const WS_URL = 'wss://alert-proxy.alert-proxy-ua.workers.dev/ws-alerts-in-ua';
+const FALLBACK_POLL_URL = 'https://alert-proxy.alert-proxy-ua.workers.dev';
+const RECONNECT_DELAY_MS = 5000;
+const HEARTBEAT_TIMEOUT_MS = 8 * 60 * 1000;
+const FALLBACK_POLL_INTERVAL_MS = 30000;
 const ORIGIN_ISSUE_LOG_COOLDOWN_MS = 30 * 60 * 1000;
 
-let lastModified = null;
-let backoffUntil = 0;
 let lastLoggedStatus = null;
 let lastLoggedAt = 0;
 
@@ -36,63 +37,145 @@ function noteOriginHealthy() {
     lastLoggedStatus = null;
 }
 
-async function pollOnce(clientKey, onHealthChange) {
-    if (Date.now() < backoffUntil) {
-        return getLatestAlertData();
-    }
-
-    try {
-        const headers = { 'X-Client-Key': clientKey };
-        if (lastModified) headers['If-Modified-Since'] = lastModified;
-
-        const response = await fetch(PROXY_URL, { headers });
-
-        if (response.status === 304) {
-            noteOriginHealthy();
-            if (onHealthChange) onHealthChange(true);
-            return getLatestAlertData();
-        }
-
-        if (response.status === 429) {
-            logOriginIssue(429);
-            backoffUntil = Date.now() + POLL_INTERVAL_MS * 2;
-            if (onHealthChange) onHealthChange(false);
-            return getLatestAlertData();
-        }
-
-        if (!response.ok) {
-            logOriginIssue(response.status);
-            if (onHealthChange) onHealthChange(false);
-            return getLatestAlertData();
-        }
-
-        const data = await response.json();
-        lastModified = response.headers.get('Last-Modified');
-        setLatestAlertData(data);
-
-        const originErrorStatus = response.headers.get('X-Origin-Error-Status');
-        if (originErrorStatus) logOriginIssue(Number(originErrorStatus));
-        else noteOriginHealthy();
-        if (onHealthChange) onHealthChange(true);
-
-        fs.writeFileSync(getUserDataFile('alert_received.json'), JSON.stringify(data, null, 2), 'utf-8');
-
-        return data;
-    } catch (err) {
-        logEvent(`alert-proxy request error: ${err.message}`, 'NETWORK');
-        if (onHealthChange) onHealthChange(false);
-        return getLatestAlertData();
-    }
+function persistData(data) {
+    setLatestAlertData(data);
+    fs.writeFileSync(getUserDataFile('alert_received.json'), JSON.stringify(data, null, 2), 'utf-8');
 }
 
 function startPolling(clientKey, onUpdate, onHealthChange) {
-    const tick = async () => {
-        const data = await pollOnce(clientKey, onHealthChange);
-        if (data) onUpdate(data);
-    };
+    let socket = null;
+    let reconnectTimer = null;
+    let heartbeatTimer = null;
+    let fallbackTimer = null;
+    let stopped = false;
+    let usingFallback = false;
 
-    tick();
-    return setInterval(tick, POLL_INTERVAL_MS);
+    function resetHeartbeatWatch() {
+        if (heartbeatTimer) clearTimeout(heartbeatTimer);
+        heartbeatTimer = setTimeout(() => {
+            logEvent('alert-proxy (alerts.in.ua) WebSocket: no messages received, reconnecting', 'NETWORK');
+            connect();
+        }, HEARTBEAT_TIMEOUT_MS);
+    }
+
+    async function fallbackPollOnce() {
+        try {
+            const response = await fetch(FALLBACK_POLL_URL, { headers: { 'X-Client-Key': clientKey } });
+
+            if (!response.ok) {
+                logOriginIssue(response.status);
+                if (onHealthChange) onHealthChange(false);
+                return;
+            }
+
+            const data = await response.json();
+            persistData(data);
+            onUpdate(data);
+
+            const originErrorStatus = response.headers.get('X-Origin-Error-Status');
+            if (originErrorStatus) logOriginIssue(Number(originErrorStatus));
+            else noteOriginHealthy();
+            if (onHealthChange) onHealthChange(true);
+        } catch (err) {
+            logEvent(`alert-proxy request error: ${err.message}`, 'NETWORK');
+            if (onHealthChange) onHealthChange(false);
+        }
+    }
+
+    function startFallbackPolling() {
+        if (usingFallback || stopped) return;
+        usingFallback = true;
+        logEvent('alert-proxy (alerts.in.ua): WebSocket unavailable, falling back to polling', 'NETWORK');
+        fallbackPollOnce();
+        fallbackTimer = setInterval(fallbackPollOnce, FALLBACK_POLL_INTERVAL_MS);
+    }
+
+    function stopFallbackPolling() {
+        if (!usingFallback) return;
+        usingFallback = false;
+        if (fallbackTimer) clearInterval(fallbackTimer);
+        fallbackTimer = null;
+        logEvent('alert-proxy (alerts.in.ua): WebSocket recovered, stopping fallback polling', 'NETWORK');
+    }
+
+    function scheduleReconnect() {
+        if (stopped) return;
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+        reconnectTimer = setTimeout(connect, RECONNECT_DELAY_MS);
+    }
+
+    function connect() {
+        if (stopped) return;
+        if (reconnectTimer) {
+            clearTimeout(reconnectTimer);
+            reconnectTimer = null;
+        }
+        if (socket) {
+            try {
+                socket.close();
+            } catch (err) {}
+        }
+
+        let ws;
+        try {
+            ws = new WebSocket(`${WS_URL}?key=${encodeURIComponent(clientKey)}`);
+        } catch (err) {
+            logEvent(`alert-proxy (alerts.in.ua) WebSocket connection failed: ${err.message}`, 'NETWORK');
+            startFallbackPolling();
+            scheduleReconnect();
+            return;
+        }
+        socket = ws;
+
+        ws.addEventListener('open', resetHeartbeatWatch);
+
+        ws.addEventListener('message', (event) => {
+            resetHeartbeatWatch();
+            stopFallbackPolling();
+            noteOriginHealthy();
+            if (onHealthChange) onHealthChange(true);
+
+            try {
+                const data = JSON.parse(event.data);
+                if (data && data.type === 'heartbeat') {
+                    const cached = getLatestAlertData();
+                    if (cached) onUpdate(cached);
+                    return;
+                }
+                persistData(data);
+                onUpdate(data);
+            } catch (err) {
+                logEvent(`alert-proxy (alerts.in.ua) WebSocket message parse failed: ${err.message}`, 'NETWORK');
+            }
+        });
+
+        ws.addEventListener('close', () => {
+            if (heartbeatTimer) clearTimeout(heartbeatTimer);
+            if (stopped || socket !== ws) return;
+            startFallbackPolling();
+            scheduleReconnect();
+        });
+
+        ws.addEventListener('error', (event) => {
+            logEvent(`alert-proxy (alerts.in.ua) WebSocket error: ${event.message || 'unknown error'}`, 'NETWORK');
+        });
+    }
+
+    connect();
+
+    return {
+        stop: () => {
+            stopped = true;
+            if (reconnectTimer) clearTimeout(reconnectTimer);
+            if (heartbeatTimer) clearTimeout(heartbeatTimer);
+            if (fallbackTimer) clearInterval(fallbackTimer);
+            if (socket) {
+                try {
+                    socket.close();
+                } catch (err) {}
+            }
+        },
+    };
 }
 
 module.exports = { startPolling };
