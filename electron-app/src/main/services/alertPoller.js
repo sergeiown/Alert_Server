@@ -28,12 +28,12 @@ function logOriginIssue(status) {
     if (status === lastLoggedStatus && now - lastLoggedAt < ORIGIN_ISSUE_LOG_COOLDOWN_MS) return;
     lastLoggedStatus = status;
     lastLoggedAt = now;
-    logEvent(`alert-proxy origin issue (alerts.in.ua): ${status} (${describeOriginStatus(status)})`, 'NETWORK');
+    logEvent(`alerts.in.ua via alert-proxy origin issue: ${status} (${describeOriginStatus(status)})`, 'NETWORK');
 }
 
 function noteOriginHealthy() {
     if (lastLoggedStatus === null) return;
-    logEvent('alert-proxy origin recovered (alerts.in.ua)', 'NETWORK');
+    logEvent('alerts.in.ua via alert-proxy origin recovered', 'NETWORK');
     lastLoggedStatus = null;
 }
 
@@ -53,7 +53,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
     function resetHeartbeatWatch() {
         if (heartbeatTimer) clearTimeout(heartbeatTimer);
         heartbeatTimer = setTimeout(() => {
-            logEvent('alert-proxy (alerts.in.ua) WebSocket: no messages received, reconnecting', 'NETWORK');
+            logEvent('alerts.in.ua via alert-proxy: no messages received, reconnecting', 'NETWORK');
             connect();
         }, HEARTBEAT_TIMEOUT_MS);
     }
@@ -77,7 +77,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
             else noteOriginHealthy();
             if (onHealthChange) onHealthChange(true);
         } catch (err) {
-            logEvent(`alert-proxy request error: ${err.message}`, 'NETWORK');
+            logEvent(`alerts.in.ua via alert-proxy fallback request error: ${err.message}`, 'NETWORK');
             if (onHealthChange) onHealthChange(false);
         }
     }
@@ -85,7 +85,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
     function startFallbackPolling() {
         if (usingFallback || stopped) return;
         usingFallback = true;
-        logEvent('alert-proxy (alerts.in.ua): WebSocket unavailable, falling back to polling', 'NETWORK');
+        logEvent('alerts.in.ua via alert-proxy: unavailable, falling back to polling', 'NETWORK');
         fallbackPollOnce();
         fallbackTimer = setInterval(fallbackPollOnce, FALLBACK_POLL_INTERVAL_MS);
     }
@@ -95,7 +95,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
         usingFallback = false;
         if (fallbackTimer) clearInterval(fallbackTimer);
         fallbackTimer = null;
-        logEvent('alert-proxy (alerts.in.ua): WebSocket recovered, stopping fallback polling', 'NETWORK');
+        logEvent('alerts.in.ua via alert-proxy: recovered, stopping fallback polling', 'NETWORK');
     }
 
     function scheduleReconnect() {
@@ -120,7 +120,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
         try {
             ws = new WebSocket(`${WS_URL}?key=${encodeURIComponent(clientKey)}`);
         } catch (err) {
-            logEvent(`alert-proxy (alerts.in.ua) WebSocket connection failed: ${err.message}`, 'NETWORK');
+            logEvent(`alerts.in.ua via alert-proxy connection failed: ${err.message}`, 'NETWORK');
             startFallbackPolling();
             scheduleReconnect();
             return;
@@ -128,7 +128,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
         socket = ws;
 
         ws.addEventListener('open', () => {
-            logEvent('alert-proxy (alerts.in.ua) WebSocket connected', 'NETWORK');
+            logEvent('alerts.in.ua via alert-proxy connected', 'NETWORK');
             resetHeartbeatWatch();
         });
 
@@ -148,7 +148,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
                 persistData(data);
                 onUpdate(data);
             } catch (err) {
-                logEvent(`alert-proxy (alerts.in.ua) WebSocket message parse failed: ${err.message}`, 'NETWORK');
+                logEvent(`alerts.in.ua via alert-proxy message parse failed: ${err.message}`, 'NETWORK');
             }
         });
 
@@ -160,7 +160,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
         });
 
         ws.addEventListener('error', (event) => {
-            logEvent(`alert-proxy (alerts.in.ua) WebSocket error: ${event.message || 'unknown error'}`, 'NETWORK');
+            logEvent(`alerts.in.ua via alert-proxy error: ${event.message || 'unknown error'}`, 'NETWORK');
         });
     }
 
