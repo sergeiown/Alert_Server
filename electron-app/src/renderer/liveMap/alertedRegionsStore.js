@@ -53,6 +53,16 @@ function getRaionAlertLevel(key) {
     return match ? match.alertLevel : null;
 }
 
+function getOblastHasBothLevels(key) {
+    const match = latest.oblasts.find((o) => normalizeOblastName(o.name) === key);
+    return match ? Boolean(match.hasBothLevels) : false;
+}
+
+function getRaionHasBothLevels(key) {
+    const match = latest.raions.find((r) => normalizeRaionName(r.name) === key);
+    return match ? Boolean(match.hasBothLevels) : false;
+}
+
 function getKyivRaionStartedAt(name) {
     const match = latest.kyivRaions.find((r) => r.name === name);
     return match ? match.startedAt : null;
@@ -85,6 +95,8 @@ export {
     getRaionAlertTypeName,
     getOblastAlertLevel,
     getRaionAlertLevel,
+    getOblastHasBothLevels,
+    getRaionHasBothLevels,
     getKyivRaionStartedAt,
     getKyivRaionAlertLevel,
     getKyivRaionHasBothLevels,
