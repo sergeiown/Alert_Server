@@ -93,6 +93,7 @@ const KyivToggleControl = L.Control.extend({
 });
 
 async function main() {
+    const forceKyivMode = await window.alertServerLiveMap.consumePendingKyivMode();
     const strings = await window.alertServerLiveMap.getStrings();
     const settings = await window.alertServerLiveMap.getSettings();
     const baseMapUrl = await window.alertServerLiveMap.getBaseMapUrl();
@@ -467,6 +468,8 @@ async function main() {
         fadeIn(baseMapOverlay.getElement());
     }
     resolveMapRevealed();
+
+    if (forceKyivMode && !kyivModeActive) applyKyivMode(true);
 }
 
 main();
