@@ -293,9 +293,9 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         e.tooltip.update();
     });
 
-    const MARKER_FADE_MS = 600;
-    const ICON_POP_SCALE = 0.35;
-    const ICON_POP_IN_EASING = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
+    const MARKER_FADE_MS = 750;
+    const ICON_POP_SCALE = 0.15;
+    const ICON_POP_IN_EASING = 'cubic-bezier(0.25, 1.8, 0.4, 1)';
 
     function revealWhenReady(reveal) {
         if (readyPromise) readyPromise.then(reveal);

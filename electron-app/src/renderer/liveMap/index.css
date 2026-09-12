@@ -71,12 +71,12 @@ body {
 
 .alert-status-shape {
     transition:
-        opacity 0.45s ease,
-        fill 0.45s ease,
-        fill-opacity 0.45s ease,
-        stroke 0.45s ease,
-        stroke-opacity 0.45s ease,
-        stroke-width 0.45s ease;
+        opacity 0.38s ease,
+        fill 0.38s ease,
+        fill-opacity 0.38s ease,
+        stroke 0.38s ease,
+        stroke-opacity 0.38s ease,
+        stroke-width 0.38s ease;
 }
 
 .threat-icon-wrapper,

@@ -26,10 +26,10 @@ import { alertPopupHtml } from './alertPopup.js';
 import { RAION_OBLAST } from './raionOblastMap.js';
 import { RAION_MIN_ZOOM } from './zoomTiers.js';
 import { oblastDisplayName, raionDisplayName } from './regionNameUtils.js';
+import { pulseLayerStyle, PULSE_TOTAL_MS } from './alertFillPulse.js';
 
 const RESHADE_MS = 60000;
 const TIER_MS = 30 * 60 * 1000;
-const FILL_TRANSITION_MS = 450;
 
 const RED_LIGHT_SHADES = ['#e6ac9f', '#e2a496', '#df9d8d', '#db9584', '#d68d7b', '#d18572'];
 const RED_DARK_SHADES = ['#5c3934', '#603b35', '#653e37', '#6a4139', '#70443b', '#76483d'];
@@ -122,6 +122,7 @@ const RegionStatusLayer = L.LayerGroup.extend({
     _hardClear: function () {
         this._shapes.forEach((shape) => {
             if (shape.fadeOutTimer) clearTimeout(shape.fadeOutTimer);
+            if (shape.list) shape.list.forEach(clearTimeout);
             this.removeLayer(shape.layer);
         });
         this._shapes.clear();
@@ -129,6 +130,7 @@ const RegionStatusLayer = L.LayerGroup.extend({
 
     _upsertShape: function (key, rings, style, popupArgs) {
         this._wantedKeys.add(key);
+        const styleKey = JSON.stringify(style);
         const shape = this._shapes.get(key);
 
         if (shape) {
@@ -137,11 +139,14 @@ const RegionStatusLayer = L.LayerGroup.extend({
                 shape.fadeOutTimer = null;
             }
             shape.popupArgs = popupArgs;
-            shape.layer.setStyle(style);
+            if (shape.styleKey !== styleKey) {
+                shape.styleKey = styleKey;
+                pulseLayerStyle(shape.layer, shape, style);
+            }
             return;
         }
 
-        const newShape = { layer: null, popupArgs, fadeOutTimer: null };
+        const newShape = { layer: null, popupArgs, fadeOutTimer: null, styleKey };
         const layer = L.polygon(rings, {
             className: 'alert-status-shape',
             ...style,
@@ -166,17 +171,18 @@ const RegionStatusLayer = L.LayerGroup.extend({
 
         const el = layer.getElement();
         if (el) void el.offsetWidth;
-        layer.setStyle(style);
+        pulseLayerStyle(layer, newShape, style);
     },
 
     _pruneUnwanted: function () {
         this._shapes.forEach((shape, key) => {
             if (this._wantedKeys.has(key) || shape.fadeOutTimer) return;
-            shape.layer.setStyle({ opacity: 0, fillOpacity: 0 });
+            shape.styleKey = null;
+            pulseLayerStyle(shape.layer, shape, { ...shape.layer.options, opacity: 0, fillOpacity: 0 });
             shape.fadeOutTimer = setTimeout(() => {
                 this.removeLayer(shape.layer);
                 this._shapes.delete(key);
-            }, FILL_TRANSITION_MS);
+            }, PULSE_TOTAL_MS);
         });
     },
 

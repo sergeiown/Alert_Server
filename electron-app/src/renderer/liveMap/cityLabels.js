@@ -3,6 +3,7 @@
 
 import { CITY_BORDERS } from './cityBorders.js';
 import { shadeFor } from './regionStatus.js';
+import { pulseLayerStyle } from './alertFillPulse.js';
 import {
     subscribe as subscribeAlertedRegions,
     getOblastStartedAt,
@@ -133,10 +134,9 @@ function buildCityGroup(strings, language) {
 
         if (border) {
 
-            const polygon = L.polygon(border, borderStyle(color, resolveCityAlert(city)))
-                .bindPopup(popupContent)
-                .addTo(layer);
-            borderPolygons.push({ polygon, city });
+            const initialStyle = borderStyle(color, resolveCityAlert(city));
+            const polygon = L.polygon(border, initialStyle).bindPopup(popupContent).addTo(layer);
+            borderPolygons.push({ polygon, city, styleKey: JSON.stringify(initialStyle), pulse: {} });
         }
 
         const marker = L.marker([city.lat, city.lng], {
@@ -155,8 +155,12 @@ function buildCityGroup(strings, language) {
     });
 
     subscribeAlertedRegions(() => {
-        borderPolygons.forEach(({ polygon, city }) => {
-            polygon.setStyle(borderStyle(color, resolveCityAlert(city)));
+        borderPolygons.forEach((entry) => {
+            const style = borderStyle(color, resolveCityAlert(entry.city));
+            const styleKey = JSON.stringify(style);
+            if (styleKey === entry.styleKey) return;
+            entry.styleKey = styleKey;
+            pulseLayerStyle(entry.polygon, entry.pulse, style);
         });
     });
 
