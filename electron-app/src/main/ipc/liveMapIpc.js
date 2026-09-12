@@ -15,6 +15,10 @@ function withAlertTypeName(entries, language) {
     return entries.map((entry) => ({
         ...entry,
         alertTypeName: entry.alertType ? alertTypeName(entry.alertType, language) : null,
+        threats: (entry.threats || []).map((threat) => ({
+            level: threat.level,
+            description: threat.alertType ? alertTypeName(threat.alertType, language) : null,
+        })),
     }));
 }
 
