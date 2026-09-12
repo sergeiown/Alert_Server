@@ -45,6 +45,11 @@ app.whenReady().then(() => {
     const result = importLegacyConfig(LEGACY_APP_DIR, { settingsStore, regionsStore });
     logEvent(`Legacy config import: ${JSON.stringify(result)}`, 'INFO');
 
+    if (settingsStore.wasFirstRun()) {
+        app.setLoginItemSettings({ openAtLogin: true });
+        logEvent('First run: enabled run at Windows startup by default', 'INFO');
+    }
+
     nativeTheme.themeSource = settingsStore.getSettings().theme;
 
     registerSettingsIpc();
