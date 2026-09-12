@@ -90,7 +90,10 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
         }
         socket = ws;
 
-        ws.addEventListener('open', resetHeartbeatWatch);
+        ws.addEventListener('open', () => {
+            logEvent('UkraineAlarm (via alert-proxy) WebSocket connected', 'NETWORK');
+            resetHeartbeatWatch();
+        });
 
         ws.addEventListener('message', (event) => {
             resetHeartbeatWatch();

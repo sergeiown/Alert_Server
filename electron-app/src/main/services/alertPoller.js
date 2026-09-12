@@ -127,7 +127,10 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
         }
         socket = ws;
 
-        ws.addEventListener('open', resetHeartbeatWatch);
+        ws.addEventListener('open', () => {
+            logEvent('alert-proxy (alerts.in.ua) WebSocket connected', 'NETWORK');
+            resetHeartbeatWatch();
+        });
 
         ws.addEventListener('message', (event) => {
             resetHeartbeatWatch();
