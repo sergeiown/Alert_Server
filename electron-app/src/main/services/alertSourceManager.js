@@ -38,7 +38,10 @@ function startAlertSourceManager(preferredProvider, clientKey, onAlertsPolled) {
     let activeHandle = null;
 
     function stopActive() {
-        if (activeHandle) clearInterval(activeHandle);
+        if (activeHandle) {
+            if (typeof activeHandle.stop === 'function') activeHandle.stop();
+            else clearInterval(activeHandle);
+        }
         activeHandle = null;
     }
 
