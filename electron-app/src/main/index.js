@@ -26,6 +26,7 @@ const { startOccupiedTerritoryRefresh } = require('./services/occupiedTerritoryS
 const { startWeaponStatsRefresh } = require('./services/weaponStatsStore');
 const { startTodayStatsRefresh } = require('./services/todayStatsStore');
 const { startHistoryBackfill } = require('./services/historyBackfillStore');
+const { startNeptunThreatsTracking } = require('./services/neptunThreatsStore');
 const { installHandlers } = require('./services/crashRestart');
 const { delayedCheckForUpdates } = require('./services/updater');
 const { destroySettingsWindow } = require('./windows/settingsWindow');
@@ -67,6 +68,7 @@ app.whenReady().then(() => {
     startWeaponStatsRefresh();
     startTodayStatsRefresh();
     startHistoryBackfill();
+    startNeptunThreatsTracking();
 
     const { alertSourceProvider } = settingsStore.getSettings();
     let forecastWatcherStarted = false;

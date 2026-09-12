@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld('alertServerLiveMap', {
     getActiveAlertSource: () => ipcRenderer.invoke('liveMap:getActiveAlertSource'),
     getAlertedRegions: () => ipcRenderer.invoke('liveMap:getAlertedRegions'),
     getOccupiedTerritory: () => ipcRenderer.invoke('liveMap:getOccupiedTerritory'),
+    getThreats: () => ipcRenderer.invoke('liveMap:getThreats'),
+    onThreatsUpdated: (callback) => ipcRenderer.on('liveMap:threatsUpdated', (event, threats) => callback(threats)),
     takeScreenshot: () => ipcRenderer.invoke('liveMap:takeScreenshot'),
     openExternal: (url) => ipcRenderer.invoke('system:openExternal', url),
     getTitleBarAccentColor: () => ipcRenderer.invoke('liveMap:getTitleBarAccentColor'),
@@ -18,5 +20,4 @@ contextBridge.exposeInMainWorld('alertServerLiveMap', {
         ipcRenderer.on('liveMap:titleBarAccentColorChanged', (event, color) => callback(color)),
     onForceKyivMode: (callback) => ipcRenderer.on('liveMap:forceKyivMode', () => callback()),
     consumePendingKyivMode: () => ipcRenderer.invoke('liveMap:consumePendingKyivMode'),
-    logNetworkEvent: (message) => ipcRenderer.send('liveMap:logNetworkEvent', message),
 });
