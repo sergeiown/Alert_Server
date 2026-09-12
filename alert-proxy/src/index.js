@@ -266,6 +266,7 @@ export class AlertsGateway {
 
         this.ukraineAlarmWebhookSeenHashes = new Map();
         this.ukraineAlarmWebhookPublicKey = null;
+        this.lastBroadcastAlertsBody = null;
         this.activeQueue = Promise.resolve();
         this.historyQueue = Promise.resolve();
         this.regionStatusesQueue = Promise.resolve();
@@ -274,6 +275,10 @@ export class AlertsGateway {
 
     async fetch(request) {
         const url = new URL(request.url);
+
+        if (url.pathname === '/ws' && request.headers.get('Upgrade') === 'websocket') {
+            return this.acceptAlertsWebSocket();
+        }
 
         if (url.pathname === UKRAINEALARM_WEBHOOK_PATH) {
             return this.handleUkraineAlarmWebhook(request);
@@ -565,6 +570,7 @@ export class AlertsGateway {
         }
 
         await this.state.storage.put('ukraineAlarmState', saved);
+        this.broadcastUkraineAlarmAlerts(saved);
     }
 
     async pollUkraineAlarmIfDue({ force = false } = {}) {
@@ -623,6 +629,7 @@ export class AlertsGateway {
         }
 
         await this.state.storage.put('ukraineAlarmState', saved);
+        this.broadcastUkraineAlarmAlerts(saved);
     }
 
     recordUkraineAlarmObservations(saved, alerts, now) {
@@ -653,15 +660,7 @@ export class AlertsGateway {
             .slice(0, UKRAINEALARM_MAX_OBSERVATIONS);
     }
 
-    async getUkraineAlarmAlerts() {
-
-        try {
-            await this.pollUkraineAlarmIfDue();
-        } catch (err) {
-            this.ukraineAlarmOriginError = { status: 0, body: err.message };
-        }
-
-        const saved = await this.state.storage.get('ukraineAlarmState');
+    buildUkraineAlarmAlertsBody(saved) {
         const now = Date.now();
 
         const alerts = [];
@@ -676,7 +675,6 @@ export class AlertsGateway {
                 const activeAlertLevels = alert.activeAlertLevels || [];
 
                 alerts.push({
-
                     id: `ukrainealarm-${region.regionId}-${mappedType}`,
                     location_uid: Number(region.regionId),
                     location_title: region.regionName,
@@ -688,7 +686,57 @@ export class AlertsGateway {
             });
         });
 
-        return new Response(JSON.stringify({ alerts }), { headers: { 'Content-Type': 'application/json' } });
+        return JSON.stringify({ alerts });
+    }
+
+    broadcastUkraineAlarmAlerts(saved) {
+        const sockets = this.state.getWebSockets('alerts');
+        if (!sockets.length) return;
+
+        const body = this.buildUkraineAlarmAlertsBody(saved);
+        if (body === this.lastBroadcastAlertsBody) return;
+        this.lastBroadcastAlertsBody = body;
+
+        sockets.forEach((ws) => {
+            try {
+                ws.send(body);
+            } catch (err) {
+                /* a dead socket will be cleaned up via webSocketClose/webSocketError */
+            }
+        });
+    }
+
+    async acceptAlertsWebSocket() {
+        const pair = new WebSocketPair();
+        const [client, server] = Object.values(pair);
+
+        this.state.acceptWebSocket(server, ['alerts']);
+
+        const saved = await this.state.storage.get('ukraineAlarmState');
+        server.send(this.buildUkraineAlarmAlertsBody(saved));
+
+        return new Response(null, { status: 101, webSocket: client });
+    }
+
+    async webSocketMessage() {
+        /* clients never send anything meaningful; the channel is push-only */
+    }
+
+    async webSocketClose(ws, code, reason, wasClean) {
+        ws.close(code, reason);
+    }
+
+    async webSocketError() {}
+
+    async getUkraineAlarmAlerts() {
+        try {
+            await this.pollUkraineAlarmIfDue();
+        } catch (err) {
+            this.ukraineAlarmOriginError = { status: 0, body: err.message };
+        }
+
+        const saved = await this.state.storage.get('ukraineAlarmState');
+        return new Response(this.buildUkraineAlarmAlertsBody(saved), { headers: { 'Content-Type': 'application/json' } });
     }
 
     async fetchUkraineAlarmDateHistory(dateKey) {
@@ -1067,7 +1115,7 @@ export default {
             return new Response('Method not allowed', { status: 405 });
         }
 
-        const clientKey = request.headers.get('X-Client-Key');
+        const clientKey = request.headers.get('X-Client-Key') || url.searchParams.get('key');
         if (!env.CLIENT_KEY || clientKey !== env.CLIENT_KEY) {
             return new Response('Unauthorized', { status: 401 });
         }
