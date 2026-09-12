@@ -13,6 +13,8 @@ import {
     getRaionAlertTypeName,
     getOblastAlertLevel,
     getRaionAlertLevel,
+    getOblastHasBothLevels,
+    getRaionHasBothLevels,
     getKyivRaionStartedAt,
     getKyivRaionAlertLevel,
     getKyivRaionHasBothLevels,
@@ -212,24 +214,38 @@ const RegionStatusLayer = L.LayerGroup.extend({
             const startedAt = getOblastStartedAt(name);
             const alertTypeName = getOblastAlertTypeName(name);
             const alertLevel = getOblastAlertLevel(name);
-            this._drawRegion(rings, oblastDisplayName(name, isEnglish), startedAt, now, startedAt, alertTypeName, null, alertLevel);
+            const hasBothLevels = getOblastHasBothLevels(name);
+            this._drawRegion(rings, oblastDisplayName(name, isEnglish), startedAt, now, startedAt, alertTypeName, null, alertLevel, hasBothLevels);
         });
 
         if (CITY_BORDERS['Київ']) {
             const startedAt = getOblastStartedAt('Київ');
             const alertTypeName = getOblastAlertTypeName('Київ');
             const alertLevel = getOblastAlertLevel('Київ');
-            this._drawRegion([CITY_BORDERS['Київ']], oblastDisplayName('Київ', isEnglish), startedAt, now, startedAt, alertTypeName, null, alertLevel);
+            const hasBothLevels = getOblastHasBothLevels('Київ');
+            this._drawRegion(
+                [CITY_BORDERS['Київ']],
+                oblastDisplayName('Київ', isEnglish),
+                startedAt,
+                now,
+                startedAt,
+                alertTypeName,
+                null,
+                alertLevel,
+                hasBothLevels
+            );
         }
 
         Object.entries(RAION_BORDERS).forEach(([name, ring]) => {
             const ownStartedAt = getRaionStartedAt(name);
             const ownAlertTypeName = getRaionAlertTypeName(name);
             const ownAlertLevel = getRaionAlertLevel(name);
+            const ownHasBothLevels = getRaionHasBothLevels(name);
             const oblastKey = RAION_OBLAST[name];
             const oblastStartedAt = oblastKey ? getOblastStartedAt(oblastKey) : null;
             const oblastAlertTypeName = oblastKey ? getOblastAlertTypeName(oblastKey) : null;
             const oblastAlertLevel = oblastKey ? getOblastAlertLevel(oblastKey) : null;
+            const oblastHasBothLevels = oblastKey ? getOblastHasBothLevels(oblastKey) : false;
 
             if (!raionTier) {
                 if (ownStartedAt) {
@@ -243,7 +259,8 @@ const RegionStatusLayer = L.LayerGroup.extend({
                             ownStartedAt,
                             ownAlertTypeName,
                             null,
-                            ownAlertLevel
+                            ownAlertLevel,
+                            ownHasBothLevels
                         );
                     }
                 }
@@ -260,7 +277,8 @@ const RegionStatusLayer = L.LayerGroup.extend({
                 ownStartedAt || inheritedStartedAt,
                 inherited ? oblastAlertTypeName : ownAlertTypeName,
                 inherited && inheritedStartedAt ? oblastDisplayName(oblastKey, isEnglish) : null,
-                inherited ? oblastAlertLevel : ownAlertLevel
+                inherited ? oblastAlertLevel : ownAlertLevel,
+                inherited ? oblastHasBothLevels : ownHasBothLevels
             );
         });
     },
