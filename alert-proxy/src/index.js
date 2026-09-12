@@ -267,6 +267,7 @@ export class AlertsGateway {
         this.ukraineAlarmWebhookSeenHashes = new Map();
         this.ukraineAlarmWebhookPublicKey = null;
         this.lastBroadcastAlertsBody = null;
+        this.lastBroadcastActiveBody = null;
         this.activeQueue = Promise.resolve();
         this.historyQueue = Promise.resolve();
         this.regionStatusesQueue = Promise.resolve();
@@ -278,6 +279,10 @@ export class AlertsGateway {
 
         if (url.pathname === '/ws' && request.headers.get('Upgrade') === 'websocket') {
             return this.acceptAlertsWebSocket();
+        }
+
+        if (url.pathname === '/ws-alerts-in-ua' && request.headers.get('Upgrade') === 'websocket') {
+            return this.acceptActiveWebSocket();
         }
 
         if (url.pathname === UKRAINEALARM_WEBHOOK_PATH) {
@@ -335,35 +340,68 @@ export class AlertsGateway {
         return this.getActive(ifModifiedSince);
     }
 
-    async getActive(ifModifiedSince) {
+    async ensureActiveCacheFresh() {
         const now = Date.now();
+        if (this.activeCache && now - this.activeCache.fetchedAt < ACTIVE_CACHE_TTL_MS) return;
 
-        if (!this.activeCache || now - this.activeCache.fetchedAt >= ACTIVE_CACHE_TTL_MS) {
-            const run = async () => {
-                const waitMs = Math.max(0, ACTIVE_MIN_GAP_MS - (Date.now() - this.lastActiveOriginFetchAt));
-                if (waitMs > 0) await delay(waitMs);
+        const run = async () => {
+            const waitMs = Math.max(0, ACTIVE_MIN_GAP_MS - (Date.now() - this.lastActiveOriginFetchAt));
+            if (waitMs > 0) await delay(waitMs);
 
-                this.lastActiveOriginFetchAt = Date.now();
-                this.allAlertsInUaFetchTimestamps.push(this.lastActiveOriginFetchAt);
-                const upstream = await fetch(ACTIVE_ALERTS_URL, {
-                    headers: { Authorization: `Bearer ${this.env.ALERTS_TOKEN}` },
-                });
-                const body = await upstream.text();
+            this.lastActiveOriginFetchAt = Date.now();
+            this.allAlertsInUaFetchTimestamps.push(this.lastActiveOriginFetchAt);
+            const upstream = await fetch(ACTIVE_ALERTS_URL, {
+                headers: { Authorization: `Bearer ${this.env.ALERTS_TOKEN}` },
+            });
+            const body = await upstream.text();
 
-                if (!upstream.ok) {
-                    this.activeOriginError = { status: upstream.status, body };
-                    return;
-                }
+            if (!upstream.ok) {
+                this.activeOriginError = { status: upstream.status, body };
+                return;
+            }
 
-                this.activeOriginError = null;
-                const lastModified = upstream.headers.get('Last-Modified');
-                this.activeCache = { body, lastModified, fetchedAt: Date.now() };
-            };
+            this.activeOriginError = null;
+            const lastModified = upstream.headers.get('Last-Modified');
+            this.activeCache = { body, lastModified, fetchedAt: Date.now() };
+            this.broadcastActive();
+        };
 
-            const result = this.activeQueue.then(run, run);
-            this.activeQueue = result.catch(() => {});
-            await result;
-        }
+        const result = this.activeQueue.then(run, run);
+        this.activeQueue = result.catch(() => {});
+        await result;
+    }
+
+    broadcastActive() {
+        const sockets = this.state.getWebSockets('active');
+        if (!sockets.length || !this.activeCache) return;
+
+        const body = this.activeCache.body;
+        const unchanged = body === this.lastBroadcastActiveBody;
+        this.lastBroadcastActiveBody = body;
+
+        const message = unchanged ? '{"type":"heartbeat"}' : body;
+
+        sockets.forEach((ws) => {
+            try {
+                ws.send(message);
+            } catch (err) {}
+        });
+    }
+
+    async acceptActiveWebSocket() {
+        const pair = new WebSocketPair();
+        const [client, server] = Object.values(pair);
+
+        this.state.acceptWebSocket(server, ['active']);
+
+        await this.ensureActiveCacheFresh();
+        if (this.activeCache) server.send(this.activeCache.body);
+
+        return new Response(null, { status: 101, webSocket: client });
+    }
+
+    async getActive(ifModifiedSince) {
+        await this.ensureActiveCacheFresh();
 
         if (this.activeOriginError && !this.activeCache) {
             return new Response(this.activeOriginError.body, {
@@ -475,6 +513,14 @@ export class AlertsGateway {
             await this.pollUkraineAlarmIfDue();
         } catch (err) {
             this.ukraineAlarmOriginError = { status: 0, body: err.message };
+        }
+
+        if (this.state.getWebSockets('active').length > 0) {
+            try {
+                await this.ensureActiveCacheFresh();
+            } catch (err) {
+                this.activeOriginError = { status: 0, body: err.message };
+            }
         }
     }
 
