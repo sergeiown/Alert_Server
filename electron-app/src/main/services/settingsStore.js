@@ -21,11 +21,13 @@ const defaultSettings = {
 };
 
 let settings = null;
+let isFirstRun = false;
 
 function load() {
     const filePath = getUserDataFile('settings.json');
 
     if (!fs.existsSync(filePath)) {
+        isFirstRun = true;
         settings = { ...defaultSettings };
         save();
         return settings;
@@ -58,6 +60,11 @@ function getSettings() {
     return settings;
 }
 
+function wasFirstRun() {
+    if (!settings) load();
+    return isFirstRun;
+}
+
 function updateSetting(key, value) {
     if (!settings) load();
     if (!defaultSettings.hasOwnProperty(key)) {
@@ -67,4 +74,4 @@ function updateSetting(key, value) {
     save();
 }
 
-module.exports = { getSettings, updateSetting };
+module.exports = { getSettings, updateSetting, wasFirstRun };
