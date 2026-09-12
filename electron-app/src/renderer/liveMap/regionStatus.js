@@ -312,4 +312,4 @@ function addRegionStatusLayer(map, strings, language) {
     return new RegionStatusLayer(strings, language).addTo(map);
 }
 
-export { addRegionStatusLayer };
+export { addRegionStatusLayer, shadeFor };
