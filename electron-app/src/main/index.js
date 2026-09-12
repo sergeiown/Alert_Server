@@ -71,10 +71,12 @@ app.whenReady().then(() => {
     const { alertSourceProvider } = settingsStore.getSettings();
     let forecastWatcherStarted = false;
 
-    function onAlertsUpdated(sourceLabel, alertData) {
+    function onAlertsUpdated(sourceLabel, alertData, meta = {}) {
         const matched = filterAlerts(alertData);
         discoverUnknownLocations(alertData.alerts);
-        logEvent(`Update (${sourceLabel}): ${alertData.alerts.length} active alerts, ${matched.length} in monitored regions`, 'NETWORK');
+        if (!meta.heartbeat) {
+            logEvent(`Update (${sourceLabel}): ${alertData.alerts.length} active alerts, ${matched.length} in monitored regions`, 'NETWORK');
+        }
         setLatestMatchedAlerts(matched);
         setLatestTotalAlertCount(alertData.alerts.length);
         const kyivRaions = computeKyivRaionStatuses(alertData.alerts);
