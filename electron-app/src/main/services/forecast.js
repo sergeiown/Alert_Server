@@ -161,6 +161,8 @@ function formatProbabilityPercent(fraction, language) {
 function buildForecastText(stats, language, source) {
     const lines = [];
 
+    lines.push(`${t('forecastAsOf', language)}: ${formatShortDateTime(Date.now(), language)}`);
+
     const sourceName = HISTORY_SOURCE_DISPLAY[source];
     lines.push(`${t('forecastSourceLabel', language)}: ${sourceName || t('forecastSourceUnknown', language)}`);
 
@@ -185,6 +187,10 @@ function buildForecastText(stats, language, source) {
 
     if (stats.sinceLastMs !== null) {
         lines.push(`${t('forecastSinceLast', language)}: ${formatDuration(stats.sinceLastMs, language)}`);
+    }
+
+    if (stats.lastAlertDurationMs !== null) {
+        lines.push(`${t('forecastLastDuration', language)}: ${formatDuration(stats.lastAlertDurationMs, language)}`);
     }
 
     lines.push('');
