@@ -142,7 +142,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
                 const data = JSON.parse(event.data);
                 if (data && data.type === 'heartbeat') {
                     const cached = getLatestAlertData();
-                    if (cached) onUpdate(cached);
+                    if (cached) onUpdate(cached, { heartbeat: true });
                     return;
                 }
                 persistData(data);
