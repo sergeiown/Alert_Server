@@ -694,15 +694,15 @@ export class AlertsGateway {
         if (!sockets.length) return;
 
         const body = this.buildUkraineAlarmAlertsBody(saved);
-        if (body === this.lastBroadcastAlertsBody) return;
+        const unchanged = body === this.lastBroadcastAlertsBody;
         this.lastBroadcastAlertsBody = body;
+
+        const message = unchanged ? '{"type":"heartbeat"}' : body;
 
         sockets.forEach((ws) => {
             try {
-                ws.send(body);
-            } catch (err) {
-                /* a dead socket will be cleaned up via webSocketClose/webSocketError */
-            }
+                ws.send(message);
+            } catch (err) {}
         });
     }
 
@@ -718,9 +718,7 @@ export class AlertsGateway {
         return new Response(null, { status: 101, webSocket: client });
     }
 
-    async webSocketMessage() {
-        /* clients never send anything meaningful; the channel is push-only */
-    }
+    async webSocketMessage() {}
 
     async webSocketClose(ws, code, reason, wasClean) {
         ws.close(code, reason);

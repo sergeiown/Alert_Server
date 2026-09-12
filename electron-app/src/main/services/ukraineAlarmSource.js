@@ -7,7 +7,7 @@ const { setLatestAlertData } = require('./activeAlertData');
 const WS_URL = 'wss://alert-proxy.alert-proxy-ua.workers.dev/ws';
 const FALLBACK_POLL_URL = 'https://alert-proxy.alert-proxy-ua.workers.dev/ukrainealarm-alerts';
 const RECONNECT_DELAY_MS = 5000;
-const HEARTBEAT_TIMEOUT_MS = 45000;
+const HEARTBEAT_TIMEOUT_MS = 8 * 60 * 1000;
 const FALLBACK_POLL_INTERVAL_MS = 30000;
 
 function startPolling(clientKey, onUpdate, onHealthChange) {
@@ -76,9 +76,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
         if (socket) {
             try {
                 socket.close();
-            } catch (err) {
-                /* already closing/closed */
-            }
+            } catch (err) {}
         }
 
         let ws;
@@ -97,11 +95,13 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
         ws.addEventListener('message', (event) => {
             resetHeartbeatWatch();
             stopFallbackPolling();
+            if (onHealthChange) onHealthChange(true);
+
             try {
                 const data = JSON.parse(event.data);
+                if (data && data.type === 'heartbeat') return;
                 setLatestAlertData(data);
                 onUpdate(data);
-                if (onHealthChange) onHealthChange(true);
             } catch (err) {
                 logEvent(`UkraineAlarm (via alert-proxy) WebSocket message parse failed: ${err.message}`, 'NETWORK');
             }
@@ -130,9 +130,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
             if (socket) {
                 try {
                     socket.close();
-                } catch (err) {
-                    /* already closing/closed */
-                }
+                } catch (err) {}
             }
         },
     };
