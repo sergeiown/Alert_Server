@@ -225,7 +225,9 @@ function computeStats(alerts, nowMs, config) {
         .sort((a, b) => b.count - a.count);
 
     const lastFinishedMs = sortedDesc[0].finished_at ? new Date(sortedDesc[0].finished_at).getTime() : null;
+    const lastStartedMs = new Date(sortedDesc[0].started_at).getTime();
     const sinceLastMs = lastFinishedMs !== null ? Math.max(0, nowMs - lastFinishedMs) : null;
+    const lastAlertDurationMs = lastFinishedMs !== null ? Math.max(0, lastFinishedMs - lastStartedMs) : null;
 
     return {
         count,
@@ -236,6 +238,7 @@ function computeStats(alerts, nowMs, config) {
         todayWeekday,
         typeBreakdown,
         sinceLastMs,
+        lastAlertDurationMs,
         lambdaRegion,
     };
 }
