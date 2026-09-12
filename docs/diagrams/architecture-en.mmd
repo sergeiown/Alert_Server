@@ -53,7 +53,7 @@ flowchart LR
     neptun -->|WebSocket stream| threatsStore
     neptun --> altSource
 
-    pushNote(["persistent connection, kept alive&#10;for the whole app session;&#10;falls back to polling only while down"])
+    pushNote(["persistent connection, kept alive;for the whole app session;;falls back to polling only while down"])
     proxy -. pushes via .-> pushNote
     pushNote -. explains .-> uaSource
     pushNote -. explains .-> poller
