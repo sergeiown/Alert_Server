@@ -172,16 +172,15 @@ function connect() {
         }
     });
 
-    ws.addEventListener('close', () => {
+    ws.addEventListener('close', (event) => {
         if (heartbeatTimer) clearTimeout(heartbeatTimer);
         if (socket !== ws) return;
+        logEvent(`Neptun threats connection closed (code ${event.code}${event.reason ? `: ${event.reason}` : ''}) - reconnecting`, 'NETWORK');
         startFallbackPolling();
         reconnectTimer = setTimeout(connect, RECONNECT_DELAY_MS);
     });
 
-    ws.addEventListener('error', (event) => {
-        logEvent(`Neptun threats error: ${event.message || event.error?.message || event.error?.code || 'unknown error'}`, 'NETWORK');
-    });
+    ws.addEventListener('error', () => {});
 }
 
 function startNeptunThreatsTracking() {
