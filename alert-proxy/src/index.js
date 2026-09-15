@@ -259,11 +259,6 @@ export class AlertsGateway {
         this.historyFetchTimestamps = [];
         this.ukraineAlarmFetchTimestamps = [];
         this.ukraineAlarmOriginError = null;
-        this.ukraineAlarmTodayCache = null;
-        this.ukraineAlarmTodayOriginError = null;
-        this.ukraineAlarmTodayFailCount = 0;
-        this.ukraineAlarmTodayAttemptDate = null;
-        this.ukraineAlarmTodayLastAttemptAt = 0;
 
         this.ukraineAlarmDateStatsCache = new Map();
         this.ukraineAlarmRegionHistoryCache = new Map();
@@ -814,48 +809,58 @@ export class AlertsGateway {
         return { alerts };
     }
 
+    async loadUkraineAlarmTodayState() {
+        return (
+            (await this.state.storage.get('ukraineAlarmTodayState')) || {
+                attemptDate: null,
+                failCount: 0,
+                lastAttemptAt: 0,
+                cache: null,
+                originError: null,
+            }
+        );
+    }
+
     async getUkraineAlarmTodayStats() {
         const todayKey = kyivDateKey(new Date());
         const now = Date.now();
 
-        if (this.ukraineAlarmTodayAttemptDate !== todayKey) {
-            this.ukraineAlarmTodayAttemptDate = todayKey;
-            this.ukraineAlarmTodayFailCount = 0;
-            this.ukraineAlarmTodayLastAttemptAt = 0;
+        let today = await this.loadUkraineAlarmTodayState();
+        if (today.attemptDate !== todayKey) {
+            today = { attemptDate: todayKey, failCount: 0, lastAttemptAt: 0, cache: today.cache, originError: null };
         }
 
         const cacheStale =
-            !this.ukraineAlarmTodayCache ||
-            this.ukraineAlarmTodayCache.date !== todayKey ||
-            now - this.ukraineAlarmTodayCache.fetchedAt >= UKRAINEALARM_TODAY_CACHE_TTL_MS;
+            !today.cache || today.cache.date !== todayKey || now - today.cache.fetchedAt >= UKRAINEALARM_TODAY_CACHE_TTL_MS;
 
-        const backingOff = this.ukraineAlarmTodayFailCount >= UKRAINEALARM_TODAY_BACKOFF_THRESHOLD;
+        const backingOff = today.failCount >= UKRAINEALARM_TODAY_BACKOFF_THRESHOLD;
         const retryGapMs = backingOff ? UKRAINEALARM_TODAY_BACKOFF_MS : UKRAINEALARM_TODAY_CACHE_TTL_MS;
-        const dueForRetry = now - this.ukraineAlarmTodayLastAttemptAt >= retryGapMs;
+        const dueForRetry = now - today.lastAttemptAt >= retryGapMs;
 
         if (cacheStale && dueForRetry) {
-            this.ukraineAlarmTodayLastAttemptAt = now;
+            today.lastAttemptAt = now;
             const result = await this.fetchUkraineAlarmDateHistory(todayKey);
             if (result.error) {
-                this.ukraineAlarmTodayOriginError = result.error;
-                this.ukraineAlarmTodayFailCount++;
+                today.originError = result.error;
+                today.failCount++;
             } else {
-                this.ukraineAlarmTodayOriginError = null;
-                this.ukraineAlarmTodayFailCount = 0;
-                this.ukraineAlarmTodayCache = { date: todayKey, alerts: result.alerts, fetchedAt: now };
+                today.originError = null;
+                today.failCount = 0;
+                today.cache = { date: todayKey, alerts: result.alerts, fetchedAt: now };
             }
+            await this.state.storage.put('ukraineAlarmTodayState', today);
         }
 
-        if (this.ukraineAlarmTodayOriginError && !this.ukraineAlarmTodayCache) {
-            return new Response(JSON.stringify({ error: this.ukraineAlarmTodayOriginError }), {
-                status: this.ukraineAlarmTodayOriginError.status || 502,
+        if (today.originError && !today.cache) {
+            return new Response(JSON.stringify({ error: today.originError }), {
+                status: today.originError.status || 502,
                 headers: { 'Content-Type': 'application/json' },
             });
         }
 
         const body = JSON.stringify({
-            date: this.ukraineAlarmTodayCache.date,
-            alerts: this.ukraineAlarmTodayCache.alerts,
+            date: today.cache.date,
+            alerts: today.cache.alerts,
             complete: true,
             warmupEtaMinutes: 0,
         });
@@ -1020,6 +1025,7 @@ export class AlertsGateway {
 
         const todayState = await this.loadTodayStatsState();
         const oblastsRemaining = Math.max(0, ALL_OBLAST_UIDS.length - todayState.cursor);
+        const ukraineAlarmTodayState = await this.loadUkraineAlarmTodayState();
         const uniqueUsersState = await this.state.storage.get('uniqueUsersState');
         const allTimeUniqueUsersState = await this.state.storage.get('allTimeUniqueUsersState');
 
@@ -1073,6 +1079,18 @@ export class AlertsGateway {
                 oblastsTotal: ALL_OBLAST_UIDS.length,
                 complete: oblastsRemaining === 0,
                 refreshIntervalMs: TODAY_STATS_REFRESH_INTERVAL_MS,
+            },
+            ukraineAlarmTodayStats: {
+                date: ukraineAlarmTodayState.attemptDate,
+                hasCache: Boolean(ukraineAlarmTodayState.cache && ukraineAlarmTodayState.cache.date === ukraineAlarmTodayState.attemptDate),
+                lastOriginFetchAgeMs: ageOrNull(ukraineAlarmTodayState.lastAttemptAt),
+                consecutiveFailures: ukraineAlarmTodayState.failCount,
+                backingOff: ukraineAlarmTodayState.failCount >= UKRAINEALARM_TODAY_BACKOFF_THRESHOLD,
+                retryIntervalMs:
+                    ukraineAlarmTodayState.failCount >= UKRAINEALARM_TODAY_BACKOFF_THRESHOLD
+                        ? UKRAINEALARM_TODAY_BACKOFF_MS
+                        : UKRAINEALARM_TODAY_CACHE_TTL_MS,
+                currentError: ukraineAlarmTodayState.originError,
             },
             uniqueUsers: {
 
