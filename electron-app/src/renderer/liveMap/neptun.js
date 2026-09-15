@@ -154,10 +154,10 @@ function iconHtml(typeKey, rotationDeg, lifecycle, sizePx = DEFAULT_ICON_SIZE_PX
     );
 }
 
-function threatIcon(threat) {
+function threatIcon(threat, sizeMultiplier = 1) {
     const typeKey = resolveTypeKey(threat);
     const rotation = typeof threat.heading === 'number' ? threat.heading : undefined;
-    const sizePx = MAP_ICON_SIZE_OVERRIDES[typeKey] || DEFAULT_ICON_SIZE_PX;
+    const sizePx = Math.round((MAP_ICON_SIZE_OVERRIDES[typeKey] || DEFAULT_ICON_SIZE_PX) * sizeMultiplier);
 
     return L.divIcon({
         className: 'threat-icon-wrapper',
@@ -282,6 +282,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const activeCircles = new Map();
     const isEnglish = language === 'English';
     let lastThreats = [];
+    let kyivMode = false;
 
     const legend = buildLegend(strings);
     legend.addTo(map);
@@ -294,8 +295,12 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     });
 
     const MARKER_FADE_MS = 750;
-    const ICON_POP_SCALE = 0.15;
-    const ICON_POP_IN_EASING = 'cubic-bezier(0.25, 1.8, 0.4, 1)';
+    const ICON_APPEAR_START_SCALE = 1.6;
+    const ICON_APPEAR_EASING = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
+    const KYIV_ICON_SCALE = 1.2;
+    const MOVE_DURATION_MS = 600;
+    const EXPLOSION_DURATION_MS = 600;
+    const DEBRIS_COUNT = 7;
 
     function revealWhenReady(reveal) {
         if (readyPromise) readyPromise.then(reveal);
@@ -308,8 +313,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         const inner = el ? el.querySelector('.threat-icon') : null;
         if (el) el.style.transition = `opacity ${MARKER_FADE_MS}ms ease`;
         if (inner) {
-            inner.style.transition = `transform ${MARKER_FADE_MS}ms ${ICON_POP_IN_EASING}`;
-            inner.style.transform = `scale(${ICON_POP_SCALE})`;
+            inner.style.transition = `transform ${MARKER_FADE_MS}ms ${ICON_APPEAR_EASING}`;
+            inner.style.transform = `scale(${ICON_APPEAR_START_SCALE})`;
         }
 
         revealWhenReady(() => {
@@ -319,6 +324,37 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         });
     }
 
+    function spawnExplosion(el) {
+        const burst = document.createElement('div');
+        burst.className = 'threat-explosion';
+
+        const flash = document.createElement('span');
+        flash.className = 'threat-explosion-flash';
+        burst.appendChild(flash);
+
+        const fragments = [];
+        for (let i = 0; i < DEBRIS_COUNT; i++) {
+            const angle = (Math.PI * 2 * i) / DEBRIS_COUNT + (Math.random() - 0.5) * 0.7;
+            const distance = 12 + Math.random() * 10;
+            const size = 2 + Math.random() * 2;
+
+            const frag = document.createElement('span');
+            frag.className = 'threat-debris';
+            frag.style.width = `${size}px`;
+            frag.style.height = `${size}px`;
+            frag.style.setProperty('--dx', `${Math.cos(angle) * distance}px`);
+            frag.style.setProperty('--dy', `${Math.sin(angle) * distance}px`);
+            frag.style.setProperty('--rot', `${(Math.random() - 0.5) * 360}deg`);
+            burst.appendChild(frag);
+            fragments.push(frag);
+        }
+
+        el.appendChild(burst);
+        void burst.offsetWidth;
+        flash.classList.add('exploding');
+        fragments.forEach((frag) => frag.classList.add('exploding'));
+    }
+
     function fadeOutAndRemove(marker) {
         const el = marker.getElement();
         if (!el) {
@@ -326,13 +362,13 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             return;
         }
         const inner = el.querySelector('.threat-icon');
-        el.style.transition = `opacity ${MARKER_FADE_MS}ms ease`;
         if (inner) {
-            inner.style.transition = `transform ${MARKER_FADE_MS}ms ease`;
-            inner.style.transform = `scale(${ICON_POP_SCALE})`;
+            inner.style.transition = 'opacity 180ms ease, transform 180ms ease';
+            inner.style.opacity = '0';
+            inner.style.transform = 'scale(0.6)';
         }
-        marker.setOpacity(0);
-        setTimeout(() => layer.removeLayer(marker), MARKER_FADE_MS);
+        spawnExplosion(el);
+        setTimeout(() => layer.removeLayer(marker), EXPLOSION_DURATION_MS);
     }
 
     function fadeInCircle(circle) {
@@ -417,22 +453,26 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         const points = valid.map((t) => map.latLngToContainerPoint([t.lat, t.lon]));
         const spread = declutterPoints(points);
 
+        const sizeMultiplier = kyivMode ? KYIV_ICON_SCALE : 1;
+
         valid.forEach((threat, i) => {
             const displayLatLng = map.containerPointToLatLng([spread[i].x, spread[i].y]);
             const existing = activeMarkers.get(threat.id);
-            const iconSig = `${resolveTypeKey(threat)}|${threat.heading ?? ''}|${threat.lifecycle}`;
+            const iconSig = `${resolveTypeKey(threat)}|${threat.heading ?? ''}|${threat.lifecycle}|${sizeMultiplier}`;
 
             if (existing) {
+                const el = existing.getElement();
+                if (el) el.style.transition = `opacity ${MARKER_FADE_MS}ms ease, transform ${MOVE_DURATION_MS}ms ease`;
                 existing.setLatLng(displayLatLng);
                 if (existing._iconSig !== iconSig) {
-                    existing.setIcon(threatIcon(threat));
+                    existing.setIcon(threatIcon(threat, sizeMultiplier));
                     existing._iconSig = iconSig;
                 }
                 existing.setTooltipContent(tooltipContent(threat, strings, isEnglish));
                 return;
             }
 
-            const marker = L.marker(displayLatLng, { icon: threatIcon(threat), pane: THREATS_PANE })
+            const marker = L.marker(displayLatLng, { icon: threatIcon(threat, sizeMultiplier), pane: THREATS_PANE })
                 .bindTooltip(tooltipContent(threat, strings, isEnglish))
                 .on('mouseover', () => map.closePopup())
                 .addTo(layer);
@@ -443,6 +483,12 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     }
 
     map.on('zoomend', () => renderThreats(lastThreats));
+
+    layer.setKyivMode = function (active) {
+        if (kyivMode === active) return;
+        kyivMode = active;
+        renderThreats(lastThreats);
+    };
 
     window.alertServerLiveMap.getThreats().then((threats) => renderThreats(threats));
     window.alertServerLiveMap.onThreatsUpdated((threats) => renderThreats(threats));
