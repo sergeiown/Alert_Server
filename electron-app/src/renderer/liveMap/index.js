@@ -336,6 +336,7 @@ async function main() {
 
         regionStatusLayer.setKyivMode(active);
         labelsLayer.setKyivMode(active);
+        threatsLayer.setKyivMode(active);
         fitAndLockMinZoom();
 
         await waitForSceneReady(active);
