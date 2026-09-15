@@ -79,7 +79,7 @@ Left-clicking the tray icon opens a small popup with any active alerts (each wit
   <img src="docs/images/forecast-notify-en-light.png" alt="forecast approaching notification">
 </picture>
 
-The event log records app activity (start/exit, settings and region changes, alerts, update checks) as CSV, each line tagged with a level (info, warning, error, network, or an actual alert starting/ending) so a quick scan shows what mattered without reading every line. It always writes in English regardless of the interface language - it's meant to be read later, not translated on the fly - and opens straight into a proper table if you double-click it in Excel, rather than one long unreadable line. Capped at 1 MB, automatically trimmed once it grows past that.
+The event log records app activity (start/exit, settings and region changes, alerts, update checks) as CSV, each line tagged with a level (info, warning, error, network, or an actual alert starting/ending) so a quick scan shows what mattered without reading every line. It always writes in English regardless of the interface language. Capped at 1 MB, automatically trimmed once it grows past that.
 
 ## Data sources & credits
 
