@@ -295,12 +295,23 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     });
 
     const MARKER_FADE_MS = 750;
+    const MARKER_FADE_SPREAD_MS = 120;
     const ICON_APPEAR_START_SCALE = 1.6;
     const ICON_APPEAR_EASING = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
     const KYIV_ICON_SCALE = 1.2;
     const MOVE_DURATION_MS = 600;
-    const EXPLOSION_DURATION_MS = 600;
+    const MOVE_SPREAD_MS = 100;
+    const SHRINK_DURATION_MS = 180;
+    const SHRINK_SPREAD_MS = 40;
+    const FLASH_DURATION_MS = 320;
+    const FLASH_SPREAD_MS = 60;
+    const DEBRIS_DURATION_MS = 550;
+    const DEBRIS_SPREAD_MS = 90;
     const DEBRIS_COUNT = 7;
+
+    function randomDuration(baseMs, spreadMs) {
+        return Math.round(baseMs + (Math.random() * 2 - 1) * spreadMs);
+    }
 
     function revealWhenReady(reveal) {
         if (readyPromise) readyPromise.then(reveal);
@@ -311,9 +322,10 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         marker.setOpacity(0);
         const el = marker.getElement();
         const inner = el ? el.querySelector('.threat-icon') : null;
-        if (el) el.style.transition = `opacity ${MARKER_FADE_MS}ms ease`;
+        const duration = randomDuration(MARKER_FADE_MS, MARKER_FADE_SPREAD_MS);
+        if (el) el.style.transition = `opacity ${duration}ms ease`;
         if (inner) {
-            inner.style.transition = `transform ${MARKER_FADE_MS}ms ${ICON_APPEAR_EASING}`;
+            inner.style.transition = `transform ${duration}ms ${ICON_APPEAR_EASING}`;
             inner.style.transform = `scale(${ICON_APPEAR_START_SCALE})`;
         }
 
@@ -328,15 +340,20 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         const burst = document.createElement('div');
         burst.className = 'threat-explosion';
 
+        const flashDuration = randomDuration(FLASH_DURATION_MS, FLASH_SPREAD_MS);
         const flash = document.createElement('span');
         flash.className = 'threat-explosion-flash';
+        flash.style.transition = `transform ${flashDuration}ms ease-out, opacity ${flashDuration}ms ease-out`;
         burst.appendChild(flash);
 
         const fragments = [];
+        let longestDebrisMs = 0;
         for (let i = 0; i < DEBRIS_COUNT; i++) {
             const angle = (Math.PI * 2 * i) / DEBRIS_COUNT + (Math.random() - 0.5) * 0.7;
             const distance = 12 + Math.random() * 10;
             const size = 2 + Math.random() * 2;
+            const fragDuration = randomDuration(DEBRIS_DURATION_MS, DEBRIS_SPREAD_MS);
+            longestDebrisMs = Math.max(longestDebrisMs, fragDuration);
 
             const frag = document.createElement('span');
             frag.className = 'threat-debris';
@@ -345,6 +362,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             frag.style.setProperty('--dx', `${Math.cos(angle) * distance}px`);
             frag.style.setProperty('--dy', `${Math.sin(angle) * distance}px`);
             frag.style.setProperty('--rot', `${(Math.random() - 0.5) * 360}deg`);
+            frag.style.transition = `transform ${fragDuration}ms cubic-bezier(0.2, 0.7, 0.3, 1), opacity ${fragDuration}ms ease-in`;
             burst.appendChild(frag);
             fragments.push(frag);
         }
@@ -353,6 +371,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         void burst.offsetWidth;
         flash.classList.add('exploding');
         fragments.forEach((frag) => frag.classList.add('exploding'));
+
+        return Math.max(flashDuration, longestDebrisMs);
     }
 
     function fadeOutAndRemove(marker) {
@@ -361,14 +381,15 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             layer.removeLayer(marker);
             return;
         }
+        const shrinkDuration = randomDuration(SHRINK_DURATION_MS, SHRINK_SPREAD_MS);
         const inner = el.querySelector('.threat-icon');
         if (inner) {
-            inner.style.transition = 'opacity 180ms ease, transform 180ms ease';
+            inner.style.transition = `opacity ${shrinkDuration}ms ease, transform ${shrinkDuration}ms ease`;
             inner.style.opacity = '0';
             inner.style.transform = 'scale(0.6)';
         }
-        spawnExplosion(el);
-        setTimeout(() => layer.removeLayer(marker), EXPLOSION_DURATION_MS);
+        const explosionDuration = spawnExplosion(el);
+        setTimeout(() => layer.removeLayer(marker), Math.max(shrinkDuration, explosionDuration) + 50);
     }
 
     function fadeInCircle(circle) {
@@ -462,7 +483,10 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
 
             if (existing) {
                 const el = existing.getElement();
-                if (el) el.style.transition = `opacity ${MARKER_FADE_MS}ms ease, transform ${MOVE_DURATION_MS}ms ease`;
+                if (el) {
+                    const moveDuration = randomDuration(MOVE_DURATION_MS, MOVE_SPREAD_MS);
+                    el.style.transition = `opacity ${randomDuration(MARKER_FADE_MS, MARKER_FADE_SPREAD_MS)}ms ease, transform ${moveDuration}ms ease`;
+                }
                 existing.setLatLng(displayLatLng);
                 if (existing._iconSig !== iconSig) {
                     existing.setIcon(threatIcon(threat, sizeMultiplier));
