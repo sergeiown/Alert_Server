@@ -114,16 +114,15 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
             }
         });
 
-        ws.addEventListener('close', () => {
+        ws.addEventListener('close', (event) => {
             if (heartbeatTimer) clearTimeout(heartbeatTimer);
             if (stopped || socket !== ws) return;
+            logEvent(`UkraineAlarm via alert-proxy connection closed (code ${event.code}${event.reason ? `: ${event.reason}` : ''}) - reconnecting`, 'NETWORK');
             startFallbackPolling();
             scheduleReconnect();
         });
 
-        ws.addEventListener('error', (event) => {
-            logEvent(`UkraineAlarm via alert-proxy error: ${event.message || event.error?.message || event.error?.code || 'unknown error'}`, 'NETWORK');
-        });
+        ws.addEventListener('error', () => {});
     }
 
     connect();
