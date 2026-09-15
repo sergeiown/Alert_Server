@@ -42,7 +42,7 @@ autoUpdater.on('update-available', (info) => {
         })
         .then((result) => {
             if (result.response === 0) {
-                logEvent(`Update ${info.version} confirmed, downloading`, 'INFO');
+                logEvent(`Update ${info.version} confirmed - downloading`, 'INFO');
                 anchor.show();
                 autoUpdater.downloadUpdate();
             } else {
@@ -59,7 +59,7 @@ autoUpdater.on('download-progress', (progress) => {
 });
 
 autoUpdater.on('update-downloaded', (info) => {
-    logEvent(`Update ${info.version} downloaded, installing`, 'INFO');
+    logEvent(`Update ${info.version} downloaded - installing`, 'INFO');
     setUpdateProgress(100);
     setUpdateStatus('Завантажено, встановлення...');
     setTemporaryTooltip('Alert Server: оновлення завантажено, встановлення...');

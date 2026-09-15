@@ -16,7 +16,7 @@ function registerSettingsIpc() {
 
         if (key === 'alertSourceProvider') {
 
-            logEvent(`Alert data source switched to ${value}, relaunching to apply it`, 'INFO');
+            logEvent(`Alert data source switched to ${value} - relaunching to apply it`, 'INFO');
         }
 
         if (key === 'language' || key === 'alertSourceProvider') {
