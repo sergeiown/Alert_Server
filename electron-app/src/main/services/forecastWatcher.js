@@ -48,7 +48,7 @@ function notifyApproaching(uid, alertType, etaMs, language) {
     });
 
     logEvent(
-        `Forecast notify: ${regionName(uid, 'English')} - ${alertTypeName(alertType, 'English')} (uid ${uid}, eta approximately ${formatDuration(etaMs, 'English')})`,
+        `Forecast notify: ${regionName(uid, 'English')} - ${alertTypeName(alertType, 'English')} (uid ${uid} - eta approximately ${formatDuration(etaMs, 'English')})`,
         'INFO'
     );
 }

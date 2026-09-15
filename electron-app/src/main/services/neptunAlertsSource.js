@@ -54,7 +54,7 @@ function logUnmatchedOnce(name, oblast) {
     const lastLogged = loggedUnmatchedAt.get(name) || 0;
     if (now - lastLogged < UNMATCHED_LOG_COOLDOWN_MS) return;
     loggedUnmatchedAt.set(name, now);
-    logEvent(`Neptun alert source: no matching location in locations.json for "${name}" (${oblast})`, 'WARNING');
+    logEvent(`Neptun alert source: no matching location in locations.json for ${name} (${oblast})`, 'WARNING');
 }
 
 function mapNeptunThreats(entry) {
@@ -138,7 +138,7 @@ function warnAboutUncoveredMonitoredRegions() {
 
     if (!uncovered.length) return;
     logEvent(
-        `Neptun alert source: ${uncovered.length} monitored location(s) have no community-level equivalent in Neptun's data and won't be directly matched (only if their whole raion/oblast goes on alert): ${uncovered.join(', ')}`,
+        `Neptun alert source: ${uncovered.length} monitored location(s) have no community-level equivalent in Neptun's data and won't be directly matched (only if their whole raion/oblast goes on alert): ${uncovered.join('; ')}`,
         'WARNING'
     );
 }

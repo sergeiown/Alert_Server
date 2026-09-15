@@ -44,7 +44,10 @@ app.whenReady().then(() => {
     logEvent(`Application started (v${app.getVersion()})`, 'INFO');
 
     const result = importLegacyConfig(LEGACY_APP_DIR, { settingsStore, regionsStore });
-    logEvent(`Legacy config import: ${JSON.stringify(result)}`, 'INFO');
+    logEvent(
+        result.imported ? `Legacy config imported (${result.count} region(s))` : `Legacy config not imported (${result.reason})`,
+        'INFO'
+    );
 
     if (settingsStore.wasFirstRun()) {
         app.setLoginItemSettings({ openAtLogin: true });
