@@ -28,7 +28,7 @@ function installHandlers() {
         logEvent(err.stack || '', 'ERROR');
 
         if (tooSoonSinceLastRestart()) {
-            logEvent('Restart loop detected, exiting without relaunch', 'ERROR');
+            logEvent('Restart loop detected - exiting without relaunch', 'ERROR');
             app.exit(3);
             return;
         }

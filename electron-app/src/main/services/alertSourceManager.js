@@ -53,7 +53,7 @@ function startAlertSourceManager(preferredProvider, clientKey, onAlertsUpdated) 
         const source = SOURCES[key];
 
         if ((key === 'ukrainealarm' || key === 'alerts.in.ua') && !clientKey) {
-            logEvent(`alertProxyClientKey missing from config.local.json, skipping ${source.label} in the failover chain`, 'WARNING');
+            logEvent(`alertProxyClientKey missing from config.local.json - skipping ${source.label} in the failover chain`, 'WARNING');
             if (index < chain.length - 1) activate(index + 1, `${source.label} unavailable (no client key)`);
             return;
         }
