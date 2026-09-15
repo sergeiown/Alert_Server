@@ -11,7 +11,7 @@ Per always-on client instance, steady-state requests against this Worker:
 | Feed | Mechanism | Requests/day |
 |---|---|---|
 | Alerts | WebSocket push (`/ws` for UkraineAlarm, `/ws-alerts-in-ua` for its alerts.in.ua failover - same mechanism, same cost either way), one connection per session; falls back to polling every 30s only while the socket is down | ~1 (handshake) + occasional reconnects |
-| Today-stats | Polled every 5 min, 1 call/cycle in steady state (the alerts.in.ua fallback call only fires during a genuine transient UkraineAlarm hiccup, confirmed 2026-09-12) | ~288 |
+| Today-stats | Polled every 5 min, 1 call/cycle in steady state - the alerts.in.ua fallback call fires whenever UkraineAlarm's `/alerts/dateHistory` is down, which as of 2026-09-15 is persistent (401, empty body) rather than transient; the token works fine for the main `/alerts` and `/alerts/status` endpoints, so this looks like a UkraineAlarm-side access-scope limit on history endpoints specifically, not something fixable here. The proxy backs off to a 30-minute retry once it fails 3 times in a row for the day, instead of retrying every 2 minutes forever. | ~288 |
 | Weapon-stats | Polled every 24h | 1 |
 | **Total** | | **~289/day/user** (was ~3169/day before the push migration) |
 
@@ -28,4 +28,4 @@ Occupied-territory (DeepState) and update checks (GitHub Releases) bypass this W
 1. Lengthen the today-stats poll interval, or push it over the same WebSocket alongside alerts - it's already cheap (~288/day), so low priority.
 2. Upgrade to Workers Paid ($5/month) - removes the hard daily cap outright.
 
-_Numbers last checked against the current Cloudflare docs: 2026-09-12._
+_Numbers last checked against the current Cloudflare docs: 2026-09-15._

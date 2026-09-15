@@ -75,6 +75,8 @@ const UKRAINEALARM_WEBHOOK_MAX_TIMESTAMP_AGE_MS = 5 * 60 * 1000;
 const UKRAINEALARM_WEBHOOK_DEDUPE_WINDOW_MS = 5 * 60 * 1000;
 
 const UKRAINEALARM_TODAY_CACHE_TTL_MS = 2 * 60 * 1000;
+const UKRAINEALARM_TODAY_BACKOFF_THRESHOLD = 3;
+const UKRAINEALARM_TODAY_BACKOFF_MS = 30 * 60 * 1000;
 
 const UKRAINEALARM_TODAY_MAX_DURATION_MS = 24 * 60 * 60 * 1000;
 
@@ -259,6 +261,9 @@ export class AlertsGateway {
         this.ukraineAlarmOriginError = null;
         this.ukraineAlarmTodayCache = null;
         this.ukraineAlarmTodayOriginError = null;
+        this.ukraineAlarmTodayFailCount = 0;
+        this.ukraineAlarmTodayAttemptDate = null;
+        this.ukraineAlarmTodayLastAttemptAt = 0;
 
         this.ukraineAlarmDateStatsCache = new Map();
         this.ukraineAlarmRegionHistoryCache = new Map();
@@ -813,16 +818,30 @@ export class AlertsGateway {
         const todayKey = kyivDateKey(new Date());
         const now = Date.now();
 
-        if (
+        if (this.ukraineAlarmTodayAttemptDate !== todayKey) {
+            this.ukraineAlarmTodayAttemptDate = todayKey;
+            this.ukraineAlarmTodayFailCount = 0;
+            this.ukraineAlarmTodayLastAttemptAt = 0;
+        }
+
+        const cacheStale =
             !this.ukraineAlarmTodayCache ||
             this.ukraineAlarmTodayCache.date !== todayKey ||
-            now - this.ukraineAlarmTodayCache.fetchedAt >= UKRAINEALARM_TODAY_CACHE_TTL_MS
-        ) {
+            now - this.ukraineAlarmTodayCache.fetchedAt >= UKRAINEALARM_TODAY_CACHE_TTL_MS;
+
+        const backingOff = this.ukraineAlarmTodayFailCount >= UKRAINEALARM_TODAY_BACKOFF_THRESHOLD;
+        const retryGapMs = backingOff ? UKRAINEALARM_TODAY_BACKOFF_MS : UKRAINEALARM_TODAY_CACHE_TTL_MS;
+        const dueForRetry = now - this.ukraineAlarmTodayLastAttemptAt >= retryGapMs;
+
+        if (cacheStale && dueForRetry) {
+            this.ukraineAlarmTodayLastAttemptAt = now;
             const result = await this.fetchUkraineAlarmDateHistory(todayKey);
             if (result.error) {
                 this.ukraineAlarmTodayOriginError = result.error;
+                this.ukraineAlarmTodayFailCount++;
             } else {
                 this.ukraineAlarmTodayOriginError = null;
+                this.ukraineAlarmTodayFailCount = 0;
                 this.ukraineAlarmTodayCache = { date: todayKey, alerts: result.alerts, fetchedAt: now };
             }
         }
