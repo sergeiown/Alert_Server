@@ -10,6 +10,7 @@ const RECONNECT_DELAY_MS = 5000;
 const HEARTBEAT_TIMEOUT_MS = 120000;
 const SNAPSHOT_REFRESH_MS = 60000;
 const PUBLISH_DEBOUNCE_MS = 500;
+const LOG_MIN_INTERVAL_MS = 60000;
 
 let latestThreats = [];
 let threatsById = new Map();
@@ -19,6 +20,8 @@ let heartbeatTimer = null;
 let fallbackTimer = null;
 let usingFallback = false;
 let publishDebounceTimer = null;
+let lastLoggedAt = 0;
+let logCatchupTimer = null;
 
 function getLatestThreats() {
     return latestThreats;
@@ -42,13 +45,35 @@ function applyRemove(id) {
     if (id) threatsById.delete(id);
 }
 
+function logCurrentCount() {
+    lastLoggedAt = Date.now();
+    logEvent(`Update (Neptun threats): ${threatsById.size} active threats`, 'NETWORK');
+}
+
+function maybeLogUpdate() {
+    const elapsed = Date.now() - lastLoggedAt;
+    if (elapsed >= LOG_MIN_INTERVAL_MS) {
+        if (logCatchupTimer) {
+            clearTimeout(logCatchupTimer);
+            logCatchupTimer = null;
+        }
+        logCurrentCount();
+        return;
+    }
+
+    if (logCatchupTimer) return;
+    logCatchupTimer = setTimeout(() => {
+        logCatchupTimer = null;
+        logCurrentCount();
+    }, LOG_MIN_INTERVAL_MS - elapsed);
+}
+
 function schedulePublish() {
     if (publishDebounceTimer) clearTimeout(publishDebounceTimer);
     publishDebounceTimer = setTimeout(() => {
         publishDebounceTimer = null;
-        const threats = Array.from(threatsById.values());
-        logEvent(`Update (Neptun threats): ${threats.length} active threats`, 'NETWORK');
-        publishThreats(threats);
+        maybeLogUpdate();
+        publishThreats(Array.from(threatsById.values()));
     }, PUBLISH_DEBOUNCE_MS);
 }
 
@@ -61,7 +86,7 @@ async function fetchSnapshot() {
         }
         const data = await response.json();
         applySnapshot(data.threats);
-        logEvent(`Update (Neptun threats): ${threatsById.size} active threats`, 'NETWORK');
+        maybeLogUpdate();
         publishThreats(Array.from(threatsById.values()));
     } catch (err) {
         logEvent(`Neptun threats fallback request error: ${err.message}`, 'NETWORK');
