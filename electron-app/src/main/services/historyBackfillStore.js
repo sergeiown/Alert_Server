@@ -109,9 +109,13 @@ async function runBackfill() {
         await delay(REQUEST_GAP_MS);
     }
 
-    const stillMissing = targetDateKeys().length - completed.size;
+    const currentTargets = targetDateKeys();
+    const prunedCompleted = new Set(currentTargets.filter((key) => completed.has(key)));
+    saveState({ completedDates: Array.from(prunedCompleted) });
+
+    const stillMissing = currentTargets.filter((key) => !prunedCompleted.has(key)).length;
     logEvent(
-        `Historical backfill (UkraineAlarm): ${succeededNow}/${missing.length} days fetched this run (${totalAlerts} alerts), ${stillMissing} day(s) still missing overall`,
+        `Historical backfill (UkraineAlarm): ${succeededNow}/${missing.length} days fetched this run (${totalAlerts} alerts) - ${stillMissing} day(s) still missing overall`,
         'NETWORK'
     );
 }
