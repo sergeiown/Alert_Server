@@ -7,7 +7,7 @@ const { getLiveMapWindow } = require('../windows/liveMapWindow');
 const THREATS_URL = 'https://neptun.in.ua/api/v1/threats';
 const STREAM_URL = 'wss://neptun.in.ua/api/v1/stream';
 const RECONNECT_DELAY_MS = 5000;
-const HEARTBEAT_TIMEOUT_MS = 30000;
+const HEARTBEAT_TIMEOUT_MS = 120000;
 const SNAPSHOT_REFRESH_MS = 60000;
 const PUBLISH_DEBOUNCE_MS = 500;
 
@@ -71,7 +71,7 @@ async function fetchSnapshot() {
 function startFallbackPolling() {
     if (usingFallback) return;
     usingFallback = true;
-    logEvent('Neptun threats: unavailable, falling back to polling', 'NETWORK');
+    logEvent('Neptun threats: unavailable - falling back to polling', 'NETWORK');
     fetchSnapshot();
     fallbackTimer = setInterval(fetchSnapshot, SNAPSHOT_REFRESH_MS);
 }
@@ -81,13 +81,13 @@ function stopFallbackPolling() {
     usingFallback = false;
     if (fallbackTimer) clearInterval(fallbackTimer);
     fallbackTimer = null;
-    logEvent('Neptun threats: recovered, stopping fallback polling', 'NETWORK');
+    logEvent('Neptun threats: recovered - stopping fallback polling', 'NETWORK');
 }
 
 function resetHeartbeatWatch() {
     if (heartbeatTimer) clearTimeout(heartbeatTimer);
     heartbeatTimer = setTimeout(() => {
-        logEvent('Neptun threats: no messages received, reconnecting', 'NETWORK');
+        logEvent('Neptun threats: no messages received - reconnecting', 'NETWORK');
         connect();
     }, HEARTBEAT_TIMEOUT_MS);
 }
@@ -155,7 +155,7 @@ function connect() {
     });
 
     ws.addEventListener('error', (event) => {
-        logEvent(`Neptun threats error: ${event.message || 'unknown error'}`, 'NETWORK');
+        logEvent(`Neptun threats error: ${event.message || event.error?.message || event.error?.code || 'unknown error'}`, 'NETWORK');
     });
 }
 

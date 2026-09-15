@@ -21,7 +21,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
     function resetHeartbeatWatch() {
         if (heartbeatTimer) clearTimeout(heartbeatTimer);
         heartbeatTimer = setTimeout(() => {
-            logEvent('UkraineAlarm via alert-proxy: no messages received, reconnecting', 'NETWORK');
+            logEvent('UkraineAlarm via alert-proxy: no messages received - reconnecting', 'NETWORK');
             connect();
         }, HEARTBEAT_TIMEOUT_MS);
     }
@@ -48,7 +48,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
     function startFallbackPolling() {
         if (usingFallback || stopped) return;
         usingFallback = true;
-        logEvent('UkraineAlarm via alert-proxy: unavailable, falling back to polling', 'NETWORK');
+        logEvent('UkraineAlarm via alert-proxy: unavailable - falling back to polling', 'NETWORK');
         fallbackPollOnce();
         fallbackTimer = setInterval(fallbackPollOnce, FALLBACK_POLL_INTERVAL_MS);
     }
@@ -58,7 +58,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
         usingFallback = false;
         if (fallbackTimer) clearInterval(fallbackTimer);
         fallbackTimer = null;
-        logEvent('UkraineAlarm via alert-proxy: recovered, stopping fallback polling', 'NETWORK');
+        logEvent('UkraineAlarm via alert-proxy: recovered - stopping fallback polling', 'NETWORK');
     }
 
     function scheduleReconnect() {
@@ -122,7 +122,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
         });
 
         ws.addEventListener('error', (event) => {
-            logEvent(`UkraineAlarm via alert-proxy error: ${event.message || 'unknown error'}`, 'NETWORK');
+            logEvent(`UkraineAlarm via alert-proxy error: ${event.message || event.error?.message || event.error?.code || 'unknown error'}`, 'NETWORK');
         });
     }
 
