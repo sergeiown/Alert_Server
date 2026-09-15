@@ -296,7 +296,10 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
 
     const MARKER_FADE_MS = 750;
     const MARKER_FADE_SPREAD_MS = 120;
+    const ICON_APPEAR_DURATION_MS = 1100;
+    const ICON_APPEAR_SPREAD_MS = 160;
     const ICON_APPEAR_START_SCALE = 1.6;
+    const ICON_APPEAR_DROP_PX = 40;
     const ICON_APPEAR_EASING = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
     const KYIV_ICON_SCALE = 1.2;
     const MOVE_DURATION_MS = 600;
@@ -322,17 +325,17 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         marker.setOpacity(0);
         const el = marker.getElement();
         const inner = el ? el.querySelector('.threat-icon') : null;
-        const duration = randomDuration(MARKER_FADE_MS, MARKER_FADE_SPREAD_MS);
+        const duration = randomDuration(ICON_APPEAR_DURATION_MS, ICON_APPEAR_SPREAD_MS);
         if (el) el.style.transition = `opacity ${duration}ms ease`;
         if (inner) {
             inner.style.transition = `transform ${duration}ms ${ICON_APPEAR_EASING}`;
-            inner.style.transform = `scale(${ICON_APPEAR_START_SCALE})`;
+            inner.style.transform = `translateY(-${ICON_APPEAR_DROP_PX}px) scale(${ICON_APPEAR_START_SCALE})`;
         }
 
         revealWhenReady(() => {
             if (el) void el.offsetWidth;
             marker.setOpacity(1);
-            if (inner) inner.style.transform = 'scale(1)';
+            if (inner) inner.style.transform = 'translateY(0) scale(1)';
         });
     }
 
