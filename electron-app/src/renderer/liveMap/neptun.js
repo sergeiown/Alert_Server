@@ -352,7 +352,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const DEBRIS_COUNT = 9;
     const CIRCLE_DRAW_DURATION_MS = 2200;
     const CIRCLE_DRAW_SPREAD_MS = 300;
-    const CIRCLE_DRAW_DELAY_MS = Math.round(ICON_APPEAR_DURATION_MS * 0.7);
+    const CIRCLE_DRAW_DELAY_MS = ICON_APPEAR_DURATION_MS + 200;
+    const CIRCLE_REDRAW_DELAY_MS = MOVE_DURATION_MS + 100;
     const ROTATE_DURATION_MS = 900;
     const ROTATE_SPREAD_MS = 150;
     const ICON_SWAP_DURATION_MS = 450;
@@ -449,7 +450,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         setTimeout(() => layer.removeLayer(marker), Math.max(shrinkDuration, explosionDuration) + 50);
     }
 
-    function fadeInCircle(circle) {
+    function drawCircleStroke(circle, delayMs) {
         const el = circle.getElement();
         if (!el) return;
 
@@ -460,6 +461,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             length = 0;
         }
 
+        el.style.transition = '';
         el.style.opacity = '0';
         if (length) {
             el.style.strokeDasharray = `${length}`;
@@ -481,7 +483,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                         el.style.strokeDashoffset = '';
                     }, duration + 30);
                 }
-            }, CIRCLE_DRAW_DELAY_MS);
+            }, delayMs);
         });
     }
 
@@ -587,10 +589,15 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         });
 
         approxThreats.forEach((threat) => {
+            const posSig = `${threat.lat}|${threat.lon}|${threat.uncertaintyKm}`;
             const existing = activeCircles.get(threat.id);
             if (existing) {
-                existing.setLatLng([threat.lat, threat.lon]);
-                existing.setRadius(threat.uncertaintyKm * 1000);
+                if (existing._posSig !== posSig) {
+                    existing._posSig = posSig;
+                    existing.setLatLng([threat.lat, threat.lon]);
+                    existing.setRadius(threat.uncertaintyKm * 1000);
+                    drawCircleStroke(existing, CIRCLE_REDRAW_DELAY_MS);
+                }
                 return;
             }
 
@@ -605,8 +612,9 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                 interactive: false,
                 className: 'threat-uncertainty-circle',
             }).addTo(circlesGroup);
+            circle._posSig = posSig;
             activeCircles.set(threat.id, circle);
-            fadeInCircle(circle);
+            drawCircleStroke(circle, CIRCLE_DRAW_DELAY_MS);
         });
 
         const currentIds = new Set(valid.map((t) => t.id));
