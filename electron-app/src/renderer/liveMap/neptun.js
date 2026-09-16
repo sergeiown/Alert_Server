@@ -296,21 +296,21 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
 
     const MARKER_FADE_MS = 750;
     const MARKER_FADE_SPREAD_MS = 120;
-    const ICON_APPEAR_DURATION_MS = 1100;
-    const ICON_APPEAR_SPREAD_MS = 160;
-    const ICON_APPEAR_START_SCALE = 1.6;
-    const ICON_APPEAR_DROP_PX = 40;
+    const ICON_APPEAR_DURATION_MS = 1300;
+    const ICON_APPEAR_SPREAD_MS = 180;
+    const ICON_APPEAR_START_SCALE = 2.2;
+    const ICON_APPEAR_DROP_PX = 60;
     const ICON_APPEAR_EASING = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
     const KYIV_ICON_SCALE = 1.2;
-    const MOVE_DURATION_MS = 600;
-    const MOVE_SPREAD_MS = 100;
-    const SHRINK_DURATION_MS = 180;
-    const SHRINK_SPREAD_MS = 40;
-    const FLASH_DURATION_MS = 320;
-    const FLASH_SPREAD_MS = 60;
-    const DEBRIS_DURATION_MS = 550;
-    const DEBRIS_SPREAD_MS = 90;
-    const DEBRIS_COUNT = 7;
+    const MOVE_DURATION_MS = 1300;
+    const MOVE_SPREAD_MS = 200;
+    const SHRINK_DURATION_MS = 250;
+    const SHRINK_SPREAD_MS = 50;
+    const FLASH_DURATION_MS = 450;
+    const FLASH_SPREAD_MS = 80;
+    const DEBRIS_DURATION_MS = 750;
+    const DEBRIS_SPREAD_MS = 110;
+    const DEBRIS_COUNT = 9;
 
     function randomDuration(baseMs, spreadMs) {
         return Math.round(baseMs + (Math.random() * 2 - 1) * spreadMs);
@@ -334,8 +334,12 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
 
         revealWhenReady(() => {
             if (el) void el.offsetWidth;
-            marker.setOpacity(1);
-            if (inner) inner.style.transform = 'translateY(0) scale(1)';
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    marker.setOpacity(1);
+                    if (inner) inner.style.transform = 'translateY(0) scale(1)';
+                });
+            });
         });
     }
 
@@ -353,8 +357,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         let longestDebrisMs = 0;
         for (let i = 0; i < DEBRIS_COUNT; i++) {
             const angle = (Math.PI * 2 * i) / DEBRIS_COUNT + (Math.random() - 0.5) * 0.7;
-            const distance = 12 + Math.random() * 10;
-            const size = 2 + Math.random() * 2;
+            const distance = 20 + Math.random() * 18;
+            const size = 4 + Math.random() * 3;
             const fragDuration = randomDuration(DEBRIS_DURATION_MS, DEBRIS_SPREAD_MS);
             longestDebrisMs = Math.max(longestDebrisMs, fragDuration);
 
@@ -371,9 +375,13 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         }
 
         el.appendChild(burst);
-        void burst.offsetWidth;
-        flash.classList.add('exploding');
-        fragments.forEach((frag) => frag.classList.add('exploding'));
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                flash.classList.add('exploding');
+                fragments.forEach((frag) => frag.classList.add('exploding'));
+            });
+        });
 
         return Math.max(flashDuration, longestDebrisMs);
     }
