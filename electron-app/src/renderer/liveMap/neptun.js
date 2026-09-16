@@ -412,17 +412,105 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
 
     function fadeInCircle(circle) {
         const el = circle.getElement();
-        if (el) {
-            el.style.transition = `opacity ${MARKER_FADE_MS}ms ease`;
-            el.style.opacity = '0';
+        if (!el) return;
+
+        let length = 0;
+        try {
+            length = typeof el.getTotalLength === 'function' ? el.getTotalLength() : 0;
+        } catch {
+            length = 0;
+        }
+
+        el.style.opacity = '0';
+        if (length) {
+            el.style.strokeDasharray = `${length}`;
+            el.style.strokeDashoffset = `${length}`;
         }
 
         revealWhenReady(() => {
-            if (el) {
+            setTimeout(() => {
+                const duration = randomDuration(CIRCLE_DRAW_DURATION_MS, CIRCLE_DRAW_SPREAD_MS);
                 void el.offsetWidth;
+                el.style.transition = `opacity ${duration}ms ease, stroke-dashoffset ${duration}ms ease-in-out`;
                 el.style.opacity = '1';
-            }
+                if (length) el.style.strokeDashoffset = '0';
+
+                if (length) {
+                    setTimeout(() => {
+                        el.style.transition = '';
+                        el.style.strokeDasharray = '';
+                        el.style.strokeDashoffset = '';
+                    }, duration + 30);
+                }
+            }, CIRCLE_DRAW_DELAY_MS);
         });
+    }
+
+    function normalizedDelta(fromDeg, toDeg) {
+        return (((toDeg - fromDeg) % 360) + 540) % 360 - 180;
+    }
+
+    function applyIconRotation(marker, threat, animate) {
+        const el = marker.getElement();
+        const rotateEl = el ? el.querySelector('.threat-icon-rotate') : null;
+        if (!rotateEl) return;
+
+        if (typeof threat.heading !== 'number') {
+            marker._headingDeg = undefined;
+            rotateEl.style.transition = '';
+            rotateEl.style.transform = '';
+            return;
+        }
+
+        if (!animate || typeof marker._headingDeg !== 'number') {
+            marker._headingDeg = threat.heading;
+            rotateEl.style.transition = '';
+            rotateEl.style.transform = `rotate(${threat.heading}deg)`;
+            return;
+        }
+
+        const unwrapped = marker._headingDeg + normalizedDelta(marker._headingDeg % 360, threat.heading);
+        const duration = randomDuration(ROTATE_DURATION_MS, ROTATE_SPREAD_MS);
+        rotateEl.style.transition = `transform ${duration}ms ease-in-out`;
+        rotateEl.style.transform = `rotate(${unwrapped}deg)`;
+        marker._headingDeg = unwrapped;
+    }
+
+    function animateIconSwap(marker, threat, sizeMultiplier) {
+        const el = marker.getElement();
+        const inner = el ? el.querySelector('.threat-icon') : null;
+        const duration = randomDuration(ICON_SWAP_DURATION_MS, ICON_SWAP_SPREAD_MS);
+
+        if (!inner) {
+            marker.setIcon(threatIcon(threat, sizeMultiplier));
+            marker._headingDeg = typeof threat.heading === 'number' ? threat.heading : undefined;
+            return;
+        }
+
+        inner.style.transition = `opacity ${duration}ms ease, transform ${duration}ms ease`;
+        inner.style.opacity = '0';
+        inner.style.transform = 'scale(0.5)';
+
+        setTimeout(() => {
+            marker.setIcon(threatIcon(threat, sizeMultiplier));
+            marker._headingDeg = typeof threat.heading === 'number' ? threat.heading : undefined;
+            const newEl = marker.getElement();
+            const newInner = newEl ? newEl.querySelector('.threat-icon') : null;
+            if (!newInner) return;
+
+            newInner.style.transition = 'none';
+            newInner.style.opacity = '0';
+            newInner.style.transform = 'scale(0.5)';
+            void newEl.offsetWidth;
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    newInner.style.transition = `opacity ${duration}ms ease, transform ${duration}ms ease`;
+                    newInner.style.opacity = '1';
+                    newInner.style.transform = 'scale(1)';
+                });
+            });
+        }, duration);
     }
 
     function fadeOutAndRemoveCircle(circle) {
@@ -497,7 +585,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         valid.forEach((threat, i) => {
             const displayLatLng = map.containerPointToLatLng([spread[i].x, spread[i].y]);
             const existing = activeMarkers.get(threat.id);
-            const iconSig = `${resolveTypeKey(threat)}|${threat.heading ?? ''}|${threat.lifecycle}|${sizeMultiplier}`;
+            const typeSig = `${resolveTypeKey(threat)}|${threat.lifecycle}|${sizeMultiplier}`;
 
             if (existing) {
                 const el = existing.getElement();
@@ -506,9 +594,11 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                     el.style.transition = `opacity ${randomDuration(MARKER_FADE_MS, MARKER_FADE_SPREAD_MS)}ms ease, transform ${moveDuration}ms ease`;
                 }
                 existing.setLatLng(displayLatLng);
-                if (existing._iconSig !== iconSig) {
-                    existing.setIcon(threatIcon(threat, sizeMultiplier));
-                    existing._iconSig = iconSig;
+                if (existing._typeSig !== typeSig) {
+                    animateIconSwap(existing, threat, sizeMultiplier);
+                    existing._typeSig = typeSig;
+                } else {
+                    applyIconRotation(existing, threat, true);
                 }
                 existing.setTooltipContent(tooltipContent(threat, strings, isEnglish));
                 return;
@@ -518,7 +608,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                 .bindTooltip(tooltipContent(threat, strings, isEnglish))
                 .on('mouseover', () => map.closePopup())
                 .addTo(layer);
-            marker._iconSig = iconSig;
+            marker._typeSig = typeSig;
+            marker._headingDeg = typeof threat.heading === 'number' ? threat.heading : undefined;
             activeMarkers.set(threat.id, marker);
             fadeInMarker(marker);
         });
