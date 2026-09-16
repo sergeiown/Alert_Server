@@ -350,8 +350,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const DEBRIS_DURATION_MS = 1900;
     const DEBRIS_SPREAD_MS = 250;
     const DEBRIS_COUNT = 9;
-    const CIRCLE_DRAW_DURATION_MS = 2200;
-    const CIRCLE_DRAW_SPREAD_MS = 300;
+    const CIRCLE_DRAW_DURATION_MS = 1500;
+    const CIRCLE_DRAW_SPREAD_MS = 200;
     const CIRCLE_DRAW_DELAY_MS = ICON_APPEAR_DURATION_MS + 200;
     const CIRCLE_REDRAW_DELAY_MS = MOVE_DURATION_MS + 100;
     const ROTATE_DURATION_MS = 900;
@@ -450,9 +450,21 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         setTimeout(() => layer.removeLayer(marker), Math.max(shrinkDuration, explosionDuration) + 50);
     }
 
+    let circleMaskCounter = 0;
+
+    function ensureSvgDefs(svg) {
+        let defs = svg.querySelector('defs');
+        if (!defs) {
+            defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            svg.insertBefore(defs, svg.firstChild);
+        }
+        return defs;
+    }
+
     function drawCircleStroke(circle, delayMs) {
         const el = circle.getElement();
-        if (!el) return;
+        const svg = el ? el.ownerSVGElement : null;
+        if (!el || !svg) return;
 
         let length = 0;
         try {
@@ -460,29 +472,44 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         } catch {
             length = 0;
         }
+        if (!length) return;
 
-        el.style.transition = '';
-        el.style.opacity = '0';
-        if (length) {
-            el.style.strokeDasharray = `${length}`;
-            el.style.strokeDashoffset = `${length}`;
+        const defs = ensureSvgDefs(svg);
+        if (!circle._maskId) circle._maskId = `threat-circle-mask-${++circleMaskCounter}`;
+
+        let mask = defs.querySelector(`#${circle._maskId}`);
+        let maskPath;
+        if (!mask) {
+            mask = document.createElementNS('http://www.w3.org/2000/svg', 'mask');
+            mask.setAttribute('id', circle._maskId);
+            maskPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            maskPath.setAttribute('fill', 'none');
+            maskPath.setAttribute('stroke', '#fff');
+            mask.appendChild(maskPath);
+            defs.appendChild(mask);
+        } else {
+            maskPath = mask.firstChild;
         }
+
+        const strokeWidth = (parseFloat(el.getAttribute('stroke-width')) || 1) + 3;
+        maskPath.setAttribute('stroke-width', `${strokeWidth}`);
+        maskPath.setAttribute('d', el.getAttribute('d'));
+        maskPath.style.transition = '';
+        maskPath.style.strokeDasharray = `${length}`;
+        maskPath.style.strokeDashoffset = `${length}`;
+
+        el.style.mask = `url(#${circle._maskId})`;
 
         revealWhenReady(() => {
             setTimeout(() => {
                 const duration = randomDuration(CIRCLE_DRAW_DURATION_MS, CIRCLE_DRAW_SPREAD_MS);
-                void el.offsetWidth;
-                el.style.transition = `opacity ${duration}ms ease, stroke-dashoffset ${duration}ms ease-in-out`;
-                el.style.opacity = '1';
-                if (length) el.style.strokeDashoffset = '0';
+                void maskPath.getBoundingClientRect();
+                maskPath.style.transition = `stroke-dashoffset ${duration}ms ease-in-out`;
+                maskPath.style.strokeDashoffset = '0';
 
-                if (length) {
-                    setTimeout(() => {
-                        el.style.transition = '';
-                        el.style.strokeDasharray = '';
-                        el.style.strokeDashoffset = '';
-                    }, duration + 30);
-                }
+                setTimeout(() => {
+                    el.style.mask = '';
+                }, duration + 30);
             }, delayMs);
         });
     }
@@ -554,15 +581,25 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         }, duration);
     }
 
+    function removeCircleMask(circle) {
+        if (!circle._maskId) return;
+        const mask = document.getElementById(circle._maskId);
+        if (mask) mask.remove();
+    }
+
     function fadeOutAndRemoveCircle(circle) {
         const el = circle.getElement();
         if (!el) {
             circlesGroup.removeLayer(circle);
+            removeCircleMask(circle);
             return;
         }
         el.style.transition = `opacity ${MARKER_FADE_MS}ms ease`;
         el.style.opacity = '0';
-        setTimeout(() => circlesGroup.removeLayer(circle), MARKER_FADE_MS);
+        setTimeout(() => {
+            circlesGroup.removeLayer(circle);
+            removeCircleMask(circle);
+        }, MARKER_FADE_MS);
     }
 
     function renderThreats(threats, isZoomEvent = false) {

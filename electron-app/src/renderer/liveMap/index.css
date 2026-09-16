@@ -449,6 +449,11 @@ body {
     color: var(--map-chrome-text);
 }
 
+.threat-legend,
+.threat-hint {
+    user-select: none;
+}
+
 .threat-hint {
     max-width: 230px;
 }
