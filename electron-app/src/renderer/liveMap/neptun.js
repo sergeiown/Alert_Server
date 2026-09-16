@@ -404,8 +404,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         let longestDebrisMs = 0;
         for (let i = 0; i < DEBRIS_COUNT; i++) {
             const angle = (Math.PI * 2 * i) / DEBRIS_COUNT + (Math.random() - 0.5) * 0.7;
-            const distance = 20 + Math.random() * 18;
-            const size = 4 + Math.random() * 3;
+            const distance = 28 + Math.random() * 26;
+            const size = 5 + Math.random() * 3.5;
             const fragDuration = randomDuration(DEBRIS_DURATION_MS, DEBRIS_SPREAD_MS);
             longestDebrisMs = Math.max(longestDebrisMs, fragDuration);
 
