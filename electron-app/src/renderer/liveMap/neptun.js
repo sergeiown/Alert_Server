@@ -268,6 +268,28 @@ function buildLegend(strings) {
     return legend;
 }
 
+function buildHint(strings) {
+    const hint = L.control({ position: 'bottomright' });
+    let container = null;
+
+    hint.onAdd = () => {
+        container = L.DomUtil.create('div', 'threat-hint');
+        hint.update({ hasThreats: false });
+        return container;
+    };
+
+    hint.update = ({ hasThreats }) => {
+        if (!container) return;
+        const rows = [strings.liveMapHintRealtime, strings.liveMapHintClickMap, hasThreats ? strings.liveMapHintHoverThreat : null]
+            .filter(Boolean)
+            .map((text) => `<div class="hint-row">${escapeHtml(text)}</div>`)
+            .join('');
+        container.innerHTML = `<div class="hint-title">${escapeHtml(strings.liveMapHintTitle)}</div>${rows}`;
+    };
+
+    return hint;
+}
+
 function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     if (!map.getPane(THREATS_PANE)) {
         map.createPane(THREATS_PANE).style.zIndex = THREATS_PANE_Z;
@@ -286,6 +308,9 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
 
     const legend = buildLegend(strings);
     legend.addTo(map);
+
+    const hint = buildHint(strings);
+    hint.addTo(map);
 
     map.on('tooltipopen', (e) => {
         const el = e.tooltip.getElement();
@@ -535,6 +560,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             hasApprox: valid.some((t) => t.positionQuality === 'approx' && typeof t.uncertaintyKm === 'number'),
         });
         if (typeof onCountChange === 'function') onCountChange(valid.length);
+        hint.update({ hasThreats: valid.length > 0 });
 
         const approxThreats = valid.filter((t) => t.positionQuality === 'approx' && typeof t.uncertaintyKm === 'number');
         const currentCircleIds = new Set(approxThreats.map((t) => t.id));
