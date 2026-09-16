@@ -565,7 +565,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         setTimeout(() => circlesGroup.removeLayer(circle), MARKER_FADE_MS);
     }
 
-    function renderThreats(threats) {
+    function renderThreats(threats, isZoomEvent = false) {
         if (!Array.isArray(threats)) return;
         lastThreats = threats;
 
@@ -592,10 +592,13 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             const posSig = `${threat.lat}|${threat.lon}|${threat.uncertaintyKm}`;
             const existing = activeCircles.get(threat.id);
             if (existing) {
-                if (existing._posSig !== posSig) {
+                const moved = existing._posSig !== posSig;
+                if (moved) {
                     existing._posSig = posSig;
                     existing.setLatLng([threat.lat, threat.lon]);
                     existing.setRadius(threat.uncertaintyKm * 1000);
+                }
+                if (moved || isZoomEvent) {
                     drawCircleStroke(existing, CIRCLE_REDRAW_DELAY_MS);
                 }
                 return;
@@ -663,7 +666,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         });
     }
 
-    map.on('zoomend', () => renderThreats(lastThreats));
+    map.on('zoomend', () => renderThreats(lastThreats, true));
 
     layer.setKyivMode = function (active) {
         if (kyivMode === active) return;
