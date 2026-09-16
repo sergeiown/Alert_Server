@@ -457,6 +457,8 @@ async function main() {
             [strings.liveMapLayerThreats]: threatsLayer,
             [strings.liveMapLayerRiver]: riverLayer,
             [strings.liveMapLayerLabels]: labelsLayer,
+            [strings.liveMapLegendTitle]: threatsLayer.legendLayer,
+            [strings.liveMapHintTitle]: threatsLayer.hintLayer,
         })
         .addTo(map);
 
