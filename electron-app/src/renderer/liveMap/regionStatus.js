@@ -104,19 +104,28 @@ const RegionStatusLayer = L.LayerGroup.extend({
 
     onAdd: function (map) {
         this._map = map;
-        map.on('zoomend', this._render, this);
+        map.on('zoomend', this._onZoomEnd, this);
         this._unsubscribe = subscribeAlertedRegions(() => this._render());
         this._reshadeTimer = setInterval(() => this._render(), RESHADE_MS);
         this._render();
     },
 
     onRemove: function (map) {
-        map.off('zoomend', this._render, this);
+        map.off('zoomend', this._onZoomEnd, this);
         if (this._unsubscribe) this._unsubscribe();
         if (this._reshadeTimer) clearInterval(this._reshadeTimer);
         this._hardClear();
 
         L.LayerGroup.prototype.onRemove.call(this, map);
+    },
+
+    _onZoomEnd: function () {
+        const container = this._map.getContainer();
+        container.classList.add('zoom-no-fill-animate');
+        this._render();
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => container.classList.remove('zoom-no-fill-animate'));
+        });
     },
 
     _hardClear: function () {
