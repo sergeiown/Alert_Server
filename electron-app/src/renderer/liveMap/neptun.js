@@ -290,6 +290,18 @@ function buildHint(strings) {
     return hint;
 }
 
+const ControlLayer = L.Layer.extend({
+    initialize(control) {
+        this._control = control;
+    },
+    onAdd(map) {
+        this._control.addTo(map);
+    },
+    onRemove(map) {
+        map.removeControl(this._control);
+    },
+});
+
 function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     if (!map.getPane(THREATS_PANE)) {
         map.createPane(THREATS_PANE).style.zIndex = THREATS_PANE_Z;
@@ -307,10 +319,12 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     let kyivMode = false;
 
     const legend = buildLegend(strings);
-    legend.addTo(map);
+    const legendLayer = new ControlLayer(legend);
+    legendLayer.addTo(map);
 
     const hint = buildHint(strings);
-    hint.addTo(map);
+    const hintLayer = new ControlLayer(hint);
+    hintLayer.addTo(map);
 
     map.on('tooltipopen', (e) => {
         const el = e.tooltip.getElement();
@@ -336,8 +350,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const DEBRIS_DURATION_MS = 1900;
     const DEBRIS_SPREAD_MS = 250;
     const DEBRIS_COUNT = 9;
-    const CIRCLE_DRAW_DURATION_MS = 900;
-    const CIRCLE_DRAW_SPREAD_MS = 150;
+    const CIRCLE_DRAW_DURATION_MS = 2200;
+    const CIRCLE_DRAW_SPREAD_MS = 300;
     const CIRCLE_DRAW_DELAY_MS = Math.round(ICON_APPEAR_DURATION_MS * 0.7);
     const ROTATE_DURATION_MS = 900;
     const ROTATE_SPREAD_MS = 150;
@@ -648,6 +662,9 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         kyivMode = active;
         renderThreats(lastThreats);
     };
+
+    layer.legendLayer = legendLayer;
+    layer.hintLayer = hintLayer;
 
     window.alertServerLiveMap.getThreats().then((threats) => renderThreats(threats));
     window.alertServerLiveMap.onThreatsUpdated((threats) => renderThreats(threats));
