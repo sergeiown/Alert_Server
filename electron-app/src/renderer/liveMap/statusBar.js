@@ -12,6 +12,7 @@ function formatClock(now, language) {
 }
 
 function startStatusBar(strings, language) {
+    const statusBarEl = document.getElementById('statusBar');
     const clockEl = document.getElementById('statusClock');
     const countEl = document.getElementById('statusAlertCount');
 
@@ -19,6 +20,10 @@ function startStatusBar(strings, language) {
     let threatCount = 0;
     let alertPeak = 0;
     let threatPeak = 0;
+
+    function syncStatusBarHeight() {
+        document.documentElement.style.setProperty('--status-bar-height', `${statusBarEl.offsetHeight}px`);
+    }
 
     function tickClock() {
         clockEl.textContent = formatClock(new Date(), language);
@@ -39,6 +44,7 @@ function startStatusBar(strings, language) {
             row.textContent = line;
             countEl.appendChild(row);
         });
+        syncStatusBarHeight();
     }
 
     async function refreshAlertCount() {
