@@ -304,13 +304,20 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const KYIV_ICON_SCALE = 1.2;
     const MOVE_DURATION_MS = 1300;
     const MOVE_SPREAD_MS = 200;
-    const SHRINK_DURATION_MS = 500;
-    const SHRINK_SPREAD_MS = 80;
-    const FLASH_DURATION_MS = 700;
-    const FLASH_SPREAD_MS = 120;
-    const DEBRIS_DURATION_MS = 1500;
-    const DEBRIS_SPREAD_MS = 200;
+    const SHRINK_DURATION_MS = 650;
+    const SHRINK_SPREAD_MS = 100;
+    const FLASH_DURATION_MS = 950;
+    const FLASH_SPREAD_MS = 150;
+    const DEBRIS_DURATION_MS = 1900;
+    const DEBRIS_SPREAD_MS = 250;
     const DEBRIS_COUNT = 9;
+    const CIRCLE_DRAW_DURATION_MS = 900;
+    const CIRCLE_DRAW_SPREAD_MS = 150;
+    const CIRCLE_DRAW_DELAY_MS = Math.round(ICON_APPEAR_DURATION_MS * 0.7);
+    const ROTATE_DURATION_MS = 900;
+    const ROTATE_SPREAD_MS = 150;
+    const ICON_SWAP_DURATION_MS = 450;
+    const ICON_SWAP_SPREAD_MS = 80;
 
     function randomDuration(baseMs, spreadMs) {
         return Math.round(baseMs + (Math.random() * 2 - 1) * spreadMs);
@@ -350,7 +357,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         const flashDuration = randomDuration(FLASH_DURATION_MS, FLASH_SPREAD_MS);
         const flash = document.createElement('span');
         flash.className = 'threat-explosion-flash';
-        flash.style.transition = `transform ${flashDuration}ms ease-out, opacity ${flashDuration}ms ease-out`;
+        flash.style.transition = `transform ${flashDuration}ms ease-in-out, opacity ${flashDuration}ms ease-in-out`;
         burst.appendChild(flash);
 
         const fragments = [];
@@ -369,7 +376,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             frag.style.setProperty('--dx', `${Math.cos(angle) * distance}px`);
             frag.style.setProperty('--dy', `${Math.sin(angle) * distance}px`);
             frag.style.setProperty('--rot', `${(Math.random() - 0.5) * 360}deg`);
-            frag.style.transition = `transform ${fragDuration}ms cubic-bezier(0.2, 0.7, 0.3, 1), opacity ${fragDuration}ms ease-in`;
+            frag.style.transition = `transform ${fragDuration}ms ease-in-out, opacity ${fragDuration}ms ease-in-out`;
             burst.appendChild(frag);
             fragments.push(frag);
         }
