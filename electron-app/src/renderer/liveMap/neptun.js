@@ -304,12 +304,12 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const KYIV_ICON_SCALE = 1.2;
     const MOVE_DURATION_MS = 1300;
     const MOVE_SPREAD_MS = 200;
-    const SHRINK_DURATION_MS = 250;
-    const SHRINK_SPREAD_MS = 50;
-    const FLASH_DURATION_MS = 450;
-    const FLASH_SPREAD_MS = 80;
-    const DEBRIS_DURATION_MS = 750;
-    const DEBRIS_SPREAD_MS = 110;
+    const SHRINK_DURATION_MS = 500;
+    const SHRINK_SPREAD_MS = 80;
+    const FLASH_DURATION_MS = 700;
+    const FLASH_SPREAD_MS = 120;
+    const DEBRIS_DURATION_MS = 1500;
+    const DEBRIS_SPREAD_MS = 200;
     const DEBRIS_COUNT = 9;
 
     function randomDuration(baseMs, spreadMs) {
