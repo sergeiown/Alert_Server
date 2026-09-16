@@ -3,6 +3,7 @@
 
 const { logEvent } = require('./logger');
 const { getLiveMapWindow } = require('../windows/liveMapWindow');
+const dailyPeakStore = require('./dailyPeakStore');
 
 const THREATS_URL = 'https://neptun.in.ua/api/v1/threats';
 const STREAM_URL = 'wss://neptun.in.ua/api/v1/stream';
@@ -29,6 +30,7 @@ function getLatestThreats() {
 
 function publishThreats(threats) {
     latestThreats = Array.isArray(threats) ? threats : [];
+    dailyPeakStore.recordThreatCount(latestThreats.length);
     const win = getLiveMapWindow();
     if (win) win.webContents.send('liveMap:threatsUpdated', latestThreats);
 }

@@ -17,6 +17,8 @@ function startStatusBar(strings, language) {
 
     let alertCount = 0;
     let threatCount = 0;
+    let alertPeak = 0;
+    let threatPeak = 0;
 
     function tickClock() {
         clockEl.textContent = formatClock(new Date(), language);
@@ -25,11 +27,16 @@ function startStatusBar(strings, language) {
     function renderCounts() {
         countEl.textContent = strings.liveMapStatusCounts
             .replace('{alerts}', alertCount)
-            .replace('{threats}', threatCount);
+            .replace('{threats}', threatCount)
+            .replace('{alertsPeak}', Math.max(alertPeak, alertCount))
+            .replace('{threatsPeak}', Math.max(threatPeak, threatCount));
     }
 
     async function refreshAlertCount() {
         alertCount = await window.alertServerLiveMap.getActiveAlertCount();
+        const peaks = await window.alertServerLiveMap.getDailyPeaks();
+        alertPeak = peaks.alertPeak;
+        threatPeak = peaks.threatPeak;
         renderCounts();
     }
 

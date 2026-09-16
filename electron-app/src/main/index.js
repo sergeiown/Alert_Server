@@ -19,6 +19,7 @@ const { filterAlerts, discoverUnknownLocations } = require('./services/locationF
 const { loadLocalConfig } = require('./services/localConfig');
 const { processAlerts, processKyivDistricts, getActiveCount } = require('./services/notifier');
 const { setLatestMatchedAlerts, setLatestTotalAlertCount, setLatestAlertedRegions } = require('./services/alertState');
+const dailyPeakStore = require('./services/dailyPeakStore');
 const { computeAlertedRegions, computeKyivRaionStatuses } = require('./services/regionAlertStatus');
 const { createTray, updateTrayState } = require('./services/tray');
 const { startForecastWatcher } = require('./services/forecastWatcher');
@@ -84,6 +85,7 @@ app.whenReady().then(() => {
         }
         setLatestMatchedAlerts(matched);
         setLatestTotalAlertCount(alertData.alerts.length);
+        dailyPeakStore.recordAlertCount(alertData.alerts.length);
         const kyivRaions = computeKyivRaionStatuses(alertData.alerts);
         setLatestAlertedRegions({ ...computeAlertedRegions(alertData.alerts), kyivRaions });
         processAlerts(matched, alertData.alerts);
