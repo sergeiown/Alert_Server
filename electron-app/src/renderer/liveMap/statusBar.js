@@ -25,11 +25,20 @@ function startStatusBar(strings, language) {
     }
 
     function renderCounts() {
-        countEl.textContent = strings.liveMapStatusCounts
+        const alertsLine = strings.liveMapStatusAlertsLine
             .replace('{alerts}', alertCount)
+            .replace('{alertsPeak}', Math.max(alertPeak, alertCount));
+        const threatsLine = strings.liveMapStatusThreatsLine
             .replace('{threats}', threatCount)
-            .replace('{alertsPeak}', Math.max(alertPeak, alertCount))
             .replace('{threatsPeak}', Math.max(threatPeak, threatCount));
+
+        countEl.innerHTML = '';
+        [alertsLine, threatsLine].forEach((line) => {
+            const row = document.createElement('div');
+            row.className = 'status-count-row';
+            row.textContent = line;
+            countEl.appendChild(row);
+        });
     }
 
     async function refreshAlertCount() {
