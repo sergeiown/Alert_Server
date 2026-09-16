@@ -428,6 +428,7 @@ body {
 }
 
 .threat-legend,
+.threat-hint,
 .leaflet-control-layers-expanded {
     background: var(--map-chrome-bg);
     border-radius: 8px;
@@ -435,6 +436,16 @@ body {
     padding: 10px 14px;
     font-size: 12px;
     color: var(--map-chrome-text);
+}
+
+.hint-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.hint-row {
+    padding: 2px 0;
+    opacity: 0.8;
 }
 
 .leaflet-control-layers label:has(input:disabled) {
@@ -524,6 +535,7 @@ body {
     }
 
     .threat-legend,
+    .threat-hint,
     .leaflet-control-layers-expanded {
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
     }
