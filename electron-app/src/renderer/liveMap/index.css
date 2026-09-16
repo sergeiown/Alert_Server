@@ -100,6 +100,10 @@ body {
     opacity: 0 !important;
 }
 
+.zoom-no-fill-animate .alert-status-shape {
+    transition: none !important;
+}
+
 .map-transitioning-instant .alert-status-shape,
 .map-transitioning-instant .occupied-territory-shape,
 .map-transitioning-instant .region-label,
@@ -400,7 +404,7 @@ body {
     background: var(--map-chrome-bg);
     border-radius: 8px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-    padding: 8px 18px;
+    padding: 8px 14px;
     text-align: center;
     font-family: 'Segoe UI', system-ui, sans-serif;
     color: var(--map-chrome-text);
@@ -408,19 +412,26 @@ body {
 }
 
 #statusClock {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
     letter-spacing: 0.02em;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+    line-height: 1.25;
 
     font-variant-numeric: tabular-nums;
 }
 
 #statusAlertCount {
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid rgba(127, 127, 127, 0.25);
+}
+
+.status-count-row {
     font-size: 12px;
     font-weight: 500;
     color: #b3261e;
-    margin-top: 2px;
+    padding: 1px 0;
 }
 
 .leaflet-top.leaflet-right {
@@ -439,7 +450,7 @@ body {
 }
 
 .threat-hint {
-    max-width: 160px;
+    max-width: 230px;
 }
 
 .hint-title {
@@ -472,9 +483,6 @@ body {
     width: 18px;
     height: 18px;
     flex-shrink: 0;
-    filter: none;
-    background: rgba(127, 127, 127, 0.28);
-    border-radius: 50%;
 }
 
 .legend-row .threat-icon svg {
