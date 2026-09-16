@@ -6,6 +6,7 @@ const { getResourcePath } = require('../services/appPaths');
 const { getLatestTotalAlertCount, getLatestAlertedRegions, getActiveAlertSource } = require('../services/alertState');
 const { getLatestOccupiedTerritory } = require('../services/occupiedTerritoryStore');
 const { getLatestThreats } = require('../services/neptunThreatsStore');
+const { getDailyPeaks } = require('../services/dailyPeakStore');
 const { alertTypeName } = require('../services/alertTypes');
 const { getTitleBarAccentColor } = require('../services/accentColor');
 const { getLiveMapWindow, consumePendingKyivMode } = require('../windows/liveMapWindow');
@@ -30,6 +31,8 @@ function registerLiveMapIpc() {
     });
 
     ipcMain.handle('liveMap:getActiveAlertCount', () => getLatestTotalAlertCount());
+
+    ipcMain.handle('liveMap:getDailyPeaks', () => getDailyPeaks());
 
     ipcMain.handle('liveMap:getActiveAlertSource', () => getActiveAlertSource());
 

@@ -60,7 +60,7 @@
     "liveMapLayerThreats": "Позначки загроз",
     "liveMapLayerRiver": "Річка Дніпро",
     "liveMapLayerLabels": "Назви на мапі",
-    "liveMapStatusCounts": "По Україні тривог: {alerts} · загроз: {threats}",
+    "liveMapStatusCounts": "По Україні тривог: {alerts} (макс. {alertsPeak}) · загроз: {threats} (макс. {threatsPeak})",
     "liveMapLegendUncertain": "непідтверджено",
     "liveMapLegendApprox": "Орієнтовний радіус невизначеності позиції",
     "liveMapHintTitle": "Підказки",
