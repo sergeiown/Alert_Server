@@ -256,7 +256,8 @@ body {
 .screenshot-hide-controls .leaflet-control-layers,
 .screenshot-hide-controls .leaflet-control-center-wrapper,
 .screenshot-hide-controls .leaflet-control-kyiv-toggle-wrapper,
-.screenshot-hide-controls .leaflet-control-screenshot-wrapper {
+.screenshot-hide-controls .leaflet-control-screenshot-wrapper,
+.screenshot-hide-controls .threat-hint {
     visibility: hidden !important;
 }
 
