@@ -452,6 +452,7 @@ body {
 .threat-legend,
 .threat-hint {
     user-select: none;
+    pointer-events: none;
 }
 
 .threat-hint {
