@@ -469,6 +469,8 @@ body {
     height: 18px;
     flex-shrink: 0;
     filter: none;
+    background: rgba(127, 127, 127, 0.28);
+    border-radius: 50%;
 }
 
 .legend-row .threat-icon svg {
