@@ -360,9 +360,9 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const ICON_SWAP_DURATION_MS = 450;
     const ICON_SWAP_SPREAD_MS = 80;
     const EXTRAPOLATION_TICK_MS = 1000;
-    const DRIFT_SPEED_KMH = 12;
+    const DRIFT_SPEED_KMH = 45;
     const DRIFT_SPEED_DEG_PER_MS = DRIFT_SPEED_KMH / 3.6 / 1000 / 111320;
-    const MAX_DRIFT_MS = 30000;
+    const MAX_DRIFT_MS = 45000;
     const DRIFTING_TYPE_KEYS = new Set(['uav', 'uav_recon', 'fpv']);
     const THREAT_CLICK_ZOOM_STEP = 2;
 

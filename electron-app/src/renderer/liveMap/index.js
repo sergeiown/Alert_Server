@@ -126,7 +126,7 @@ async function main() {
 
     let kyivModeActive = false;
 
-    function fitAndLockMinZoom() {
+    function applyBaseFit() {
         map.stop();
         map.setMinZoom(MAP_MIN_ZOOM);
         map.setMaxZoom(kyivModeActive ? KYIV_MAX_ZOOM : UKRAINE_MAX_ZOOM);
@@ -136,6 +136,11 @@ async function main() {
         map.fitBounds(bounds, { animate: false });
         map.setMinZoom(map.getZoom());
         if (kyivModeActive) map.setMaxBounds(L.latLngBounds(KYIV_BOUNDS).pad(0.05));
+    }
+
+    function fitAndLockMinZoom() {
+        applyBaseFit();
+        requestAnimationFrame(() => requestAnimationFrame(applyBaseFit));
     }
 
     map.on('popupopen', () => {
