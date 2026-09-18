@@ -314,6 +314,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const circlesGroup = L.layerGroup().addTo(layer);
     const activeMarkers = new Map();
     const activeCircles = new Map();
+    const velocityById = new Map();
     const isEnglish = language === 'English';
     let lastThreats = [];
     let kyivMode = false;
@@ -358,9 +359,51 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const ROTATE_SPREAD_MS = 150;
     const ICON_SWAP_DURATION_MS = 450;
     const ICON_SWAP_SPREAD_MS = 80;
+    const EXTRAPOLATION_TICK_MS = 1000;
+    const MIN_VELOCITY_SAMPLE_MS = 1000;
+    const MIN_MOVE_DEG = 0.0002;
+    const MAX_EXTRAPOLATION_MS = 25000;
 
     function randomDuration(baseMs, spreadMs) {
         return Math.round(baseMs + (Math.random() * 2 - 1) * spreadMs);
+    }
+
+    function updateVelocityEstimate(threat, now) {
+        const prev = velocityById.get(threat.id);
+        if (!prev) {
+            velocityById.set(threat.id, { vLat: 0, vLon: 0, baseLat: threat.lat, baseLon: threat.lon, baseTime: now });
+            return;
+        }
+
+        const dt = now - prev.baseTime;
+        if (dt < MIN_VELOCITY_SAMPLE_MS) return;
+
+        const dLat = threat.lat - prev.baseLat;
+        const dLon = threat.lon - prev.baseLon;
+        const moved = Math.hypot(dLat, dLon) > MIN_MOVE_DEG;
+
+        velocityById.set(threat.id, {
+            vLat: moved ? dLat / dt : 0,
+            vLon: moved ? dLon / dt : 0,
+            baseLat: threat.lat,
+            baseLon: threat.lon,
+            baseTime: now,
+        });
+    }
+
+    function extrapolatedThreats() {
+        if (!lastThreats.length) return lastThreats;
+        const now = Date.now();
+
+        return lastThreats.map((threat) => {
+            const vel = velocityById.get(threat.id);
+            if (!vel || (vel.vLat === 0 && vel.vLon === 0)) return threat;
+
+            const elapsed = Math.min(now - vel.baseTime, MAX_EXTRAPOLATION_MS);
+            if (elapsed <= 0) return threat;
+
+            return { ...threat, lat: vel.baseLat + vel.vLat * elapsed, lon: vel.baseLon + vel.vLon * elapsed };
+        });
     }
 
     function revealWhenReady(reveal) {
@@ -560,11 +603,18 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         setTimeout(() => circlesGroup.removeLayer(circle), MARKER_FADE_MS);
     }
 
-    function renderThreats(threats, isZoomEvent = false) {
+    function renderThreats(threats, options = {}) {
+        const { isZoomEvent = false, isExtrapolation = false } = options;
         if (!Array.isArray(threats)) return;
-        lastThreats = threats;
+        if (!isExtrapolation) lastThreats = threats;
 
         const valid = threats.filter((t) => typeof t.lat === 'number' && typeof t.lon === 'number');
+
+        if (!isExtrapolation) {
+            const now = Date.now();
+            valid.forEach((threat) => updateVelocityEstimate(threat, now));
+        }
+
         legend.update({
             confirmedTypeKeys: valid.filter((t) => t.lifecycle !== 'uncertain').map((t) => resolveTypeKey(t)),
             uncertainTypeKeys: valid.filter((t) => t.lifecycle === 'uncertain').map((t) => resolveTypeKey(t)),
@@ -593,7 +643,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                     existing.setLatLng([threat.lat, threat.lon]);
                     existing.setRadius(threat.uncertaintyKm * 1000);
                 }
-                if (moved || isZoomEvent) {
+                if ((moved || isZoomEvent) && !isExtrapolation) {
                     drawCircleStroke(existing, CIRCLE_REDRAW_DELAY_MS);
                 }
                 return;
@@ -620,6 +670,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             if (!currentIds.has(id)) {
                 fadeOutAndRemove(marker);
                 activeMarkers.delete(id);
+                if (!isExtrapolation) velocityById.delete(id);
             }
         });
 
@@ -640,6 +691,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                     el.style.transition = `opacity ${randomDuration(MARKER_FADE_MS, MARKER_FADE_SPREAD_MS)}ms ease, transform ${moveDuration}ms ease`;
                 }
                 existing.setLatLng(displayLatLng);
+                existing._truePos = [threat.lat, threat.lon];
                 if (existing._typeSig !== typeSig) {
                     animateIconSwap(existing, threat, sizeMultiplier);
                     existing._typeSig = typeSig;
@@ -653,15 +705,17 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             const marker = L.marker(displayLatLng, { icon: threatIcon(threat, sizeMultiplier), pane: THREATS_PANE })
                 .bindTooltip(tooltipContent(threat, strings, isEnglish))
                 .on('mouseover', () => map.closePopup())
+                .on('click', () => map.flyTo(marker._truePos, map.getMaxZoom(), { animate: true, duration: 0.8 }))
                 .addTo(layer);
             marker._typeSig = typeSig;
             marker._headingDeg = typeof threat.heading === 'number' ? threat.heading : undefined;
+            marker._truePos = [threat.lat, threat.lon];
             activeMarkers.set(threat.id, marker);
             fadeInMarker(marker);
         });
     }
 
-    map.on('zoomend', () => renderThreats(lastThreats, true));
+    map.on('zoomend', () => renderThreats(lastThreats, { isZoomEvent: true }));
 
     layer.setKyivMode = function (active) {
         if (kyivMode === active) return;
@@ -674,6 +728,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
 
     window.alertServerLiveMap.getThreats().then((threats) => renderThreats(threats));
     window.alertServerLiveMap.onThreatsUpdated((threats) => renderThreats(threats));
+
+    setInterval(() => renderThreats(extrapolatedThreats(), { isExtrapolation: true }), EXTRAPOLATION_TICK_MS);
 
     return layer;
 }
