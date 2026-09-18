@@ -127,6 +127,7 @@ async function main() {
     let kyivModeActive = false;
 
     function fitAndLockMinZoom() {
+        map.stop();
         map.setMinZoom(MAP_MIN_ZOOM);
         map.setMaxZoom(kyivModeActive ? KYIV_MAX_ZOOM : UKRAINE_MAX_ZOOM);
         map.setMaxBounds(null);
