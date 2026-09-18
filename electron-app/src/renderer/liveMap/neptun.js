@@ -361,9 +361,9 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const ICON_SWAP_DURATION_MS = 450;
     const ICON_SWAP_SPREAD_MS = 80;
     const EXTRAPOLATION_TICK_MS = 1000;
-    const DRIFT_SPEED_KMH = 15;
+    const DRIFT_SPEED_KMH = 75;
     const DRIFT_SPEED_REFERENCE_ZOOM = 13;
-    const MAX_DRIFT_MS = 45000;
+    const MAX_DRIFT_MS = 120000;
     const DRIFTING_TYPE_KEYS = new Set(['uav', 'uav_recon', 'fpv']);
     const KYIV_THREAT_CLICK_ZOOM = 13;
 
