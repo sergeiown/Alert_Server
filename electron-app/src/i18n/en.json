@@ -36,7 +36,7 @@
     "liveMapConfidenceLow": "low",
     "liveMapDirectionLabel": "Direction",
     "liveMapConfirmations": "Confirmations",
-    "liveMapDangerLabel": "Threat level",
+    "liveMapConfidenceLabel": "Confidence",
     "liveMapLegendTitle": "Legend",
     "liveMapType_uav": "UAV (attack)",
     "liveMapType_uav_recon": "UAV (reconnaissance)",

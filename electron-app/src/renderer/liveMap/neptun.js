@@ -198,7 +198,7 @@ function tooltipContent(threat, strings, isEnglish) {
         `<strong>${escapeHtml(title)}</strong>`,
         escapeHtml(locationLine),
         escapeHtml(confirmationsLine),
-        `<small>${strings.liveMapDangerLabel} ${escapeHtml(confidenceLabel(threat, strings))}${updatedTime ? ` · ${strings.liveMapUpdated}: ${updatedTime}` : ''}</small>`,
+        `<small>${strings.liveMapConfidenceLabel} ${escapeHtml(confidenceLabel(threat, strings))}${updatedTime ? ` · ${strings.liveMapUpdated}: ${updatedTime}` : ''}</small>`,
     ];
     return lines.filter(Boolean).join('<br>');
 }
