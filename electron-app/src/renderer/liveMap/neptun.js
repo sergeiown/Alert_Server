@@ -314,7 +314,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const circlesGroup = L.layerGroup().addTo(layer);
     const activeMarkers = new Map();
     const activeCircles = new Map();
-    const velocityById = new Map();
+    const driftById = new Map();
     const isEnglish = language === 'English';
     let lastThreats = [];
     let kyivMode = false;
@@ -360,35 +360,23 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const ICON_SWAP_DURATION_MS = 450;
     const ICON_SWAP_SPREAD_MS = 80;
     const EXTRAPOLATION_TICK_MS = 1000;
-    const MIN_VELOCITY_SAMPLE_MS = 1000;
-    const MIN_MOVE_DEG = 0.0002;
-    const MAX_EXTRAPOLATION_MS = 25000;
+    const DRIFT_SPEED_KMH = 12;
+    const DRIFT_SPEED_DEG_PER_MS = DRIFT_SPEED_KMH / 3.6 / 1000 / 111320;
+    const MAX_DRIFT_MS = 30000;
+    const DRIFTING_TYPE_KEYS = new Set(['uav', 'uav_recon', 'fpv']);
+    const THREAT_CLICK_ZOOM_STEP = 2;
 
     function randomDuration(baseMs, spreadMs) {
         return Math.round(baseMs + (Math.random() * 2 - 1) * spreadMs);
     }
 
     function updateVelocityEstimate(threat, now) {
-        const prev = velocityById.get(threat.id);
-        if (!prev) {
-            velocityById.set(threat.id, { vLat: 0, vLon: 0, baseLat: threat.lat, baseLon: threat.lon, baseTime: now });
+        const canDrift = DRIFTING_TYPE_KEYS.has(resolveTypeKey(threat)) && typeof threat.heading === 'number';
+        if (!canDrift) {
+            driftById.delete(threat.id);
             return;
         }
-
-        const dt = now - prev.baseTime;
-        if (dt < MIN_VELOCITY_SAMPLE_MS) return;
-
-        const dLat = threat.lat - prev.baseLat;
-        const dLon = threat.lon - prev.baseLon;
-        const moved = Math.hypot(dLat, dLon) > MIN_MOVE_DEG;
-
-        velocityById.set(threat.id, {
-            vLat: moved ? dLat / dt : 0,
-            vLon: moved ? dLon / dt : 0,
-            baseLat: threat.lat,
-            baseLon: threat.lon,
-            baseTime: now,
-        });
+        driftById.set(threat.id, { heading: threat.heading, baseLat: threat.lat, baseLon: threat.lon, baseTime: now });
     }
 
     function extrapolatedThreats() {
@@ -396,13 +384,21 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         const now = Date.now();
 
         return lastThreats.map((threat) => {
-            const vel = velocityById.get(threat.id);
-            if (!vel || (vel.vLat === 0 && vel.vLon === 0)) return threat;
+            const drift = driftById.get(threat.id);
+            if (!drift) return threat;
 
-            const elapsed = Math.min(now - vel.baseTime, MAX_EXTRAPOLATION_MS);
+            const elapsed = Math.min(now - drift.baseTime, MAX_DRIFT_MS);
             if (elapsed <= 0) return threat;
 
-            return { ...threat, lat: vel.baseLat + vel.vLat * elapsed, lon: vel.baseLon + vel.vLon * elapsed };
+            const headingRad = (drift.heading * Math.PI) / 180;
+            const distanceDeg = DRIFT_SPEED_DEG_PER_MS * elapsed;
+            const latRad = (drift.baseLat * Math.PI) / 180;
+
+            return {
+                ...threat,
+                lat: drift.baseLat + Math.cos(headingRad) * distanceDeg,
+                lon: drift.baseLon + (Math.sin(headingRad) * distanceDeg) / Math.cos(latRad),
+            };
         });
     }
 
@@ -670,7 +666,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             if (!currentIds.has(id)) {
                 fadeOutAndRemove(marker);
                 activeMarkers.delete(id);
-                if (!isExtrapolation) velocityById.delete(id);
+                if (!isExtrapolation) driftById.delete(id);
             }
         });
 
@@ -705,7 +701,10 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             const marker = L.marker(displayLatLng, { icon: threatIcon(threat, sizeMultiplier), pane: THREATS_PANE })
                 .bindTooltip(tooltipContent(threat, strings, isEnglish))
                 .on('mouseover', () => map.closePopup())
-                .on('click', () => map.flyTo(marker._truePos, map.getMaxZoom(), { animate: true, duration: 0.8 }))
+                .on('click', () => {
+                    const targetZoom = Math.min(map.getZoom() + THREAT_CLICK_ZOOM_STEP, map.getMaxZoom());
+                    map.flyTo(marker._truePos, targetZoom, { animate: true, duration: 0.8 });
+                })
                 .addTo(layer);
             marker._typeSig = typeSig;
             marker._headingDeg = typeof threat.heading === 'number' ? threat.heading : undefined;
