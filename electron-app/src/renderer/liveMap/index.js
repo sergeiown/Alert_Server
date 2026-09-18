@@ -135,20 +135,12 @@ async function main() {
 
         map.fitBounds(bounds, { animate: false });
         map.setMinZoom(map.getZoom());
-        if (kyivModeActive) map.setMaxBounds(L.latLngBounds(KYIV_BOUNDS).pad(0.05));
     }
 
     function fitAndLockMinZoom() {
         applyBaseFit();
         requestAnimationFrame(() => requestAnimationFrame(applyBaseFit));
     }
-
-    map.on('popupopen', () => {
-        if (kyivModeActive) map.setMaxBounds(null);
-    });
-    map.on('popupclose', () => {
-        if (kyivModeActive) map.setMaxBounds(L.latLngBounds(KYIV_BOUNDS).pad(0.05));
-    });
 
     const baseMapOverlay = L.imageOverlay(baseMapUrl, UKRAINE_BOUNDS).addTo(map);
     setOpacity(baseMapOverlay.getElement(), 0);
