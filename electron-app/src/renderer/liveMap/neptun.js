@@ -361,7 +361,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const ICON_SWAP_DURATION_MS = 450;
     const ICON_SWAP_SPREAD_MS = 80;
     const EXTRAPOLATION_TICK_MS = 1000;
-    const DRIFT_PX_PER_SEC = 0.3;
+    const DRIFT_SPEED_KMH = 15;
+    const DRIFT_SPEED_DEG_PER_MS = DRIFT_SPEED_KMH / 3.6 / 1000 / 111320;
     const MAX_DRIFT_MS = 45000;
     const DRIFTING_TYPE_KEYS = new Set(['uav', 'uav_recon', 'fpv']);
     const KYIV_THREAT_CLICK_ZOOM = 13;
@@ -393,15 +394,14 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             const marker = activeMarkers.get(threat.id);
             const facingDeg = marker && typeof marker._headingDeg === 'number' ? marker._headingDeg : drift.heading;
             const headingRad = (facingDeg * Math.PI) / 180;
-            const pixelDistance = DRIFT_PX_PER_SEC * (elapsed / 1000);
-            const basePoint = map.latLngToContainerPoint([drift.baseLat, drift.baseLon]);
-            const driftedPoint = L.point(
-                basePoint.x + Math.sin(headingRad) * pixelDistance,
-                basePoint.y - Math.cos(headingRad) * pixelDistance
-            );
-            const driftedLatLng = map.containerPointToLatLng(driftedPoint);
+            const distanceDeg = DRIFT_SPEED_DEG_PER_MS * elapsed;
+            const latRad = (drift.baseLat * Math.PI) / 180;
 
-            return { ...threat, lat: driftedLatLng.lat, lon: driftedLatLng.lng };
+            return {
+                ...threat,
+                lat: drift.baseLat + Math.cos(headingRad) * distanceDeg,
+                lon: drift.baseLon + (Math.sin(headingRad) * distanceDeg) / Math.cos(latRad),
+            };
         });
     }
 
