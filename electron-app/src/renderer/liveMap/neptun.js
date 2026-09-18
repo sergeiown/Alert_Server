@@ -362,7 +362,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const ICON_SWAP_SPREAD_MS = 80;
     const EXTRAPOLATION_TICK_MS = 1000;
     const DRIFT_SPEED_KMH = 15;
-    const DRIFT_SPEED_DEG_PER_MS = DRIFT_SPEED_KMH / 3.6 / 1000 / 111320;
+    const DRIFT_SPEED_REFERENCE_ZOOM = 13;
     const MAX_DRIFT_MS = 45000;
     const DRIFTING_TYPE_KEYS = new Set(['uav', 'uav_recon', 'fpv']);
     const KYIV_THREAT_CLICK_ZOOM = 13;
@@ -394,7 +394,9 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             const marker = activeMarkers.get(threat.id);
             const facingDeg = marker && typeof marker._headingDeg === 'number' ? marker._headingDeg : drift.heading;
             const headingRad = (facingDeg * Math.PI) / 180;
-            const distanceDeg = DRIFT_SPEED_DEG_PER_MS * elapsed;
+            const zoomFactor = Math.pow(2, map.getZoom() - DRIFT_SPEED_REFERENCE_ZOOM);
+            const speedDegPerMs = (DRIFT_SPEED_KMH * zoomFactor) / 3.6 / 1000 / 111320;
+            const distanceDeg = speedDegPerMs * elapsed;
             const latRad = (drift.baseLat * Math.PI) / 180;
 
             return {
