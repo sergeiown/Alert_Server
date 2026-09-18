@@ -361,7 +361,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const ICON_SWAP_DURATION_MS = 450;
     const ICON_SWAP_SPREAD_MS = 80;
     const EXTRAPOLATION_TICK_MS = 1000;
-    const DRIFT_SPEED_KMH = 40;
+    const DRIFT_SPEED_KMH = 150;
     const DRIFT_SPEED_REFERENCE_ZOOM = 9;
     const DRIFT_SPEED_MAX_KMH = 600;
     const MAX_DRIFT_MS = 120000;
