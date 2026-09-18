@@ -3,6 +3,7 @@
 
 import { normalizeOblastName, oblastDisplayName } from './regionNameUtils.js';
 import { transliterate } from './transliterate.js';
+import { RAION_MIN_ZOOM } from './zoomTiers.js';
 
 const TOOLTIP_MAX_WIDTH_PX = 410;
 const TOOLTIP_MIN_WIDTH_PX = 90;
@@ -364,7 +365,6 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const DRIFT_SPEED_DEG_PER_MS = DRIFT_SPEED_KMH / 3.6 / 1000 / 111320;
     const MAX_DRIFT_MS = 45000;
     const DRIFTING_TYPE_KEYS = new Set(['uav', 'uav_recon', 'fpv']);
-    const THREAT_CLICK_ZOOM_STEP = 2;
 
     function randomDuration(baseMs, spreadMs) {
         return Math.round(baseMs + (Math.random() * 2 - 1) * spreadMs);
@@ -702,7 +702,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                 .bindTooltip(tooltipContent(threat, strings, isEnglish))
                 .on('mouseover', () => map.closePopup())
                 .on('click', () => {
-                    const targetZoom = Math.min(map.getZoom() + THREAT_CLICK_ZOOM_STEP, map.getMaxZoom());
+                    const targetZoom = Math.min(Math.max(map.getZoom(), RAION_MIN_ZOOM), map.getMaxZoom());
                     map.flyTo(marker._truePos, targetZoom, { animate: true, duration: 0.8 });
                 })
                 .addTo(layer);
