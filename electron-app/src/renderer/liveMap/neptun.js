@@ -361,9 +361,10 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const ICON_SWAP_DURATION_MS = 450;
     const ICON_SWAP_SPREAD_MS = 80;
     const EXTRAPOLATION_TICK_MS = 1000;
-    const DRIFT_PX_PER_SEC = 0.5;
+    const DRIFT_PX_PER_SEC = 0.3;
     const MAX_DRIFT_MS = 45000;
     const DRIFTING_TYPE_KEYS = new Set(['uav', 'uav_recon', 'fpv']);
+    const KYIV_THREAT_CLICK_ZOOM = 13;
 
     function randomDuration(baseMs, spreadMs) {
         return Math.round(baseMs + (Math.random() * 2 - 1) * spreadMs);
@@ -704,7 +705,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                 .bindTooltip(tooltipContent(threat, strings, isEnglish))
                 .on('mouseover', () => map.closePopup())
                 .on('click', () => {
-                    const targetZoom = Math.min(Math.max(map.getZoom(), RAION_MIN_ZOOM), map.getMaxZoom());
+                    const cityZoom = kyivMode ? KYIV_THREAT_CLICK_ZOOM : RAION_MIN_ZOOM;
+                    const targetZoom = Math.min(Math.max(map.getZoom(), cityZoom), map.getMaxZoom());
                     map.flyTo(marker._truePos, targetZoom, { animate: true, duration: 0.8 });
                 })
                 .addTo(layer);
