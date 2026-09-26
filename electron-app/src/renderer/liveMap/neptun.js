@@ -16,7 +16,7 @@ const THREATS_PANE = 'threatsPane';
 const THREATS_PANE_Z = 620;
 
 const UNCERTAINTY_PANE = 'threatsUncertaintyPane';
-const UNCERTAINTY_PANE_Z = 410;
+const UNCERTAINTY_PANE_Z = 615;
 const UNCERTAINTY_CIRCLE_COLOR = '#6b7280';
 const UNCERTAIN_ICON_COLOR = '#9ca3af';
 
@@ -361,9 +361,9 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const ICON_SWAP_DURATION_MS = 450;
     const ICON_SWAP_SPREAD_MS = 80;
     const EXTRAPOLATION_TICK_MS = 1000;
-    const DRIFT_SPEED_KMH = 150;
+    const DRIFT_SPEED_KMH = 105;
     const DRIFT_SPEED_REFERENCE_ZOOM = 9;
-    const DRIFT_SPEED_MAX_KMH = 600;
+    const DRIFT_SPEED_MAX_KMH = 420;
     const MAX_DRIFT_MS = 120000;
     const DRIFTING_TYPE_KEYS = new Set(['uav', 'uav_recon', 'fpv']);
     const KYIV_THREAT_CLICK_ZOOM = 13;
