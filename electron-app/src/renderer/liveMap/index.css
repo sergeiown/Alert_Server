@@ -85,6 +85,7 @@ body {
 
 .threat-uncertainty-circle {
     transition: opacity 0.6s ease;
+    filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 1px rgba(0, 0, 0, 0.75));
 }
 
 .map-transitioning .alert-status-shape,
