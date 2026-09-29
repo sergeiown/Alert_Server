@@ -55,12 +55,19 @@ function computeToday() {
     const dayBefore = lib.kyivDateKey(new Date(Date.now() - 24 * 60 * 60 * 1000));
     const alerts = archive
         .getAlertsFromDay(dayBefore)
-        .filter((alert) => !alert.deleted_at && alert.started_at && lib.kyivDateKey(new Date(alert.started_at)) === today);
+        .filter((alert) => {
+            if (alert.deleted_at || !alert.started_at) return false;
+            const startedDay = lib.kyivDateKey(new Date(alert.started_at));
+            if (startedDay === today) return true;
+            if (startedDay > today) return false;
+            return !alert.finished_at || lib.kyivDateKey(new Date(alert.finished_at)) === today;
+        });
 
     const byHour = Array.from({ length: 24 }, () => 0);
     const byOblast = new Map();
     alerts.forEach((alert) => {
-        byHour[lib.kyivHour(alert.started_at)]++;
+        const startedToday = lib.kyivDateKey(new Date(alert.started_at)) === today;
+        byHour[startedToday ? lib.kyivHour(alert.started_at) : 0]++;
         if (alert.location_oblast) byOblast.set(alert.location_oblast, (byOblast.get(alert.location_oblast) || 0) + 1);
     });
 
