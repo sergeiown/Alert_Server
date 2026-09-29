@@ -3,7 +3,6 @@
 
 const { logEvent } = require('./logger');
 const { getLiveMapWindow } = require('../windows/liveMapWindow');
-const dailyPeakStore = require('./dailyPeakStore');
 const { loadLocalConfig } = require('./localConfig');
 const { PROXY_URL, PROXY_WS_URL, getClientVersion } = require('./proxyConfig');
 
@@ -57,7 +56,6 @@ function getLatestThreats() {
 
 function publishThreats(threats) {
     latestThreats = Array.isArray(threats) ? threats : [];
-    dailyPeakStore.recordThreatCount(latestThreats.length);
     const win = getLiveMapWindow();
     if (win) win.webContents.send('liveMap:threatsUpdated', latestThreats);
 }

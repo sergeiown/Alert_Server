@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
-const { ipcMain, dialog, BrowserWindow } = require('electron');
+const { ipcMain } = require('electron');
 const regionsStore = require('../services/regionsStore');
 const settingsStore = require('../services/settingsStore');
 const { getLocationLookup, getAlertCoverageUids, getAncestorUids } = require('../services/locationFilter');
@@ -12,13 +12,9 @@ const {
     getRegionDurationStats,
     buildActiveDurationText,
     buildActiveDurationLines,
-    fetchHistoryAlerts,
 } = require('../services/forecast');
-const historyStore = require('../services/forecastHistoryStore');
-const { logEvent } = require('../services/logger');
 const { alertTypeName } = require('../services/alertTypes');
 const { worstLevelAmong, getThreatLines } = require('../services/alertLevels');
-const { t } = require('../../i18n/i18n');
 
 function registerForecastIpc() {
     ipcMain.handle('forecast:getRegions', () => {
@@ -45,7 +41,7 @@ function registerForecastIpc() {
 
         if (activeAlertsHere.length) {
             const activeTypes = [...new Set(activeAlertsHere.map((alert) => alert.alert_type))];
-            const durationStats = getRegionDurationStats(uid, activeTypes);
+            const durationStats = await getRegionDurationStats(uid, activeTypes);
 
             const earliestStartedAtByType = new Map();
             const alertsByType = new Map();
@@ -73,34 +69,9 @@ function registerForecastIpc() {
         }
 
         const text = await getRegionForecastText(uid, language);
-        if (!text) {
-
-            fetchHistoryAlerts(uid).catch((err) => logEvent(`Forecast prefetch failed for uid ${uid}: ${err.message}`, 'NETWORK'));
-            return { status: 'empty' };
-        }
+        if (!text) return { status: 'empty' };
 
         return { status: 'ok', text, etaMs: getRegionSoonestEtaMs(uid) };
-    });
-
-    ipcMain.handle('forecast:getLocalStats', () => historyStore.getStats());
-
-    ipcMain.handle('forecast:clearLocalStats', async (event) => {
-        const language = settingsStore.getSettings().language;
-        const window = BrowserWindow.fromWebContents(event.sender);
-
-        const { response } = await dialog.showMessageBox(window, {
-            type: 'warning',
-            buttons: [t('forecastClearStatsConfirmYes', language), t('forecastClearStatsConfirmNo', language)],
-            defaultId: 1,
-            cancelId: 1,
-            title: t('forecastClearStatsTitle', language),
-            message: t('forecastClearStatsWarning', language),
-        });
-
-        if (response !== 0) return { cleared: false };
-
-        historyStore.clearAll();
-        return { cleared: true };
     });
 }
 

@@ -12,13 +12,13 @@ const FAILURE_THRESHOLD = 3;
 const RECOVERY_RETRY_MS = 5 * 60 * 1000;
 
 const SOURCES = {
-    ukrainealarm: {
-        label: 'UkraineAlarm',
-        start: (clientKey, onUpdate, onHealthChange) => startUkraineAlarmPolling(clientKey, onUpdate, onHealthChange),
-    },
     'alerts.in.ua': {
         label: 'alerts.in.ua',
         start: (clientKey, onUpdate, onHealthChange) => startAlertsInUaPolling(clientKey, onUpdate, onHealthChange),
+    },
+    ukrainealarm: {
+        label: 'UkraineAlarm',
+        start: (clientKey, onUpdate, onHealthChange) => startUkraineAlarmPolling(clientKey, onUpdate, onHealthChange),
     },
     neptun: {
         label: 'Neptun',

@@ -16,11 +16,11 @@ function registerTrayPopupIpc() {
         nativeImage.createFromPath(getResourcePath('icons', 'app-icon-256.png')).toDataURL()
     );
 
-    ipcMain.handle('trayPopup:getAlerts', () => {
+    ipcMain.handle('trayPopup:getAlerts', async () => {
         const language = settingsStore.getSettings().language;
 
-        return getLatestMatchedAlerts().map((alert) => {
-            const [duration] = getRegionDurationStats(alert.location_uid, [alert.alert_type]);
+        return Promise.all(getLatestMatchedAlerts().map(async (alert) => {
+            const [duration] = await getRegionDurationStats(alert.location_uid, [alert.alert_type]);
             return {
                 location: language === 'English' ? alert.location_lat : alert.location_title,
                 type: alertTypeName(alert.alert_type, language),
@@ -31,7 +31,7 @@ function registerTrayPopupIpc() {
                 alertLevel: alert.alert_level || null,
                 threatLines: getThreatLines(alert.threats, language),
             };
-        });
+        }));
     });
 
     ipcMain.handle('trayPopup:openForecast', () => {

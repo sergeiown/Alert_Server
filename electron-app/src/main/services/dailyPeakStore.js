@@ -1,62 +1,33 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
-const fs = require('fs');
-const { getUserDataFile } = require('./appPaths');
+const { loadLocalConfig } = require('./localConfig');
+const { PROXY_URL, getClientVersion } = require('./proxyConfig');
 
-const TODAY_STATS_TIMEZONE = 'Europe/Kyiv';
-const STATE_FILE = 'daily_peak_state.json';
+const CACHE_TTL_MS = 15 * 1000;
+const EMPTY_PEAKS = { alertPeak: 0, threatPeak: 0 };
 
-let state = null;
+let cached = null;
 
-function kyivDateStr(date) {
-    return new Intl.DateTimeFormat('en-CA', {
-        timeZone: TODAY_STATS_TIMEZONE,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-    }).format(date);
-}
+async function getDailyPeaks() {
+    if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) return cached.data;
 
-function loadState() {
-    const filePath = getUserDataFile(STATE_FILE);
-    if (!fs.existsSync(filePath)) return null;
     try {
-        return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        const { alertProxyClientKey } = loadLocalConfig();
+        if (!alertProxyClientKey) return EMPTY_PEAKS;
+
+        const response = await fetch(`${PROXY_URL}/daily-peaks`, {
+            headers: { 'X-Client-Key': alertProxyClientKey, 'X-Client-Version': getClientVersion() },
+        });
+        if (!response.ok) throw new Error(`status ${response.status}`);
+
+        const data = await response.json();
+        const peaks = { alertPeak: Number(data.alertPeak) || 0, threatPeak: Number(data.threatPeak) || 0 };
+        cached = { data: peaks, fetchedAt: Date.now() };
+        return peaks;
     } catch (err) {
-        return null;
+        return cached ? cached.data : EMPTY_PEAKS;
     }
 }
 
-function saveState() {
-    fs.writeFileSync(getUserDataFile(STATE_FILE), JSON.stringify(state), 'utf-8');
-}
-
-function ensureToday() {
-    const today = kyivDateStr(new Date());
-    if (!state) state = loadState() || { date: today, alertPeak: 0, threatPeak: 0 };
-    if (state.date !== today) state = { date: today, alertPeak: 0, threatPeak: 0 };
-}
-
-function recordAlertCount(count) {
-    ensureToday();
-    if (count > state.alertPeak) {
-        state.alertPeak = count;
-        saveState();
-    }
-}
-
-function recordThreatCount(count) {
-    ensureToday();
-    if (count > state.threatPeak) {
-        state.threatPeak = count;
-        saveState();
-    }
-}
-
-function getDailyPeaks() {
-    ensureToday();
-    return { alertPeak: state.alertPeak, threatPeak: state.threatPeak };
-}
-
-module.exports = { recordAlertCount, recordThreatCount, getDailyPeaks };
+module.exports = { getDailyPeaks };

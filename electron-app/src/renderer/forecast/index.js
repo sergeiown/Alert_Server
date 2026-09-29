@@ -23,16 +23,6 @@ function addCopyButton(card, pre, strings) {
     card.appendChild(button);
 }
 
-async function renderLocalStats(strings) {
-    const stats = await window.alertServerForecast.getLocalStats();
-    const line = strings.forecastLocalStatsLabel
-        .replace('{days}', stats.spanDays)
-        .replace('{regions}', stats.regionCount)
-        .replace('{total}', stats.totalAlerts);
-    document.getElementById('localStatsLine').textContent = line;
-    document.getElementById('localStatsNote').textContent = strings.forecastLocalStatsNote;
-}
-
 function sortRank({ result }) {
     if (result.status === 'active') return 0;
     if (result.status === 'ok' && typeof result.etaMs === 'number') return 1 + result.etaMs;
@@ -126,14 +116,6 @@ async function main() {
     document.title = strings.forecastWindowTitle;
     document.getElementById('forecastHeader').textContent = strings.forecastHeader;
     document.getElementById('baselineCalibrationNote').textContent = strings.forecastBaselineCalibrationNote;
-
-    const clearStatsButton = document.getElementById('clearStatsButton');
-    clearStatsButton.textContent = strings.forecastClearStatsButton;
-    clearStatsButton.addEventListener('click', async () => {
-        const { cleared } = await window.alertServerForecast.clearLocalStats();
-        if (cleared) await renderLocalStats(strings);
-    });
-    await renderLocalStats(strings);
 
     await renderRegionsList();
 

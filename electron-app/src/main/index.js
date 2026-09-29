@@ -19,14 +19,12 @@ const { filterAlerts, discoverUnknownLocations } = require('./services/locationF
 const { loadLocalConfig } = require('./services/localConfig');
 const { processAlerts, processKyivDistricts, getActiveCount } = require('./services/notifier');
 const { setLatestMatchedAlerts, setLatestTotalAlertCount, setLatestAlertedRegions } = require('./services/alertState');
-const dailyPeakStore = require('./services/dailyPeakStore');
+const { removeLegacyLocalData } = require('./services/legacyDataCleanup');
 const { computeAlertedRegions, computeKyivRaionStatuses } = require('./services/regionAlertStatus');
 const { createTray, updateTrayState } = require('./services/tray');
 const { startForecastWatcher } = require('./services/forecastWatcher');
 const { startOccupiedTerritoryRefresh } = require('./services/occupiedTerritoryStore');
 const { startWeaponStatsRefresh } = require('./services/weaponStatsStore');
-const { startTodayStatsRefresh } = require('./services/todayStatsStore');
-const { startHistoryBackfill } = require('./services/historyBackfillStore');
 const { startNeptunThreatsTracking } = require('./services/neptunThreatsStore');
 const { installHandlers } = require('./services/crashRestart');
 const { delayedCheckForUpdates } = require('./services/updater');
@@ -70,8 +68,7 @@ app.whenReady().then(() => {
     delayedCheckForUpdates();
     startOccupiedTerritoryRefresh();
     startWeaponStatsRefresh();
-    startTodayStatsRefresh();
-    startHistoryBackfill();
+    removeLegacyLocalData();
     startNeptunThreatsTracking();
 
     const { alertSourceProvider } = settingsStore.getSettings();
@@ -85,7 +82,6 @@ app.whenReady().then(() => {
         }
         setLatestMatchedAlerts(matched);
         setLatestTotalAlertCount(alertData.alerts.length);
-        dailyPeakStore.recordAlertCount(alertData.alerts.length);
         const kyivRaions = computeKyivRaionStatuses(alertData.alerts);
         setLatestAlertedRegions({ ...computeAlertedRegions(alertData.alerts), kyivRaions });
         processAlerts(matched, alertData.alerts);

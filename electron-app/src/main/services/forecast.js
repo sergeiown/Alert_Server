@@ -5,10 +5,15 @@ const { logEvent } = require('./logger');
 const { loadLocalConfig } = require('./localConfig');
 const { alertTypeName } = require('./alertTypes');
 const { t } = require('../../i18n/i18n');
-const forecastConfig = require('./forecastConfig');
-const { computeStats, filterUsableAlerts } = require('./forecastModel');
-const historyStore = require('./forecastHistoryStore');
-const { getHistoryFetchTarget } = require('./locationFilter');
+const { PROXY_URL, getClientVersion } = require('./proxyConfig');
+
+const FORECAST_CACHE_TTL_MS = 60 * 1000;
+const FETCH_ERROR_LOG_COOLDOWN_MS = 10 * 60 * 1000;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+const forecastCache = new Map();
+const inflight = new Map();
+let lastErrorLoggedAt = 0;
 
 function weekdayName(weekdayIndex, language) {
     const locale = language === 'English' ? 'en-US' : 'uk-UA';
@@ -16,122 +21,51 @@ function weekdayName(weekdayIndex, language) {
     return reference.toLocaleDateString(locale, { weekday: 'long', timeZone: 'UTC' });
 }
 
-const { PROXY_URL } = require('./proxyConfig');
-const HISTORY_CACHE_TTL_MS = 15 * 60 * 1000;
-const MIN_ORIGIN_GAP_MS = 35000;
-
-const HISTORY_ORIGIN_ISSUE_LOG_COOLDOWN_MS = 30 * 60 * 1000;
-const HISTORY_BACKOFF_MS = 60000;
-
-const historyCache = new Map();
-let queue = Promise.resolve();
-let lastOriginFetchAt = 0;
-
-let historyLastLoggedStatus = null;
-let historyLastLoggedAt = 0;
-
-function delay(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function describeOriginStatus(status) {
-    if (status === 401) return 'token invalid, revoked, or expired';
-    if (status === 403) return 'IP blocked or country unavailable';
-    if (status === 429) return 'rate limit exceeded';
-    return `unexpected status ${status}`;
-}
-
-function logHistoryOriginIssue(uid, status) {
+function logFetchError(uid, detail) {
     const now = Date.now();
-    if (status === historyLastLoggedStatus && now - historyLastLoggedAt < HISTORY_ORIGIN_ISSUE_LOG_COOLDOWN_MS) return;
-    historyLastLoggedStatus = status;
-    historyLastLoggedAt = now;
-    logEvent(`alerts.in.ua history origin issue (uid ${uid}): ${status} (${describeOriginStatus(status)})`, 'NETWORK');
+    if (now - lastErrorLoggedAt < FETCH_ERROR_LOG_COOLDOWN_MS) return;
+    lastErrorLoggedAt = now;
+    logEvent(`Forecast fetch failed (uid ${uid}): ${detail}`, 'NETWORK');
 }
 
-function noteHistoryOriginHealthy() {
-    if (historyLastLoggedStatus === null) return;
-    logEvent('alerts.in.ua history origin recovered', 'NETWORK');
-    historyLastLoggedStatus = null;
+async function requestForecast(uid) {
+    const { alertProxyClientKey } = loadLocalConfig();
+    if (!alertProxyClientKey) return null;
+
+    const response = await fetch(`${PROXY_URL}/forecast/${uid}`, {
+        headers: { 'X-Client-Key': alertProxyClientKey, 'X-Client-Version': getClientVersion() },
+    });
+    if (!response.ok) throw new Error(`status ${response.status}`);
+
+    const data = await response.json();
+    if (!data || !Array.isArray(data.durations)) throw new Error('unexpected response');
+    return data;
 }
 
-async function fetchOblastAlerts(stateUid) {
-    const cached = historyCache.get(stateUid);
-    if (cached && Date.now() - cached.fetchedAt < HISTORY_CACHE_TTL_MS) {
-        return cached.alerts;
-    }
+async function fetchRegionForecast(uid) {
+    const key = String(uid);
+    const cached = forecastCache.get(key);
+    if (cached && Date.now() - cached.fetchedAt < FORECAST_CACHE_TTL_MS) return cached.data;
+    if (inflight.has(key)) return inflight.get(key);
 
-    const run = async () => {
-        const waitMs = Math.max(0, MIN_ORIGIN_GAP_MS - (Date.now() - lastOriginFetchAt));
-        if (waitMs > 0) await delay(waitMs);
+    const promise = requestForecast(key)
+        .then((data) => {
+            if (data) forecastCache.set(key, { data, fetchedAt: Date.now() });
+            return data;
+        })
+        .catch((err) => {
+            logFetchError(key, err.message);
+            return cached ? cached.data : null;
+        })
+        .finally(() => inflight.delete(key));
 
-        const { alertProxyClientKey } = loadLocalConfig();
-        lastOriginFetchAt = Date.now();
-
-        const response = await fetch(`${PROXY_URL}/history/${stateUid}`, {
-            headers: { 'X-Client-Key': alertProxyClientKey },
-        });
-
-        if (response.status === 429) {
-            logHistoryOriginIssue(stateUid, 429);
-            lastOriginFetchAt = Date.now() + HISTORY_BACKOFF_MS;
-            return historyCache.get(stateUid)?.alerts || [];
-        }
-
-        if (!response.ok) {
-            logHistoryOriginIssue(stateUid, response.status);
-            return historyCache.get(stateUid)?.alerts || [];
-        }
-
-        const data = await response.json();
-        const alerts = data.alerts || [];
-
-        const originErrorStatus = response.headers.get('X-Origin-Error-Status');
-        if (originErrorStatus) logHistoryOriginIssue(stateUid, Number(originErrorStatus));
-        else noteHistoryOriginHealthy();
-
-        historyCache.set(stateUid, { fetchedAt: Date.now(), alerts });
-        return alerts;
-    };
-
-    const result = queue.then(run, run);
-    queue = result.catch(() => historyCache.get(stateUid)?.alerts || []);
-    return result;
+    inflight.set(key, promise);
+    return promise;
 }
 
-async function fetchUkraineAlarmHistory(uid) {
-    try {
-        const { alertProxyClientKey } = loadLocalConfig();
-        const response = await fetch(`${PROXY_URL}/ukrainealarm-region-history/${uid}`, {
-            headers: { 'X-Client-Key': alertProxyClientKey },
-        });
-        if (!response.ok) return null;
-
-        const data = await response.json();
-        if (!data || !Array.isArray(data.alerts)) return null;
-        return data.alerts;
-    } catch (err) {
-        return null;
-    }
-}
-
-async function fetchHistoryAlerts(uid) {
-    const ukraineAlarmAlerts = await fetchUkraineAlarmHistory(uid);
-    if (ukraineAlarmAlerts) {
-        historyStore.mergeAlerts(uid, ukraineAlarmAlerts, { source: 'ukrainealarm', backfill: true });
-        return ukraineAlarmAlerts;
-    }
-
-    const target = getHistoryFetchTarget(uid);
-    if (!target) return [];
-
-    const oblastAlerts = await fetchOblastAlerts(target.stateUid);
-    const matched =
-        target.matchUid === null
-            ? oblastAlerts
-            : oblastAlerts.filter((alert) => String(alert.location_uid) === String(target.matchUid));
-    historyStore.mergeAlerts(uid, matched, { source: 'alerts.in.ua', backfill: true });
-    return matched;
+function cachedForecast(uid) {
+    const entry = forecastCache.get(String(uid));
+    return entry ? entry.data : null;
 }
 
 function formatDuration(ms, language) {
@@ -156,6 +90,11 @@ const HISTORY_SOURCE_DISPLAY = {
 function formatProbabilityPercent(fraction, language) {
     const percent = fraction * 100;
     return percent >= 99.5 ? t('forecastProbabilityNearCertain', language) : Math.round(percent).toString();
+}
+
+function formatShortDateTime(dateValue, language) {
+    const locale = language === 'English' ? 'en-US' : 'uk-UA';
+    return new Date(dateValue).toLocaleString(locale, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 function buildForecastText(stats, language, source) {
@@ -215,13 +154,6 @@ function buildForecastText(stats, language, source) {
     return lines.join('\n');
 }
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-function formatShortDateTime(dateValue, language) {
-    const locale = language === 'English' ? 'en-US' : 'uk-UA';
-    return new Date(dateValue).toLocaleString(locale, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
 function daysSince(dateValue) {
     return Math.max(1, Math.round((Date.now() - new Date(dateValue).getTime()) / MS_PER_DAY));
 }
@@ -238,7 +170,6 @@ function daysWord(count, language) {
 }
 
 function buildActiveDurationLines(durationStats, language) {
-
     const lines = [{ text: t('forecastActiveDurationNotApplicable', language), level: null }];
 
     durationStats.forEach((entry) => {
@@ -283,69 +214,53 @@ function buildActiveDurationText(durationStats, language) {
         .join('\n');
 }
 
-async function getAccumulatedAlerts(uid) {
-    await fetchHistoryAlerts(uid);
-    return historyStore.getAllAlertsForRegion(uid);
-}
-
-function getRegionForecastText(uid, language) {
-    const alerts = historyStore.getAllAlertsForRegion(uid);
-    const stats = computeStats(alerts, Date.now(), forecastConfig);
-    if (!stats) return null;
-    return buildForecastText(stats, language, historyStore.getRegionSource(uid));
-}
-
 function soonestTypeEntry(typeBreakdown) {
     const candidates = typeBreakdown.filter((entry) => entry.projectedNextMs !== null);
     if (!candidates.length) return null;
     return candidates.reduce((soonest, entry) => (entry.projectedNextMs < soonest.projectedNextMs ? entry : soonest));
 }
 
-function getRegionSoonestEtaMs(uid) {
-    const alerts = historyStore.getAllAlertsForRegion(uid);
-    const stats = computeStats(alerts, Date.now(), forecastConfig);
-    if (!stats) return null;
+async function getRegionForecastText(uid, language) {
+    const data = await fetchRegionForecast(uid);
+    if (!data || !data.stats) return null;
+    return buildForecastText(data.stats, language, data.source);
+}
 
-    const soonest = soonestTypeEntry(stats.typeBreakdown);
+function getRegionSoonestEtaMs(uid) {
+    const data = cachedForecast(uid);
+    if (!data || !data.stats) return null;
+
+    const soonest = soonestTypeEntry(data.stats.typeBreakdown);
     return soonest ? soonest.projectedNextMs : null;
 }
 
-function getRegionDurationStats(uid, alertTypes) {
-    const alerts = filterUsableAlerts(historyStore.getAllAlertsForRegion(uid));
-    const now = Date.now();
-    const DAY_MS = 24 * 60 * 60 * 1000;
+async function getRegionSoonestPrediction(uid) {
+    const data = await fetchRegionForecast(uid);
+    if (!data || !data.stats) return null;
+    return soonestTypeEntry(data.stats.typeBreakdown);
+}
 
-    const avgOf = (list) => (list.length ? list.reduce((sum, a) => sum + a._durationMs, 0) / list.length : null);
+function emptyDurationEntry(type) {
+    return {
+        type,
+        avgDurationLast24hMs: null,
+        avgDurationAllTimeMs: null,
+        countLast24h: 0,
+        countAllTime: 0,
+        oldestStartedAt: null,
+    };
+}
 
+async function getRegionDurationStats(uid, alertTypes) {
+    const data = await fetchRegionForecast(uid);
     return alertTypes.map((type) => {
-        const finished = alerts
-            .filter((a) => a.alert_type === type && a.finished_at)
-            .map((a) => ({ ...a, _durationMs: new Date(a.finished_at).getTime() - new Date(a.started_at).getTime() }));
-        const last24h = finished.filter((a) => now - new Date(a.started_at).getTime() <= DAY_MS);
-
-        const oldestStartedAt = finished.length
-            ? finished.reduce((oldest, a) => (new Date(a.started_at) < new Date(oldest) ? a.started_at : oldest), finished[0].started_at)
-            : null;
-
-        return {
-            type,
-            avgDurationLast24hMs: avgOf(last24h),
-            avgDurationAllTimeMs: avgOf(finished),
-            countLast24h: last24h.length,
-            countAllTime: finished.length,
-            oldestStartedAt,
-        };
+        const entry = data ? data.durations.find((duration) => duration.type === type) : null;
+        return entry ? { ...entry } : emptyDurationEntry(type);
     });
 }
 
-async function getRegionSoonestPrediction(uid) {
-    const alerts = await getAccumulatedAlerts(uid);
-    if (!alerts.length) return null;
-
-    const stats = computeStats(alerts, Date.now(), forecastConfig);
-    if (!stats) return null;
-
-    return soonestTypeEntry(stats.typeBreakdown);
+function prefetchForecast(uid) {
+    return fetchRegionForecast(uid);
 }
 
 module.exports = {
@@ -355,6 +270,6 @@ module.exports = {
     getRegionDurationStats,
     buildActiveDurationText,
     buildActiveDurationLines,
-    fetchHistoryAlerts,
+    prefetchForecast,
     formatDuration,
 };

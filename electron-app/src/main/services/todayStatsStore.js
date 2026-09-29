@@ -3,195 +3,40 @@
 
 const { logEvent } = require('./logger');
 const { loadLocalConfig } = require('./localConfig');
-const { getLocationLookup } = require('./locationFilter');
-const historyStore = require('./forecastHistoryStore');
+const { PROXY_URL, getClientVersion } = require('./proxyConfig');
 
-const { PROXY_URL } = require('./proxyConfig');
-const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
-const TODAY_STATS_TIMEZONE = 'Europe/Kyiv';
+const CACHE_TTL_MS = 30 * 1000;
+const ERROR_LOG_COOLDOWN_MS = 10 * 60 * 1000;
 
 let cached = null;
+let lastErrorLoggedAt = 0;
 
-function kyivHour(dateStr) {
-    const formatted = new Intl.DateTimeFormat('en-GB', {
-        timeZone: TODAY_STATS_TIMEZONE,
-        hour: '2-digit',
-        hourCycle: 'h23',
-    }).format(new Date(dateStr));
-    return Number(formatted);
-}
-
-function kyivDateStr(dateStr) {
-    return new Intl.DateTimeFormat('en-CA', {
-        timeZone: TODAY_STATS_TIMEZONE,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-    }).format(new Date(dateStr));
-}
-
-function resolveOblastName(locationUid) {
-    const lookup = getLocationLookup();
-    const info = lookup.get(String(locationUid));
-    if (!info) return null;
-    const state = lookup.get(String(info.stateUid));
-    return state ? state.name : null;
-}
-
-function aggregateTodayStats(date, rawAlerts) {
-
-    const alerts = rawAlerts.filter((alert) => kyivDateStr(alert.started_at) === date);
-
-    const byHour = Array.from({ length: 24 }, () => 0);
-    const byOblast = new Map();
-
-    alerts.forEach((alert) => {
-        byHour[kyivHour(alert.started_at)]++;
-        const oblastName = resolveOblastName(alert.location_uid);
-        if (oblastName) byOblast.set(oblastName, (byOblast.get(oblastName) || 0) + 1);
-    });
-
-    return {
-        date,
-        total: alerts.length,
-        byHour,
-        byOblast: Array.from(byOblast, ([oblast, count]) => ({ oblast, count })).sort((a, b) => b.count - a.count),
-        alerts,
-        complete: true,
-        warmupEtaMinutes: 0,
-        source: 'ukrainealarm',
-    };
-}
-
-function mergeIntoForecastHistory(alerts, source) {
-
-    const lookup = getLocationLookup();
-    const byOblast = new Map();
-    const byLocation = new Map();
-
-    alerts.forEach((alert) => {
-        if (alert.location_uid === undefined || alert.location_uid === null) return;
-        const locationUid = String(alert.location_uid);
-
-        if (!byLocation.has(locationUid)) byLocation.set(locationUid, []);
-        byLocation.get(locationUid).push(alert);
-
-        const info = lookup.get(locationUid);
-        if (info && info.stateUid !== undefined) {
-            const oblastKey = String(info.stateUid);
-            if (!byOblast.has(oblastKey)) byOblast.set(oblastKey, []);
-            byOblast.get(oblastKey).push(alert);
-        }
-    });
-
-    byOblast.forEach((list, uid) => historyStore.mergeAlerts(uid, list, { source }));
-    byLocation.forEach((list, uid) => historyStore.mergeAlerts(uid, list, { source }));
-}
-
-async function refreshFromUkraineAlarm(clientKey) {
-    try {
-        const response = await fetch(`${PROXY_URL}/ukrainealarm-today-stats`, {
-            headers: { 'X-Client-Key': clientKey },
-        });
-        if (!response.ok) {
-            logEvent(`Today stats fetch failed (UkraineAlarm): ${response.status}`, 'NETWORK');
-            return false;
-        }
-
-        const data = await response.json();
-        if (!data || !Array.isArray(data.alerts)) {
-            logEvent('Today stats response missing expected fields (UkraineAlarm)', 'WARNING');
-            return false;
-        }
-
-        cached = aggregateTodayStats(data.date, data.alerts);
-        mergeIntoForecastHistory(data.alerts, 'ukrainealarm');
-        logEvent(`Today stats updated (UkraineAlarm): ${cached.total} nationwide (${data.date})`, 'NETWORK');
-        return true;
-    } catch (err) {
-        logEvent(`Today stats fetch error (UkraineAlarm): ${err.message}`, 'NETWORK');
-        return false;
-    }
-}
-
-async function refreshFromAlertsInUa(clientKey) {
-    try {
-        const response = await fetch(`${PROXY_URL}/today-stats`, {
-            headers: { 'X-Client-Key': clientKey },
-        });
-        if (!response.ok) {
-            logEvent(`Today stats fetch failed (alerts.in.ua): ${response.status}`, 'NETWORK');
-            return;
-        }
-
-        const data = await response.json();
-
-        if (!data || typeof data.total !== 'number' || !Array.isArray(data.byHour) || !Array.isArray(data.alerts)) {
-            logEvent('Today stats response missing expected fields (alerts.in.ua)', 'WARNING');
-            return;
-        }
-
-        cached = { ...data, source: 'alerts.in.ua' };
-        mergeIntoForecastHistory(data.alerts, 'alerts.in.ua');
-        logEvent(`Today stats updated (alerts.in.ua): ${data.total} nationwide (${data.date})`, 'NETWORK');
-    } catch (err) {
-        logEvent(`Today stats fetch error (alerts.in.ua): ${err.message}`, 'NETWORK');
-    }
-}
-
-async function refresh() {
+async function getLatestTodayStats(monitoredUids) {
     const { alertProxyClientKey } = loadLocalConfig();
-    if (!alertProxyClientKey) return;
+    if (!alertProxyClientKey) return null;
 
-    const gotUkraineAlarmData = await refreshFromUkraineAlarm(alertProxyClientKey);
-    if (!gotUkraineAlarmData) await refreshFromAlertsInUa(alertProxyClientKey);
-}
+    const uids = (monitoredUids || []).map(String).sort().join(',');
+    if (cached && cached.uids === uids && Date.now() - cached.fetchedAt < CACHE_TTL_MS) return cached.data;
 
-function getLatestTodayStats(monitoredUids) {
-    if (!cached) return null;
+    try {
+        const response = await fetch(`${PROXY_URL}/trends/today?uids=${encodeURIComponent(uids)}`, {
+            headers: { 'X-Client-Key': alertProxyClientKey, 'X-Client-Version': getClientVersion() },
+        });
+        if (!response.ok) throw new Error(`status ${response.status}`);
 
-    const monitored = new Set((monitoredUids || []).map(String));
-    const byMonitoredLocation = new Map();
-    cached.alerts.forEach((alert) => {
-        const uid = alert.location_uid !== undefined ? String(alert.location_uid) : null;
-        if (uid && monitored.has(uid)) {
-            const label = alert.location_title || uid;
-            byMonitoredLocation.set(label, (byMonitoredLocation.get(label) || 0) + 1);
+        const data = await response.json();
+        if (!data || typeof data.total !== 'number' || !Array.isArray(data.byHour)) throw new Error('unexpected response');
+
+        cached = { uids, data, fetchedAt: Date.now() };
+        return data;
+    } catch (err) {
+        const now = Date.now();
+        if (now - lastErrorLoggedAt >= ERROR_LOG_COOLDOWN_MS) {
+            lastErrorLoggedAt = now;
+            logEvent(`Today stats fetch failed: ${err.message}`, 'NETWORK');
         }
-    });
-
-    return {
-        total: cached.total,
-        byHour: cached.byHour,
-        byOblast: cached.byOblast,
-        byMonitoredLocation: Array.from(byMonitoredLocation, ([location, count]) => ({ location, count })).sort(
-            (a, b) => b.count - a.count
-        ),
-        complete: cached.complete,
-        warmupEtaMinutes: cached.warmupEtaMinutes,
-        source: cached.source,
-    };
+        return cached ? cached.data : null;
+    }
 }
 
-const MIDNIGHT_REFRESH_BUFFER_MS = 5000;
-
-function msUntilNextLocalMidnight() {
-    const now = new Date();
-    const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
-    return next.getTime() - now.getTime() + MIDNIGHT_REFRESH_BUFFER_MS;
-}
-
-function scheduleMidnightRefresh() {
-    setTimeout(() => {
-        refresh();
-        scheduleMidnightRefresh();
-    }, msUntilNextLocalMidnight());
-}
-
-function startTodayStatsRefresh() {
-    refresh();
-    setInterval(refresh, REFRESH_INTERVAL_MS);
-    scheduleMidnightRefresh();
-}
-
-module.exports = { startTodayStatsRefresh, getLatestTodayStats };
+module.exports = { getLatestTodayStats };

@@ -4,7 +4,7 @@
 const { logEvent } = require('./logger');
 const regionsStore = require('./regionsStore');
 const settingsStore = require('./settingsStore');
-const forecastConfig = require('./forecastConfig');
+const DEFAULT_LOOKAHEAD_MINUTES = 120;
 const { getRegionSoonestPrediction, formatDuration } = require('./forecast');
 const { getLatestAlertData } = require('./activeAlertData');
 const { getLocationLookup, getAlertCoverageUids } = require('./locationFilter');
@@ -74,7 +74,7 @@ async function evaluateRegion(uid, language) {
     const settings = settingsStore.getSettings();
     if (!settings.visualNotificationsEnabled || !settings.forecastNotifyEnabled) return null;
 
-    const lookaheadMinutes = settings.forecastNotifyLookaheadMinutes || forecastConfig.NOTIFY_LOOKAHEAD_MINUTES;
+    const lookaheadMinutes = settings.forecastNotifyLookaheadMinutes || DEFAULT_LOOKAHEAD_MINUTES;
     const lookaheadMs = lookaheadMinutes * 60 * 1000;
     if (soonest.projectedNextMs > lookaheadMs) return null;
 

@@ -8,12 +8,12 @@ const regionsStore = require('../services/regionsStore');
 const discoveredLocationsStore = require('../services/discoveredLocationsStore');
 const regionAvailability = require('../services/regionAvailability');
 const forecastWatcher = require('../services/forecastWatcher');
-const { fetchHistoryAlerts } = require('../services/forecast');
+const { prefetchForecast } = require('../services/forecast');
 const { notifyRegionsChanged } = require('../windows/forecastWindow');
 const { logEvent } = require('../services/logger');
 
 function prefetchForecastHistory(uid) {
-    fetchHistoryAlerts(uid).catch((err) => logEvent(`Forecast prefetch failed for uid ${uid}: ${err.message}`, 'NETWORK'));
+    prefetchForecast(uid);
 }
 
 let cachedTree = null;
