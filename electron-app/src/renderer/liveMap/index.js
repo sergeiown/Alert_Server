@@ -131,12 +131,13 @@ async function main() {
     function applyBaseFit() {
         map.stop();
         map.setMinZoom(MAP_MIN_ZOOM);
-        map.setMaxZoom(kyivModeActive ? KYIV_MAX_ZOOM : UKRAINE_MAX_ZOOM);
+        map.setMaxZoom(Math.max(KYIV_MAX_ZOOM, UKRAINE_MAX_ZOOM));
         map.setMaxBounds(null);
         const bounds = kyivModeActive ? KYIV_BOUNDS : UKRAINE_BOUNDS;
 
         const fitPadding = kyivModeActive ? [0, 0] : window.alertServerLiveMap.fitPadding || [0, 0];
         map.fitBounds(bounds, { animate: false, padding: fitPadding });
+        map.setMaxZoom(kyivModeActive ? KYIV_MAX_ZOOM : UKRAINE_MAX_ZOOM);
         map.setMinZoom(map.getZoom());
     }
 
