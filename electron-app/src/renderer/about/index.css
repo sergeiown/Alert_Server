@@ -54,14 +54,16 @@ body {
     margin: 2px 0;
 }
 
-#githubLink {
+#githubLink,
+#webMapLink {
     color: var(--link);
-    margin-top: 12px;
+    margin-top: 6px;
     text-decoration: none;
     cursor: pointer;
     word-break: break-all;
 }
 
-#githubLink:hover {
+#githubLink:hover,
+#webMapLink:hover {
     text-decoration: underline;
 }
