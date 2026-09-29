@@ -1,12 +1,21 @@
 flowchart LR
     subgraph ext[Зовнішні сервіси]
-        ukrainealarm[UkraineAlarm]
         api[alerts.in.ua]
-        proxy[alert-proxy Worker]
+        ukrainealarm["UkraineAlarm (необов'язково)"]
         neptun[Neptun]
         deepstate[DeepState]
         kaggle[Kaggle]
-        gh[GitHub Releases]
+    end
+
+    gh[GitHub Releases]
+
+    subgraph srv[Серверна частина Alert Server]
+        pollers[Опитувачі та ретранслятори джерел]
+        archive[(Архів тривог і загроз)]
+        forecastEngine[Рушій прогнозу]
+        trendsEngine[Статистика дня та піки]
+        srvCache[Кешовані набори даних]
+        gateway[HTTPS і WebSocket API]
     end
 
     subgraph main[Основний процес Electron]
@@ -19,9 +28,8 @@ flowchart LR
         notifier[notifier]
         regionStatus[regionAlertStatus]
         todayStats[todayStatsStore]
-        historyBackfill[historyBackfillStore]
         occupied[occupiedTerritoryStore]
-        forecast[forecast-сервіси]
+        forecast[клієнт прогнозу]
         watcher[forecastWatcher]
         weaponStats[weaponStatsStore]
         tray[tray]
@@ -33,55 +41,58 @@ flowchart LR
         settingsWin[Налаштування]
         forecastWin[Прогноз]
         trendsWin[Тенденції]
-        liveMapWin[Live-мапа]
-        popup[Попап трею]
-        logWin[Лог]
-        aboutWin[Про програму]
+        liveMapWin[Жива мапа]
+        popup[Спливаюче вікно трея]
+        logWin[Журнал]
+        aboutWin[Про застосунок]
     end
 
-    ukrainealarm --> proxy
-    ukrainealarm -. webhook push .-> proxy
-    api --> proxy
-    kaggle --> proxy
-    proxy -->|WebSocket push| uaSource
-    proxy -->|WebSocket push| poller
-    proxy --> forecast
-    proxy --> weaponStats
-    proxy --> todayStats
-    proxy --> historyBackfill
-    deepstate --> occupied
-    neptun -->|WebSocket-стрім| threatsStore
-    neptun --> altSource
+    api -->|опитується з максимальною частотою, яку дозволяє його API| pollers
+    ukrainealarm -. коли увімкнено .-> pollers
+    neptun -->|потік WebSocket| pollers
+    deepstate --> srvCache
+    kaggle --> srvCache
+    pollers --> archive
+    archive --> forecastEngine
+    archive --> trendsEngine
+    pollers --> gateway
+    forecastEngine --> gateway
+    trendsEngine --> gateway
+    srvCache --> gateway
 
-    pushNote(["постійне з'єднання, живе всю сесію застосунку, відкат на опитування лише поки з'єднання недоступне"])
-    proxy -. надсилає через .-> pushNote
-    pushNote -. пояснює .-> uaSource
-    pushNote -. пояснює .-> poller
-    pushNote -. пояснює .-> threatsStore
+    gateway -->|WebSocket push, постійне з'єднання, опитування лише поки воно недоступне| poller
+    gateway -->|WebSocket push| uaSource
+    gateway -->|WebSocket push| threatsStore
+    gateway --> altSource
+    gateway --> forecast
+    gateway --> todayStats
+    gateway --> weaponStats
+    gateway --> occupied
+    neptun -. пряме резервне підключення .-> threatsStore
+    neptun -. пряме резервне підключення .-> altSource
 
-    levelNote(["alert_level / threats (червоний / жовтий), у всіх 3 джерелах"])
-    proxy -. додає .-> levelNote
-    altSource -. додає .-> levelNote
+
+    levelNote(["alert_level / threats (червоний / жовтий) з кожного джерела"])
+    pollers -. додає .-> levelNote
 
     stores -. пріоритетне джерело .-> sourceManager
-    sourceManager -. ланцюжок відмовостійкості .-> uaSource
-    sourceManager -. ланцюжок відмовостійкості .-> poller
-    sourceManager -. ланцюжок відмовостійкості .-> altSource
-    uaSource --> activeData
+    sourceManager -. ланцюжок переключення .-> poller
+    sourceManager -. ланцюжок переключення .-> uaSource
+    sourceManager -. ланцюжок переключення .-> altSource
     poller --> activeData
+    uaSource --> activeData
     altSource --> activeData
-    uaSource --> notifier
     poller --> notifier
+    uaSource --> notifier
     altSource --> notifier
-    uaSource --> regionStatus
     poller --> regionStatus
+    uaSource --> regionStatus
     altSource --> regionStatus
     notifier --> tray
 
-    activeData --> forecast
     activeData --> watcher
-    historyBackfill --> forecast
     forecast --> watcher
+    forecast --> popup
     watcher --> tray
     watcher --> popup
 
@@ -105,15 +116,18 @@ flowchart LR
     updater --> gh
 
     classDef extNode fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+    classDef srvNode fill:#ffedd5,stroke:#ea580c,color:#7c2d12
     classDef mainNode fill:#dcfce7,stroke:#16a34a,color:#14532d
     classDef winNode fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
     classDef noteNode fill:#fef9c3,stroke:#ca8a04,color:#713f12,stroke-dasharray:3 3
 
-    class ukrainealarm,api,proxy,neptun,deepstate,kaggle,gh extNode
-    class sourceManager,uaSource,poller,altSource,threatsStore,activeData,notifier,regionStatus,todayStats,historyBackfill,occupied,forecast,watcher,weaponStats,tray,stores,updater mainNode
+    class api,ukrainealarm,neptun,deepstate,kaggle,gh extNode
+    class pollers,archive,forecastEngine,trendsEngine,srvCache,gateway srvNode
+    class sourceManager,uaSource,poller,altSource,threatsStore,activeData,notifier,regionStatus,todayStats,occupied,forecast,watcher,weaponStats,tray,stores,updater mainNode
     class settingsWin,forecastWin,trendsWin,liveMapWin,popup,logWin,aboutWin winNode
-    class levelNote,pushNote noteNode
+    class levelNote noteNode
 
     style ext fill:#eff6ff,stroke:#93c5fd
+    style srv fill:#fff7ed,stroke:#fdba74
     style main fill:#f0fdf4,stroke:#86efac
     style win fill:#f5f3ff,stroke:#c4b5fd

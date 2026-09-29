@@ -1,12 +1,21 @@
 flowchart LR
     subgraph ext[External services]
-        ukrainealarm[UkraineAlarm]
         api[alerts.in.ua]
-        proxy[alert-proxy Worker]
+        ukrainealarm["UkraineAlarm (optional)"]
         neptun[Neptun]
         deepstate[DeepState]
         kaggle[Kaggle]
-        gh[GitHub Releases]
+    end
+
+    gh[GitHub Releases]
+
+    subgraph srv[Alert Server backend]
+        pollers[Source pollers and relays]
+        archive[(Alert and threat archive)]
+        forecastEngine[Forecast engine]
+        trendsEngine[Today stats and daily peaks]
+        srvCache[Cached datasets]
+        gateway[HTTPS and WebSocket API]
     end
 
     subgraph main[Electron main process]
@@ -19,9 +28,8 @@ flowchart LR
         notifier[notifier]
         regionStatus[regionAlertStatus]
         todayStats[todayStatsStore]
-        historyBackfill[historyBackfillStore]
         occupied[occupiedTerritoryStore]
-        forecast[forecast services]
+        forecast[forecast client]
         watcher[forecastWatcher]
         weaponStats[weaponStatsStore]
         tray[tray]
@@ -39,49 +47,52 @@ flowchart LR
         aboutWin[About]
     end
 
-    ukrainealarm --> proxy
-    ukrainealarm -. webhook push .-> proxy
-    api --> proxy
-    kaggle --> proxy
-    proxy -->|WebSocket push| uaSource
-    proxy -->|WebSocket push| poller
-    proxy --> forecast
-    proxy --> weaponStats
-    proxy --> todayStats
-    proxy --> historyBackfill
-    deepstate --> occupied
-    neptun -->|WebSocket stream| threatsStore
-    neptun --> altSource
+    api -->|polled at the fastest pace its API allows| pollers
+    ukrainealarm -. when enabled .-> pollers
+    neptun -->|WebSocket stream| pollers
+    deepstate --> srvCache
+    kaggle --> srvCache
+    pollers --> archive
+    archive --> forecastEngine
+    archive --> trendsEngine
+    pollers --> gateway
+    forecastEngine --> gateway
+    trendsEngine --> gateway
+    srvCache --> gateway
 
-    pushNote(["persistent connection, kept alive for the whole app session falls back to polling only while down"])
-    proxy -. pushes via .-> pushNote
-    pushNote -. explains .-> uaSource
-    pushNote -. explains .-> poller
-    pushNote -. explains .-> threatsStore
+    gateway -->|WebSocket push, persistent connection, polling fallback only while it is down| poller
+    gateway -->|WebSocket push| uaSource
+    gateway -->|WebSocket push| threatsStore
+    gateway --> altSource
+    gateway --> forecast
+    gateway --> todayStats
+    gateway --> weaponStats
+    gateway --> occupied
+    neptun -. direct fallback .-> threatsStore
+    neptun -. direct fallback .-> altSource
 
-    levelNote(["alert_level / threats(red / yellow), all 3 sources"])
-    proxy -. adds .-> levelNote
-    altSource -. adds .-> levelNote
+
+    levelNote(["alert_level / threats (red / yellow) from every source"])
+    pollers -. adds .-> levelNote
 
     stores -. preferred source .-> sourceManager
-    sourceManager -. failover chain .-> uaSource
     sourceManager -. failover chain .-> poller
+    sourceManager -. failover chain .-> uaSource
     sourceManager -. failover chain .-> altSource
-    uaSource --> activeData
     poller --> activeData
+    uaSource --> activeData
     altSource --> activeData
-    uaSource --> notifier
     poller --> notifier
+    uaSource --> notifier
     altSource --> notifier
-    uaSource --> regionStatus
     poller --> regionStatus
+    uaSource --> regionStatus
     altSource --> regionStatus
     notifier --> tray
 
-    activeData --> forecast
     activeData --> watcher
-    historyBackfill --> forecast
     forecast --> watcher
+    forecast --> popup
     watcher --> tray
     watcher --> popup
 
@@ -105,15 +116,18 @@ flowchart LR
     updater --> gh
 
     classDef extNode fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+    classDef srvNode fill:#ffedd5,stroke:#ea580c,color:#7c2d12
     classDef mainNode fill:#dcfce7,stroke:#16a34a,color:#14532d
     classDef winNode fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
     classDef noteNode fill:#fef9c3,stroke:#ca8a04,color:#713f12,stroke-dasharray:3 3
 
-    class ukrainealarm,api,proxy,neptun,deepstate,kaggle,gh extNode
-    class sourceManager,uaSource,poller,altSource,threatsStore,activeData,notifier,regionStatus,todayStats,historyBackfill,occupied,forecast,watcher,weaponStats,tray,stores,updater mainNode
+    class api,ukrainealarm,neptun,deepstate,kaggle,gh extNode
+    class pollers,archive,forecastEngine,trendsEngine,srvCache,gateway srvNode
+    class sourceManager,uaSource,poller,altSource,threatsStore,activeData,notifier,regionStatus,todayStats,occupied,forecast,watcher,weaponStats,tray,stores,updater mainNode
     class settingsWin,forecastWin,trendsWin,liveMapWin,popup,logWin,aboutWin winNode
-    class levelNote,pushNote noteNode
+    class levelNote noteNode
 
     style ext fill:#eff6ff,stroke:#93c5fd
+    style srv fill:#fff7ed,stroke:#fdba74
     style main fill:#f0fdf4,stroke:#86efac
     style win fill:#f5f3ff,stroke:#c4b5fd
