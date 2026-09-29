@@ -7,6 +7,9 @@ const { checkClientKey, checkAdminKey } = require('./auth');
 const { attachWebSockets } = require('./ws');
 const { startRecurringJob } = require('./job');
 const gateway = require('./gateway');
+const neptun = require('./neptun');
+const archive = require('./archive');
+const users = require('./users');
 
 const UKRAINEALARM_WEBHOOK_PATH = '/webhook/ukrainealarm/x1fP-zwrLYGX0KsseCw_uB8CdR4cOjKU';
 
@@ -14,6 +17,11 @@ function getClientIp(req) {
     const forwarded = req.headers['x-forwarded-for'];
     if (forwarded) return forwarded.split(',')[0].trim();
     return req.socket.remoteAddress;
+}
+
+function normalizeRoute(pathname) {
+    if (pathname === '/') return '/';
+    return pathname.replace(/\/\d{8}$/, '/:date').replace(/\/\d+$/, '/:uid');
 }
 
 function readBody(req) {
@@ -61,7 +69,7 @@ async function handleRequest(req, res) {
         return;
     }
 
-    const isAdminRoute = url.pathname === '/status' || url.pathname === '/ukrainealarm-status';
+    const isAdminRoute = url.pathname === '/status' || url.pathname === '/ukrainealarm-status' || url.pathname === '/users-stats';
     const authorized = isAdminRoute ? checkAdminKey(url, req.headers) : checkClientKey(url, req.headers);
     if (!authorized) {
         send(res, { status: 401, headers: {}, body: 'Unauthorized' });
@@ -69,7 +77,9 @@ async function handleRequest(req, res) {
     }
 
     if (!isAdminRoute) {
-        await gateway.recordUniqueUser(getClientIp(req));
+        const clientIp = getClientIp(req);
+        await gateway.recordUniqueUser(clientIp);
+        await users.recordRequest(clientIp, normalizeRoute(url.pathname), req.headers['x-client-version'] || url.searchParams.get('v'));
     }
 
     const ifModifiedSince = req.headers['if-modified-since'];
@@ -97,6 +107,27 @@ async function handleRequest(req, res) {
 
     if (url.pathname === '/status') {
         send(res, gateway.getStatus());
+        return;
+    }
+
+    if (url.pathname === '/users-stats') {
+        send(res, { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(users.getStats(gateway.totalConnections())) });
+        return;
+    }
+
+    if (url.pathname === '/neptun/alerts') {
+        send(res, neptun.getAlertsResponse());
+        return;
+    }
+
+    if (url.pathname === '/neptun/threats') {
+        send(res, neptun.getThreatsResponse());
+        return;
+    }
+
+    if (url.pathname === '/archive/alerts') {
+        const rows = archive.getAlertsSince(url.searchParams.get('since'), url.searchParams.get('uid'));
+        send(res, { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ alerts: rows }) });
         return;
     }
 

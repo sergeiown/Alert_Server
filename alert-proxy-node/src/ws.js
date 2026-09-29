@@ -3,11 +3,14 @@
 
 const { WebSocketServer } = require('ws');
 const gateway = require('./gateway');
+const neptun = require('./neptun');
+const users = require('./users');
 const { checkClientKey } = require('./auth');
 
 function attachWebSockets(server) {
     const alertsWss = new WebSocketServer({ noServer: true });
     const activeWss = new WebSocketServer({ noServer: true });
+    const neptunWss = new WebSocketServer({ noServer: true });
 
     alertsWss.on('connection', (ws) => {
         gateway.acceptAlertsSocket(ws);
@@ -23,12 +26,31 @@ function attachWebSockets(server) {
         ws.on('message', () => {});
     });
 
+    neptunWss.on('connection', (ws) => {
+        neptun.acceptSocket(ws);
+        ws.on('close', () => neptun.unregisterSocket(ws));
+        ws.on('error', () => {});
+        ws.on('message', () => {});
+    });
+
     server.on('upgrade', (request, socket, head) => {
         const url = new URL(request.url, 'http://localhost');
 
         if (!checkClientKey(url, request.headers)) {
             socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
             socket.destroy();
+            return;
+        }
+
+        const forwarded = request.headers['x-forwarded-for'];
+        const ip = forwarded ? forwarded.split(',')[0].trim() : request.socket.remoteAddress;
+        users
+            .recordRequest(ip, `ws:${url.pathname}`, url.searchParams.get('v'))
+            .then(() => users.notePeak(gateway.totalConnections() + 1))
+            .catch(() => {});
+
+        if (url.pathname === '/ws-neptun') {
+            neptunWss.handleUpgrade(request, socket, head, (ws) => neptunWss.emit('connection', ws, request));
             return;
         }
 

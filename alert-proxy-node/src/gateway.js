@@ -5,6 +5,10 @@ const config = require('./config');
 const store = require('./store');
 const lib = require('./lib');
 const system = require('./system');
+const archive = require('./archive');
+const neptun = require('./neptun');
+const backup = require('./backup');
+const health = require('./health');
 
 const UNIQUE_USERS_HISTORY_MAX_DAYS = 90;
 
@@ -89,6 +93,10 @@ function unregisterSocket(tag, ws) {
     sockets[tag].delete(ws);
 }
 
+function totalConnections() {
+    return sockets.alerts.size + sockets.active.size + neptun.socketCount();
+}
+
 function socketCount(tag) {
     return sockets[tag].size;
 }
@@ -129,6 +137,11 @@ async function ensureActiveCacheFresh({ force = false } = {}) {
         state.activeOriginError = null;
         const lastModified = upstream.headers.get('Last-Modified');
         state.activeCache = { body, lastModified, fetchedAt: Date.now() };
+        try {
+            archive.recordActiveAlerts(JSON.parse(body).alerts);
+        } catch (err) {
+            console.error('[archive]', err && err.stack ? err.stack : err);
+        }
         broadcastActive();
     };
 
@@ -717,7 +730,7 @@ function getTodayStats() {
     );
 }
 
-function getStatus() {
+function buildStatus() {
     const now = Date.now();
     const ageOrNull = (ts) => (ts ? now - ts : null);
     const percentOf = (count, limit) => Math.round((count / limit) * 100);
@@ -731,8 +744,7 @@ function getStatus() {
     const generalRequestsLastMinute = lib.pruneAndCount(state.allAlertsInUaFetchTimestamps, now, LOAD_WINDOW_MS);
     const historyRequestsLastMinute = lib.pruneAndCount(state.historyFetchTimestamps, now, LOAD_WINDOW_MS);
 
-    return jsonResponse(
-        JSON.stringify({
+    const status = {
             generatedAt: new Date(now).toISOString(),
             active: {
                 softLimitPerMinute: 9,
@@ -795,8 +807,26 @@ function getStatus() {
                 history: store.get('uniqueUsersHistory') || [],
             },
             system: system.getSystemMetrics(),
-        })
-    );
+            connections: { alerts: socketCount('alerts'), active: socketCount('active'), neptun: neptun.socketCount() },
+            neptun: neptun.getStatusInfo(),
+            archive: archive.getStats(),
+            backup: backup.getStatusInfo(),
+    };
+
+    status.health = health.evaluate(status, {
+        alertsConfigured: Boolean(config.ALERTS_TOKEN),
+        ukraineAlarmConfigured: Boolean(config.UKRAINEALARM_TOKEN),
+    });
+    return status;
+}
+
+function getStatus() {
+    return jsonResponse(JSON.stringify(buildStatus()));
+}
+
+function checkHealth() {
+    if (process.uptime() < 90) return;
+    health.logTransitions(buildStatus().health);
 }
 
 async function getRegionStatuses() {
@@ -874,6 +904,8 @@ async function getWeaponStats() {
 }
 
 module.exports = {
+    checkHealth,
+    totalConnections,
     registerSocket,
     unregisterSocket,
     socketCount,

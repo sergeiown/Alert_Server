@@ -25,4 +25,8 @@ function put(key, value) {
     putStmt.run(key, JSON.stringify(value), Date.now());
 }
 
-module.exports = { get, put };
+function vacuumInto(targetPath) {
+    db.exec(`VACUUM INTO '${targetPath.replace(/'/g, "''")}'`);
+}
+
+module.exports = { get, put, db, vacuumInto };

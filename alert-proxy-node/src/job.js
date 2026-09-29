@@ -3,6 +3,10 @@
 
 const config = require('./config');
 const gateway = require('./gateway');
+const neptun = require('./neptun');
+const backup = require('./backup');
+const archive = require('./archive');
+const users = require('./users');
 
 const TICK_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -47,9 +51,36 @@ async function loop() {
     }
 }
 
+async function maintenanceLoop() {
+    for (;;) {
+        try {
+            backup.runBackupIfDue();
+            archive.pruneOldThreats();
+            users.prune();
+        } catch (err) {
+            logError('maintenance', err);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 60 * 60 * 1000));
+    }
+}
+
+async function healthLoop() {
+    for (;;) {
+        try {
+            gateway.checkHealth();
+        } catch (err) {
+            logError('health', err);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+    }
+}
+
 function startRecurringJob() {
     loop();
     activeLoop();
+    neptun.start();
+    maintenanceLoop();
+    healthLoop();
 }
 
 module.exports = { startRecurringJob };
