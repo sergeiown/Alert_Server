@@ -1,6 +1,11 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
 <title>Вартовий</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%230e2f33'/%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%230e7c8c' stroke-width='1.5'/%3E%3Ccircle cx='16' cy='16' r='6' fill='none' stroke='%230e7c8c' stroke-width='1.5'/%3E%3Cpath d='M16 16 L16 1 A15 15 0 0 1 29.5 21 Z' fill='%233fd0c9' fill-opacity='0.35'/%3E%3Ccircle cx='21' cy='10' r='1.6' fill='%233fd0c9'/%3E%3C/svg%3E">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -14,12 +19,14 @@
     --text-dim: #5c6f78;
     --accent: #0e7c8c;
     --accent-soft: rgba(14, 124, 140, 0.12);
+    --accent-2: #7a5cc8;
     --ok: #1f8a4c;
     --ok-soft: rgba(31, 138, 76, 0.12);
     --warn: #96650a;
     --warn-soft: rgba(176, 125, 16, 0.14);
     --critical: #c23b3b;
     --critical-soft: rgba(194, 59, 59, 0.12);
+    --info-soft: rgba(14, 124, 140, 0.1);
     color-scheme: light;
   }
 
@@ -33,12 +40,14 @@
       --text-dim: #8fa3aa;
       --accent: #3ecbde;
       --accent-soft: rgba(62, 203, 222, 0.14);
+      --accent-2: #a58cf0;
       --ok: #35d488;
       --ok-soft: rgba(53, 212, 136, 0.14);
       --warn: #f0b429;
       --warn-soft: rgba(240, 180, 41, 0.16);
       --critical: #ff6b6b;
       --critical-soft: rgba(255, 107, 107, 0.14);
+      --info-soft: rgba(62, 203, 222, 0.1);
       color-scheme: dark;
     }
   }
@@ -52,28 +61,36 @@
     --text-dim: #8fa3aa;
     --accent: #3ecbde;
     --accent-soft: rgba(62, 203, 222, 0.14);
+    --accent-2: #a58cf0;
     --ok: #35d488;
     --ok-soft: rgba(53, 212, 136, 0.14);
     --warn: #f0b429;
     --warn-soft: rgba(240, 180, 41, 0.16);
     --critical: #ff6b6b;
     --critical-soft: rgba(255, 107, 107, 0.14);
+    --info-soft: rgba(62, 203, 222, 0.1);
     color-scheme: dark;
   }
 
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+
+  html { -webkit-text-size-adjust: 100%; }
 
   body {
+    margin: 0;
     background: var(--bg);
     color: var(--text);
     font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    padding-inline: 20px;
-    padding-block: 20px 40px;
+    font-size: 14px;
+    padding-inline: 16px;
+    padding-block: 16px 40px;
     max-width: 1180px;
-    margin: 0 auto;
+    margin-inline: auto;
   }
 
   .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+  .dim { color: var(--text-dim); }
 
   .eyebrow {
     font-family: 'IBM Plex Mono', monospace;
@@ -87,27 +104,24 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 16px;
+    gap: 12px;
     flex-wrap: wrap;
-    margin-bottom: 20px;
+    margin-bottom: 14px;
   }
 
   h1 {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 600;
     margin: 4px 0 2px;
     text-wrap: balance;
   }
 
-  .subtitle { color: var(--text-dim); font-size: 13px; }
+  h2 { font-size: 13px; font-weight: 600; margin: 0 0 12px; }
 
-  .top-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
+  .subtitle { color: var(--text-dim); font-size: 12px; }
+
+  .top-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
   .pill {
     display: inline-flex;
@@ -121,18 +135,16 @@
     background: var(--surface-2);
     white-space: nowrap;
   }
-
   .pill.ok { color: var(--ok); background: var(--ok-soft); border-color: transparent; }
   .pill.warn { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
   .pill.critical { color: var(--critical); background: var(--critical-soft); border-color: transparent; }
-
   .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
 
   button {
     font-family: inherit;
     font-size: 13px;
     font-weight: 500;
-    padding: 7px 14px;
+    padding: 8px 14px;
     border-radius: 8px;
     border: 1px solid var(--border);
     background: var(--surface);
@@ -148,19 +160,17 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 20px;
+    padding: 14px;
+    margin-bottom: 14px;
     display: grid;
     gap: 10px;
   }
-  #settingsPanel[hidden] { display: none; }
-
   .field-row { display: flex; gap: 10px; flex-wrap: wrap; }
-  .field { flex: 1 1 220px; display: grid; gap: 4px; }
+  .field { flex: 1 1 240px; display: grid; gap: 4px; min-width: 0; }
   .field label { font-size: 12px; color: var(--text-dim); }
   .field input {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
+    font-size: 16px;
     padding: 8px 10px;
     border-radius: 7px;
     border: 1px solid var(--border);
@@ -168,154 +178,162 @@
     color: var(--text);
     width: 100%;
   }
-  .field-actions { display: flex; gap: 8px; align-items: end; }
+  .field-actions { display: flex; gap: 8px; }
+  .settings-note { font-size: 12px; color: var(--text-dim); margin: 0; }
 
-  .banner {
-    padding: 10px 14px;
-    border-radius: 9px;
-    font-size: 13px;
-    margin-bottom: 18px;
+  nav.tabs {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 5;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    padding: 6px;
+    margin-bottom: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    scrollbar-width: none;
+  }
+  nav.tabs::-webkit-scrollbar { display: none; }
+  nav.tabs button {
+    flex: 1 0 auto;
+    border: none;
+    background: transparent;
+    padding: 9px 16px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  nav.tabs button:hover { color: var(--text); }
+  nav.tabs button[aria-selected="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  nav.tabs .badge {
+    display: inline-block;
+    min-width: 18px;
+    padding: 1px 6px;
+    margin-left: 6px;
+    border-radius: 999px;
+    font-size: 11px;
     background: var(--critical-soft);
     color: var(--critical);
-    border: 1px solid transparent;
   }
-  .banner[hidden] { display: none; }
+  nav.tabs .badge.warn { background: var(--warn-soft); color: var(--warn); }
+
+  .notice { padding: 10px 14px; border-radius: 9px; font-size: 13px; margin-bottom: 12px; }
+  .notice.critical { background: var(--critical-soft); color: var(--critical); }
+  .notice.warn { background: var(--warn-soft); color: var(--warn); }
+  .notice.info { background: var(--info-soft); color: var(--text-dim); }
+  .notice.ok { background: var(--ok-soft); color: var(--ok); }
 
   .kpi-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-    gap: 12px;
-    margin-bottom: 22px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
   }
 
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 16px;
+    padding: 14px;
+    min-width: 0;
   }
 
   .kpi .label { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
   .kpi .value {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 30px;
+    font-size: 28px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     line-height: 1.1;
   }
   .kpi .sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
 
-  .progress-track {
-    height: 6px;
-    border-radius: 999px;
-    background: var(--surface-2);
-    margin-top: 8px;
-    overflow: hidden;
-  }
+  .progress-track { height: 6px; border-radius: 999px; background: var(--surface-2); margin-top: 8px; overflow: hidden; }
   .progress-fill { height: 100%; background: var(--accent); border-radius: 999px; }
   .progress-fill.warn { background: var(--warn); }
   .progress-fill.critical { background: var(--critical); }
 
-  .columns {
-    display: grid;
-    grid-template-columns: 1.3fr 1fr;
-    gap: 16px;
-    align-items: start;
-    margin-bottom: 16px;
-  }
-  @media (max-width: 760px) {
-    .columns { grid-template-columns: 1fr; }
-  }
+  .columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-bottom: 12px; align-items: start; }
+  .stack { display: grid; gap: 12px; margin-bottom: 12px; }
 
-  .section-title {
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .source-row {
-    display: grid;
-    grid-template-columns: 120px 1fr auto;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 0;
-    border-top: 1px solid var(--border);
-  }
-  .source-row:first-of-type { border-top: none; padding-top: 0; }
-  .source-name { font-size: 13px; font-weight: 500; }
-  .source-meta { font-size: 12px; color: var(--text-dim); }
-  .source-meta .mono { color: var(--text); }
-
-  .gauge-row { display: flex; align-items: center; gap: 8px; min-width: 120px; }
-  .gauge-row .progress-track { flex: 1; margin-top: 0; }
-  .gauge-row .gauge-pct { font-size: 12px; font-family: 'IBM Plex Mono', monospace; width: 34px; text-align: right; }
-
-  .status-chip {
-    font-size: 11px;
-    font-weight: 600;
-    padding: 3px 8px;
-    border-radius: 999px;
-  }
+  .status-chip { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
   .status-chip.ok { background: var(--ok-soft); color: var(--ok); }
   .status-chip.warn { background: var(--warn-soft); color: var(--warn); }
   .status-chip.critical { background: var(--critical-soft); color: var(--critical); }
+  .status-chip.info { background: var(--surface-2); color: var(--text-dim); }
 
-  .resource-item { margin-bottom: 14px; }
-  .resource-item:last-child { margin-bottom: 0; }
-  .resource-top { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; }
-  .resource-top .val { font-family: 'IBM Plex Mono', monospace; color: var(--text-dim); }
+  .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .card-head h2 { margin: 0; }
 
-  .meta-line {
+  .line {
     display: flex;
     justify-content: space-between;
-    font-size: 12px;
-    color: var(--text-dim);
-    padding: 6px 0;
+    align-items: baseline;
+    gap: 12px;
+    font-size: 13px;
+    padding: 7px 0;
     border-top: 1px solid var(--border);
   }
-  .meta-line:first-of-type { border-top: none; }
-  .meta-line .mono { color: var(--text); }
+  .line:first-of-type { border-top: none; }
+  .line .k { color: var(--text-dim); }
+  .line .v { font-family: 'IBM Plex Mono', monospace; text-align: right; overflow-wrap: anywhere; }
 
-  .chart-card { margin-bottom: 16px; }
-  #usersChart { width: 100%; height: 140px; overflow: visible; }
-  .chart-empty { color: var(--text-dim); font-size: 13px; padding: 30px 0; text-align: center; }
+  .bar-row { display: grid; grid-template-columns: minmax(70px, 130px) 1fr auto; gap: 10px; align-items: center; padding: 5px 0; font-size: 13px; }
+  .bar-row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-row .track { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .bar-row .fill { height: 100%; background: var(--accent); border-radius: 999px; }
+  .bar-row .num { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-dim); }
 
-  table.observations { width: 100%; border-collapse: collapse; font-size: 13px; }
-  table.observations th {
+  .chart { width: 100%; height: auto; display: block; }
+  .chart .grid { stroke: var(--border); stroke-width: 1; }
+  .chart .axis { fill: var(--text-dim); font-size: 10px; font-family: 'IBM Plex Mono', monospace; }
+  .chart .bar-a { fill: var(--accent); }
+  .chart .bar-b { fill: var(--accent-2); }
+  .chart .bar-c { fill: var(--ok); }
+  .legend { display: flex; gap: 14px; font-size: 12px; color: var(--text-dim); margin-bottom: 8px; flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+  .table-wrap { overflow-x: auto; }
+  table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.data th {
     text-align: left;
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--text-dim);
     font-weight: 500;
-    padding-bottom: 8px;
+    padding: 0 12px 8px 0;
     border-bottom: 1px solid var(--border);
+    white-space: nowrap;
   }
-  table.observations td { padding: 8px 0; border-bottom: 1px solid var(--border); }
-  table.observations tr:last-child td { border-bottom: none; }
-  .table-wrap { overflow-x: auto; }
+  table.data td { padding: 8px 12px 8px 0; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  table.data tr:last-child td { border-bottom: none; }
+  table.data td.num, table.data th.num { text-align: right; padding-left: 12px; padding-right: 12px; }
 
-  .empty-note { color: var(--text-dim); font-size: 13px; }
+  .empty-note { color: var(--text-dim); font-size: 13px; padding: 6px 0; }
 
-  footer.foot {
-    margin-top: 24px;
-    font-size: 11px;
-    color: var(--text-dim);
-    text-align: center;
+  footer.foot { margin-top: 24px; font-size: 11px; color: var(--text-dim); text-align: center; }
+
+  @media (max-width: 520px) {
+    h1 { font-size: 22px; }
+    .kpi .value { font-size: 24px; }
+    .top-right { width: 100%; }
+    .top-right button { flex: 1; }
+    .bar-row { grid-template-columns: minmax(60px, 90px) 1fr auto; gap: 8px; }
   }
 </style>
+</head>
+<body>
 
 <header class="top">
   <div>
-    <div class="eyebrow">Alert Proxy · панель для власника</div>
+    <div class="eyebrow">Alert Proxy · панель власника</div>
     <h1>Вартовий</h1>
     <div class="subtitle" id="lastUpdated">ще не оновлювалось</div>
   </div>
   <div class="top-right">
-    <span class="pill" id="connectionPill"><span class="dot"></span><span>Демо-дані</span></span>
+    <span class="pill" id="healthPill"><span class="dot"></span><span>Немає даних</span></span>
     <button id="refreshBtn">Оновити</button>
     <button id="settingsBtn">Підключення</button>
   </div>
@@ -324,482 +342,520 @@
 <div id="settingsPanel" hidden>
   <div class="field-row">
     <div class="field">
-      <label for="baseUrlInput">Базовий URL сервера</label>
-      <input id="baseUrlInput" type="text" placeholder="https://your-subdomain.duckdns.org" autocomplete="off">
+      <label for="baseUrlInput">Адреса сервера</label>
+      <input id="baseUrlInput" type="url" inputmode="url" autocomplete="off">
     </div>
     <div class="field">
       <label for="adminKeyInput">Адмін-ключ (ADMIN_KEY)</label>
       <input id="adminKeyInput" type="password" placeholder="••••••••" autocomplete="off">
     </div>
   </div>
-  <div class="field-row field-actions">
-    <button class="primary" id="saveSettingsBtn">Зберегти й підключитись</button>
-    <button id="forgetSettingsBtn">Забути</button>
-    <span class="empty-note" id="settingsNote">Значення зберігаються лише в цьому браузері.</span>
+  <p class="settings-note">Ключ зберігається лише в цьому браузері й надсилається тільки на цей сервер.</p>
+  <div class="field-actions">
+    <button class="primary" id="saveBtn">Зберегти й підключитись</button>
+    <button id="clearBtn">Забути ключ</button>
   </div>
 </div>
 
-<div class="banner" id="errorBanner" hidden></div>
+<nav class="tabs" role="tablist" aria-label="Розділи">
+  <button role="tab" data-tab="overview" aria-selected="true">Огляд<span class="badge" id="healthBadge" hidden></span></button>
+  <button role="tab" data-tab="sources" aria-selected="false">Джерела</button>
+  <button role="tab" data-tab="users" aria-selected="false">Користувачі</button>
+  <button role="tab" data-tab="system" aria-selected="false">Система</button>
+</nav>
 
-<section class="kpi-grid">
-  <div class="card kpi">
-    <div class="label">Активних тривог зараз</div>
-    <div class="value" id="kpiActiveNow">—</div>
-    <div class="sub" id="kpiActiveNowSub">&nbsp;</div>
-  </div>
-  <div class="card kpi">
-    <div class="label">Покриття "сьогодні"</div>
-    <div class="value" id="kpiCoverage">—</div>
-    <div class="progress-track"><div class="progress-fill" id="kpiCoverageBar" style="width:0%"></div></div>
-  </div>
-  <div class="card kpi">
-    <div class="label">Унікальних сьогодні</div>
-    <div class="value" id="kpiUsersToday">—</div>
-    <div class="sub" id="kpiUsersTodaySub">&nbsp;</div>
-  </div>
-  <div class="card kpi">
-    <div class="label">Унікальних за весь час</div>
-    <div class="value" id="kpiUsersAllTime">—</div>
-    <div class="sub">лічильник ніколи не скидається</div>
-  </div>
-</section>
-
-<div class="columns">
-  <div class="card">
-    <div class="section-title">Джерела даних</div>
-    <div id="sourcesList"></div>
-  </div>
-  <div class="card">
-    <div class="section-title">Ресурси сервера</div>
-    <div id="resourcesList"></div>
-    <div style="margin-top:14px">
-      <div class="meta-line"><span>Аптайм</span><span class="mono" id="resUptime">—</span></div>
-      <div class="meta-line"><span>Node.js</span><span class="mono" id="resNode">—</span></div>
-      <div class="meta-line"><span>Платформа</span><span class="mono" id="resPlatform">—</span></div>
+<main>
+  <section id="tab-overview" data-panel="overview">
+    <div id="healthList"></div>
+    <div class="kpi-grid" id="overviewKpis"></div>
+    <div class="columns">
+      <div class="card">
+        <h2>Стан джерел</h2>
+        <div id="sourceSummary"></div>
+      </div>
+      <div class="card">
+        <h2>Підключення в реальному часі</h2>
+        <div id="connectionSummary"></div>
+      </div>
     </div>
-  </div>
-</div>
+  </section>
 
-<div class="card chart-card">
-  <div class="section-title">Унікальні користувачі за днями</div>
-  <div id="usersChartWrap"></div>
-</div>
-
-<div class="columns">
-  <div class="card">
-    <div class="section-title">
-      <span>Застряглі тривоги UkraineAlarm</span>
-      <span class="status-chip" id="staleChip"></span>
+  <section id="tab-sources" data-panel="sources" hidden>
+    <div class="columns">
+      <div class="card" id="cardAlertsInUa"></div>
+      <div class="card" id="cardNeptun"></div>
     </div>
-    <div class="table-wrap">
-      <table class="observations" id="observationsTable">
-        <thead>
-          <tr><th>Область</th><th>Тип</th><th>Не оновлювалась</th><th>Спостережень</th></tr>
-        </thead>
-        <tbody id="observationsBody"></tbody>
-      </table>
+    <div class="columns">
+      <div class="card" id="cardUkraineAlarm"></div>
+      <div class="card" id="cardStats"></div>
     </div>
-    <div class="empty-note" id="observationsEmpty" hidden>Немає застряглих тривог - усе оновлюється штатно.</div>
-  </div>
-  <div class="card">
-    <div class="section-title">Вебхук UkraineAlarm</div>
-    <div class="meta-line"><span>Налаштовано</span><span class="mono" id="webhookConfigured">—</span></div>
-    <div class="meta-line"><span>Останній виклик</span><span class="mono" id="webhookLast">—</span></div>
-  </div>
-</div>
+    <div class="card" id="cardStale"></div>
+  </section>
 
-<footer class="foot">Дані оновлюються що 30 секунд, поки сторінка відкрита. Тільки для власника проєкту.</footer>
+  <section id="tab-users" data-panel="users" hidden>
+    <div id="usersBody"><div class="empty-note">Завантаження статистики користувачів…</div></div>
+  </section>
+
+  <section id="tab-system" data-panel="system" hidden>
+    <div class="columns">
+      <div class="card" id="cardResources"></div>
+      <div class="card" id="cardArchive"></div>
+    </div>
+    <div class="columns">
+      <div class="card" id="cardBackup"></div>
+      <div class="card" id="cardServer"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot" id="footer">Вартовий · дані оновлюються автоматично</footer>
 
 <script>
 (function () {
-  var DEMO = {
-    status: {
-      generatedAt: new Date().toISOString(),
-      active: { softLimitPerMinute: 9, hardLimitPerMinute: 12, requestsLastMinute: 3, percentOfSoftLimit: 33, percentOfHardLimit: 25, minGapMs: 5000, cacheTtlMs: 30000, lastOriginFetchAgeMs: 12000, cacheAgeMs: 8000, currentError: null },
-      history: { limitPerMinute: 2, requestsLastMinute: 1, percentOfLimit: 50, minGapMs: 35000, cacheTtlMs: 900000, lastOriginFetchAgeMs: 240000, cachedUidCount: 18, currentErrors: {} },
-      regionStatuses: { minGapMs: 5000, cacheTtlMs: 21600000, lastOriginFetchAgeMs: 1800000, cacheAgeMs: 1800000, currentError: null },
-      weaponStats: { cacheTtlMs: 86400000, lastOriginFetchAgeMs: 3600000, cacheAgeMs: 3600000, currentError: null },
-      todayStats: { date: '2026-09-28', oblastsCovered: 14, oblastsTotal: 26, complete: false, refreshIntervalMs: 300000 },
-      ukraineAlarmTodayStats: { date: '2026-09-28', hasCache: true, lastOriginFetchAgeMs: 60000, consecutiveFailures: 0, backingOff: false, retryIntervalMs: 120000, currentError: null },
-      uniqueUsers: {
-        date: '2026-09-28', allTime: 812, today: 96,
-        history: Array.from({ length: 14 }).map(function (_, i) {
-          var d = new Date(); d.setDate(d.getDate() - (13 - i));
-          return { date: d.toISOString().slice(0, 10), count: 60 + Math.round(Math.random() * 50) };
-        })
-      },
-      system: { cpuLoadAvg: [0.4, 0.3, 0.25], cpuCount: 4, cpuUsagePercent: 14.5, memory: { totalBytes: 25769803776, freeBytes: 19327352832, usedBytes: 6442450944, usedPercent: 25 }, disk: { totalBytes: 214748364800, freeBytes: 193273528320, usedBytes: 21474836480, usedPercent: 10 }, uptimeSec: 273600, nodeVersion: 'v22.13.0', platform: 'linux/arm64' }
-    },
-    ukraineAlarmStatus: {
-      staleAlertObservations: [],
-      webhookConfigured: true,
-      lastWebhookPayload: { receivedAt: new Date(Date.now() - 5 * 60000).toISOString() }
+  'use strict';
+
+  var POLL_MS = 30000;
+  var USERS_POLL_MS = 60000;
+  var STORE_KEY = 'vartovyi.adminKey';
+  var STORE_URL = 'vartovyi.baseUrl';
+  var STORE_TAB = 'vartovyi.tab';
+
+  var state = { status: null, ua: null, users: null, tab: 'overview', timer: null, usersTimer: null };
+
+  function $(id) { return document.getElementById(id); }
+  function esc(v) {
+    return String(v === null || v === undefined ? '' : v).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function read(key) { try { return localStorage.getItem(key) || ''; } catch (e) { return ''; } }
+  function write(key, value) { try { localStorage.setItem(key, value); } catch (e) {} }
+  function remove(key) { try { localStorage.removeItem(key); } catch (e) {} }
+
+  function fmtNum(n) { return n === null || n === undefined ? '-' : Number(n).toLocaleString('uk-UA'); }
+  function fmtBytes(b) {
+    if (b === null || b === undefined) return '-';
+    var units = ['Б', 'КБ', 'МБ', 'ГБ', 'ТБ'];
+    var i = 0;
+    var v = b;
+    while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+    return (i === 0 ? v : v.toFixed(v >= 100 ? 0 : 1)) + ' ' + units[i];
+  }
+  function fmtDuration(ms) {
+    if (ms === null || ms === undefined) return '-';
+    var s = Math.floor(ms / 1000);
+    if (s < 60) return s + ' с';
+    var m = Math.floor(s / 60);
+    if (m < 60) return m + ' хв';
+    var h = Math.floor(m / 60);
+    if (h < 48) return h + ' год ' + (m % 60) + ' хв';
+    return Math.floor(h / 24) + ' д ' + (h % 24) + ' год';
+  }
+  function fmtAgo(ms) { return ms === null || ms === undefined ? '-' : fmtDuration(ms) + ' тому'; }
+  function fmtDate(iso) {
+    if (!iso) return '-';
+    var d = new Date(iso);
+    if (isNaN(d)) return '-';
+    var opts = { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' };
+    if (d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
+    return d.toLocaleString('uk-UA', opts);
+  }
+  function level(pct) { return pct >= 90 ? 'critical' : pct >= 70 ? 'warn' : ''; }
+
+  function line(k, v) { return '<div class="line"><span class="k">' + esc(k) + '</span><span class="v">' + v + '</span></div>'; }
+  function chip(cls, text) { return '<span class="status-chip ' + cls + '">' + esc(text) + '</span>'; }
+  function gauge(pct) {
+    var p = Math.max(0, Math.min(100, pct || 0));
+    return '<div class="progress-track"><div class="progress-fill ' + level(p) + '" style="width:' + p + '%"></div></div>';
+  }
+  function kpi(label, value, sub, extra) {
+    return '<div class="card kpi"><div class="label">' + esc(label) + '</div><div class="value">' + value + '</div>' +
+      (sub ? '<div class="sub">' + sub + '</div>' : '') + (extra || '') + '</div>';
+  }
+  function barRows(items, nameKey, valueKey, max) {
+    if (!items.length) return '<div class="empty-note">Даних ще немає</div>';
+    var top = max || Math.max.apply(null, items.map(function (i) { return i[valueKey]; })) || 1;
+    return items.map(function (item) {
+      return '<div class="bar-row"><span class="name" title="' + esc(item[nameKey]) + '">' + esc(item[nameKey]) +
+        '</span><span class="track"><span class="fill" style="width:' + Math.round((item[valueKey] / top) * 100) + '%;display:block"></span></span><span class="num">' +
+        fmtNum(item[valueKey]) + '</span></div>';
+    }).join('');
+  }
+
+  function niceMax(v) {
+    var raw = Math.max(1, v) / 4;
+    var p = Math.pow(10, Math.floor(Math.log10(raw)));
+    var n = raw / p;
+    var step = Math.max(1, (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p);
+    return step * 4;
+  }
+
+  function barChart(series, labels, opts) {
+    var W = (opts && opts.width) || 600, H = (opts && opts.height) || 190, padL = 36, padR = 8, padT = 10, padB = 24;
+    var n = labels.length;
+    if (!n) return '<div class="empty-note">Даних ще немає</div>';
+    var all = [];
+    series.forEach(function (s) { all = all.concat(s.values); });
+    var max = niceMax(Math.max(1, Math.max.apply(null, all)));
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var groupW = plotW / n;
+    var barW = Math.max(2, (groupW * 0.74) / series.length);
+    var out = '';
+    for (var i = 0; i <= 4; i++) {
+      var y = padT + plotH - (plotH * i) / 4;
+      out += '<line class="grid" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y + '" y2="' + y + '"/>' +
+        '<text class="axis" x="' + (padL - 6) + '" y="' + (y + 3) + '" text-anchor="end">' + fmtNum(Math.round((max * i) / 4)) + '</text>';
     }
+    series.forEach(function (s, si) {
+      s.values.forEach(function (v, idx) {
+        var h = (plotH * v) / max;
+        var x = padL + idx * groupW + (groupW - barW * series.length) / 2 + si * barW;
+        out += '<rect class="' + s.cls + '" x="' + x.toFixed(1) + '" y="' + (padT + plotH - h).toFixed(1) + '" width="' + barW.toFixed(1) +
+          '" height="' + Math.max(h, v > 0 ? 1 : 0).toFixed(1) + '" rx="1.5"><title>' + esc(labels[idx]) + ': ' + v + '</title></rect>';
+      });
+    });
+    var step = Math.ceil(n / Math.max(2, Math.floor(plotW / 46)));
+    labels.forEach(function (l, idx) {
+      if (idx % step === 0) {
+        out += '<text class="axis" x="' + (padL + idx * groupW + groupW / 2).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle">' + esc(l) + '</text>';
+      }
+    });
+    return '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc((opts && opts.label) || 'Діаграма') + '">' + out + '</svg>';
+  }
+
+  var HEALTH_TEXT = {
+    'alertsinua-error': function (i) { return 'alerts.in.ua повертає помилку. ' + i.message; },
+    'alertsinua-stale': function () { return 'Кеш активних тривог застарів: опитування alerts.in.ua не оновлює дані.'; },
+    'alertsinua-rate': function () { return 'Частота запитів перевищила м’який ліміт alerts.in.ua.'; },
+    'alertsinua-no-token': function () { return 'Не задано ALERTS_TOKEN: основне джерело тривог не працює.'; },
+    'ukrainealarm-no-token': function () { return 'Токен UkraineAlarm не задано: це джерело вимкнене, клієнти використовують alerts.in.ua.'; },
+    'neptun-stream': function () { return 'Стрім Neptun не підключений.'; },
+    'neptun-alerts': function () { return 'Тривоги Neptun застаріли або джерело відповідає помилкою.'; },
+    cpu: function (i) { return 'Високе навантаження процесора. ' + i.message; },
+    memory: function (i) { return 'Мало вільної пам’яті. ' + i.message; },
+    disk: function (i) { return 'Закінчується місце на диску. ' + i.message; },
+    backup: function () { return 'Немає свіжої резервної копії бази даних.'; }
   };
 
-  var els = {};
-  document.querySelectorAll('[id]').forEach(function (el) { els[el.id] = el; });
-
-  var timer = null;
-
-  function loadSettings() {
-    try {
-      return {
-        baseUrl: localStorage.getItem('vartovyi.baseUrl') || '',
-        adminKey: localStorage.getItem('vartovyi.adminKey') || ''
-      };
-    } catch (err) {
-      return { baseUrl: '', adminKey: '' };
-    }
-  }
-
-  function saveSettings(baseUrl, adminKey) {
-    try {
-      localStorage.setItem('vartovyi.baseUrl', baseUrl);
-      localStorage.setItem('vartovyi.adminKey', adminKey);
-    } catch (err) {}
-  }
-
-  function clearSettings() {
-    try {
-      localStorage.removeItem('vartovyi.baseUrl');
-      localStorage.removeItem('vartovyi.adminKey');
-    } catch (err) {}
-  }
-
-  function formatBytes(bytes) {
-    if (bytes === null || bytes === undefined) return '—';
-    var gb = bytes / (1024 * 1024 * 1024);
-    return gb.toFixed(1) + ' ГБ';
-  }
-
-  function formatAgo(ms) {
-    if (ms === null || ms === undefined) return '—';
-    if (ms < 60000) return Math.round(ms / 1000) + 'с тому';
-    if (ms < 3600000) return Math.round(ms / 60000) + ' хв тому';
-    if (ms < 86400000) return Math.round(ms / 3600000) + ' год тому';
-    return Math.round(ms / 86400000) + ' дн тому';
-  }
-
-  function formatUptime(sec) {
-    var d = Math.floor(sec / 86400);
-    var h = Math.floor((sec % 86400) / 3600);
-    var m = Math.floor((sec % 3600) / 60);
-    var parts = [];
-    if (d) parts.push(d + 'д');
-    if (h || d) parts.push(h + 'г');
-    parts.push(m + 'хв');
-    return parts.join(' ');
-  }
-
-  function levelFromPercent(pct) {
-    if (pct >= 90) return 'critical';
-    if (pct >= 70) return 'warn';
+  function healthLevel(issues) {
+    if (issues.some(function (i) { return i.level === 'crit'; })) return 'critical';
+    if (issues.some(function (i) { return i.level === 'warn'; })) return 'warn';
     return 'ok';
   }
 
-  function setBar(el, pct, level) {
-    el.style.width = Math.min(100, Math.max(0, pct)) + '%';
-    el.classList.remove('warn', 'critical');
-    if (level === 'warn') el.classList.add('warn');
-    if (level === 'critical') el.classList.add('critical');
-  }
+  function renderHealth() {
+    var s = state.status;
+    var issues = s ? s.health || [] : [];
+    var lvl = s ? healthLevel(issues) : '';
+    var pill = $('healthPill');
+    pill.className = 'pill ' + lvl;
+    pill.innerHTML = '<span class="dot"></span><span>' + (!s ? 'Немає даних' : lvl === 'critical' ? 'Потрібна увага' : lvl === 'warn' ? 'Є зауваження' : 'Усе гаразд') + '</span>';
 
-  function renderSourceRow(name, meta, pct, errorObj) {
-    var row = document.createElement('div');
-    row.className = 'source-row';
+    var problems = issues.filter(function (i) { return i.level !== 'info'; });
+    var badge = $('healthBadge');
+    badge.hidden = !problems.length;
+    badge.className = 'badge' + (lvl === 'warn' ? ' warn' : '');
+    badge.textContent = problems.length;
 
-    var nameEl = document.createElement('div');
-    nameEl.className = 'source-name';
-    nameEl.textContent = name;
-    row.appendChild(nameEl);
-
-    var metaEl = document.createElement('div');
-    metaEl.className = 'source-meta';
-    metaEl.innerHTML = meta;
-    row.appendChild(metaEl);
-
-    var right = document.createElement('div');
-    if (errorObj) {
-      var chip = document.createElement('span');
-      chip.className = 'status-chip critical';
-      chip.textContent = 'HTTP ' + errorObj.status;
-      right.appendChild(chip);
-    } else if (pct !== null) {
-      var gr = document.createElement('div');
-      gr.className = 'gauge-row';
-      var track = document.createElement('div');
-      track.className = 'progress-track';
-      var fill = document.createElement('div');
-      fill.className = 'progress-fill';
-      setBar(fill, pct, levelFromPercent(pct));
-      track.appendChild(fill);
-      gr.appendChild(track);
-      var pctLabel = document.createElement('span');
-      pctLabel.className = 'gauge-pct mono';
-      pctLabel.textContent = Math.round(pct) + '%';
-      gr.appendChild(pctLabel);
-      right.appendChild(gr);
-    } else {
-      var chipOk = document.createElement('span');
-      chipOk.className = 'status-chip ok';
-      chipOk.textContent = 'OK';
-      right.appendChild(chipOk);
-    }
-    row.appendChild(right);
-    return row;
-  }
-
-  function renderUsersChart(history) {
-    var wrap = els.usersChartWrap;
-    wrap.innerHTML = '';
-    if (!history || !history.length) {
-      var empty = document.createElement('div');
-      empty.className = 'chart-empty';
-      empty.textContent = 'Історія ще накопичується.';
-      wrap.appendChild(empty);
-      return;
-    }
-
-    var w = 900, h = 140, padL = 30, padB = 20, padT = 10, padR = 6;
-    var max = Math.max.apply(null, history.map(function (p) { return p.count; })) || 1;
-    var innerW = w - padL - padR;
-    var innerH = h - padT - padB;
-    var barGap = 4;
-    var barW = Math.max(2, innerW / history.length - barGap);
-
-    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
-    svg.setAttribute('id', 'usersChart');
-    svg.setAttribute('preserveAspectRatio', 'none');
-
-    var textColor = getComputedStyle(document.body).getPropertyValue('--text-dim').trim() || '#888';
-    var accent = getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#0e7c8c';
-    var borderColor = getComputedStyle(document.body).getPropertyValue('--border').trim() || '#ccc';
-
-    [0, 0.5, 1].forEach(function (f) {
-      var y = padT + innerH * (1 - f);
-      var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('x1', padL);
-      line.setAttribute('x2', w - padR);
-      line.setAttribute('y1', y);
-      line.setAttribute('y2', y);
-      line.setAttribute('stroke', borderColor);
-      line.setAttribute('stroke-width', '1');
-      svg.appendChild(line);
-
-      var label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      label.setAttribute('x', 4);
-      label.setAttribute('y', y + 4);
-      label.setAttribute('font-size', '9');
-      label.setAttribute('font-family', 'IBM Plex Mono, monospace');
-      label.setAttribute('fill', textColor);
-      label.textContent = Math.round(max * f);
-      svg.appendChild(label);
+    var html = '';
+    if (s && !issues.length) html = '<div class="notice ok">Усі перевірки пройдено.</div>';
+    issues.forEach(function (i) {
+      var text = HEALTH_TEXT[i.code] ? HEALTH_TEXT[i.code](i) : i.message;
+      html += '<div class="notice ' + (i.level === 'crit' ? 'critical' : i.level) + '">' + esc(text) + '</div>';
     });
+    $('healthList').innerHTML = html;
+  }
 
-    history.forEach(function (point, i) {
-      var x = padL + i * (innerW / history.length) + barGap / 2;
-      var barH = (point.count / max) * innerH;
-      var y = padT + innerH - barH;
+  function sourceState(ok, warn) { return ok ? chip('ok', 'працює') : warn ? chip('warn', warn) : chip('critical', 'збій'); }
 
-      var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      rect.setAttribute('x', x);
-      rect.setAttribute('y', y);
-      rect.setAttribute('width', barW);
-      rect.setAttribute('height', Math.max(1, barH));
-      rect.setAttribute('rx', '2');
-      rect.setAttribute('fill', i === history.length - 1 ? accent : accent);
-      rect.setAttribute('opacity', i === history.length - 1 ? '1' : '0.55');
-      svg.appendChild(rect);
+  function renderOverview() {
+    var s = state.status;
+    if (!s) return;
+    var u = s.uniqueUsers, c = s.connections, n = s.neptun, a = s.archive;
+    var totalConn = c.alerts + c.active + c.neptun;
 
-      if (i === 0 || i === history.length - 1 || history.length <= 10) {
-        var dLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        dLabel.setAttribute('x', x + barW / 2);
-        dLabel.setAttribute('y', h - 4);
-        dLabel.setAttribute('font-size', '9');
-        dLabel.setAttribute('font-family', 'IBM Plex Mono, monospace');
-        dLabel.setAttribute('fill', textColor);
-        dLabel.setAttribute('text-anchor', 'middle');
-        dLabel.textContent = point.date.slice(5);
-        svg.appendChild(dLabel);
-      }
+    $('overviewKpis').innerHTML =
+      kpi('Користувачів сьогодні', fmtNum(u.today), 'за весь час: ' + fmtNum(u.allTime)) +
+      kpi('Зараз підключено', fmtNum(totalConn), 'WebSocket-з’єднань') +
+      kpi('Запитів до alerts.in.ua', s.active.requestsLastMinute + '<span class="dim" style="font-size:14px"> /хв</span>', s.active.percentOfSoftLimit + '% м’якого ліміту', gauge(s.active.percentOfSoftLimit)) +
+      kpi('Загроз на мапі (Neptun)', fmtNum(n.threats.active), n.stream.connected ? 'стрім підключено' : 'стрім не підключено') +
+      kpi('Подій в архіві', fmtNum(a.alertEvents.total), 'сховище: ' + fmtBytes(a.dbSizeBytes));
+
+    var alertsOk = !s.active.currentError && s.active.cacheAgeMs !== null && s.active.cacheAgeMs < 90000;
+    var uaConfigured = state.ua ? state.ua.configured : null;
+    var neptunOk = n.stream.connected && !n.alerts.currentError;
+    $('sourceSummary').innerHTML =
+      line('alerts.in.ua', sourceState(alertsOk)) +
+      line('Neptun', sourceState(neptunOk, n.stream.connected || !n.alerts.currentError ? 'частково' : '')) +
+      line('UkraineAlarm', uaConfigured === null ? chip('info', '...') : uaConfigured ? sourceState(!state.ua.currentError, 'помилка') : chip('info', 'вимкнено (немає токена)'));
+
+    $('connectionSummary').innerHTML =
+      line('Тривоги alerts.in.ua (WS)', fmtNum(c.active)) +
+      line('Тривоги UkraineAlarm (WS)', fmtNum(c.alerts)) +
+      line('Мапа загроз Neptun (WS)', fmtNum(c.neptun)) +
+      line('Останнє оновлення кешу тривог', fmtAgo(s.active.cacheAgeMs));
+  }
+
+  function renderSources() {
+    var s = state.status;
+    if (!s) return;
+    var act = s.active, h = s.history, n = s.neptun;
+
+    var errs = Object.keys(h.currentErrors || {});
+    $('cardAlertsInUa').innerHTML =
+      '<div class="card-head"><h2>alerts.in.ua</h2>' + sourceState(!act.currentError && act.cacheAgeMs !== null && act.cacheAgeMs < 90000) + '</div>' +
+      line('Кеш активних тривог', fmtAgo(act.cacheAgeMs)) +
+      line('Запитів за хвилину', act.requestsLastMinute + ' / м’який ' + act.softLimitPerMinute + ' / жорсткий ' + act.hardLimitPerMinute) +
+      gauge(act.percentOfSoftLimit) +
+      line('Історія: запитів за хвилину', h.requestsLastMinute + ' / ' + h.limitPerMinute) +
+      line('Історія: областей у кеші', fmtNum(h.cachedUidCount)) +
+      line('Мін. пауза між запитами', fmtDuration(act.minGapMs)) +
+      line('Поточна помилка', act.currentError ? chip('critical', String(act.currentError.status)) : chip('ok', 'немає')) +
+      (errs.length ? line('Помилки історії', chip('critical', errs.length + ' обл.')) : '');
+
+    var neptunOk = n.stream.connected && !n.alerts.currentError;
+    $('cardNeptun').innerHTML =
+      '<div class="card-head"><h2>Neptun</h2>' + (neptunOk ? chip('ok', 'працює') : n.stream.connected || !n.alerts.currentError ? chip('warn', 'частково') : chip('critical', 'збій')) + '</div>' +
+      line('Стрім загроз', n.stream.connected ? chip('ok', 'підключено ' + fmtDuration(n.stream.connectedForMs)) : chip('critical', 'відключено')) +
+      line('Останнє повідомлення стріму', fmtAgo(n.stream.lastMessageAgeMs)) +
+      line('Спроб перепідключення', fmtNum(n.stream.reconnectAttempts)) +
+      line('Активних загроз', fmtNum(n.threats.active)) +
+      line('Тривоги: кеш', fmtAgo(n.alerts.cacheAgeMs)) +
+      line('Тривоги: області / райони', n.alerts.counts ? n.alerts.counts.oblasts + ' / ' + n.alerts.counts.raions : '-') +
+      line('Клієнтів на ретрансляції', fmtNum(n.clients)) +
+      line('Помилка тривог', n.alerts.currentError ? chip('critical', String(n.alerts.currentError.status || 'мережа')) : chip('ok', 'немає'));
+
+    var ua = state.ua;
+    $('cardUkraineAlarm').innerHTML = !ua
+      ? '<div class="card-head"><h2>UkraineAlarm</h2></div><div class="empty-note">Даних немає</div>'
+      : '<div class="card-head"><h2>UkraineAlarm</h2>' + (ua.configured ? (ua.currentError ? chip('critical', 'помилка') : chip('ok', 'працює')) : chip('info', 'вимкнено')) + '</div>' +
+        line('Токен API', ua.configured ? chip('ok', 'задано') : chip('warn', 'не задано')) +
+        line('Вебхук (публічний ключ)', ua.webhookConfigured ? chip('ok', 'задано') : chip('warn', 'не задано')) +
+        line('Запитів за хвилину', fmtNum(ua.requestsLastMinute)) +
+        line('Активних тривог', fmtNum(ua.currentActiveAlertCount)) +
+        line('Останній запит', fmtAgo(ua.lastFetchAgeMs)) +
+        line('Останній вебхук', ua.lastWebhookPayload ? chip('ok', 'отримано') : chip('info', 'ще не було'));
+
+    var t = s.todayStats, ut = s.ukraineAlarmTodayStats, w = s.weaponStats, r = s.regionStatuses;
+    $('cardStats').innerHTML =
+      '<div class="card-head"><h2>Кеші й агрегати</h2></div>' +
+      line('Статистика дня: області', t.oblastsCovered + ' / ' + t.oblastsTotal + (t.complete ? ' ✓' : '')) +
+      line('Статистика дня (UkraineAlarm)', ut.hasCache ? chip('ok', 'є кеш') : chip('info', 'немає')) +
+      line('Статуси регіонів: кеш', fmtAgo(r.cacheAgeMs)) +
+      line('Статистика зброї (Kaggle): кеш', fmtAgo(w.cacheAgeMs)) +
+      line('Помилка Kaggle', w.currentError ? chip('critical', String(w.currentError.status)) : chip('ok', 'немає'));
+
+    var obs = ua && ua.staleAlertObservations ? ua.staleAlertObservations : [];
+    $('cardStale').innerHTML = '<div class="card-head"><h2>Спостереження UkraineAlarm за «завислими» тривогами</h2></div>' +
+      (obs.length
+        ? '<div class="table-wrap"><table class="data"><thead><tr><th>Регіон</th><th>Тип</th><th class="num">Вік, днів</th><th class="num">Спостережень</th></tr></thead><tbody>' +
+          obs.map(function (o) { return '<tr><td>' + esc(o.regionName || o.regionId || '-') + '</td><td>' + esc(o.alertType || '-') + '</td><td class="num">' + fmtNum(o.ageDays) + '</td><td class="num">' + fmtNum(o.timesSeen) + '</td></tr>'; }).join('') +
+          '</tbody></table></div>'
+        : '<div class="empty-note">Немає спостережень.</div>');
+  }
+
+  function renderSystem() {
+    var s = state.status;
+    if (!s) return;
+    var sys = s.system, a = s.archive, b = s.backup, c = s.connections;
+
+    $('cardResources').innerHTML = '<div class="card-head"><h2>Ресурси Oracle VM</h2></div>' +
+      '<div class="line"><span class="k">Процесор</span><span class="v">' + sys.cpuUsagePercent + '% · ' + sys.cpuCount + ' ядро</span></div>' + gauge(sys.cpuUsagePercent) +
+      '<div class="line"><span class="k">Пам’ять</span><span class="v">' + fmtBytes(sys.memory.usedBytes) + ' / ' + fmtBytes(sys.memory.totalBytes) + '</span></div>' + gauge(sys.memory.usedPercent) +
+      '<div class="line"><span class="k">Диск</span><span class="v">' + fmtBytes(sys.disk.usedBytes) + ' / ' + fmtBytes(sys.disk.totalBytes) + '</span></div>' + gauge(sys.disk.usedPercent) +
+      line('Навантаження (1/5/15 хв)', sys.cpuLoadAvg.map(function (v) { return v.toFixed(2); }).join(' / '));
+
+    $('cardArchive').innerHTML = '<div class="card-head"><h2>Архів на сервері</h2></div>' +
+      line('Подій тривог', fmtNum(a.alertEvents.total)) +
+      line('Відкритих зараз', fmtNum(a.alertEvents.openNow)) +
+      line('Найстаріша / найновіша', fmtDate(a.alertEvents.oldestStartedAt) + ' / ' + fmtDate(a.alertEvents.newestStartedAt)) +
+      line('Загроз Neptun (усього / відкритих)', fmtNum(a.neptunThreats.total) + ' / ' + fmtNum(a.neptunThreats.open)) +
+      line('Розмір бази', fmtBytes(a.dbSizeBytes));
+
+    $('cardBackup').innerHTML = '<div class="card-head"><h2>Резервні копії</h2>' + (b.ageMs !== null && b.ageMs < 36 * 3600 * 1000 ? chip('ok', 'свіжа') : chip('warn', 'застаріла')) + '</div>' +
+      line('Остання копія', b.lastBackupAt ? fmtDate(b.lastBackupAt) + ' (' + fmtAgo(b.ageMs) + ')' : '-') +
+      line('Файл', esc(b.file || '-')) +
+      line('Розмір', fmtBytes(b.sizeBytes)) +
+      line('Зберігається копій', b.keptCount + ' з ' + b.keepLimit);
+
+    $('cardServer').innerHTML = '<div class="card-head"><h2>Сервер</h2></div>' +
+      line('Працює без перезапуску', fmtDuration(sys.uptimeSec * 1000)) +
+      line('Node.js', esc(sys.nodeVersion)) +
+      line('Платформа', esc(sys.platform)) +
+      line('WebSocket-з’єднань', fmtNum(c.alerts + c.active + c.neptun));
+  }
+
+  function renderUsers() {
+    var u = state.users;
+    var body = $('usersBody');
+    if (!u) return;
+    var t = u.totals, e = u.engagement;
+
+    var dailyLabels = u.daily.map(function (d) { return d.day.slice(5).replace('-', '.'); });
+    var hourLabels = u.hourlyRequestsToday.map(function (_, h) { return String(h); });
+
+    var chartWidth = Math.max(300, Math.min(1100, body.clientWidth - 30)) || 600;
+    body.innerHTML =
+      '<div class="kpi-grid">' +
+        kpi('Сьогодні', fmtNum(t.today), 'нових: ' + fmtNum(t.newToday) + ' · повернулись: ' + fmtNum(t.returningToday)) +
+        kpi('Онлайн зараз', fmtNum(u.connections.now), 'пік сьогодні: ' + fmtNum(u.connections.peakToday)) +
+        kpi('Повертаються', e.multiDayShare + '%', 'були активні 2+ дні: ' + fmtNum(e.multiDayUsers)) +
+        kpi('Днів активності', String(e.avgActiveDays), 'у середньому на користувача') +
+        kpi('Липкість', e.stickiness + '%', 'частка щоденних серед місячних') +
+      '</div>' +
+      '<div class="card" style="margin-bottom:12px"><h2>Активні пристрої за період</h2>' +
+          line('За останню годину', fmtNum(t.lastHour)) + line('За 24 години', fmtNum(t.last24h)) + line('За 7 днів', fmtNum(t.last7d)) +
+          line('За 30 днів', fmtNum(t.last30d)) + line('За весь час', fmtNum(t.allTime)) +
+      '</div>' +
+      '<div class="card" style="margin-bottom:12px"><h2>Активність за 30 днів</h2>' +
+        '<div class="legend"><span><i style="background:var(--accent)"></i>активні</span><span><i style="background:var(--accent-2)"></i>нові</span></div>' +
+        barChart([{ cls: 'bar-a', values: u.daily.map(function (d) { return d.active; }) }, { cls: 'bar-b', values: u.daily.map(function (d) { return d.newUsers; }) }], dailyLabels, { label: 'Активні та нові користувачі за днями', width: chartWidth }) +
+      '</div>' +
+      '<div class="card" style="margin-bottom:12px"><h2>Запити за годинами сьогодні (час Києва)</h2>' +
+        barChart([{ cls: 'bar-c', values: u.hourlyRequestsToday }], hourLabels, { label: 'Запити за годинами', width: chartWidth, height: 160 }) +
+      '</div>' +
+      '<div class="columns">' +
+        '<div class="card"><h2>Версії застосунку (активні за 7 днів)</h2>' + barRows(u.versions.map(function (v) { return { name: v.version === 'unknown' ? 'невідомо' : v.version, value: v.users }; }), 'name', 'value') + '</div>' +
+        '<div class="card"><h2>Маршрути сьогодні</h2>' + barRows(u.routesToday.map(function (r) { return { name: r.route, value: r.count }; }), 'name', 'value') + '</div>' +
+      '</div>' +
+      '<div class="card"><h2>Найактивніші пристрої</h2>' +
+        (u.topUsers.length
+          ? '<div class="table-wrap"><table class="data"><thead><tr><th>Ідентифікатор</th><th class="num">Запитів</th><th>Версія</th><th>Уперше</th><th>Востаннє</th></tr></thead><tbody>' +
+            u.topUsers.map(function (x) {
+              return '<tr><td class="mono">' + esc(x.id) + '</td><td class="num mono">' + fmtNum(x.requests) + '</td><td>' + esc(x.version || 'невідомо') + '</td><td>' + fmtDate(x.firstSeen) + '</td><td>' + fmtDate(x.lastSeen) + '</td></tr>';
+            }).join('') + '</tbody></table></div>'
+          : '<div class="empty-note">Даних ще немає</div>') +
+        '<p class="settings-note" style="margin-top:10px">Пристрої розрізняються за хешем IP-адреси, самі адреси не зберігаються. Статистика накопичується від моменту запуску нового сервера.</p>' +
+      '</div>';
+
+  }
+
+  function renderAll() {
+    renderHealth();
+    renderOverview();
+    renderSources();
+    renderSystem();
+    if (state.tab === 'users') renderUsers();
+  }
+
+
+  function settings() {
+    var base = read(STORE_URL) || (location.protocol === 'file:' ? '' : location.origin);
+    return { baseUrl: base.replace(/\/$/, ''), adminKey: read(STORE_KEY) };
+  }
+
+  function setConnectionError(text, cls) {
+    var pill = $('healthPill');
+    pill.className = 'pill ' + (cls || 'critical');
+    pill.innerHTML = '<span class="dot"></span><span>' + esc(text) + '</span>';
+  }
+
+  function api(path, cfg) {
+    return fetch(cfg.baseUrl + path, { headers: { 'X-Admin-Key': cfg.adminKey } }).then(function (res) {
+      if (res.status === 401) { var err = new Error('auth'); err.code = 401; throw err; }
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
     });
-
-    wrap.appendChild(svg);
-  }
-
-  function render(status, uaStatus, isDemo) {
-    els.connectionPill.className = 'pill ' + (isDemo ? '' : 'ok');
-    els.connectionPill.querySelector('span:last-child').textContent = isDemo ? 'Демо-дані' : 'Підключено';
-    els.lastUpdated.textContent = 'Оновлено: ' + new Date(status.generatedAt).toLocaleString('uk-UA');
-
-    els.kpiActiveNow.textContent = status.todayStats.oblastsCovered !== undefined
-      ? (uaStatus.currentActiveAlertCount !== null && uaStatus.currentActiveAlertCount !== undefined ? uaStatus.currentActiveAlertCount : '—')
-      : '—';
-    els.kpiActiveNowSub.textContent = 'областей з активними подіями (UkraineAlarm)';
-
-    var coveragePct = status.todayStats.oblastsTotal
-      ? (status.todayStats.oblastsCovered / status.todayStats.oblastsTotal) * 100
-      : 0;
-    els.kpiCoverage.textContent = status.todayStats.oblastsCovered + '/' + status.todayStats.oblastsTotal;
-    setBar(els.kpiCoverageBar, coveragePct, status.todayStats.complete ? 'ok' : null);
-
-    els.kpiUsersToday.textContent = status.uniqueUsers.today;
-    els.kpiUsersTodaySub.textContent = status.uniqueUsers.date;
-    els.kpiUsersAllTime.textContent = status.uniqueUsers.allTime;
-
-    els.sourcesList.innerHTML = '';
-    els.sourcesList.appendChild(renderSourceRow(
-      'alerts.in.ua (активні)',
-      'кеш ' + formatAgo(status.active.cacheAgeMs) + ' · запит ' + formatAgo(status.active.lastOriginFetchAgeMs),
-      status.active.percentOfHardLimit,
-      status.active.currentError
-    ));
-    els.sourcesList.appendChild(renderSourceRow(
-      'alerts.in.ua (історія)',
-      'кеш областей: <span class="mono">' + status.history.cachedUidCount + '</span> · запит ' + formatAgo(status.history.lastOriginFetchAgeMs),
-      status.history.percentOfLimit,
-      Object.keys(status.history.currentErrors || {}).length ? { status: 'декілька' } : null
-    ));
-    els.sourcesList.appendChild(renderSourceRow(
-      'Статуси регіонів',
-      'кеш ' + formatAgo(status.regionStatuses.cacheAgeMs),
-      null,
-      status.regionStatuses.currentError
-    ));
-    els.sourcesList.appendChild(renderSourceRow(
-      'Статистика зброї (Kaggle)',
-      'кеш ' + formatAgo(status.weaponStats.cacheAgeMs),
-      null,
-      status.weaponStats.currentError
-    ));
-    els.sourcesList.appendChild(renderSourceRow(
-      'UkraineAlarm "сьогодні"',
-      status.ukraineAlarmTodayStats.backingOff
-        ? 'бекофф після ' + status.ukraineAlarmTodayStats.consecutiveFailures + ' невдач'
-        : 'запит ' + formatAgo(status.ukraineAlarmTodayStats.lastOriginFetchAgeMs),
-      null,
-      status.ukraineAlarmTodayStats.currentError
-    ));
-
-    var sys = status.system;
-    els.resourcesList.innerHTML = '';
-    [
-      { label: 'CPU (' + sys.cpuCount + ' ядер)', pct: sys.cpuUsagePercent, val: (sys.cpuUsagePercent === null ? '—' : sys.cpuUsagePercent + '%') },
-      { label: 'Пам\'ять', pct: sys.memory.usedPercent, val: formatBytes(sys.memory.usedBytes) + ' / ' + formatBytes(sys.memory.totalBytes) },
-      { label: 'Диск', pct: sys.disk ? sys.disk.usedPercent : null, val: sys.disk ? formatBytes(sys.disk.usedBytes) + ' / ' + formatBytes(sys.disk.totalBytes) : '—' }
-    ].forEach(function (item) {
-      var wrap = document.createElement('div');
-      wrap.className = 'resource-item';
-      var top = document.createElement('div');
-      top.className = 'resource-top';
-      top.innerHTML = '<span>' + item.label + '</span><span class="val">' + item.val + '</span>';
-      wrap.appendChild(top);
-      var track = document.createElement('div');
-      track.className = 'progress-track';
-      var fill = document.createElement('div');
-      fill.className = 'progress-fill';
-      setBar(fill, item.pct || 0, levelFromPercent(item.pct || 0));
-      track.appendChild(fill);
-      wrap.appendChild(track);
-      els.resourcesList.appendChild(wrap);
-    });
-
-    els.resUptime.textContent = formatUptime(sys.uptimeSec);
-    els.resNode.textContent = sys.nodeVersion;
-    els.resPlatform.textContent = sys.platform;
-
-    renderUsersChart(status.uniqueUsers.history);
-
-    var obs = uaStatus.staleAlertObservations || [];
-    els.observationsBody.innerHTML = '';
-    if (!obs.length) {
-      els.observationsTable.hidden = true;
-      els.observationsEmpty.hidden = false;
-      els.staleChip.className = 'status-chip ok';
-      els.staleChip.textContent = '0';
-    } else {
-      els.observationsTable.hidden = false;
-      els.observationsEmpty.hidden = true;
-      els.staleChip.className = 'status-chip ' + (obs.length > 20 ? 'warn' : 'ok');
-      els.staleChip.textContent = String(obs.length);
-      obs.slice(0, 15).forEach(function (o) {
-        var tr = document.createElement('tr');
-        tr.innerHTML = '<td>' + (o.regionName || o.regionId) + '</td><td>' + o.alertType + '</td>' +
-          '<td class="mono">' + o.ageDays + ' дн</td><td class="mono">' + o.timesSeen + '</td>';
-        els.observationsBody.appendChild(tr);
-      });
-    }
-
-    els.webhookConfigured.textContent = uaStatus.webhookConfigured ? 'Так' : 'Ні';
-    els.webhookLast.textContent = uaStatus.lastWebhookPayload
-      ? formatAgo(Date.now() - new Date(uaStatus.lastWebhookPayload.receivedAt).getTime())
-      : 'Ще не надходив';
-
-    els.errorBanner.hidden = true;
-  }
-
-  function showError(message) {
-    els.errorBanner.hidden = false;
-    els.errorBanner.textContent = message;
-    els.connectionPill.className = 'pill critical';
-    els.connectionPill.querySelector('span:last-child').textContent = "Немає зв'язку";
-  }
-
-  async function fetchLive(baseUrl, adminKey) {
-    var headers = { 'X-Admin-Key': adminKey };
-    var statusRes = await fetch(baseUrl.replace(/\/$/, '') + '/status', { headers: headers });
-    if (!statusRes.ok) throw new Error('/status повернув HTTP ' + statusRes.status);
-    var status = await statusRes.json();
-
-    var uaRes = await fetch(baseUrl.replace(/\/$/, '') + '/ukrainealarm-status', { headers: headers });
-    if (!uaRes.ok) throw new Error('/ukrainealarm-status повернув HTTP ' + uaRes.status);
-    var uaStatus = await uaRes.json();
-
-    return { status: status, uaStatus: uaStatus };
   }
 
   function refresh() {
-    var settings = loadSettings();
-    if (!settings.baseUrl || !settings.adminKey) {
-      render(DEMO.status, DEMO.ukraineAlarmStatus, true);
-      return;
+    var cfg = settings();
+    if (!cfg.baseUrl || !cfg.adminKey) {
+      $('settingsPanel').hidden = false;
+      setConnectionError('Потрібен ключ', 'warn');
+      return Promise.resolve();
     }
-
-    fetchLive(settings.baseUrl, settings.adminKey)
-      .then(function (data) { render(data.status, data.uaStatus, false); })
-      .catch(function (err) { showError(err.message); });
+    return Promise.all([api('/status', cfg), api('/ukrainealarm-status', cfg).catch(function () { return null; })])
+      .then(function (res) {
+        state.status = res[0];
+        state.ua = res[1];
+        $('lastUpdated').textContent = 'оновлено ' + new Date().toLocaleTimeString('uk-UA');
+        renderAll();
+      })
+      .catch(function (err) {
+        if (err.code === 401) {
+          $('settingsPanel').hidden = false;
+          setConnectionError('Невірний ключ');
+        } else {
+          setConnectionError('Немає зв’язку із сервером');
+        }
+      });
   }
 
-  function scheduleAutoRefresh() {
-    if (timer) clearInterval(timer);
-    timer = setInterval(refresh, 30000);
+  function refreshUsers() {
+    var cfg = settings();
+    if (!cfg.baseUrl || !cfg.adminKey) return Promise.resolve();
+    return api('/users-stats', cfg).then(function (data) {
+      state.users = data;
+      renderUsers();
+    }).catch(function () {
+      $('usersBody').innerHTML = '<div class="notice critical">Не вдалося завантажити статистику користувачів.</div>';
+    });
   }
 
-  els.settingsBtn.addEventListener('click', function () {
-    var settings = loadSettings();
-    els.baseUrlInput.value = settings.baseUrl;
-    els.adminKeyInput.value = settings.adminKey;
-    els.settingsPanel.hidden = !els.settingsPanel.hidden;
+  function startTimers() {
+    if (state.timer) clearInterval(state.timer);
+    state.timer = setInterval(refresh, POLL_MS);
+  }
+
+  function syncUsersTimer() {
+    if (state.usersTimer) { clearInterval(state.usersTimer); state.usersTimer = null; }
+    if (state.tab === 'users') {
+      refreshUsers();
+      state.usersTimer = setInterval(refreshUsers, USERS_POLL_MS);
+    }
+  }
+
+  function selectTab(name) {
+    state.tab = name;
+    write(STORE_TAB, name);
+    document.querySelectorAll('nav.tabs button').forEach(function (b) {
+      b.setAttribute('aria-selected', b.getAttribute('data-tab') === name ? 'true' : 'false');
+    });
+    document.querySelectorAll('[data-panel]').forEach(function (p) { p.hidden = p.getAttribute('data-panel') !== name; });
+    if (name === 'users' && state.users) renderUsers();
+    syncUsersTimer();
+  }
+
+  document.querySelectorAll('nav.tabs button').forEach(function (b) {
+    b.addEventListener('click', function () { selectTab(b.getAttribute('data-tab')); });
   });
 
-  els.saveSettingsBtn.addEventListener('click', function () {
-    saveSettings(els.baseUrlInput.value.trim(), els.adminKeyInput.value.trim());
-    els.settingsPanel.hidden = true;
-    refresh();
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () { if (state.tab === 'users' && state.users) renderUsers(); }, 200);
   });
 
-  els.forgetSettingsBtn.addEventListener('click', function () {
-    clearSettings();
-    els.baseUrlInput.value = '';
-    els.adminKeyInput.value = '';
-    refresh();
+  $('refreshBtn').addEventListener('click', function () { refresh(); if (state.tab === 'users') refreshUsers(); });
+  $('settingsBtn').addEventListener('click', function () {
+    var panel = $('settingsPanel');
+    panel.hidden = !panel.hidden;
+    var cfg = settings();
+    $('baseUrlInput').value = cfg.baseUrl;
+    $('adminKeyInput').value = cfg.adminKey;
+  });
+  $('saveBtn').addEventListener('click', function () {
+    write(STORE_URL, $('baseUrlInput').value.trim());
+    write(STORE_KEY, $('adminKeyInput').value.trim());
+    $('settingsPanel').hidden = true;
+    refresh().then(function () { if (state.tab === 'users') refreshUsers(); });
+  });
+  $('clearBtn').addEventListener('click', function () {
+    remove(STORE_KEY);
+    remove(STORE_URL);
+    $('adminKeyInput').value = '';
+    state.status = null;
+    state.users = null;
+    setConnectionError('Ключ видалено', 'warn');
   });
 
-  els.refreshBtn.addEventListener('click', refresh);
-
+  $('baseUrlInput').value = settings().baseUrl;
+  var savedTab = read(STORE_TAB);
+  selectTab(['overview', 'sources', 'users', 'system'].indexOf(savedTab) >= 0 ? savedTab : 'overview');
   refresh();
-  scheduleAutoRefresh();
+  startTimers();
 })();
 </script>
+</body>
+</html>
