@@ -12,6 +12,7 @@ const CLIENT_KEY = process.env.CLIENT_KEY || '';
 const ADMIN_KEY = process.env.ADMIN_KEY || '';
 const UKRAINEALARM_TOKEN = process.env.UKRAINEALARM_TOKEN || '';
 const UKRAINEALARM_WEBHOOK_PUBLIC_KEY = (process.env.UKRAINEALARM_WEBHOOK_PUBLIC_KEY || '').replace(/\\n/g, '\n');
+const UKRAINEALARM_WEBHOOK_PATH = process.env.UKRAINEALARM_WEBHOOK_PATH || '';
 const KAGGLE_TOKEN = process.env.KAGGLE_TOKEN || '';
 const KAGGLE_USERNAME = process.env.KAGGLE_USERNAME || '';
 const KAGGLE_KEY = process.env.KAGGLE_KEY || '';
@@ -25,6 +26,7 @@ module.exports = {
     ADMIN_KEY,
     UKRAINEALARM_TOKEN,
     UKRAINEALARM_WEBHOOK_PUBLIC_KEY,
+    UKRAINEALARM_WEBHOOK_PATH,
     KAGGLE_TOKEN,
     KAGGLE_USERNAME,
     KAGGLE_KEY,

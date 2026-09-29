@@ -7,7 +7,9 @@
   "license": "MIT",
   "main": "src/server.js",
   "scripts": {
-    "start": "node --env-file=.env src/server.js"
+    "start": "node --env-file=.env src/server.js",
+    "test": "node scripts/test-forecast-model.js",
+    "backtest": "node scripts/backtest-forecast.js"
   },
   "dependencies": {
     "ws": "^8.18.0"

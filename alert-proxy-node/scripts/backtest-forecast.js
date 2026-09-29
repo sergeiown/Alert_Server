@@ -4,10 +4,10 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const forecastConfig = require('../src/main/services/forecastConfig');
-const { filterUsableAlerts, estimateRegionLambda } = require('../src/main/services/forecastModel');
+const forecastConfig = require('../src/forecastConfig');
+const { filterUsableAlerts, estimateRegionLambda } = require('../src/forecastModel');
 
-const { PROXY_URL } = require('../src/main/services/proxyConfig');
+const PROXY_URL = 'https://alert-proxy-ua.duckdns.org';
 const MIN_ORIGIN_GAP_MS = 32000;
 const WALK_FORWARD_DAYS = 10;
 const DAY_MS = 24 * 60 * 60 * 1000;

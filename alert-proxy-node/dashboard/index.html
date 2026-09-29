@@ -20,6 +20,8 @@
     --accent: #0e7c8c;
     --accent-soft: rgba(14, 124, 140, 0.12);
     --accent-2: #7a5cc8;
+    --c5: #d9822b;
+    --c6: #c2508f;
     --ok: #1f8a4c;
     --ok-soft: rgba(31, 138, 76, 0.12);
     --warn: #96650a;
@@ -41,6 +43,8 @@
       --accent: #3ecbde;
       --accent-soft: rgba(62, 203, 222, 0.14);
       --accent-2: #a58cf0;
+      --c5: #f29e4c;
+      --c6: #e879b0;
       --ok: #35d488;
       --ok-soft: rgba(53, 212, 136, 0.14);
       --warn: #f0b429;
@@ -62,6 +66,8 @@
     --accent: #3ecbde;
     --accent-soft: rgba(62, 203, 222, 0.14);
     --accent-2: #a58cf0;
+    --c5: #f29e4c;
+    --c6: #e879b0;
     --ok: #35d488;
     --ok-soft: rgba(53, 212, 136, 0.14);
     --warn: #f0b429;
@@ -291,6 +297,21 @@
   .chart .bar-a { fill: var(--accent); }
   .chart .bar-b { fill: var(--accent-2); }
   .chart .bar-c { fill: var(--ok); }
+  .chart .seg-0 { fill: var(--accent); }
+  .chart .seg-1 { fill: var(--accent-2); }
+  .chart .seg-2 { fill: var(--ok); }
+  .chart .seg-3 { fill: var(--c5); }
+  .chart .seg-4 { fill: var(--c6); }
+  .chart .seg-5 { fill: var(--warn); }
+  .chart .seg-6 { fill: var(--critical); }
+  .chart .seg-7 { fill: var(--text-dim); }
+  .live-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); margin-right: 6px; animation: pulse 2s ease-in-out infinite; }
+  .live-dot.stale { background: var(--warn); animation: none; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+  @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+  .seg { display: flex; gap: 4px; }
+  .seg button { padding: 5px 10px; font-size: 12px; }
+  .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
   .legend { display: flex; gap: 14px; font-size: 12px; color: var(--text-dim); margin-bottom: 8px; flex-wrap: wrap; }
   .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
 
@@ -330,11 +351,10 @@
   <div>
     <div class="eyebrow">Alert Proxy · панель власника</div>
     <h1>Вартовий</h1>
-    <div class="subtitle" id="lastUpdated">ще не оновлювалось</div>
+    <div class="subtitle"><span class="live-dot stale" id="liveDot"></span><span id="lastUpdated">підключення…</span></div>
   </div>
   <div class="top-right">
     <span class="pill" id="healthPill"><span class="dot"></span><span>Немає даних</span></span>
-    <button id="refreshBtn">Оновити</button>
     <button id="settingsBtn">Підключення</button>
   </div>
 </header>
@@ -389,6 +409,10 @@
       <div class="card" id="cardUkraineAlarm"></div>
       <div class="card" id="cardStats"></div>
     </div>
+    <div class="columns">
+      <div class="card" id="cardHistory"></div>
+      <div class="card" id="cardDeepState"></div>
+    </div>
     <div class="card" id="cardStale"></div>
   </section>
 
@@ -414,13 +438,13 @@
 (function () {
   'use strict';
 
-  var POLL_MS = 30000;
-  var USERS_POLL_MS = 60000;
+  var POLL_MS = 10000;
+  var USERS_POLL_MS = 30000;
   var STORE_KEY = 'vartovyi.adminKey';
   var STORE_URL = 'vartovyi.baseUrl';
   var STORE_TAB = 'vartovyi.tab';
 
-  var state = { status: null, ua: null, users: null, tab: 'overview', timer: null, usersTimer: null };
+  var state = { countryPeriod: 'last7d', status: null, ua: null, users: null, tab: 'overview', timer: null, usersTimer: null, busy: false, usersBusy: false };
 
   function $(id) { return document.getElementById(id); }
   function esc(v) {
@@ -490,6 +514,42 @@
     return step * 4;
   }
 
+  function stackedChart(days, versions, width) {
+    var W = width || 600, H = 200, padL = 36, padR = 8, padT = 10, padB = 24;
+    var n = days.length;
+    if (!n) return '<div class="empty-note">Даних ще немає</div>';
+    var totals = days.map(function (d) { return versions.reduce(function (sum, v) { return sum + (d.versions[v] || 0); }, 0); });
+    var max = niceMax(Math.max(1, Math.max.apply(null, totals)));
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var groupW = plotW / n;
+    var barW = Math.max(3, groupW * 0.72);
+    var out = '';
+    for (var i = 0; i <= 4; i++) {
+      var y = padT + plotH - (plotH * i) / 4;
+      out += '<line class="grid" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y + '" y2="' + y + '"/>' +
+        '<text class="axis" x="' + (padL - 6) + '" y="' + (y + 3) + '" text-anchor="end">' + fmtNum(Math.round((max * i) / 4)) + '</text>';
+    }
+    days.forEach(function (d, idx) {
+      var x = padL + idx * groupW + (groupW - barW) / 2;
+      var acc = 0;
+      versions.forEach(function (v, vi) {
+        var count = d.versions[v] || 0;
+        if (!count) return;
+        var h = (plotH * count) / max;
+        acc += h;
+        out += '<rect class="seg-' + Math.min(vi, 7) + '" x="' + x.toFixed(1) + '" y="' + (padT + plotH - acc).toFixed(1) + '" width="' + barW.toFixed(1) +
+          '" height="' + h.toFixed(1) + '"><title>' + esc(d.day + ' · ' + v + ': ' + count) + '</title></rect>';
+      });
+    });
+    var step = Math.ceil(n / Math.max(2, Math.floor(plotW / 46)));
+    days.forEach(function (d, idx) {
+      if (idx % step === 0) out += '<text class="axis" x="' + (padL + idx * groupW + groupW / 2).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle">' + esc(d.day.slice(5).replace('-', '.')) + '</text>';
+    });
+    return '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Історія версій застосунку">' + out + '</svg>';
+  }
+
+  var VERSION_COLORS = ['accent', 'accent-2', 'ok', 'c5', 'c6', 'warn', 'critical', 'text-dim'];
+
   function barChart(series, labels, opts) {
     var W = (opts && opts.width) || 600, H = (opts && opts.height) || 190, padL = 36, padR = 8, padT = 10, padB = 24;
     var n = labels.length;
@@ -531,6 +591,7 @@
     'ukrainealarm-no-token': function () { return 'Токен UkraineAlarm не задано: це джерело вимкнене, клієнти використовують alerts.in.ua.'; },
     'neptun-stream': function () { return 'Стрім Neptun не підключений.'; },
     'neptun-alerts': function () { return 'Тривоги Neptun застаріли або джерело відповідає помилкою.'; },
+    'occupied-stale': function () { return 'Дані про окуповану територію (DeepState) застаріли.'; },
     cpu: function (i) { return 'Високе навантаження процесора. ' + i.message; },
     memory: function (i) { return 'Мало вільної пам’яті. ' + i.message; },
     disk: function (i) { return 'Закінчується місце на диску. ' + i.message; },
@@ -579,7 +640,8 @@
       kpi('Зараз підключено', fmtNum(totalConn), 'WebSocket-з’єднань') +
       kpi('Запитів до alerts.in.ua', s.active.requestsLastMinute + '<span class="dim" style="font-size:14px"> /хв</span>', s.active.percentOfSoftLimit + '% м’якого ліміту', gauge(s.active.percentOfSoftLimit)) +
       kpi('Загроз на мапі (Neptun)', fmtNum(n.threats.active), n.stream.connected ? 'стрім підключено' : 'стрім не підключено') +
-      kpi('Подій в архіві', fmtNum(a.alertEvents.total), 'сховище: ' + fmtBytes(a.dbSizeBytes));
+      kpi('Пік за сьогодні', fmtNum(s.peaks.alertPeak), 'тривог одночасно · загроз: ' + fmtNum(s.peaks.threatPeak)) +
+      kpi('Подій в архіві', fmtNum(a.alertEvents.total), 'за 30 днів: ' + fmtNum(a.alertEvents.last30d) + ' · ' + fmtBytes(a.dbSizeBytes));
 
     var alertsOk = !s.active.currentError && s.active.cacheAgeMs !== null && s.active.cacheAgeMs < 90000;
     var uaConfigured = state.ua ? state.ua.configured : null;
@@ -587,7 +649,9 @@
     $('sourceSummary').innerHTML =
       line('alerts.in.ua', sourceState(alertsOk)) +
       line('Neptun', sourceState(neptunOk, n.stream.connected || !n.alerts.currentError ? 'частково' : '')) +
-      line('UkraineAlarm', uaConfigured === null ? chip('info', '...') : uaConfigured ? sourceState(!state.ua.currentError, 'помилка') : chip('info', 'вимкнено (немає токена)'));
+      line('UkraineAlarm', uaConfigured === null ? chip('info', '...') : uaConfigured ? sourceState(!state.ua.currentError, 'помилка') : chip('info', 'вимкнено (немає токена)')) +
+      line('DeepState (окупована територія)', sourceState(s.occupied.cacheAgeMs !== null && s.occupied.cacheAgeMs < 14 * 3600 * 1000 && !!s.occupied.date)) +
+      line('Kaggle (статистика зброї)', sourceState(!s.weaponStats.currentError, 'помилка'));
 
     $('connectionSummary').innerHTML =
       line('Тривоги alerts.in.ua (WS)', fmtNum(c.active)) +
@@ -645,6 +709,23 @@
       line('Статистика зброї (Kaggle): кеш', fmtAgo(w.cacheAgeMs)) +
       line('Помилка Kaggle', w.currentError ? chip('critical', String(w.currentError.status)) : chip('ok', 'немає'));
 
+    var occ = s.occupied, a2 = s.archive;
+    $('cardHistory').innerHTML =
+      '<div class="card-head"><h2>Історія тривог і прогноз</h2>' + (s.backfill.complete ? chip('ok', 'історію зібрано') : chip('warn', 'збір історії триває')) + '</div>' +
+      line('Джерело історії', 'alerts.in.ua (місяць по областях)') +
+      line('Подій за останні 30 днів', fmtNum(a2.alertEvents.last30d)) +
+      line('Усього подій в архіві', fmtNum(a2.alertEvents.total)) +
+      line('Відкритих зараз', fmtNum(a2.alertEvents.openNow)) +
+      line('Прогноз рахується', 'на сервері, за запитом клієнтів') +
+      line('Піки сьогодні (тривоги / загрози)', fmtNum(s.peaks.alertPeak) + ' / ' + fmtNum(s.peaks.threatPeak));
+
+    $('cardDeepState').innerHTML =
+      '<div class="card-head"><h2>DeepState: окупована територія</h2>' + (occ.date && !occ.error ? chip('ok', 'працює') : occ.date ? chip('warn', 'є помилка') : chip('critical', 'немає даних')) + '</div>' +
+      line('Дата знімка', occ.date ? esc(occ.date.slice(0, 4) + '-' + occ.date.slice(4, 6) + '-' + occ.date.slice(6, 8)) : '-') +
+      line('Кеш оновлено', fmtAgo(occ.cacheAgeMs)) +
+      line('Розмір', fmtBytes(occ.sizeBytes)) +
+      line('Помилка', occ.error ? chip('critical', esc(occ.error)) : chip('ok', 'немає'));
+
     var obs = ua && ua.staleAlertObservations ? ua.staleAlertObservations : [];
     $('cardStale').innerHTML = '<div class="card-head"><h2>Спостереження UkraineAlarm за «завислими» тривогами</h2></div>' +
       (obs.length
@@ -666,7 +747,7 @@
       line('Навантаження (1/5/15 хв)', sys.cpuLoadAvg.map(function (v) { return v.toFixed(2); }).join(' / '));
 
     $('cardArchive').innerHTML = '<div class="card-head"><h2>Архів на сервері</h2></div>' +
-      line('Подій тривог', fmtNum(a.alertEvents.total)) +
+      line('Подій тривог (усього / за 30 днів)', fmtNum(a.alertEvents.total) + ' / ' + fmtNum(a.alertEvents.last30d)) +
       line('Відкритих зараз', fmtNum(a.alertEvents.openNow)) +
       line('Найстаріша / найновіша', fmtDate(a.alertEvents.oldestStartedAt) + ' / ' + fmtDate(a.alertEvents.newestStartedAt)) +
       line('Загроз Neptun (усього / відкритих)', fmtNum(a.neptunThreats.total) + ' / ' + fmtNum(a.neptunThreats.open)) +
@@ -682,7 +763,34 @@
       line('Працює без перезапуску', fmtDuration(sys.uptimeSec * 1000)) +
       line('Node.js', esc(sys.nodeVersion)) +
       line('Платформа', esc(sys.platform)) +
+      line('База країн (DB-IP)', s.geoip && s.geoip.loaded ? chip('ok', fmtNum(s.geoip.ranges) + ' діапазонів') : chip('warn', 'не завантажена')) +
       line('WebSocket-з’єднань', fmtNum(c.alerts + c.active + c.neptun));
+  }
+
+  var COUNTRY_PERIODS = [['today', 'Сьогодні'], ['last7d', '7 днів'], ['allTime', 'Усього']];
+  var countryNames = null;
+
+  function countryName(code) {
+    if (!code || code === 'unknown') return 'невизначено';
+    try {
+      if (!countryNames) countryNames = new Intl.DisplayNames(['uk'], { type: 'region' });
+      return countryNames.of(code) || code;
+    } catch (e) {
+      return code;
+    }
+  }
+
+  function paintCountries() {
+    var u = state.users;
+    var list = $('countryList');
+    if (!u || !list) return;
+    var rows = (u.countries[state.countryPeriod] || []).map(function (c) {
+      return { name: countryName(c.code) + (c.code && c.code !== 'unknown' ? ' (' + c.code + ')' : ''), value: c.users };
+    });
+    list.innerHTML = barRows(rows, 'name', 'value');
+    document.querySelectorAll('#countryTabs button').forEach(function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-period') === state.countryPeriod ? 'true' : 'false');
+    });
   }
 
   function renderUsers() {
@@ -714,20 +822,40 @@
       '<div class="card" style="margin-bottom:12px"><h2>Запити за годинами сьогодні (час Києва)</h2>' +
         barChart([{ cls: 'bar-c', values: u.hourlyRequestsToday }], hourLabels, { label: 'Запити за годинами', width: chartWidth, height: 160 }) +
       '</div>' +
+      '<div class="card" style="margin-bottom:12px"><h2>Історія версій застосунку за днями</h2>' +
+        '<div class="legend">' + u.versionHistory.versions.slice(0, 8).map(function (v, i) { return '<span><i style="background:var(--' + VERSION_COLORS[i] + ')"></i>' + esc(v === 'unknown' ? 'невідомо' : v) + '</span>'; }).join('') + '</div>' +
+        stackedChart(u.versionHistory.days, u.versionHistory.versions.slice(0, 8), chartWidth) +
+      '</div>' +
+      '<div class="card" style="margin-bottom:12px"><div class="card-head"><h2>Країни клієнтів</h2><div class="seg" id="countryTabs">' +
+        COUNTRY_PERIODS.map(function (p) { return '<button data-period="' + p[0] + '" aria-pressed="false">' + p[1] + '</button>'; }).join('') +
+        '</div></div><div id="countryList"></div>' +
+        '<p class="settings-note" style="margin-top:10px">Країна визначається за IP під час запиту (локальна база DB-IP), сама адреса не зберігається.</p></div>' +
       '<div class="columns">' +
         '<div class="card"><h2>Версії застосунку (активні за 7 днів)</h2>' + barRows(u.versions.map(function (v) { return { name: v.version === 'unknown' ? 'невідомо' : v.version, value: v.users }; }), 'name', 'value') + '</div>' +
         '<div class="card"><h2>Маршрути сьогодні</h2>' + barRows(u.routesToday.map(function (r) { return { name: r.route, value: r.count }; }), 'name', 'value') + '</div>' +
       '</div>' +
       '<div class="card"><h2>Найактивніші пристрої</h2>' +
         (u.topUsers.length
-          ? '<div class="table-wrap"><table class="data"><thead><tr><th>Ідентифікатор</th><th class="num">Запитів</th><th>Версія</th><th>Уперше</th><th>Востаннє</th></tr></thead><tbody>' +
+          ? '<div class="table-wrap"><table class="data"><thead><tr><th>Ідентифікатор</th><th class="num">Запитів</th><th>Версія</th><th>Країна</th><th>Уперше</th><th>Востаннє</th></tr></thead><tbody>' +
             u.topUsers.map(function (x) {
-              return '<tr><td class="mono">' + esc(x.id) + '</td><td class="num mono">' + fmtNum(x.requests) + '</td><td>' + esc(x.version || 'невідомо') + '</td><td>' + fmtDate(x.firstSeen) + '</td><td>' + fmtDate(x.lastSeen) + '</td></tr>';
+              return '<tr><td class="mono">' + esc(x.id) + '</td><td class="num mono">' + fmtNum(x.requests) + '</td><td>' + esc(x.version || 'невідомо') + '</td><td>' + esc(countryName(x.country)) + '</td><td>' + fmtDate(x.firstSeen) + '</td><td>' + fmtDate(x.lastSeen) + '</td></tr>';
             }).join('') + '</tbody></table></div>'
           : '<div class="empty-note">Даних ще немає</div>') +
         '<p class="settings-note" style="margin-top:10px">Пристрої розрізняються за хешем IP-адреси, самі адреси не зберігаються. Статистика накопичується від моменту запуску нового сервера.</p>' +
       '</div>';
 
+    bindCountryTabs();
+
+  }
+
+  function bindCountryTabs() {
+    document.querySelectorAll('#countryTabs button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        state.countryPeriod = b.getAttribute('data-period');
+        paintCountries();
+      });
+    });
+    paintCountries();
   }
 
   function renderAll() {
@@ -758,39 +886,56 @@
     });
   }
 
+  function markLive(ok) {
+    $('liveDot').className = 'live-dot' + (ok ? '' : ' stale');
+  }
+
   function refresh() {
+    if (state.busy) return Promise.resolve();
     var cfg = settings();
     if (!cfg.baseUrl || !cfg.adminKey) {
       $('settingsPanel').hidden = false;
       setConnectionError('Потрібен ключ', 'warn');
       return Promise.resolve();
     }
+    state.busy = true;
     return Promise.all([api('/status', cfg), api('/ukrainealarm-status', cfg).catch(function () { return null; })])
       .then(function (res) {
         state.status = res[0];
         state.ua = res[1];
-        $('lastUpdated').textContent = 'оновлено ' + new Date().toLocaleTimeString('uk-UA');
+        $('lastUpdated').textContent = 'оновлюється автоматично · ' + new Date().toLocaleTimeString('uk-UA');
+        markLive(true);
         renderAll();
       })
       .catch(function (err) {
+        markLive(false);
         if (err.code === 401) {
           $('settingsPanel').hidden = false;
           setConnectionError('Невірний ключ');
         } else {
           setConnectionError('Немає зв’язку із сервером');
         }
+      })
+      .then(function () {
+        state.busy = false;
       });
   }
 
   function refreshUsers() {
     var cfg = settings();
-    if (!cfg.baseUrl || !cfg.adminKey) return Promise.resolve();
-    return api('/users-stats', cfg).then(function (data) {
-      state.users = data;
-      renderUsers();
-    }).catch(function () {
-      $('usersBody').innerHTML = '<div class="notice critical">Не вдалося завантажити статистику користувачів.</div>';
-    });
+    if (state.usersBusy || !cfg.baseUrl || !cfg.adminKey) return Promise.resolve();
+    state.usersBusy = true;
+    return api('/users-stats', cfg)
+      .then(function (data) {
+        state.users = data;
+        renderUsers();
+      })
+      .catch(function () {
+        if (!state.users) $('usersBody').innerHTML = '<div class="notice critical">Не вдалося завантажити статистику користувачів.</div>';
+      })
+      .then(function () {
+        state.usersBusy = false;
+      });
   }
 
   function startTimers() {
@@ -827,7 +972,12 @@
     resizeTimer = setTimeout(function () { if (state.tab === 'users' && state.users) renderUsers(); }, 200);
   });
 
-  $('refreshBtn').addEventListener('click', function () { refresh(); if (state.tab === 'users') refreshUsers(); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState !== 'visible') return;
+    refresh();
+    if (state.tab === 'users') refreshUsers();
+  });
+
   $('settingsBtn').addEventListener('click', function () {
     var panel = $('settingsPanel');
     panel.hidden = !panel.hidden;

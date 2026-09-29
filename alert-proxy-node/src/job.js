@@ -7,6 +7,10 @@ const neptun = require('./neptun');
 const backup = require('./backup');
 const archive = require('./archive');
 const users = require('./users');
+const geoip = require('./geoip');
+const trends = require('./trends');
+const occupied = require('./occupied');
+const lib = require('./lib');
 
 const TICK_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -51,6 +55,28 @@ async function loop() {
     }
 }
 
+const BACKFILL_REPEAT_MS = 6 * 60 * 60 * 1000;
+
+async function historyBackfillLoop() {
+    for (;;) {
+        if (config.ALERTS_TOKEN) {
+            let failures = 0;
+            for (const uid of lib.ALL_OBLAST_UIDS) {
+                try {
+                    const response = await gateway.getHistory(String(uid));
+                    if (response.status !== 200) failures++;
+                } catch (err) {
+                    failures++;
+                    logError('history-backfill', err);
+                }
+            }
+            if (failures === 0) trends.markBackfillDone();
+            console.log(`[backfill] pass finished, failures: ${failures}`);
+        }
+        await new Promise((resolve) => setTimeout(resolve, BACKFILL_REPEAT_MS));
+    }
+}
+
 async function maintenanceLoop() {
     for (;;) {
         try {
@@ -79,6 +105,9 @@ function startRecurringJob() {
     loop();
     activeLoop();
     neptun.start();
+    occupied.start();
+    geoip.start();
+    historyBackfillLoop();
     maintenanceLoop();
     healthLoop();
 }

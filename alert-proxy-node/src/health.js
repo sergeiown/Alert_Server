@@ -6,6 +6,7 @@ const ACTIVE_STALE_MS = 90 * 1000;
 const NEPTUN_STREAM_DOWN_MS = 5 * 60 * 1000;
 const NEPTUN_ALERTS_STALE_MS = 5 * 60 * 1000;
 const BACKUP_STALE_MS = 36 * 60 * 60 * 1000;
+const OCCUPIED_STALE_MS = 14 * 60 * 60 * 1000;
 
 let previousCodes = new Set();
 
@@ -34,6 +35,10 @@ function evaluate(status, flags) {
     }
     if (neptun.alerts.currentError || neptun.alerts.cacheAgeMs === null || neptun.alerts.cacheAgeMs > NEPTUN_ALERTS_STALE_MS) {
         add('warn', 'neptun-alerts', 'Neptun alerts are stale or failing');
+    }
+
+    if (status.occupied.cacheAgeMs === null || status.occupied.cacheAgeMs > OCCUPIED_STALE_MS) {
+        add('warn', 'occupied-stale', 'Occupied territory data (DeepState) is stale');
     }
 
     const sys = status.system;

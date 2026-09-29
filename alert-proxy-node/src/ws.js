@@ -5,6 +5,7 @@ const { WebSocketServer } = require('ws');
 const gateway = require('./gateway');
 const neptun = require('./neptun');
 const users = require('./users');
+const ratelimit = require('./ratelimit');
 const { checkClientKey } = require('./auth');
 
 function attachWebSockets(server) {
@@ -44,6 +45,13 @@ function attachWebSockets(server) {
 
         const forwarded = request.headers['x-forwarded-for'];
         const ip = forwarded ? forwarded.split(',')[0].trim() : request.socket.remoteAddress;
+
+        if (!ratelimit.openSocket(ip)) {
+            socket.write('HTTP/1.1 429 Too Many Requests\r\n\r\n');
+            socket.destroy();
+            return;
+        }
+        socket.once('close', () => ratelimit.closeSocket(ip));
         users
             .recordRequest(ip, `ws:${url.pathname}`, url.searchParams.get('v'))
             .then(() => users.notePeak(gateway.totalConnections() + 1))
@@ -55,6 +63,11 @@ function attachWebSockets(server) {
         }
 
         if (url.pathname === '/ws') {
+            if (gateway.isUkraineAlarmUnavailable()) {
+                socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n');
+                socket.destroy();
+                return;
+            }
             alertsWss.handleUpgrade(request, socket, head, (ws) => alertsWss.emit('connection', ws, request));
             return;
         }

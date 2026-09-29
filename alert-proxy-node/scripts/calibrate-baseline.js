@@ -2,8 +2,8 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const fs = require('fs');
-const forecastConfig = require('../src/main/services/forecastConfig');
-const { estimateRegionLambda } = require('../src/main/services/forecastModel');
+const forecastConfig = require('../src/forecastConfig');
+const { estimateRegionLambda } = require('../src/forecastModel');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const TEST_SAMPLE_STRIDE_DAYS = 5;

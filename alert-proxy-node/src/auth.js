@@ -17,7 +17,7 @@ function checkClientKey(url, headers) {
 }
 
 function checkAdminKey(url, headers) {
-    const provided = headers['x-admin-key'] || url.searchParams.get('adminKey') || '';
+    const provided = headers['x-admin-key'] || '';
     return Boolean(ADMIN_KEY) && timingSafeEqualStr(provided, ADMIN_KEY);
 }
 

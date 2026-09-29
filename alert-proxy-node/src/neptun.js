@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const archive = require('./archive');
+const trends = require('./trends');
 
 const ALERTS_URL = 'https://neptun.in.ua/api/v1/alerts';
 const THREATS_URL = 'https://neptun.in.ua/api/v1/threats';
@@ -59,12 +60,14 @@ function applySnapshot(threats) {
     threatsById.clear();
     incoming.forEach((t) => threatsById.set(t.id, t));
     archive.recordThreats(incoming, removedIds);
+    trends.recordThreatCount(threatsById.size);
 }
 
 function applyUpsert(threat) {
     if (!threat || !threat.id) return;
     threatsById.set(threat.id, threat);
     archive.recordThreats([threat], []);
+    trends.recordThreatCount(threatsById.size);
 }
 
 function applyRemove(id) {

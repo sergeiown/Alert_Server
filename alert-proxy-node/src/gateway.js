@@ -9,12 +9,15 @@ const archive = require('./archive');
 const neptun = require('./neptun');
 const backup = require('./backup');
 const health = require('./health');
+const trends = require('./trends');
+const occupied = require('./occupied');
+const geoip = require('./geoip');
 
 const UNIQUE_USERS_HISTORY_MAX_DAYS = 90;
 
 const ACTIVE_ALERTS_URL = 'https://api.alerts.in.ua/v1/alerts/active.json';
 const ACTIVE_CACHE_TTL_MS = 20 * 1000;
-const ACTIVE_POLL_INTERVAL_MS = 9 * 1000;
+const ACTIVE_POLL_INTERVAL_MS = 10 * 1000;
 const ACTIVE_HEARTBEAT_INTERVAL_MS = 60 * 1000;
 const ACTIVE_MIN_GAP_MS = 5 * 1000;
 
@@ -138,7 +141,9 @@ async function ensureActiveCacheFresh({ force = false } = {}) {
         const lastModified = upstream.headers.get('Last-Modified');
         state.activeCache = { body, lastModified, fetchedAt: Date.now() };
         try {
-            archive.recordActiveAlerts(JSON.parse(body).alerts);
+            const activeAlerts = JSON.parse(body).alerts || [];
+            archive.recordActiveAlerts(activeAlerts);
+            trends.recordAlertCount(activeAlerts.length);
         } catch (err) {
             console.error('[archive]', err && err.stack ? err.stack : err);
         }
@@ -222,6 +227,11 @@ async function getHistory(uid) {
 
             state.historyOriginErrors.delete(uid);
             state.historyCache.set(uid, { body, fetchedAt: Date.now() });
+            try {
+                archive.upsertMany(JSON.parse(body).alerts);
+            } catch (err) {
+                console.error('[archive]', err && err.stack ? err.stack : err);
+            }
         };
 
         const result = state.historyQueue.then(run, run);
@@ -500,7 +510,15 @@ function acceptAlertsSocket(ws) {
     } catch (err) {}
 }
 
+function isUkraineAlarmUnavailable() {
+    const saved = store.get('ukraineAlarmState');
+    return !config.UKRAINEALARM_TOKEN && !(saved && saved.lastFetchAt);
+}
+
 async function getUkraineAlarmAlerts() {
+    if (isUkraineAlarmUnavailable()) {
+        return jsonResponse(JSON.stringify({ error: 'UkraineAlarm is not configured on the server' }), 503);
+    }
     try {
         await pollUkraineAlarmIfDue();
     } catch (err) {
@@ -809,6 +827,10 @@ function buildStatus() {
             system: system.getSystemMetrics(),
             connections: { alerts: socketCount('alerts'), active: socketCount('active'), neptun: neptun.socketCount() },
             neptun: neptun.getStatusInfo(),
+            occupied: occupied.getStatusInfo(),
+            geoip: geoip.getStatusInfo(),
+            backfill: { complete: trends.isBackfillComplete() },
+            peaks: trends.getDailyPeaks(),
             archive: archive.getStats(),
             backup: backup.getStatusInfo(),
     };
@@ -904,6 +926,7 @@ async function getWeaponStats() {
 }
 
 module.exports = {
+    isUkraineAlarmUnavailable,
     checkHealth,
     totalConnections,
     registerSocket,

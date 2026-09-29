@@ -3,6 +3,7 @@
 
 const { db } = require('./store');
 const lib = require('./lib');
+const geoip = require('./geoip');
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
@@ -18,8 +19,20 @@ db.exec(`CREATE TABLE IF NOT EXISTS users (
     requests INTEGER NOT NULL DEFAULT 0,
     version TEXT
 )`);
+if (!db.prepare('PRAGMA table_info(users)').all().some((column) => column.name === 'country')) {
+    db.exec('ALTER TABLE users ADD COLUMN country TEXT');
+}
 db.exec('CREATE INDEX IF NOT EXISTS idx_users_last_seen ON users(last_seen)');
 db.exec('CREATE TABLE IF NOT EXISTS user_days (day TEXT NOT NULL, id TEXT NOT NULL, PRIMARY KEY (day, id))');
+if (!db.prepare('PRAGMA table_info(user_days)').all().some((column) => column.name === 'version')) {
+    db.exec('ALTER TABLE user_days ADD COLUMN version TEXT');
+}
+db.exec(`CREATE TABLE IF NOT EXISTS version_daily (
+    day TEXT NOT NULL,
+    version TEXT NOT NULL,
+    users INTEGER NOT NULL,
+    PRIMARY KEY (day, version)
+)`);
 db.exec(`CREATE TABLE IF NOT EXISTS route_hits (
     day TEXT NOT NULL,
     hour INTEGER NOT NULL,
@@ -28,13 +41,15 @@ db.exec(`CREATE TABLE IF NOT EXISTS route_hits (
     PRIMARY KEY (day, hour, route)
 )`);
 
-const upsertUser = db.prepare(`INSERT INTO users (id, first_seen, first_day, last_seen, requests, version)
-    VALUES (?, ?, ?, ?, 1, ?)
+const upsertUser = db.prepare(`INSERT INTO users (id, first_seen, first_day, last_seen, requests, version, country)
+    VALUES (?, ?, ?, ?, 1, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
         last_seen = excluded.last_seen,
         requests = users.requests + 1,
-        version = COALESCE(excluded.version, users.version)`);
-const upsertDay = db.prepare('INSERT OR IGNORE INTO user_days (day, id) VALUES (?, ?)');
+        version = COALESCE(excluded.version, users.version),
+        country = COALESCE(excluded.country, users.country)`);
+const upsertDay = db.prepare(`INSERT INTO user_days (day, id, version) VALUES (?, ?, ?)
+    ON CONFLICT(day, id) DO UPDATE SET version = COALESCE(excluded.version, user_days.version)`);
 const upsertHit = db.prepare(`INSERT INTO route_hits (day, hour, route, count) VALUES (?, ?, ?, 1)
     ON CONFLICT(day, hour, route) DO UPDATE SET count = count + 1`);
 
@@ -44,18 +59,20 @@ function kyivHourNow(date) {
     return lib.kyivHour(date.toISOString());
 }
 
-function record(hashedId, route, version) {
+function record(hashedId, route, version, country) {
     const now = new Date();
     const day = lib.kyivDateKey(now);
     const safeVersion = version && /^[0-9A-Za-z._-]{1,20}$/.test(version) ? version : null;
 
-    upsertUser.run(hashedId, now.getTime(), day, now.getTime(), safeVersion);
-    upsertDay.run(day, hashedId);
+    const safeCountry = country && /^[A-Z]{2}$/.test(country) && country !== 'ZZ' ? country : null;
+
+    upsertUser.run(hashedId, now.getTime(), day, now.getTime(), safeVersion, safeCountry);
+    upsertDay.run(day, hashedId, safeVersion);
     upsertHit.run(day, kyivHourNow(now), route);
 }
 
 async function recordRequest(ip, route, version) {
-    record(await lib.hashIp(ip), route, version);
+    record(await lib.hashIp(ip), route, version, geoip.lookup(ip));
 }
 
 function notePeak(totalConnections) {
@@ -67,7 +84,48 @@ function notePeak(totalConnections) {
     if (totalConnections > peak.connections) peak.connections = totalConnections;
 }
 
+const VERSION_HISTORY_DAYS = 60;
+const VERSION_RETENTION_DAYS = 730;
+
+function snapshotVersions(sinceDay) {
+    const rows = db
+        .prepare("SELECT day, COALESCE(version, 'unknown') AS version, COUNT(*) AS users FROM user_days WHERE day >= ? GROUP BY day, COALESCE(version, 'unknown')")
+        .all(sinceDay);
+    const insert = db.prepare('INSERT OR REPLACE INTO version_daily (day, version, users) VALUES (?, ?, ?)');
+    db.exec('BEGIN');
+    try {
+        rows.forEach((row) => insert.run(row.day, row.version, row.users));
+        db.exec('COMMIT');
+    } catch (err) {
+        db.exec('ROLLBACK');
+        throw err;
+    }
+}
+
+function getVersionHistory() {
+    const now = Date.now();
+    snapshotVersions(lib.kyivDateKey(new Date(now - DAY_MS)));
+
+    const sinceDay = lib.kyivDateKey(new Date(now - (VERSION_HISTORY_DAYS - 1) * DAY_MS));
+    const rows = db.prepare('SELECT day, version, users FROM version_daily WHERE day >= ? ORDER BY day').all(sinceDay);
+
+    const byDay = new Map();
+    const totals = new Map();
+    rows.forEach((row) => {
+        if (!byDay.has(row.day)) byDay.set(row.day, {});
+        byDay.get(row.day)[row.version] = row.users;
+        totals.set(row.version, (totals.get(row.version) || 0) + row.users);
+    });
+
+    return {
+        versions: Array.from(totals.entries()).sort((a, b) => b[1] - a[1]).map(([version]) => version),
+        days: Array.from(byDay.entries()).map(([day, versions]) => ({ day, versions })),
+    };
+}
+
 function prune() {
+    snapshotVersions('0000-00-00');
+    db.prepare('DELETE FROM version_daily WHERE day < ?').run(lib.kyivDateKey(new Date(Date.now() - VERSION_RETENTION_DAYS * DAY_MS)));
     const cutoffDay = lib.kyivDateKey(new Date(Date.now() - RETENTION_DAYS * DAY_MS));
     db.prepare('DELETE FROM route_hits WHERE day < ?').run(cutoffDay);
     db.prepare('DELETE FROM user_days WHERE day < ?').run(cutoffDay);
@@ -113,12 +171,28 @@ function getStats(currentConnections) {
         now - 7 * DAY_MS
     ).map((row) => ({ version: row.version, users: row.c }));
 
-    const top = all('SELECT id, first_seen, last_seen, requests, version FROM users ORDER BY requests DESC LIMIT ?', TOP_USERS).map((row) => ({
+    const countryRows = (sql, ...params) =>
+        all(sql, ...params).map((row) => ({ code: row.country || 'unknown', users: row.c }));
+    const countries = {
+        today: countryRows(
+            `SELECT u.country AS country, COUNT(*) AS c FROM user_days d JOIN users u ON u.id = d.id
+             WHERE d.day = ? GROUP BY u.country ORDER BY c DESC LIMIT 15`,
+            today
+        ),
+        last7d: countryRows(
+            'SELECT country, COUNT(*) AS c FROM users WHERE last_seen >= ? GROUP BY country ORDER BY c DESC LIMIT 15',
+            now - 7 * DAY_MS
+        ),
+        allTime: countryRows('SELECT country, COUNT(*) AS c FROM users GROUP BY country ORDER BY c DESC LIMIT 15'),
+    };
+
+    const top = all('SELECT id, first_seen, last_seen, requests, version, country FROM users ORDER BY requests DESC LIMIT ?', TOP_USERS).map((row) => ({
         id: row.id,
         firstSeen: new Date(row.first_seen).toISOString(),
         lastSeen: new Date(row.last_seen).toISOString(),
         requests: row.requests,
         version: row.version,
+        country: row.country,
     }));
 
     notePeak(currentConnections);
@@ -146,6 +220,8 @@ function getStats(currentConnections) {
         hourlyRequestsToday: hourly,
         routesToday: routes,
         versions,
+        countries,
+        versionHistory: getVersionHistory(),
         topUsers: top,
     };
 }

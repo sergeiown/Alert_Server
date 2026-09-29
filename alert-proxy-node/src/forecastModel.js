@@ -2,6 +2,29 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+
+const partsFormat = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Kyiv', weekday: 'short', hour: '2-digit', hourCycle: 'h23' });
+const WEEKDAY_INDEX = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+const partsCache = new Map();
+
+function kyivParts(ms) {
+    const key = Math.floor(ms / HOUR_MS);
+    let parts = partsCache.get(key);
+    if (!parts) {
+        const formatted = partsFormat.formatToParts(new Date(key * HOUR_MS));
+        parts = {
+            weekday: WEEKDAY_INDEX[formatted.find((p) => p.type === 'weekday').value],
+            hour: Number(formatted.find((p) => p.type === 'hour').value),
+        };
+        if (partsCache.size > 100000) partsCache.clear();
+        partsCache.set(key, parts);
+    }
+    return parts;
+}
+
+const weekdayOf = (ms) => kyivParts(ms).weekday;
+const hourOf = (ms) => kyivParts(ms).hour;
 const MIN_MEANINGFUL_LAMBDA = 1 / (10 * 365);
 
 const SIMULTANEOUS_WAVE_WINDOW_MS = 3 * 60 * 1000;
@@ -63,8 +86,8 @@ function seasonalityMultiplier(alerts, nowMs, config) {
     const overallRate = alerts.length / spanDays;
     if (overallRate <= 0) return 1;
 
-    const todayWeekday = new Date(nowMs).getDay();
-    const todayCount = times.filter((t) => new Date(t).getDay() === todayWeekday).length;
+    const todayWeekday = weekdayOf(nowMs);
+    const todayCount = times.filter((t) => weekdayOf(t) === todayWeekday).length;
     const todayRate = todayCount / Math.max(1, weekdayOccurrences);
 
     const rawMultiplier = todayRate / overallRate;
@@ -85,8 +108,8 @@ function hourOfDayMultiplier(alerts, nowMs, config) {
     const overallRate = alerts.length / spanDays;
     if (overallRate <= 0) return 1;
 
-    const currentHour = new Date(nowMs).getHours();
-    const currentHourCount = times.filter((t) => new Date(t).getHours() === currentHour).length;
+    const currentHour = hourOf(nowMs);
+    const currentHourCount = times.filter((t) => hourOf(t) === currentHour).length;
     const currentHourRate = currentHourCount / Math.max(1, hourOccurrences);
 
     const expectedHourRate = overallRate / 24;
@@ -164,7 +187,7 @@ function computeStats(alerts, nowMs, config) {
 
     const hourBuckets = { night: 0, morning: 0, day: 0, evening: 0 };
     sortedDesc.forEach((a) => {
-        const hour = new Date(a.started_at).getHours();
+        const hour = hourOf(new Date(a.started_at).getTime());
         if (hour < 6) hourBuckets.night++;
         else if (hour < 12) hourBuckets.morning++;
         else if (hour < 18) hourBuckets.day++;
@@ -174,13 +197,13 @@ function computeStats(alerts, nowMs, config) {
 
     const weekdayOccurrences = [0, 0, 0, 0, 0, 0, 0];
     for (let d = 0; d < config.WINDOW_DAYS; d++) {
-        const day = new Date(windowStartMs + d * DAY_MS).getDay();
+        const day = weekdayOf(windowStartMs + d * DAY_MS);
         weekdayOccurrences[day]++;
     }
 
     const weekdayCounts = [0, 0, 0, 0, 0, 0, 0];
     sortedDesc.forEach((a) => {
-        const day = new Date(a.started_at).getDay();
+        const day = weekdayOf(new Date(a.started_at).getTime());
         weekdayCounts[day]++;
     });
 
@@ -191,7 +214,7 @@ function computeStats(alerts, nowMs, config) {
             ? weekdayRates.reduce((acc, rate, i) => (rate === maxWeekdayRate ? [...acc, i] : acc), [])
             : [];
 
-    const todayWeekday = new Date(nowMs).getDay();
+    const todayWeekday = weekdayOf(nowMs);
 
     const byType = new Map();
     sortedDesc.forEach((a) => {

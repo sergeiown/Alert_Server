@@ -1,0 +1,73 @@
+// Copyright (c) 2024-2026 Serhii I. Myshko
+// Licensed under the MIT License. See LICENSE for details.
+
+const archive = require('./archive');
+const model = require('./forecastModel');
+const forecastConfig = require('./forecastConfig');
+const states = require('../resources/states.json');
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const CACHE_TTL_MS = 60 * 1000;
+const MAX_HISTORY_AGE_MS = 730 * DAY_MS;
+const CACHE_MAX_ENTRIES = 500;
+
+const cache = new Map();
+
+function durationStats(usableAlerts, nowMs) {
+    const avgOf = (list) => (list.length ? list.reduce((sum, a) => sum + a._durationMs, 0) / list.length : null);
+    const types = [...new Set(usableAlerts.map((alert) => alert.alert_type).filter(Boolean))];
+
+    return types.map((type) => {
+        const finished = usableAlerts
+            .filter((a) => a.alert_type === type && a.finished_at)
+            .map((a) => ({ ...a, _durationMs: new Date(a.finished_at).getTime() - new Date(a.started_at).getTime() }))
+            .filter((a) => Number.isFinite(a._durationMs) && a._durationMs >= 0);
+        const last24h = finished.filter((a) => nowMs - new Date(a.started_at).getTime() <= DAY_MS);
+        const oldestStartedAt = finished.length
+            ? finished.reduce((oldest, a) => (new Date(a.started_at) < new Date(oldest) ? a.started_at : oldest), finished[0].started_at)
+            : null;
+
+        return {
+            type,
+            avgDurationLast24hMs: avgOf(last24h),
+            avgDurationAllTimeMs: avgOf(finished),
+            countLast24h: last24h.length,
+            countAllTime: finished.length,
+            oldestStartedAt,
+        };
+    });
+}
+
+function compute(uid) {
+    const nowMs = Date.now();
+    const stateName = states[String(uid)] || null;
+    const alerts = archive.getRegionAlerts(uid, stateName).filter((alert) => {
+        const startedMs = new Date(alert.started_at).getTime();
+        return Number.isFinite(startedMs) && nowMs - startedMs <= MAX_HISTORY_AGE_MS;
+    });
+
+    const stats = alerts.length ? model.computeStats(alerts, nowMs, forecastConfig) : null;
+    const usable = model.filterUsableAlerts(alerts);
+
+    return {
+        uid: String(uid),
+        generatedAt: new Date(nowMs).toISOString(),
+        source: 'alerts.in.ua',
+        alertCount: alerts.length,
+        stats,
+        durations: durationStats(usable, nowMs),
+    };
+}
+
+function getForecast(uid) {
+    const key = String(uid);
+    const cached = cache.get(key);
+    if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.data;
+
+    const data = compute(key);
+    if (cache.size >= CACHE_MAX_ENTRIES) cache.clear();
+    cache.set(key, { at: Date.now(), data });
+    return data;
+}
+
+module.exports = { getForecast };

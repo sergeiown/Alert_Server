@@ -2,8 +2,8 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const assert = require('assert');
-const forecastConfig = require('../src/main/services/forecastConfig');
-const { estimateRegionLambda, computeStats, DAY_MS } = require('../src/main/services/forecastModel');
+const forecastConfig = require('../src/forecastConfig');
+const { estimateRegionLambda, computeStats, DAY_MS } = require('../src/forecastModel');
 
 function buildUniformAlerts(count, intervalDays, endMs) {
     const alerts = [];
