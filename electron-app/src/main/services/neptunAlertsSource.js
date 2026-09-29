@@ -5,6 +5,7 @@ const { getResourcePath } = require('./appPaths');
 const { logEvent } = require('./logger');
 const { setLatestAlertData, getLatestAlertData } = require('./activeAlertData');
 const regionsStore = require('./regionsStore');
+const { PROXY_URL, getClientVersion } = require('./proxyConfig');
 const { getLocationLookup } = require('./locationFilter');
 
 const ALERTS_URL = 'https://neptun.in.ua/api/v1/alerts';
@@ -143,11 +144,23 @@ function warnAboutUncoveredMonitoredRegions() {
     );
 }
 
-async function pollOnce(onHealthChange) {
+async function fetchAlerts(clientKey) {
+    if (clientKey) {
+        try {
+            const viaProxy = await fetch(`${PROXY_URL}/neptun/alerts`, {
+                headers: { 'X-Client-Key': clientKey, 'X-Client-Version': getClientVersion() },
+            });
+            if (viaProxy.ok) return viaProxy;
+        } catch (err) {}
+    }
+    return fetch(ALERTS_URL);
+}
+
+async function pollOnce(clientKey, onHealthChange) {
     if (!stateByName) buildLookups();
 
     try {
-        const response = await fetch(ALERTS_URL);
+        const response = await fetchAlerts(clientKey);
         if (!response.ok) {
             logEvent(`Neptun alerts fetch failed: ${response.status}`, 'NETWORK');
             if (onHealthChange) onHealthChange(false);
@@ -167,11 +180,11 @@ async function pollOnce(onHealthChange) {
     }
 }
 
-function startPolling(onUpdate, onHealthChange) {
+function startPolling(clientKey, onUpdate, onHealthChange) {
     warnAboutUncoveredMonitoredRegions();
 
     const tick = async () => {
-        const data = await pollOnce(onHealthChange);
+        const data = await pollOnce(clientKey, onHealthChange);
         if (data) onUpdate(data);
     };
 

@@ -4,4 +4,12 @@
 const PROXY_URL = 'https://alert-proxy-ua.duckdns.org';
 const PROXY_WS_URL = PROXY_URL.replace(/^http/, 'ws');
 
-module.exports = { PROXY_URL, PROXY_WS_URL };
+function getClientVersion() {
+    try {
+        return require('electron').app.getVersion();
+    } catch (err) {
+        return '';
+    }
+}
+
+module.exports = { PROXY_URL, PROXY_WS_URL, getClientVersion };

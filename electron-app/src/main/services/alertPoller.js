@@ -6,7 +6,7 @@ const { getUserDataFile } = require('./appPaths');
 const { logEvent } = require('./logger');
 const { setLatestAlertData, getLatestAlertData } = require('./activeAlertData');
 
-const { PROXY_URL, PROXY_WS_URL } = require('./proxyConfig');
+const { PROXY_URL, PROXY_WS_URL, getClientVersion } = require('./proxyConfig');
 
 const WS_URL = `${PROXY_WS_URL}/ws-alerts-in-ua`;
 const FALLBACK_POLL_URL = PROXY_URL;
@@ -64,7 +64,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
 
     async function fallbackPollOnce() {
         try {
-            const response = await fetch(FALLBACK_POLL_URL, { headers: { 'X-Client-Key': clientKey } });
+            const response = await fetch(FALLBACK_POLL_URL, { headers: { 'X-Client-Key': clientKey, 'X-Client-Version': getClientVersion() } });
 
             if (!response.ok) {
                 logOriginIssue(response.status);
@@ -124,7 +124,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
 
         let ws;
         try {
-            ws = new WebSocket(`${WS_URL}?key=${encodeURIComponent(clientKey)}`);
+            ws = new WebSocket(`${WS_URL}?key=${encodeURIComponent(clientKey)}&v=${encodeURIComponent(getClientVersion())}`);
         } catch (err) {
             logEvent(`alerts.in.ua via alert-proxy connection failed: ${err.message}`, 'NETWORK');
             startFallbackPolling();

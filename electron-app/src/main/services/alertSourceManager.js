@@ -22,7 +22,7 @@ const SOURCES = {
     },
     neptun: {
         label: 'Neptun',
-        start: (clientKey, onUpdate, onHealthChange) => startNeptunPolling(onUpdate, onHealthChange),
+        start: (clientKey, onUpdate, onHealthChange) => startNeptunPolling(clientKey, onUpdate, onHealthChange),
     },
 };
 

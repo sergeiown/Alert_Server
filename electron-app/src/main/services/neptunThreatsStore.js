@@ -4,10 +4,14 @@
 const { logEvent } = require('./logger');
 const { getLiveMapWindow } = require('../windows/liveMapWindow');
 const dailyPeakStore = require('./dailyPeakStore');
+const { loadLocalConfig } = require('./localConfig');
+const { PROXY_URL, PROXY_WS_URL, getClientVersion } = require('./proxyConfig');
 
 const THREATS_URL = 'https://neptun.in.ua/api/v1/threats';
 const STREAM_URL = 'wss://neptun.in.ua/api/v1/stream';
 const RECONNECT_DELAY_MS = 5000;
+const MAX_RECONNECT_DELAY_MS = 60000;
+const PROXY_RETRY_AFTER_MS = 10 * 60 * 1000;
 const HEARTBEAT_TIMEOUT_MS = 120000;
 const SNAPSHOT_REFRESH_MS = 60000;
 const PUBLISH_DEBOUNCE_MS = 500;
@@ -23,6 +27,29 @@ let usingFallback = false;
 let publishDebounceTimer = null;
 let lastLoggedAt = 0;
 let logCatchupTimer = null;
+let useProxy = true;
+let directSince = 0;
+let gotMessage = false;
+let reconnectAttempts = 0;
+
+function getClientKey() {
+    try {
+        return loadLocalConfig().alertProxyClientKey || '';
+    } catch (err) {
+        return '';
+    }
+}
+
+function proxyEnabled() {
+    if (!useProxy && Date.now() - directSince > PROXY_RETRY_AFTER_MS) useProxy = true;
+    return useProxy && Boolean(getClientKey());
+}
+
+function scheduleReconnect() {
+    const delay = Math.min(RECONNECT_DELAY_MS * 2 ** reconnectAttempts, MAX_RECONNECT_DELAY_MS);
+    reconnectAttempts += 1;
+    reconnectTimer = setTimeout(connect, delay);
+}
 
 function getLatestThreats() {
     return latestThreats;
@@ -81,7 +108,10 @@ function schedulePublish() {
 
 async function fetchSnapshot() {
     try {
-        const response = await fetch(THREATS_URL);
+        const viaProxy = proxyEnabled();
+        const response = viaProxy
+            ? await fetch(`${PROXY_URL}/neptun/threats`, { headers: { 'X-Client-Key': getClientKey(), 'X-Client-Version': getClientVersion() } })
+            : await fetch(THREATS_URL);
         if (!response.ok) {
             logEvent(`Neptun threats fallback fetch failed: ${response.status}`, 'NETWORK');
             return;
@@ -130,22 +160,34 @@ function connect() {
         } catch (err) {}
     }
 
+    const viaProxy = proxyEnabled();
+    gotMessage = false;
     let ws;
     try {
-        ws = new WebSocket(STREAM_URL);
+        ws = new WebSocket(
+            viaProxy
+                ? `${PROXY_WS_URL}/ws-neptun?key=${encodeURIComponent(getClientKey())}&v=${encodeURIComponent(getClientVersion())}`
+                : STREAM_URL
+        );
     } catch (err) {
         logEvent(`Neptun threats connection failed: ${err.message}`, 'NETWORK');
-        reconnectTimer = setTimeout(connect, RECONNECT_DELAY_MS);
+        if (viaProxy) {
+            useProxy = false;
+            directSince = Date.now();
+        }
+        scheduleReconnect();
         return;
     }
     socket = ws;
 
     ws.addEventListener('open', () => {
-        logEvent('Neptun threats connected', 'NETWORK');
+        logEvent(`Neptun threats connected${viaProxy ? ' (via alert-proxy)' : ' (direct)'}`, 'NETWORK');
         resetHeartbeatWatch();
     });
 
     ws.addEventListener('message', (event) => {
+        gotMessage = true;
+        reconnectAttempts = 0;
         resetHeartbeatWatch();
         let message;
         try {
@@ -178,8 +220,13 @@ function connect() {
         if (heartbeatTimer) clearTimeout(heartbeatTimer);
         if (socket !== ws) return;
         logEvent(`Neptun threats connection closed (code ${event.code}${event.reason ? `: ${event.reason}` : ''}) - reconnecting`, 'NETWORK');
+        if (viaProxy && !gotMessage) {
+            useProxy = false;
+            directSince = Date.now();
+            logEvent('Neptun threats: alert-proxy stream unavailable - switching to direct connection', 'NETWORK');
+        }
         startFallbackPolling();
-        reconnectTimer = setTimeout(connect, RECONNECT_DELAY_MS);
+        scheduleReconnect();
     });
 
     ws.addEventListener('error', () => {});
