@@ -118,6 +118,9 @@
     }
 
     web.whenMapReady(function (api) {
+        var credits = api.map.attributionControl && api.map.attributionControl.getContainer();
+        if (credits) document.getElementById('webCredits').appendChild(credits);
+
         var settings = loadSettings();
         var saved = settings.layers || {};
         var narrow = window.matchMedia('(max-width: 560px)').matches;
