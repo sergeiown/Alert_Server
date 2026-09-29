@@ -443,17 +443,17 @@
 (function () {
   'use strict';
 
-  var POLL_MS = 10000;
-  var USERS_POLL_MS = 30000;
-  var STORE_KEY = 'vartovyi.adminKey';
-  var STORE_URL = 'vartovyi.baseUrl';
-  var STORE_TAB = 'vartovyi.tab';
+  const POLL_MS = 10000;
+  const USERS_POLL_MS = 30000;
+  const STORE_KEY = 'vartovyi.adminKey';
+  const STORE_URL = 'vartovyi.baseUrl';
+  const STORE_TAB = 'vartovyi.tab';
 
-  var state = { web: null, webTimer: null, webBusy: false, webPeriod: 'last7d', countryPeriod: 'last7d', status: null, ua: null, users: null, tab: 'overview', timer: null, usersTimer: null, busy: false, usersBusy: false };
+  const state = { web: null, webTimer: null, webBusy: false, webPeriod: 'last7d', countryPeriod: 'last7d', status: null, ua: null, users: null, tab: 'overview', timer: null, usersTimer: null, busy: false, usersBusy: false };
 
   function $(id) { return document.getElementById(id); }
   function esc(v) {
-    return String(v === null || v === undefined ? '' : v).replace(/[&<>"']/g, function (c) {
+    return String(v === null || v === undefined ? '' : v).replace(/[&<>"']/g, (c) => {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
@@ -464,170 +464,170 @@
   function fmtNum(n) { return n === null || n === undefined ? '-' : Number(n).toLocaleString('uk-UA'); }
   function fmtBytes(b) {
     if (b === null || b === undefined) return '-';
-    var units = ['Б', 'КБ', 'МБ', 'ГБ', 'ТБ'];
-    var i = 0;
-    var v = b;
+    const units = ['Б', 'КБ', 'МБ', 'ГБ', 'ТБ'];
+    let i = 0;
+    let v = b;
     while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
-    return (i === 0 ? v : v.toFixed(v >= 100 ? 0 : 1)) + ' ' + units[i];
+    return `${i === 0 ? v : v.toFixed(v >= 100 ? 0 : 1)} ${units[i]}`;
   }
   function fmtDuration(ms) {
     if (ms === null || ms === undefined) return '-';
-    var s = Math.floor(ms / 1000);
-    if (s < 60) return s + ' с';
-    var m = Math.floor(s / 60);
-    if (m < 60) return m + ' хв';
-    var h = Math.floor(m / 60);
-    if (h < 48) return h + ' год ' + (m % 60) + ' хв';
-    return Math.floor(h / 24) + ' д ' + (h % 24) + ' год';
+    const s = Math.floor(ms / 1000);
+    if (s < 60) return `${s} с`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m} хв`;
+    const h = Math.floor(m / 60);
+    if (h < 48) return `${h} год ${m % 60} хв`;
+    return `${Math.floor(h / 24)} д ${h % 24} год`;
   }
-  function fmtAgo(ms) { return ms === null || ms === undefined ? '-' : fmtDuration(ms) + ' тому'; }
+  function fmtAgo(ms) { return ms === null || ms === undefined ? '-' : `${fmtDuration(ms)} тому`; }
   function fmtDate(iso) {
     if (!iso) return '-';
-    var d = new Date(iso);
+    const d = new Date(iso);
     if (isNaN(d)) return '-';
-    var opts = { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' };
+    const opts = { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' };
     if (d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
     return d.toLocaleString('uk-UA', opts);
   }
   function level(pct) { return pct >= 90 ? 'critical' : pct >= 70 ? 'warn' : ''; }
 
-  function line(k, v) { return '<div class="line"><span class="k">' + esc(k) + '</span><span class="v">' + v + '</span></div>'; }
-  function chip(cls, text) { return '<span class="status-chip ' + cls + '">' + esc(text) + '</span>'; }
+  function line(k, v) { return `<div class="line"><span class="k">${esc(k)}</span><span class="v">${v}</span></div>`; }
+  function chip(cls, text) { return `<span class="status-chip ${cls}">${esc(text)}</span>`; }
   function gauge(pct) {
-    var p = Math.max(0, Math.min(100, pct || 0));
-    return '<div class="progress-track"><div class="progress-fill ' + level(p) + '" style="width:' + p + '%"></div></div>';
+    const p = Math.max(0, Math.min(100, pct || 0));
+    return `<div class="progress-track"><div class="progress-fill ${level(p)}" style="width:${p}%"></div></div>`;
   }
   function kpi(label, value, sub, extra) {
-    return '<div class="card kpi"><div class="label">' + esc(label) + '</div><div class="value">' + value + '</div>' +
-      (sub ? '<div class="sub">' + sub + '</div>' : '') + (extra || '') + '</div>';
+    return `<div class="card kpi"><div class="label">${esc(label)}</div><div class="value">${value}</div>${
+      sub ? `<div class="sub">${sub}</div>` : ''}${extra || ''}</div>`;
   }
   function barRows(items, nameKey, valueKey, max) {
     if (!items.length) return '<div class="empty-note">Даних ще немає</div>';
-    var top = max || Math.max.apply(null, items.map(function (i) { return i[valueKey]; })) || 1;
-    return items.map(function (item) {
-      return '<div class="bar-row"><span class="name" title="' + esc(item[nameKey]) + '">' + esc(item[nameKey]) +
-        '</span><span class="track"><span class="fill" style="width:' + Math.round((item[valueKey] / top) * 100) + '%;display:block"></span></span><span class="num">' +
-        fmtNum(item[valueKey]) + '</span></div>';
+    const top = max || Math.max.apply(null, items.map((i) => { return i[valueKey]; })) || 1;
+    return items.map((item) => {
+      return `<div class="bar-row"><span class="name" title="${esc(item[nameKey])}">${esc(item[nameKey]) 
+        }</span><span class="track"><span class="fill" style="width:${Math.round((item[valueKey] / top) * 100)}%;display:block"></span></span><span class="num">${
+        fmtNum(item[valueKey])}</span></div>`;
     }).join('');
   }
 
   function niceMax(v) {
-    var raw = Math.max(1, v) / 4;
-    var p = Math.pow(10, Math.floor(Math.log10(raw)));
-    var n = raw / p;
-    var step = Math.max(1, (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p);
+    const raw = Math.max(1, v) / 4;
+    const p = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / p;
+    const step = Math.max(1, (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p);
     return step * 4;
   }
 
   function stackedChart(days, versions, width) {
-    var W = width || 600, H = 200, padL = 36, padR = 8, padT = 10, padB = 24;
-    var n = days.length;
+    const W = width || 600, H = 200, padL = 36, padR = 8, padT = 10, padB = 24;
+    const n = days.length;
     if (!n) return '<div class="empty-note">Даних ще немає</div>';
-    var totals = days.map(function (d) { return versions.reduce(function (sum, v) { return sum + (d.versions[v] || 0); }, 0); });
-    var max = niceMax(Math.max(1, Math.max.apply(null, totals)));
-    var plotW = W - padL - padR, plotH = H - padT - padB;
-    var groupW = plotW / n;
-    var barW = Math.max(3, groupW * 0.72);
-    var out = '';
-    for (var i = 0; i <= 4; i++) {
-      var y = padT + plotH - (plotH * i) / 4;
-      out += '<line class="grid" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y + '" y2="' + y + '"/>' +
-        '<text class="axis" x="' + (padL - 6) + '" y="' + (y + 3) + '" text-anchor="end">' + fmtNum(Math.round((max * i) / 4)) + '</text>';
+    const totals = days.map((d) => { return versions.reduce((sum, v) => { return sum + (d.versions[v] || 0); }, 0); });
+    const max = niceMax(Math.max(1, Math.max.apply(null, totals)));
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const groupW = plotW / n;
+    const barW = Math.max(3, groupW * 0.72);
+    let out = '';
+    for (let i = 0; i <= 4; i++) {
+      const y = padT + plotH - (plotH * i) / 4;
+      out += `<line class="grid" x1="${padL}" x2="${W - padR}" y1="${y}" y2="${y}"/>` +
+        `<text class="axis" x="${padL - 6}" y="${y + 3}" text-anchor="end">${fmtNum(Math.round((max * i) / 4))}</text>`;
     }
-    days.forEach(function (d, idx) {
-      var x = padL + idx * groupW + (groupW - barW) / 2;
-      var acc = 0;
-      versions.forEach(function (v, vi) {
-        var count = d.versions[v] || 0;
+    days.forEach((d, idx) => {
+      const x = padL + idx * groupW + (groupW - barW) / 2;
+      let acc = 0;
+      versions.forEach((v, vi) => {
+        const count = d.versions[v] || 0;
         if (!count) return;
-        var h = (plotH * count) / max;
+        const h = (plotH * count) / max;
         acc += h;
-        out += '<rect class="seg-' + Math.min(vi, 7) + '" x="' + x.toFixed(1) + '" y="' + (padT + plotH - acc).toFixed(1) + '" width="' + barW.toFixed(1) +
-          '" height="' + h.toFixed(1) + '"><title>' + esc(d.day + ' · ' + v + ': ' + count) + '</title></rect>';
+        out += `<rect class="seg-${Math.min(vi, 7)}" x="${x.toFixed(1)}" y="${(padT + plotH - acc).toFixed(1)}" width="${barW.toFixed(1) 
+          }" height="${h.toFixed(1)}"><title>${esc(`${d.day} · ${v}: ${count}`)}</title></rect>`;
       });
     });
-    var step = Math.ceil(n / Math.max(2, Math.floor(plotW / 46)));
-    days.forEach(function (d, idx) {
-      if (idx % step === 0) out += '<text class="axis" x="' + (padL + idx * groupW + groupW / 2).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle">' + esc(d.day.slice(5).replace('-', '.')) + '</text>';
+    const step = Math.ceil(n / Math.max(2, Math.floor(plotW / 46)));
+    days.forEach((d, idx) => {
+      if (idx % step === 0) out += `<text class="axis" x="${(padL + idx * groupW + groupW / 2).toFixed(1)}" y="${H - 7}" text-anchor="middle">${esc(d.day.slice(5).replace('-', '.'))}</text>`;
     });
-    return '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Історія версій застосунку">' + out + '</svg>';
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Історія версій застосунку">${out}</svg>`;
   }
 
-  var VERSION_COLORS = ['accent', 'accent-2', 'ok', 'c5', 'c6', 'warn', 'critical', 'text-dim'];
+  const VERSION_COLORS = ['accent', 'accent-2', 'ok', 'c5', 'c6', 'warn', 'critical', 'text-dim'];
 
   function barChart(series, labels, opts) {
-    var W = (opts && opts.width) || 600, H = (opts && opts.height) || 190, padL = 36, padR = 8, padT = 10, padB = 24;
-    var n = labels.length;
+    const W = (opts && opts.width) || 600, H = (opts && opts.height) || 190, padL = 36, padR = 8, padT = 10, padB = 24;
+    const n = labels.length;
     if (!n) return '<div class="empty-note">Даних ще немає</div>';
-    var all = [];
-    series.forEach(function (s) { all = all.concat(s.values); });
-    var max = niceMax(Math.max(1, Math.max.apply(null, all)));
-    var plotW = W - padL - padR, plotH = H - padT - padB;
-    var groupW = plotW / n;
-    var barW = Math.max(2, (groupW * 0.74) / series.length);
-    var out = '';
-    for (var i = 0; i <= 4; i++) {
-      var y = padT + plotH - (plotH * i) / 4;
-      out += '<line class="grid" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y + '" y2="' + y + '"/>' +
-        '<text class="axis" x="' + (padL - 6) + '" y="' + (y + 3) + '" text-anchor="end">' + fmtNum(Math.round((max * i) / 4)) + '</text>';
+    let all = [];
+    series.forEach((s) => { all = all.concat(s.values); });
+    const max = niceMax(Math.max(1, Math.max.apply(null, all)));
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const groupW = plotW / n;
+    const barW = Math.max(2, (groupW * 0.74) / series.length);
+    let out = '';
+    for (let i = 0; i <= 4; i++) {
+      const y = padT + plotH - (plotH * i) / 4;
+      out += `<line class="grid" x1="${padL}" x2="${W - padR}" y1="${y}" y2="${y}"/>` +
+        `<text class="axis" x="${padL - 6}" y="${y + 3}" text-anchor="end">${fmtNum(Math.round((max * i) / 4))}</text>`;
     }
-    series.forEach(function (s, si) {
-      s.values.forEach(function (v, idx) {
-        var h = (plotH * v) / max;
-        var x = padL + idx * groupW + (groupW - barW * series.length) / 2 + si * barW;
-        out += '<rect class="' + s.cls + '" x="' + x.toFixed(1) + '" y="' + (padT + plotH - h).toFixed(1) + '" width="' + barW.toFixed(1) +
-          '" height="' + Math.max(h, v > 0 ? 1 : 0).toFixed(1) + '" rx="1.5"><title>' + esc(labels[idx]) + ': ' + v + '</title></rect>';
+    series.forEach((s, si) => {
+      s.values.forEach((v, idx) => {
+        const h = (plotH * v) / max;
+        const x = padL + idx * groupW + (groupW - barW * series.length) / 2 + si * barW;
+        out += `<rect class="${s.cls}" x="${x.toFixed(1)}" y="${(padT + plotH - h).toFixed(1)}" width="${barW.toFixed(1) 
+          }" height="${Math.max(h, v > 0 ? 1 : 0).toFixed(1)}" rx="1.5"><title>${esc(labels[idx])}: ${v}</title></rect>`;
       });
     });
-    var step = Math.ceil(n / Math.max(2, Math.floor(plotW / 46)));
-    labels.forEach(function (l, idx) {
+    const step = Math.ceil(n / Math.max(2, Math.floor(plotW / 46)));
+    labels.forEach((l, idx) => {
       if (idx % step === 0) {
-        out += '<text class="axis" x="' + (padL + idx * groupW + groupW / 2).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle">' + esc(l) + '</text>';
+        out += `<text class="axis" x="${(padL + idx * groupW + groupW / 2).toFixed(1)}" y="${H - 7}" text-anchor="middle">${esc(l)}</text>`;
       }
     });
-    return '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc((opts && opts.label) || 'Діаграма') + '">' + out + '</svg>';
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc((opts && opts.label) || 'Діаграма')}">${out}</svg>`;
   }
 
-  var HEALTH_TEXT = {
-    'alertsinua-error': function (i) { return 'alerts.in.ua повертає помилку. ' + i.message; },
-    'alertsinua-stale': function () { return 'Кеш активних тривог застарів: опитування alerts.in.ua не оновлює дані.'; },
-    'alertsinua-rate': function () { return 'Частота запитів перевищила м’який ліміт alerts.in.ua.'; },
-    'alertsinua-no-token': function () { return 'Не задано ALERTS_TOKEN: основне джерело тривог не працює.'; },
-    'ukrainealarm-no-token': function () { return 'Токен UkraineAlarm не задано: це джерело вимкнене, клієнти використовують alerts.in.ua.'; },
-    'neptun-stream': function () { return 'Стрім Neptun не підключений.'; },
-    'neptun-alerts': function () { return 'Тривоги Neptun застаріли або джерело відповідає помилкою.'; },
-    'occupied-stale': function () { return 'Дані про окуповану територію (DeepState) застаріли.'; },
-    cpu: function (i) { return 'Високе навантаження процесора. ' + i.message; },
-    memory: function (i) { return 'Мало вільної пам’яті. ' + i.message; },
-    disk: function (i) { return 'Закінчується місце на диску. ' + i.message; },
-    backup: function () { return 'Немає свіжої резервної копії бази даних.'; }
+  const HEALTH_TEXT = {
+    'alertsinua-error' (i) { return `alerts.in.ua повертає помилку. ${i.message}`; },
+    'alertsinua-stale' () { return 'Кеш активних тривог застарів: опитування alerts.in.ua не оновлює дані.'; },
+    'alertsinua-rate' () { return 'Частота запитів перевищила м’який ліміт alerts.in.ua.'; },
+    'alertsinua-no-token' () { return 'Не задано ALERTS_TOKEN: основне джерело тривог не працює.'; },
+    'ukrainealarm-no-token' () { return 'Токен UkraineAlarm не задано: це джерело вимкнене, клієнти використовують alerts.in.ua.'; },
+    'neptun-stream' () { return 'Стрім Neptun не підключений.'; },
+    'neptun-alerts' () { return 'Тривоги Neptun застаріли або джерело відповідає помилкою.'; },
+    'occupied-stale' () { return 'Дані про окуповану територію (DeepState) застаріли.'; },
+    cpu (i) { return `Високе навантаження процесора. ${i.message}`; },
+    memory (i) { return `Мало вільної пам’яті. ${i.message}`; },
+    disk (i) { return `Закінчується місце на диску. ${i.message}`; },
+    backup () { return 'Немає свіжої резервної копії бази даних.'; }
   };
 
   function healthLevel(issues) {
-    if (issues.some(function (i) { return i.level === 'crit'; })) return 'critical';
-    if (issues.some(function (i) { return i.level === 'warn'; })) return 'warn';
+    if (issues.some((i) => { return i.level === 'crit'; })) return 'critical';
+    if (issues.some((i) => { return i.level === 'warn'; })) return 'warn';
     return 'ok';
   }
 
   function renderHealth() {
-    var s = state.status;
-    var issues = s ? s.health || [] : [];
-    var lvl = s ? healthLevel(issues) : '';
-    var pill = $('healthPill');
-    pill.className = 'pill ' + lvl;
-    pill.innerHTML = '<span class="dot"></span><span>' + (!s ? 'Немає даних' : lvl === 'critical' ? 'Потрібна увага' : lvl === 'warn' ? 'Є зауваження' : 'Усе гаразд') + '</span>';
+    const s = state.status;
+    const issues = s ? s.health || [] : [];
+    const lvl = s ? healthLevel(issues) : '';
+    const pill = $('healthPill');
+    pill.className = `pill ${lvl}`;
+    pill.innerHTML = `<span class="dot"></span><span>${!s ? 'Немає даних' : lvl === 'critical' ? 'Потрібна увага' : lvl === 'warn' ? 'Є зауваження' : 'Усе гаразд'}</span>`;
 
-    var problems = issues.filter(function (i) { return i.level !== 'info'; });
-    var badge = $('healthBadge');
+    const problems = issues.filter((i) => { return i.level !== 'info'; });
+    const badge = $('healthBadge');
     badge.hidden = !problems.length;
-    badge.className = 'badge' + (lvl === 'warn' ? ' warn' : '');
+    badge.className = `badge${lvl === 'warn' ? ' warn' : ''}`;
     badge.textContent = problems.length;
 
-    var html = '';
+    let html = '';
     if (s && !issues.length) html = '<div class="notice ok">Усі перевірки пройдено.</div>';
-    issues.forEach(function (i) {
-      var text = HEALTH_TEXT[i.code] ? HEALTH_TEXT[i.code](i) : i.message;
-      html += '<div class="notice ' + (i.level === 'crit' ? 'critical' : i.level) + '">' + esc(text) + '</div>';
+    issues.forEach((i) => {
+      const text = HEALTH_TEXT[i.code] ? HEALTH_TEXT[i.code](i) : i.message;
+      html += `<div class="notice ${i.level === 'crit' ? 'critical' : i.level}">${esc(text)}</div>`;
     });
     $('healthList').innerHTML = html;
   }
@@ -635,22 +635,22 @@
   function sourceState(ok, warn) { return ok ? chip('ok', 'працює') : warn ? chip('warn', warn) : chip('critical', 'збій'); }
 
   function renderOverview() {
-    var s = state.status;
+    const s = state.status;
     if (!s) return;
-    var u = s.uniqueUsers, c = s.connections, n = s.neptun, a = s.archive;
-    var totalConn = c.alerts + c.active + c.neptun;
+    const u = s.uniqueUsers, c = s.connections, n = s.neptun, a = s.archive;
+    const totalConn = c.alerts + c.active + c.neptun;
 
     $('overviewKpis').innerHTML =
-      kpi('Користувачів сьогодні', fmtNum(u.today), 'за весь час: ' + fmtNum(u.allTime)) +
+      kpi('Користувачів сьогодні', fmtNum(u.today), `за весь час: ${fmtNum(u.allTime)}`) +
       kpi('Зараз підключено', fmtNum(totalConn), 'WebSocket-з’єднань') +
-      kpi('Запитів до alerts.in.ua', s.active.requestsLastMinute + '<span class="dim" style="font-size:14px"> /хв</span>', s.active.percentOfSoftLimit + '% м’якого ліміту', gauge(s.active.percentOfSoftLimit)) +
+      kpi('Запитів до alerts.in.ua', `${s.active.requestsLastMinute}<span class="dim" style="font-size:14px"> /хв</span>`, `${s.active.percentOfSoftLimit}% м’якого ліміту`, gauge(s.active.percentOfSoftLimit)) +
       kpi('Загроз на мапі (Neptun)', fmtNum(n.threats.active), n.stream.connected ? 'стрім підключено' : 'стрім не підключено') +
-      kpi('Пік за сьогодні', fmtNum(s.peaks.alertPeak), 'тривог одночасно · загроз: ' + fmtNum(s.peaks.threatPeak)) +
-      kpi('Подій в архіві', fmtNum(a.alertEvents.total), 'за 30 днів: ' + fmtNum(a.alertEvents.last30d) + ' · ' + fmtBytes(a.dbSizeBytes));
+      kpi('Пік за сьогодні', fmtNum(s.peaks.alertPeak), `тривог одночасно · загроз: ${fmtNum(s.peaks.threatPeak)}`) +
+      kpi('Подій в архіві', fmtNum(a.alertEvents.total), `за 30 днів: ${fmtNum(a.alertEvents.last30d)} · ${fmtBytes(a.dbSizeBytes)}`);
 
-    var alertsOk = !s.active.currentError && s.active.cacheAgeMs !== null && s.active.cacheAgeMs < 90000;
-    var uaConfigured = state.ua ? state.ua.configured : null;
-    var neptunOk = n.stream.connected && !n.alerts.currentError;
+    const alertsOk = !s.active.currentError && s.active.cacheAgeMs !== null && s.active.cacheAgeMs < 90000;
+    const uaConfigured = state.ua ? state.ua.configured : null;
+    const neptunOk = n.stream.connected && !n.alerts.currentError;
     $('sourceSummary').innerHTML =
       line('alerts.in.ua', sourceState(alertsOk)) +
       line('Neptun', sourceState(neptunOk, n.stream.connected || !n.alerts.currentError ? 'частково' : '')) +
@@ -666,114 +666,114 @@
   }
 
   function renderSources() {
-    var s = state.status;
+    const s = state.status;
     if (!s) return;
-    var act = s.active, h = s.history, n = s.neptun;
+    const act = s.active, h = s.history, n = s.neptun;
 
-    var errs = Object.keys(h.currentErrors || {});
+    const errs = Object.keys(h.currentErrors || {});
     $('cardAlertsInUa').innerHTML =
-      '<div class="card-head"><h2>alerts.in.ua</h2>' + sourceState(!act.currentError && act.cacheAgeMs !== null && act.cacheAgeMs < 90000) + '</div>' +
-      line('Кеш активних тривог', fmtAgo(act.cacheAgeMs)) +
-      line('Запитів за хвилину', act.requestsLastMinute + ' / м’який ' + act.softLimitPerMinute + ' / жорсткий ' + act.hardLimitPerMinute) +
-      gauge(act.percentOfSoftLimit) +
-      line('Історія: запитів за хвилину', h.requestsLastMinute + ' / ' + h.limitPerMinute) +
-      line('Історія: областей у кеші', fmtNum(h.cachedUidCount)) +
-      line('Мін. пауза між запитами', fmtDuration(act.minGapMs)) +
-      line('Поточна помилка', act.currentError ? chip('critical', String(act.currentError.status)) : chip('ok', 'немає')) +
-      (errs.length ? line('Помилки історії', chip('critical', errs.length + ' обл.')) : '');
+      `<div class="card-head"><h2>alerts.in.ua</h2>${sourceState(!act.currentError && act.cacheAgeMs !== null && act.cacheAgeMs < 90000)}</div>${
+      line('Кеш активних тривог', fmtAgo(act.cacheAgeMs)) 
+      }${line('Запитів за хвилину', `${act.requestsLastMinute} / м’який ${act.softLimitPerMinute} / жорсткий ${act.hardLimitPerMinute}`) 
+      }${gauge(act.percentOfSoftLimit) 
+      }${line('Історія: запитів за хвилину', `${h.requestsLastMinute} / ${h.limitPerMinute}`) 
+      }${line('Історія: областей у кеші', fmtNum(h.cachedUidCount)) 
+      }${line('Мін. пауза між запитами', fmtDuration(act.minGapMs)) 
+      }${line('Поточна помилка', act.currentError ? chip('critical', String(act.currentError.status)) : chip('ok', 'немає')) 
+      }${errs.length ? line('Помилки історії', chip('critical', `${errs.length} обл.`)) : ''}`;
 
-    var neptunOk = n.stream.connected && !n.alerts.currentError;
+    const neptunOk = n.stream.connected && !n.alerts.currentError;
     $('cardNeptun').innerHTML =
-      '<div class="card-head"><h2>Neptun</h2>' + (neptunOk ? chip('ok', 'працює') : n.stream.connected || !n.alerts.currentError ? chip('warn', 'частково') : chip('critical', 'збій')) + '</div>' +
-      line('Стрім загроз', n.stream.connected ? chip('ok', 'підключено ' + fmtDuration(n.stream.connectedForMs)) : chip('critical', 'відключено')) +
-      line('Останнє повідомлення стріму', fmtAgo(n.stream.lastMessageAgeMs)) +
-      line('Спроб перепідключення', fmtNum(n.stream.reconnectAttempts)) +
-      line('Активних загроз', fmtNum(n.threats.active)) +
-      line('Тривоги: кеш', fmtAgo(n.alerts.cacheAgeMs)) +
-      line('Тривоги: області / райони', n.alerts.counts ? n.alerts.counts.oblasts + ' / ' + n.alerts.counts.raions : '-') +
-      line('Клієнтів на ретрансляції', fmtNum(n.clients)) +
-      line('Помилка тривог', n.alerts.currentError ? chip('critical', String(n.alerts.currentError.status || 'мережа')) : chip('ok', 'немає'));
+      `<div class="card-head"><h2>Neptun</h2>${neptunOk ? chip('ok', 'працює') : n.stream.connected || !n.alerts.currentError ? chip('warn', 'частково') : chip('critical', 'збій')}</div>${
+      line('Стрім загроз', n.stream.connected ? chip('ok', `підключено ${fmtDuration(n.stream.connectedForMs)}`) : chip('critical', 'відключено')) 
+      }${line('Останнє повідомлення стріму', fmtAgo(n.stream.lastMessageAgeMs)) 
+      }${line('Спроб перепідключення', fmtNum(n.stream.reconnectAttempts)) 
+      }${line('Активних загроз', fmtNum(n.threats.active)) 
+      }${line('Тривоги: кеш', fmtAgo(n.alerts.cacheAgeMs)) 
+      }${line('Тривоги: області / райони', n.alerts.counts ? `${n.alerts.counts.oblasts} / ${n.alerts.counts.raions}` : '-') 
+      }${line('Клієнтів на ретрансляції', fmtNum(n.clients)) 
+      }${line('Помилка тривог', n.alerts.currentError ? chip('critical', String(n.alerts.currentError.status || 'мережа')) : chip('ok', 'немає'))}`;
 
-    var ua = state.ua;
+    const ua = state.ua;
     $('cardUkraineAlarm').innerHTML = !ua
       ? '<div class="card-head"><h2>UkraineAlarm</h2></div><div class="empty-note">Даних немає</div>'
-      : '<div class="card-head"><h2>UkraineAlarm</h2>' + (ua.configured ? (ua.currentError ? chip('critical', 'помилка') : chip('ok', 'працює')) : chip('info', 'вимкнено')) + '</div>' +
-        line('Токен API', ua.configured ? chip('ok', 'задано') : chip('warn', 'не задано')) +
-        line('Вебхук (публічний ключ)', ua.webhookConfigured ? chip('ok', 'задано') : chip('warn', 'не задано')) +
-        line('Запитів за хвилину', fmtNum(ua.requestsLastMinute)) +
-        line('Активних тривог', fmtNum(ua.currentActiveAlertCount)) +
-        line('Останній запит', fmtAgo(ua.lastFetchAgeMs)) +
-        line('Останній вебхук', ua.lastWebhookPayload ? chip('ok', 'отримано') : chip('info', 'ще не було'));
+      : `<div class="card-head"><h2>UkraineAlarm</h2>${ua.configured ? (ua.currentError ? chip('critical', 'помилка') : chip('ok', 'працює')) : chip('info', 'вимкнено')}</div>${
+        line('Токен API', ua.configured ? chip('ok', 'задано') : chip('warn', 'не задано')) 
+        }${line('Вебхук (публічний ключ)', ua.webhookConfigured ? chip('ok', 'задано') : chip('warn', 'не задано')) 
+        }${line('Запитів за хвилину', fmtNum(ua.requestsLastMinute)) 
+        }${line('Активних тривог', fmtNum(ua.currentActiveAlertCount)) 
+        }${line('Останній запит', fmtAgo(ua.lastFetchAgeMs)) 
+        }${line('Останній вебхук', ua.lastWebhookPayload ? chip('ok', 'отримано') : chip('info', 'ще не було'))}`;
 
-    var t = s.todayStats, ut = s.ukraineAlarmTodayStats, w = s.weaponStats, r = s.regionStatuses;
+    const t = s.todayStats, ut = s.ukraineAlarmTodayStats, w = s.weaponStats, r = s.regionStatuses;
     $('cardStats').innerHTML =
-      '<div class="card-head"><h2>Кеші й агрегати</h2></div>' +
-      line('Статистика дня: області', t.oblastsCovered + ' / ' + t.oblastsTotal + (t.complete ? ' ✓' : '')) +
-      line('Статистика дня (UkraineAlarm)', ut.hasCache ? chip('ok', 'є кеш') : chip('info', 'немає')) +
-      line('Статуси регіонів: кеш', fmtAgo(r.cacheAgeMs)) +
-      line('Статистика зброї (Kaggle): кеш', fmtAgo(w.cacheAgeMs)) +
-      line('Помилка Kaggle', w.currentError ? chip('critical', String(w.currentError.status)) : chip('ok', 'немає'));
+      `<div class="card-head"><h2>Кеші й агрегати</h2></div>${
+      line('Статистика дня: області', `${t.oblastsCovered} / ${t.oblastsTotal}${t.complete ? ' ✓' : ''}`) 
+      }${line('Статистика дня (UkraineAlarm)', ut.hasCache ? chip('ok', 'є кеш') : chip('info', 'немає')) 
+      }${line('Статуси регіонів: кеш', fmtAgo(r.cacheAgeMs)) 
+      }${line('Статистика зброї (Kaggle): кеш', fmtAgo(w.cacheAgeMs)) 
+      }${line('Помилка Kaggle', w.currentError ? chip('critical', String(w.currentError.status)) : chip('ok', 'немає'))}`;
 
-    var occ = s.occupied, a2 = s.archive;
+    const occ = s.occupied, a2 = s.archive;
     $('cardHistory').innerHTML =
-      '<div class="card-head"><h2>Історія тривог і прогноз</h2>' + (s.backfill.complete ? chip('ok', 'історію зібрано') : chip('warn', 'збір історії триває')) + '</div>' +
-      line('Джерело історії', 'alerts.in.ua (місяць по областях)') +
-      line('Подій за останні 30 днів', fmtNum(a2.alertEvents.last30d)) +
-      line('Усього подій в архіві', fmtNum(a2.alertEvents.total)) +
-      line('Відкритих зараз', fmtNum(a2.alertEvents.openNow)) +
-      line('Прогноз рахується', 'на сервері, за запитом клієнтів') +
-      line('Піки сьогодні (тривоги / загрози)', fmtNum(s.peaks.alertPeak) + ' / ' + fmtNum(s.peaks.threatPeak));
+      `<div class="card-head"><h2>Історія тривог і прогноз</h2>${s.backfill.complete ? chip('ok', 'історію зібрано') : chip('warn', 'збір історії триває')}</div>${
+      line('Джерело історії', 'alerts.in.ua (місяць по областях)') 
+      }${line('Подій за останні 30 днів', fmtNum(a2.alertEvents.last30d)) 
+      }${line('Усього подій в архіві', fmtNum(a2.alertEvents.total)) 
+      }${line('Відкритих зараз', fmtNum(a2.alertEvents.openNow)) 
+      }${line('Прогноз рахується', 'на сервері, за запитом клієнтів') 
+      }${line('Піки сьогодні (тривоги / загрози)', `${fmtNum(s.peaks.alertPeak)} / ${fmtNum(s.peaks.threatPeak)}`)}`;
 
     $('cardDeepState').innerHTML =
-      '<div class="card-head"><h2>DeepState: окупована територія</h2>' + (occ.date && !occ.error ? chip('ok', 'працює') : occ.date ? chip('warn', 'є помилка') : chip('critical', 'немає даних')) + '</div>' +
-      line('Дата знімка', occ.date ? esc(occ.date.slice(0, 4) + '-' + occ.date.slice(4, 6) + '-' + occ.date.slice(6, 8)) : '-') +
-      line('Кеш оновлено', fmtAgo(occ.cacheAgeMs)) +
-      line('Розмір', fmtBytes(occ.sizeBytes)) +
-      line('Помилка', occ.error ? chip('critical', esc(occ.error)) : chip('ok', 'немає'));
+      `<div class="card-head"><h2>DeepState: окупована територія</h2>${occ.date && !occ.error ? chip('ok', 'працює') : occ.date ? chip('warn', 'є помилка') : chip('critical', 'немає даних')}</div>${
+      line('Дата знімка', occ.date ? esc(`${occ.date.slice(0, 4)}-${occ.date.slice(4, 6)}-${occ.date.slice(6, 8)}`) : '-') 
+      }${line('Кеш оновлено', fmtAgo(occ.cacheAgeMs)) 
+      }${line('Розмір', fmtBytes(occ.sizeBytes)) 
+      }${line('Помилка', occ.error ? chip('critical', esc(occ.error)) : chip('ok', 'немає'))}`;
 
-    var obs = ua && ua.staleAlertObservations ? ua.staleAlertObservations : [];
-    $('cardStale').innerHTML = '<div class="card-head"><h2>Спостереження UkraineAlarm за «завислими» тривогами</h2></div>' +
-      (obs.length
-        ? '<div class="table-wrap"><table class="data"><thead><tr><th>Регіон</th><th>Тип</th><th class="num">Вік, днів</th><th class="num">Спостережень</th></tr></thead><tbody>' +
-          obs.map(function (o) { return '<tr><td>' + esc(o.regionName || o.regionId || '-') + '</td><td>' + esc(o.alertType || '-') + '</td><td class="num">' + fmtNum(o.ageDays) + '</td><td class="num">' + fmtNum(o.timesSeen) + '</td></tr>'; }).join('') +
-          '</tbody></table></div>'
-        : '<div class="empty-note">Немає спостережень.</div>');
+    const obs = ua && ua.staleAlertObservations ? ua.staleAlertObservations : [];
+    $('cardStale').innerHTML = `<div class="card-head"><h2>Спостереження UkraineAlarm за «завислими» тривогами</h2></div>${
+      obs.length
+        ? `<div class="table-wrap"><table class="data"><thead><tr><th>Регіон</th><th>Тип</th><th class="num">Вік, днів</th><th class="num">Спостережень</th></tr></thead><tbody>${
+          obs.map((o) => { return `<tr><td>${esc(o.regionName || o.regionId || '-')}</td><td>${esc(o.alertType || '-')}</td><td class="num">${fmtNum(o.ageDays)}</td><td class="num">${fmtNum(o.timesSeen)}</td></tr>`; }).join('') 
+          }</tbody></table></div>`
+        : '<div class="empty-note">Немає спостережень.</div>'}`;
   }
 
   function renderSystem() {
-    var s = state.status;
+    const s = state.status;
     if (!s) return;
-    var sys = s.system, a = s.archive, b = s.backup, c = s.connections;
+    const sys = s.system, a = s.archive, b = s.backup, c = s.connections;
 
-    $('cardResources').innerHTML = '<div class="card-head"><h2>Ресурси Oracle VM</h2></div>' +
-      '<div class="line"><span class="k">Процесор</span><span class="v">' + sys.cpuUsagePercent + '% · ' + sys.cpuCount + ' ядро</span></div>' + gauge(sys.cpuUsagePercent) +
-      '<div class="line"><span class="k">Пам’ять</span><span class="v">' + fmtBytes(sys.memory.usedBytes) + ' / ' + fmtBytes(sys.memory.totalBytes) + '</span></div>' + gauge(sys.memory.usedPercent) +
-      '<div class="line"><span class="k">Диск</span><span class="v">' + fmtBytes(sys.disk.usedBytes) + ' / ' + fmtBytes(sys.disk.totalBytes) + '</span></div>' + gauge(sys.disk.usedPercent) +
-      line('Навантаження (1/5/15 хв)', sys.cpuLoadAvg.map(function (v) { return v.toFixed(2); }).join(' / '));
+    $('cardResources').innerHTML = `<div class="card-head"><h2>Ресурси Oracle VM</h2></div>` +
+      `<div class="line"><span class="k">Процесор</span><span class="v">${sys.cpuUsagePercent}% · ${sys.cpuCount} ядро</span></div>${gauge(sys.cpuUsagePercent) 
+      }<div class="line"><span class="k">Пам’ять</span><span class="v">${fmtBytes(sys.memory.usedBytes)} / ${fmtBytes(sys.memory.totalBytes)}</span></div>${gauge(sys.memory.usedPercent) 
+      }<div class="line"><span class="k">Диск</span><span class="v">${fmtBytes(sys.disk.usedBytes)} / ${fmtBytes(sys.disk.totalBytes)}</span></div>${gauge(sys.disk.usedPercent) 
+      }${line('Навантаження (1/5/15 хв)', sys.cpuLoadAvg.map((v) => { return v.toFixed(2); }).join(' / '))}`;
 
-    $('cardArchive').innerHTML = '<div class="card-head"><h2>Архів на сервері</h2></div>' +
-      line('Подій тривог (усього / за 30 днів)', fmtNum(a.alertEvents.total) + ' / ' + fmtNum(a.alertEvents.last30d)) +
-      line('Відкритих зараз', fmtNum(a.alertEvents.openNow)) +
-      line('Найстаріша / найновіша', fmtDate(a.alertEvents.oldestStartedAt) + ' / ' + fmtDate(a.alertEvents.newestStartedAt)) +
-      line('Загроз Neptun (усього / відкритих)', fmtNum(a.neptunThreats.total) + ' / ' + fmtNum(a.neptunThreats.open)) +
-      line('Розмір бази', fmtBytes(a.dbSizeBytes));
+    $('cardArchive').innerHTML = `<div class="card-head"><h2>Архів на сервері</h2></div>${
+      line('Подій тривог (усього / за 30 днів)', `${fmtNum(a.alertEvents.total)} / ${fmtNum(a.alertEvents.last30d)}`) 
+      }${line('Відкритих зараз', fmtNum(a.alertEvents.openNow)) 
+      }${line('Найстаріша / найновіша', `${fmtDate(a.alertEvents.oldestStartedAt)} / ${fmtDate(a.alertEvents.newestStartedAt)}`) 
+      }${line('Загроз Neptun (усього / відкритих)', `${fmtNum(a.neptunThreats.total)} / ${fmtNum(a.neptunThreats.open)}`) 
+      }${line('Розмір бази', fmtBytes(a.dbSizeBytes))}`;
 
-    $('cardBackup').innerHTML = '<div class="card-head"><h2>Резервні копії</h2>' + (b.ageMs !== null && b.ageMs < 36 * 3600 * 1000 ? chip('ok', 'свіжа') : chip('warn', 'застаріла')) + '</div>' +
-      line('Остання копія', b.lastBackupAt ? fmtDate(b.lastBackupAt) + ' (' + fmtAgo(b.ageMs) + ')' : '-') +
-      line('Файл', esc(b.file || '-')) +
-      line('Розмір', fmtBytes(b.sizeBytes)) +
-      line('Зберігається копій', b.keptCount + ' з ' + b.keepLimit);
+    $('cardBackup').innerHTML = `<div class="card-head"><h2>Резервні копії</h2>${b.ageMs !== null && b.ageMs < 36 * 3600 * 1000 ? chip('ok', 'свіжа') : chip('warn', 'застаріла')}</div>${
+      line('Остання копія', b.lastBackupAt ? `${fmtDate(b.lastBackupAt)} (${fmtAgo(b.ageMs)})` : '-') 
+      }${line('Файл', esc(b.file || '-')) 
+      }${line('Розмір', fmtBytes(b.sizeBytes)) 
+      }${line('Зберігається копій', `${b.keptCount} з ${b.keepLimit}`)}`;
 
-    $('cardServer').innerHTML = '<div class="card-head"><h2>Сервер</h2></div>' +
-      line('Працює без перезапуску', fmtDuration(sys.uptimeSec * 1000)) +
-      line('Node.js', esc(sys.nodeVersion)) +
-      line('Платформа', esc(sys.platform)) +
-      line('База країн (DB-IP)', s.geoip && s.geoip.loaded ? chip('ok', fmtNum(s.geoip.ranges) + ' діапазонів') : chip('warn', 'не завантажена')) +
-      line('WebSocket-з’єднань', fmtNum(c.alerts + c.active + c.neptun));
+    $('cardServer').innerHTML = `<div class="card-head"><h2>Сервер</h2></div>${
+      line('Працює без перезапуску', fmtDuration(sys.uptimeSec * 1000)) 
+      }${line('Node.js', esc(sys.nodeVersion)) 
+      }${line('Платформа', esc(sys.platform)) 
+      }${line('База країн (DB-IP)', s.geoip && s.geoip.loaded ? chip('ok', `${fmtNum(s.geoip.ranges)} діапазонів`) : chip('warn', 'не завантажена')) 
+      }${line('WebSocket-з’єднань', fmtNum(c.alerts + c.active + c.neptun))}`;
   }
 
-  var COUNTRY_PERIODS = [['today', 'Сьогодні'], ['last7d', '7 днів'], ['allTime', 'Усього']];
-  var countryNames = null;
+  const COUNTRY_PERIODS = [['today', 'Сьогодні'], ['last7d', '7 днів'], ['allTime', 'Усього']];
+  let countryNames = null;
 
   function countryName(code) {
     if (!code || code === 'unknown') return 'невизначено';
@@ -786,123 +786,123 @@
   }
 
   function paintCountries() {
-    var u = state.users;
-    var list = $('countryList');
+    const u = state.users;
+    const list = $('countryList');
     if (!u || !list) return;
-    var rows = (u.countries[state.countryPeriod] || []).map(function (c) {
-      return { name: countryName(c.code) + (c.code && c.code !== 'unknown' ? ' (' + c.code + ')' : ''), value: c.users };
+    const rows = (u.countries[state.countryPeriod] || []).map((c) => {
+      return { name: countryName(c.code) + (c.code && c.code !== 'unknown' ? ` (${c.code})` : ''), value: c.users };
     });
     list.innerHTML = barRows(rows, 'name', 'value');
-    document.querySelectorAll('#countryTabs button').forEach(function (b) {
+    document.querySelectorAll('#countryTabs button').forEach((b) => {
       b.setAttribute('aria-pressed', b.getAttribute('data-period') === state.countryPeriod ? 'true' : 'false');
     });
   }
 
   function renderUsers() {
-    var u = state.users;
-    var body = $('usersBody');
+    const u = state.users;
+    const body = $('usersBody');
     if (!u) return;
-    var t = u.totals, e = u.engagement;
+    const t = u.totals, e = u.engagement;
 
-    var dailyLabels = u.daily.map(function (d) { return d.day.slice(5).replace('-', '.'); });
-    var hourLabels = u.hourlyRequestsToday.map(function (_, h) { return String(h); });
+    const dailyLabels = u.daily.map((d) => { return d.day.slice(5).replace('-', '.'); });
+    const hourLabels = u.hourlyRequestsToday.map((_, h) => { return String(h); });
 
-    var chartWidth = Math.max(300, Math.min(1100, body.clientWidth - 30)) || 600;
+    const chartWidth = Math.max(300, Math.min(1100, body.clientWidth - 30)) || 600;
     body.innerHTML =
-      '<div class="kpi-grid">' +
-        kpi('Сьогодні', fmtNum(t.today), 'нових: ' + fmtNum(t.newToday) + ' · повернулись: ' + fmtNum(t.returningToday)) +
-        kpi('Онлайн зараз', fmtNum(u.connections.now), 'пік сьогодні: ' + fmtNum(u.connections.peakToday)) +
-        kpi('Повертаються', e.multiDayShare + '%', 'були активні 2+ дні: ' + fmtNum(e.multiDayUsers)) +
-        kpi('Днів активності', String(e.avgActiveDays), 'у середньому на користувача') +
-        kpi('Липкість', e.stickiness + '%', 'частка щоденних серед місячних') +
-      '</div>' +
-      '<div class="card" style="margin-bottom:12px"><h2>Активні пристрої за період</h2>' +
-          line('За останню годину', fmtNum(t.lastHour)) + line('За 24 години', fmtNum(t.last24h)) + line('За 7 днів', fmtNum(t.last7d)) +
-          line('За 30 днів', fmtNum(t.last30d)) + line('За весь час', fmtNum(t.allTime)) +
-      '</div>' +
-      '<div class="card" style="margin-bottom:12px"><h2>Активність за 30 днів</h2>' +
-        '<div class="legend"><span><i style="background:var(--accent)"></i>активні</span><span><i style="background:var(--accent-2)"></i>нові</span></div>' +
-        barChart([{ cls: 'bar-a', values: u.daily.map(function (d) { return d.active; }) }, { cls: 'bar-b', values: u.daily.map(function (d) { return d.newUsers; }) }], dailyLabels, { label: 'Активні та нові користувачі за днями', width: chartWidth }) +
-      '</div>' +
-      '<div class="card" style="margin-bottom:12px"><h2>Запити за годинами сьогодні (час Києва)</h2>' +
-        barChart([{ cls: 'bar-c', values: u.hourlyRequestsToday }], hourLabels, { label: 'Запити за годинами', width: chartWidth, height: 160 }) +
-      '</div>' +
-      '<div class="card" style="margin-bottom:12px"><h2>Історія версій застосунку за днями</h2>' +
-        '<div class="legend">' + u.versionHistory.versions.slice(0, 8).map(function (v, i) { return '<span><i style="background:var(--' + VERSION_COLORS[i] + ')"></i>' + esc(v === 'unknown' ? 'невідомо' : v) + '</span>'; }).join('') + '</div>' +
-        stackedChart(u.versionHistory.days, u.versionHistory.versions.slice(0, 8), chartWidth) +
-      '</div>' +
-      '<div class="card" style="margin-bottom:12px"><div class="card-head"><h2>Країни клієнтів</h2><div class="seg" id="countryTabs">' +
-        COUNTRY_PERIODS.map(function (p) { return '<button data-period="' + p[0] + '" aria-pressed="false">' + p[1] + '</button>'; }).join('') +
-        '</div></div><div id="countryList"></div>' +
-        '<p class="settings-note" style="margin-top:10px">Країна визначається за IP під час запиту (локальна база DB-IP), сама адреса не зберігається.</p></div>' +
-      '<div class="columns">' +
-        '<div class="card"><h2>Версії застосунку (активні за 7 днів)</h2>' + barRows(u.versions.map(function (v) { return { name: v.version === 'unknown' ? 'невідомо' : v.version, value: v.users }; }), 'name', 'value') + '</div>' +
-        '<div class="card"><h2>Маршрути сьогодні</h2>' + barRows(u.routesToday.map(function (r) { return { name: r.route, value: r.count }; }), 'name', 'value') + '</div>' +
-      '</div>' +
-      '<div class="card"><h2>Найактивніші пристрої</h2>' +
-        (u.topUsers.length
-          ? '<div class="table-wrap"><table class="data"><thead><tr><th>Ідентифікатор</th><th class="num">Запитів</th><th>Версія</th><th>Країна</th><th>Уперше</th><th>Востаннє</th></tr></thead><tbody>' +
-            u.topUsers.map(function (x) {
-              return '<tr><td class="mono">' + esc(x.id) + '</td><td class="num mono">' + fmtNum(x.requests) + '</td><td>' + esc(x.version || 'невідомо') + '</td><td>' + esc(countryName(x.country)) + '</td><td>' + fmtDate(x.firstSeen) + '</td><td>' + fmtDate(x.lastSeen) + '</td></tr>';
-            }).join('') + '</tbody></table></div>'
-          : '<div class="empty-note">Даних ще немає</div>') +
-        '<p class="settings-note" style="margin-top:10px">Пристрої розрізняються за хешем IP-адреси, самі адреси не зберігаються. Статистика накопичується від моменту запуску нового сервера.</p>' +
-      '</div>';
+      `<div class="kpi-grid">${
+        kpi('Сьогодні', fmtNum(t.today), `нових: ${fmtNum(t.newToday)} · повернулись: ${fmtNum(t.returningToday)}`) 
+        }${kpi('Онлайн зараз', fmtNum(u.connections.now), `пік сьогодні: ${fmtNum(u.connections.peakToday)}`) 
+        }${kpi('Повертаються', `${e.multiDayShare}%`, `були активні 2+ дні: ${fmtNum(e.multiDayUsers)}`) 
+        }${kpi('Днів активності', String(e.avgActiveDays), 'у середньому на користувача') 
+        }${kpi('Липкість', `${e.stickiness}%`, 'частка щоденних серед місячних') 
+      }</div>` +
+      `<div class="card" style="margin-bottom:12px"><h2>Активні пристрої за період</h2>${
+          line('За останню годину', fmtNum(t.lastHour))}${line('За 24 години', fmtNum(t.last24h))}${line('За 7 днів', fmtNum(t.last7d)) 
+          }${line('За 30 днів', fmtNum(t.last30d))}${line('За весь час', fmtNum(t.allTime)) 
+      }</div>` +
+      `<div class="card" style="margin-bottom:12px"><h2>Активність за 30 днів</h2>` +
+        `<div class="legend"><span><i style="background:var(--accent)"></i>активні</span><span><i style="background:var(--accent-2)"></i>нові</span></div>${
+        barChart([{ cls: 'bar-a', values: u.daily.map((d) => { return d.active; }) }, { cls: 'bar-b', values: u.daily.map((d) => { return d.newUsers; }) }], dailyLabels, { label: 'Активні та нові користувачі за днями', width: chartWidth }) 
+      }</div>` +
+      `<div class="card" style="margin-bottom:12px"><h2>Запити за годинами сьогодні (час Києва)</h2>${
+        barChart([{ cls: 'bar-c', values: u.hourlyRequestsToday }], hourLabels, { label: 'Запити за годинами', width: chartWidth, height: 160 }) 
+      }</div>` +
+      `<div class="card" style="margin-bottom:12px"><h2>Історія версій застосунку за днями</h2>` +
+        `<div class="legend">${u.versionHistory.versions.slice(0, 8).map((v, i) => { return `<span><i style="background:var(--${VERSION_COLORS[i]})"></i>${esc(v === 'unknown' ? 'невідомо' : v)}</span>`; }).join('')}</div>${
+        stackedChart(u.versionHistory.days, u.versionHistory.versions.slice(0, 8), chartWidth) 
+      }</div>` +
+      `<div class="card" style="margin-bottom:12px"><div class="card-head"><h2>Країни клієнтів</h2><div class="seg" id="countryTabs">${
+        COUNTRY_PERIODS.map((p) => { return `<button data-period="${p[0]}" aria-pressed="false">${p[1]}</button>`; }).join('') 
+        }</div></div><div id="countryList"></div>` +
+        `<p class="settings-note" style="margin-top:10px">Країна визначається за IP під час запиту (локальна база DB-IP), сама адреса не зберігається.</p></div>` +
+      `<div class="columns">` +
+        `<div class="card"><h2>Версії застосунку (активні за 7 днів)</h2>${barRows(u.versions.map((v) => { return { name: v.version === 'unknown' ? 'невідомо' : v.version, value: v.users }; }), 'name', 'value')}</div>` +
+        `<div class="card"><h2>Маршрути сьогодні</h2>${barRows(u.routesToday.map((r) => { return { name: r.route, value: r.count }; }), 'name', 'value')}</div>` +
+      `</div>` +
+      `<div class="card"><h2>Найактивніші пристрої</h2>${
+        u.topUsers.length
+          ? `<div class="table-wrap"><table class="data"><thead><tr><th>Ідентифікатор</th><th class="num">Запитів</th><th>Версія</th><th>Країна</th><th>Уперше</th><th>Востаннє</th></tr></thead><tbody>${
+            u.topUsers.map((x) => {
+              return `<tr><td class="mono">${esc(x.id)}</td><td class="num mono">${fmtNum(x.requests)}</td><td>${esc(x.version || 'невідомо')}</td><td>${esc(countryName(x.country))}</td><td>${fmtDate(x.firstSeen)}</td><td>${fmtDate(x.lastSeen)}</td></tr>`;
+            }).join('')}</tbody></table></div>`
+          : '<div class="empty-note">Даних ще немає</div>' 
+        }<p class="settings-note" style="margin-top:10px">Пристрої розрізняються за хешем IP-адреси, самі адреси не зберігаються. Статистика накопичується від моменту запуску нового сервера.</p>` +
+      `</div>`;
 
     bindCountryTabs();
 
   }
 
   function renderWeb() {
-    var w = state.web;
-    var body = $('webBody');
+    const w = state.web;
+    const body = $('webBody');
     if (!w) return;
-    var st = state.status && state.status.publicApi;
-    var t = w.today;
+    const st = state.status && state.status.publicApi;
+    const t = w.today;
 
-    var dailyLabels = w.daily.map(function (d) { return d.day.slice(5).replace('-', '.'); });
-    var hourLabels = w.hourlyRequestsToday.map(function (_, h) { return String(h); });
-    var chartWidth = Math.max(300, Math.min(1100, body.clientWidth - 30)) || 600;
+    const dailyLabels = w.daily.map((d) => { return d.day.slice(5).replace('-', '.'); });
+    const hourLabels = w.hourlyRequestsToday.map((_, h) => { return String(h); });
+    const chartWidth = Math.max(300, Math.min(1100, body.clientWidth - 30)) || 600;
 
-    var periods = [['today', 'Сьогодні'], ['last7d', '7 днів'], ['allTime', 'Усього']];
-    var period = state.webPeriod;
-    var countryRows = (w.countries[period] || []).map(function (c) {
-      return { name: countryName(c.key) + (c.key && c.key !== 'unknown' ? ' (' + c.key + ')' : ''), value: c.visitors };
+    const periods = [['today', 'Сьогодні'], ['last7d', '7 днів'], ['allTime', 'Усього']];
+    const period = state.webPeriod;
+    const countryRows = (w.countries[period] || []).map((c) => {
+      return { name: countryName(c.key) + (c.key && c.key !== 'unknown' ? ` (${c.key})` : ''), value: c.visitors };
     });
-    var languageNames = { uk: 'Українська', en: 'English', other: 'Інша' };
-    var languageRows = (w.languages[period] || []).map(function (l) { return { name: languageNames[l.key] || l.key, value: l.visitors }; });
+    const languageNames = { uk: 'Українська', en: 'English', other: 'Інша' };
+    const languageRows = (w.languages[period] || []).map((l) => { return { name: languageNames[l.key] || l.key, value: l.visitors }; });
 
-    var flags = st
+    const flags = st
       ? line('Публічний API', st.enabled ? chip('ok', 'увімкнено') : chip('critical', 'вимкнено')) +
         line('Шар загроз (Neptun)', st.threatsEnabled ? chip('ok', 'увімкнено') : chip('info', 'вимкнено')) +
         line('Шар окупованої території (DeepState)', st.occupiedEnabled ? chip('ok', 'увімкнено') : chip('info', 'вимкнено')) +
-        line('WebSocket-з’єднань зараз / ліміт', fmtNum(st.webSockets) + ' / ' + fmtNum(st.maxWebSockets)) +
+        line('WebSocket-з’єднань зараз / ліміт', `${fmtNum(st.webSockets)} / ${fmtNum(st.maxWebSockets)}`) +
         line('Дозволений Origin', esc(st.allowedOrigin))
       : '<div class="empty-note">Даних немає</div>';
 
     body.innerHTML =
-      '<div class="kpi-grid">' +
-        kpi('Відвідувачів сьогодні', fmtNum(t.visitors), 'унікальних за добу') +
-        kpi('Сесій сьогодні', fmtNum(t.sessions), 'відкриттів сторінки') +
-        kpi('Онлайн зараз', fmtNum(t.connectionsNow), 'пік сьогодні: ' + fmtNum(t.peakConnections)) +
-        kpi('За весь час', fmtNum(w.totals.visitors), 'сума добових унікальних · сесій: ' + fmtNum(w.totals.sessions)) +
-      '</div>' +
-      '<div class="card" style="margin-bottom:12px"><h2>Відвідувачі за 30 днів</h2>' +
-        '<div class="legend"><span><i style="background:var(--accent)"></i>відвідувачі</span><span><i style="background:var(--accent-2)"></i>сесії</span></div>' +
-        barChart([{ cls: 'bar-a', values: w.daily.map(function (d) { return d.visitors; }) }, { cls: 'bar-b', values: w.daily.map(function (d) { return d.sessions; }) }], dailyLabels, { label: 'Відвідувачі та сесії вебмапи за днями', width: chartWidth }) +
-      '</div>' +
-      '<div class="card" style="margin-bottom:12px"><h2>Запити до публічного API за годинами сьогодні (час Києва)</h2>' +
-        barChart([{ cls: 'bar-c', values: w.hourlyRequestsToday }], hourLabels, { label: 'Запити за годинами', width: chartWidth, height: 160 }) +
-      '</div>' +
-      '<div class="card" style="margin-bottom:12px"><div class="card-head"><h2>Країни та мови відвідувачів</h2><div class="seg" id="webPeriodTabs">' +
-        periods.map(function (p) { return '<button data-period="' + p[0] + '" aria-pressed="' + (p[0] === period ? 'true' : 'false') + '">' + p[1] + '</button>'; }).join('') +
-        '</div></div>' +
-        '<div class="columns"><div><h2>Країни</h2>' + barRows(countryRows, 'name', 'value') + '</div><div><h2>Мови інтерфейсу</h2>' + barRows(languageRows, 'name', 'value') + '</div></div>' +
-        '<p class="settings-note" style="margin-top:10px">Відвідувачі рахуються за хешем IP із випадковою сіллю, яка живе лише в пам’яті й змінюється щодоби; ані IP, ані хеші не зберігаються. У базі лишаються тільки підсумкові числа.</p></div>' +
-      '<div class="card"><h2>Стан публічної частини</h2>' + flags + '</div>';
+      `<div class="kpi-grid">${
+        kpi('Відвідувачів сьогодні', fmtNum(t.visitors), 'унікальних за добу') 
+        }${kpi('Сесій сьогодні', fmtNum(t.sessions), 'відкриттів сторінки') 
+        }${kpi('Онлайн зараз', fmtNum(t.connectionsNow), `пік сьогодні: ${fmtNum(t.peakConnections)}`) 
+        }${kpi('За весь час', fmtNum(w.totals.visitors), `сума добових унікальних · сесій: ${fmtNum(w.totals.sessions)}`) 
+      }</div>` +
+      `<div class="card" style="margin-bottom:12px"><h2>Відвідувачі за 30 днів</h2>` +
+        `<div class="legend"><span><i style="background:var(--accent)"></i>відвідувачі</span><span><i style="background:var(--accent-2)"></i>сесії</span></div>${
+        barChart([{ cls: 'bar-a', values: w.daily.map((d) => { return d.visitors; }) }, { cls: 'bar-b', values: w.daily.map((d) => { return d.sessions; }) }], dailyLabels, { label: 'Відвідувачі та сесії вебмапи за днями', width: chartWidth }) 
+      }</div>` +
+      `<div class="card" style="margin-bottom:12px"><h2>Запити до публічного API за годинами сьогодні (час Києва)</h2>${
+        barChart([{ cls: 'bar-c', values: w.hourlyRequestsToday }], hourLabels, { label: 'Запити за годинами', width: chartWidth, height: 160 }) 
+      }</div>` +
+      `<div class="card" style="margin-bottom:12px"><div class="card-head"><h2>Країни та мови відвідувачів</h2><div class="seg" id="webPeriodTabs">${
+        periods.map((p) => { return `<button data-period="${p[0]}" aria-pressed="${p[0] === period ? 'true' : 'false'}">${p[1]}</button>`; }).join('') 
+        }</div></div>` +
+        `<div class="columns"><div><h2>Країни</h2>${barRows(countryRows, 'name', 'value')}</div><div><h2>Мови інтерфейсу</h2>${barRows(languageRows, 'name', 'value')}</div></div>` +
+        `<p class="settings-note" style="margin-top:10px">Відвідувачі рахуються за хешем IP із випадковою сіллю, яка живе лише в пам’яті й змінюється щодоби; ані IP, ані хеші не зберігаються. У базі лишаються тільки підсумкові числа.</p></div>` +
+      `<div class="card"><h2>Стан публічної частини</h2>${flags}</div>`;
 
-    body.querySelectorAll('#webPeriodTabs button').forEach(function (b) {
-      b.addEventListener('click', function () {
+    body.querySelectorAll('#webPeriodTabs button').forEach((b) => {
+      b.addEventListener('click', () => {
         state.webPeriod = b.getAttribute('data-period');
         renderWeb();
       });
@@ -910,25 +910,25 @@
   }
 
   function refreshWeb() {
-    var cfg = settings();
+    const cfg = settings();
     if (state.webBusy || !cfg.baseUrl || !cfg.adminKey) return Promise.resolve();
     state.webBusy = true;
     return api('/web-stats', cfg)
-      .then(function (data) {
+      .then((data) => {
         state.web = data;
         renderWeb();
       })
-      .catch(function () {
+      .catch(() => {
         if (!state.web) $('webBody').innerHTML = '<div class="notice critical">Не вдалося завантажити статистику вебмапи.</div>';
       })
-      .then(function () {
+      .then(() => {
         state.webBusy = false;
       });
   }
 
   function bindCountryTabs() {
-    document.querySelectorAll('#countryTabs button').forEach(function (b) {
-      b.addEventListener('click', function () {
+    document.querySelectorAll('#countryTabs button').forEach((b) => {
+      b.addEventListener('click', () => {
         state.countryPeriod = b.getAttribute('data-period');
         paintCountries();
       });
@@ -946,46 +946,46 @@
 
 
   function settings() {
-    var base = read(STORE_URL) || (location.protocol === 'file:' ? '' : location.origin);
+    const base = read(STORE_URL) || (location.protocol === 'file:' ? '' : location.origin);
     return { baseUrl: base.replace(/\/$/, ''), adminKey: read(STORE_KEY) };
   }
 
   function setConnectionError(text, cls) {
-    var pill = $('healthPill');
-    pill.className = 'pill ' + (cls || 'critical');
-    pill.innerHTML = '<span class="dot"></span><span>' + esc(text) + '</span>';
+    const pill = $('healthPill');
+    pill.className = `pill ${cls || 'critical'}`;
+    pill.innerHTML = `<span class="dot"></span><span>${esc(text)}</span>`;
   }
 
   function api(path, cfg) {
-    return fetch(cfg.baseUrl + path, { headers: { 'X-Admin-Key': cfg.adminKey } }).then(function (res) {
-      if (res.status === 401) { var err = new Error('auth'); err.code = 401; throw err; }
-      if (!res.ok) throw new Error('HTTP ' + res.status);
+    return fetch(cfg.baseUrl + path, { headers: { 'X-Admin-Key': cfg.adminKey } }).then((res) => {
+      if (res.status === 401) { const err = new Error('auth'); err.code = 401; throw err; }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     });
   }
 
   function markLive(ok) {
-    $('liveDot').className = 'live-dot' + (ok ? '' : ' stale');
+    $('liveDot').className = `live-dot${ok ? '' : ' stale'}`;
   }
 
   function refresh() {
     if (state.busy) return Promise.resolve();
-    var cfg = settings();
+    const cfg = settings();
     if (!cfg.baseUrl || !cfg.adminKey) {
       $('settingsPanel').hidden = false;
       setConnectionError('Потрібен ключ', 'warn');
       return Promise.resolve();
     }
     state.busy = true;
-    return Promise.all([api('/status', cfg), api('/ukrainealarm-status', cfg).catch(function () { return null; })])
-      .then(function (res) {
+    return Promise.all([api('/status', cfg), api('/ukrainealarm-status', cfg).catch(() => { return null; })])
+      .then((res) => {
         state.status = res[0];
         state.ua = res[1];
-        $('lastUpdated').textContent = 'оновлюється автоматично · ' + new Date().toLocaleTimeString('uk-UA');
+        $('lastUpdated').textContent = `оновлюється автоматично · ${new Date().toLocaleTimeString('uk-UA')}`;
         markLive(true);
         renderAll();
       })
-      .catch(function (err) {
+      .catch((err) => {
         markLive(false);
         if (err.code === 401) {
           $('settingsPanel').hidden = false;
@@ -994,24 +994,24 @@
           setConnectionError('Немає зв’язку із сервером');
         }
       })
-      .then(function () {
+      .then(() => {
         state.busy = false;
       });
   }
 
   function refreshUsers() {
-    var cfg = settings();
+    const cfg = settings();
     if (state.usersBusy || !cfg.baseUrl || !cfg.adminKey) return Promise.resolve();
     state.usersBusy = true;
     return api('/users-stats', cfg)
-      .then(function (data) {
+      .then((data) => {
         state.users = data;
         renderUsers();
       })
-      .catch(function () {
+      .catch(() => {
         if (!state.users) $('usersBody').innerHTML = '<div class="notice critical">Не вдалося завантажити статистику користувачів.</div>';
       })
-      .then(function () {
+      .then(() => {
         state.usersBusy = false;
       });
   }
@@ -1037,46 +1037,46 @@
   function selectTab(name) {
     state.tab = name;
     write(STORE_TAB, name);
-    document.querySelectorAll('nav.tabs button').forEach(function (b) {
+    document.querySelectorAll('nav.tabs button').forEach((b) => {
       b.setAttribute('aria-selected', b.getAttribute('data-tab') === name ? 'true' : 'false');
     });
-    document.querySelectorAll('[data-panel]').forEach(function (p) { p.hidden = p.getAttribute('data-panel') !== name; });
+    document.querySelectorAll('[data-panel]').forEach((p) => { p.hidden = p.getAttribute('data-panel') !== name; });
     if (name === 'users' && state.users) renderUsers();
     if (name === 'web' && state.web) renderWeb();
     syncUsersTimer();
   }
 
-  document.querySelectorAll('nav.tabs button').forEach(function (b) {
-    b.addEventListener('click', function () { selectTab(b.getAttribute('data-tab')); });
+  document.querySelectorAll('nav.tabs button').forEach((b) => {
+    b.addEventListener('click', () => { selectTab(b.getAttribute('data-tab')); });
   });
 
-  var resizeTimer = null;
-  window.addEventListener('resize', function () {
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function () { if (state.tab === 'users' && state.users) renderUsers(); if (state.tab === 'web' && state.web) renderWeb(); }, 200);
+    resizeTimer = setTimeout(() => { if (state.tab === 'users' && state.users) renderUsers(); if (state.tab === 'web' && state.web) renderWeb(); }, 200);
   });
 
-  document.addEventListener('visibilitychange', function () {
+  document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') return;
     refresh();
     if (state.tab === 'users') refreshUsers();
     if (state.tab === 'web') refreshWeb();
   });
 
-  $('settingsBtn').addEventListener('click', function () {
-    var panel = $('settingsPanel');
+  $('settingsBtn').addEventListener('click', () => {
+    const panel = $('settingsPanel');
     panel.hidden = !panel.hidden;
-    var cfg = settings();
+    const cfg = settings();
     $('baseUrlInput').value = cfg.baseUrl;
     $('adminKeyInput').value = cfg.adminKey;
   });
-  $('saveBtn').addEventListener('click', function () {
+  $('saveBtn').addEventListener('click', () => {
     write(STORE_URL, $('baseUrlInput').value.trim());
     write(STORE_KEY, $('adminKeyInput').value.trim());
     $('settingsPanel').hidden = true;
-    refresh().then(function () { if (state.tab === 'users') refreshUsers(); });
+    refresh().then(() => { if (state.tab === 'users') refreshUsers(); });
   });
-  $('clearBtn').addEventListener('click', function () {
+  $('clearBtn').addEventListener('click', () => {
     remove(STORE_KEY);
     remove(STORE_URL);
     $('adminKeyInput').value = '';
@@ -1086,7 +1086,7 @@
   });
 
   $('baseUrlInput').value = settings().baseUrl;
-  var savedTab = read(STORE_TAB);
+  const savedTab = read(STORE_TAB);
   selectTab(['overview', 'sources', 'users', 'web', 'system'].indexOf(savedTab) >= 0 ? savedTab : 'overview');
   refresh();
   startTimers();

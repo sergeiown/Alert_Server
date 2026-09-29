@@ -69,7 +69,7 @@
 
     function fetchJson(url) {
         return fetch(url, { cache: 'no-cache' }).then((response) => {
-            if (!response.ok) throw new Error(`HTTP ${  response.status}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             return response.json();
         });
     }
@@ -122,9 +122,9 @@
     let firstPoll = true;
 
     function poll() {
-        const query = `?l=${  languageCode  }${firstPoll ? '&s=1' : ''}`;
+        const query = `?l=${languageCode}${firstPoll ? '&s=1' : ''}`;
         firstPoll = false;
-        return fetchJson(`/public/state${  query}`)
+        return fetchJson(`/public/state${query}`)
             .then(applyState)
             .then(() => {
                 if (features.threats) return fetchJson('/public/threats').then(applyThreats);
@@ -150,7 +150,7 @@
         const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
         let ws;
         try {
-            ws = new WebSocket(`${protocol  }//${  location.host  }/public/ws?l=${  languageCode}`);
+            ws = new WebSocket(`${protocol}//${location.host}/public/ws?l=${languageCode}`);
         } catch (err) {
             scheduleReconnect();
             return;
@@ -201,7 +201,7 @@
 
     let strings = null;
     const ready = Promise.all([
-        fetchJson(`i18n/${  language === 'English' ? 'en' : 'uk'  }.json`).then((data) => {
+        fetchJson(`i18n/${language === 'English' ? 'en' : 'uk'}.json`).then((data) => {
             strings = data;
         }),
         fetchJson('data/alertTypes.json')

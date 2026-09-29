@@ -101,7 +101,7 @@
 
     const bar = document.getElementById('webBar');
     function syncBarHeight() {
-        document.documentElement.style.setProperty('--web-bar-height', `${bar.offsetHeight  }px`);
+        document.documentElement.style.setProperty('--web-bar-height', `${bar.offsetHeight}px`);
     }
     syncBarHeight();
     if (typeof ResizeObserver === 'function') new ResizeObserver(syncBarHeight).observe(bar);
@@ -182,7 +182,7 @@
     statusButton.title = text.statusTitle;
     web.onStatus((status) => {
         const mode = status.stale ? 'stale' : status.live ? 'live' : 'polling';
-        statusButton.className = `web-chip${  mode === 'stale' ? ' stale' : ''}`;
+        statusButton.className = `web-chip${mode === 'stale' ? ' stale' : ''}`;
         statusButton.replaceChildren(
             el('span', { class: 'dot' }),
             el('span', { class: 'label', text: mode === 'stale' ? text.statusStale : mode === 'live' ? text.statusLive : text.statusPolling })
@@ -198,20 +198,20 @@
     function buildAbout() {
         const features = web.getFeatures();
         const dataList = el('ul', {}, [
-            el('li', {}, [`${text.alertsLine  } `, link('https://alerts.in.ua/', 'alerts.in.ua'), ` - ${  text.alertsNote}`]),
+            el('li', {}, [`${text.alertsLine} `, link('https://alerts.in.ua/', 'alerts.in.ua'), ` - ${text.alertsNote}`]),
         ]);
 
         if (features.threats) {
-            dataList.appendChild(el('li', {}, [`${text.neptunLine  } `, link('https://neptun.in.ua/', 'NEPTUN'), ` (${  text.neptunNote  } - NEPTUN)`]));
+            dataList.appendChild(el('li', {}, [`${text.neptunLine} `, link('https://neptun.in.ua/', 'NEPTUN'), ` (${text.neptunNote} - NEPTUN)`]));
         }
         if (features.occupied) {
-            dataList.appendChild(el('li', {}, [`${text.frontLine  } `, link('https://deepstatemap.live/', 'DeepStateMap.live')]));
+            dataList.appendChild(el('li', {}, [`${text.frontLine} `, link('https://deepstatemap.live/', 'DeepStateMap.live')]));
         }
 
         const body = document.getElementById('aboutBody');
         body.replaceChildren(
             el('h2', { id: 'aboutTitle', text: text.title }),
-            el('div', { class: 'about-warning' }, [el('strong', { text: `${text.warningTitle  }. ` }), text.warning]),
+            el('div', { class: 'about-warning' }, [el('strong', { text: `${text.warningTitle}. ` }), text.warning]),
             el('h3', { text: text.dataTitle }),
             dataList,
             el('h3', { text: text.mapTitle }),
@@ -219,7 +219,7 @@
             el('h3', { text: text.privacyTitle }),
             el('p', { text: text.privacyText }),
             el('h3', { text: text.openSourceTitle }),
-            el('p', {}, [`${text.openSourceText  } `, link('https://github.com/sergeiown/Alert_Server', 'github.com/sergeiown/Alert_Server')])
+            el('p', {}, [`${text.openSourceText} `, link('https://github.com/sergeiown/Alert_Server', 'github.com/sergeiown/Alert_Server')])
         );
     }
 
