@@ -9,8 +9,9 @@ const { setLatestAlertData, getLatestAlertData } = require('./activeAlertData');
 const WS_URL = 'wss://alert-proxy.alert-proxy-ua.workers.dev/ws-alerts-in-ua';
 const FALLBACK_POLL_URL = 'https://alert-proxy.alert-proxy-ua.workers.dev';
 const RECONNECT_DELAY_MS = 5000;
+const MAX_RECONNECT_DELAY_MS = 60000;
 const HEARTBEAT_TIMEOUT_MS = 8 * 60 * 1000;
-const FALLBACK_POLL_INTERVAL_MS = 30000;
+const FALLBACK_POLL_INTERVAL_MS = 60000;
 const ORIGIN_ISSUE_LOG_COOLDOWN_MS = 30 * 60 * 1000;
 
 let lastLoggedStatus = null;
@@ -49,6 +50,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
     let fallbackTimer = null;
     let stopped = false;
     let usingFallback = false;
+    let reconnectAttempts = 0;
 
     function resetHeartbeatWatch() {
         if (heartbeatTimer) clearTimeout(heartbeatTimer);
@@ -101,7 +103,9 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
     function scheduleReconnect() {
         if (stopped) return;
         if (reconnectTimer) clearTimeout(reconnectTimer);
-        reconnectTimer = setTimeout(connect, RECONNECT_DELAY_MS);
+        const delay = Math.min(RECONNECT_DELAY_MS * 2 ** reconnectAttempts, MAX_RECONNECT_DELAY_MS);
+        reconnectAttempts += 1;
+        reconnectTimer = setTimeout(connect, delay);
     }
 
     function connect() {
@@ -129,6 +133,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
 
         ws.addEventListener('open', () => {
             logEvent('alerts.in.ua via alert-proxy connected', 'NETWORK');
+            reconnectAttempts = 0;
             resetHeartbeatWatch();
         });
 
