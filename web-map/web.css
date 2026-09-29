@@ -61,6 +61,10 @@ body {
     gap: 6px;
 }
 
+a.web-chip {
+    text-decoration: none;
+}
+
 .web-chip-icon {
     min-width: 36px;
     justify-content: center;

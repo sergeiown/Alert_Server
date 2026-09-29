@@ -9,7 +9,7 @@
 
 > **Disclaimer. The aggressor state's full-scale war against Ukraine has been ongoing since February 2014 and escalated into a full invasion on February 24, 2022. The entire territory of Ukraine remains a zone of active hostilities and potential missile threat. Stay vigilant, never ignore air raid alerts, and follow safety guidelines.**
 
-A Windows tray application built with Electron that keeps watch on air-raid alerts across Ukraine so you don't have to: it pulls data from [alerts.in.ua](https://alerts.in.ua/) (automatically falling back to [Neptun](https://neptun.in.ua), and to [UkraineAlarm](https://api.ukrainealarm.com/) when that source is enabled on the server, if it goes quiet), delivers it straight to the Windows Notification Center for the regions you choose to monitor, and brings a live threat map, a statistics-based forecast, and nationwide weapon-usage trends together in one place.
+A Windows tray application built with Electron that keeps watch on air-raid alerts across Ukraine so you don't have to: it pulls data from [alerts.in.ua](https://alerts.in.ua/) (automatically falling back to [Neptun](https://neptun.in.ua), and to [UkraineAlarm](https://api.ukrainealarm.com/) when that source is enabled on the server, if it goes quiet), delivers it straight to the Windows Notification Center for the regions you choose to monitor, and brings a live threat map (also available [in the browser](https://alert-proxy-ua.duckdns.org/live/)) a statistics-based forecast, and nationwide weapon-usage trends together in one place.
 
 ## Architecture
 
@@ -23,6 +23,17 @@ The app doesn't talk to the alert APIs itself. It talks to a small self-hosted b
 - **A shared archive.** Every alert and threat the backend sees is kept in its own database (with daily backups), so history no longer lives on each computer.
 - **Forecast and statistics on the server.** The forecast, today's statistics, the daily peaks, the occupied-territory layer and the weapon-usage dataset are computed or cached there; the app only asks for the finished numbers. That is why a fresh install has a full history and a forecast from the first minute, and why there is nothing to accumulate or clear locally.
 - **Privacy.** Unique devices are counted by a hash of the IP address, and only the country code is kept; the addresses themselves are not stored.
+
+## Web map
+
+No Windows machine at hand? The same live map runs in any browser, on a phone too: **[alert-proxy-ua.duckdns.org/live](https://alert-proxy-ua.duckdns.org/live/)**. It is the app's Live map, served straight from the project's own server, with nothing to install and no account to make.
+
+- Alerts by oblast, raion and Kyiv district, updated in real time, plus daily peaks and the Kyiv close-up view.
+- Ukrainian and English interface, and a light/dark/auto theme. Your choices are remembered in your own browser only.
+- No cookies, no trackers. The server keeps anonymous daily counters (visitors, country, language), never IP addresses.
+- It is an unofficial source and can lag behind or be incomplete, so always follow the official alert signals.
+
+Its source lives in [web-map/](web-map/) and reuses the desktop app's map code.
 
 ## Installation
 

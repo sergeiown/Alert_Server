@@ -5,7 +5,6 @@
     'use strict';
 
     var LANGUAGE_KEY = 'alertmap.language';
-    var TRANSPARENT_TILE = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
     var POLL_MS = 10000;
     var MAX_RECONNECT_MS = 60000;
     var ALLOWED_LINK_HOSTS = ['neptun.in.ua', 'alerts.in.ua', 'deepstatemap.live', 'github.com', 'www.naturalearthdata.com', 'creativecommons.org'];
@@ -229,7 +228,11 @@
     }
 
     window.alertServerLiveMap = {
-        kyivBase: { imageryUrl: TRANSPARENT_TILE, labelsUrl: TRANSPARENT_TILE, attribution: '' },
+        kyivBase: {
+            imageryUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            labelsUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+            attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics',
+        },
         regionsRefreshMs: 5000,
         getStrings: function () {
             return ready.then(function () {

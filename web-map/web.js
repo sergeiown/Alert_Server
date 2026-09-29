@@ -81,6 +81,14 @@
 
     document.getElementById('webNotice').textContent = text.notice;
 
+    var fullscreenProto = L.Control.FullScreenButton && L.Control.FullScreenButton.prototype;
+    if (fullscreenProto) {
+        var enterOrExit = fullscreenProto._toggleFullScreenElement;
+        fullscreenProto._toggleFullScreenElement = function (element, enter) {
+            return enterOrExit.call(this, document.documentElement, enter);
+        };
+    }
+
     var darkQuery = web.nativeMatchMedia('(prefers-color-scheme: dark)');
     if (web.theme === 'auto' && typeof darkQuery.addEventListener === 'function') {
         darkQuery.addEventListener('change', function () {
@@ -113,6 +121,10 @@
         var settings = loadSettings();
         var saved = settings.layers || {};
         var narrow = window.matchMedia('(max-width: 560px)').matches;
+
+        if (api.map.hasLayer(api.layers.hints)) api.map.removeLayer(api.layers.hints);
+        api.layersControl.removeLayer(api.layers.hints);
+        delete api.layers.hints;
 
         Object.keys(api.layers).forEach(function (name) {
             var wanted = name in saved ? saved[name] : !(narrow && (name === 'legend' || name === 'hints'));

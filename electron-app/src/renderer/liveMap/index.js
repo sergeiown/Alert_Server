@@ -471,6 +471,7 @@ async function main() {
                 hints: threatsLayer.hintLayer,
             },
             applyKyivMode,
+            layersControl,
         });
     }
 
