@@ -4,10 +4,10 @@
 (function () {
     'use strict';
 
-    var web = window.alertMapWeb;
-    var isEnglish = web.language === 'English';
+    const web = window.alertMapWeb;
+    const isEnglish = web.language === 'English';
 
-    var text = isEnglish
+    const text = isEnglish
         ? {
               notice: 'Unofficial source: data may be delayed or incomplete. Always follow the official air-raid sirens.',
               about: 'About',
@@ -64,49 +64,49 @@
           };
 
     function el(tag, attrs, children) {
-        var node = document.createElement(tag);
-        Object.keys(attrs || {}).forEach(function (key) {
+        const node = document.createElement(tag);
+        Object.keys(attrs || {}).forEach((key) => {
             if (key === 'text') node.textContent = attrs[key];
             else node.setAttribute(key, attrs[key]);
         });
-        (children || []).forEach(function (child) {
+        (children || []).forEach((child) => {
             node.appendChild(typeof child === 'string' ? document.createTextNode(child) : child);
         });
         return node;
     }
 
     function link(href, label) {
-        return el('a', { href: href, target: '_blank', rel: 'noopener noreferrer', text: label });
+        return el('a', { href, target: '_blank', rel: 'noopener noreferrer', text: label });
     }
 
     document.getElementById('webNotice').textContent = text.notice;
 
-    var root = document.documentElement;
+    const root = document.documentElement;
     if (!(root.requestFullscreen || root.webkitRequestFullscreen)) root.classList.add('no-fullscreen');
 
-    var fullscreenProto = L.Control.FullScreenButton && L.Control.FullScreenButton.prototype;
+    const fullscreenProto = L.Control.FullScreenButton && L.Control.FullScreenButton.prototype;
     if (fullscreenProto) {
-        var enterOrExit = fullscreenProto._toggleFullScreenElement;
+        const enterOrExit = fullscreenProto._toggleFullScreenElement;
         fullscreenProto._toggleFullScreenElement = function (element, enter) {
             return enterOrExit.call(this, document.documentElement, enter);
         };
     }
 
-    var darkQuery = web.nativeMatchMedia('(prefers-color-scheme: dark)');
+    const darkQuery = web.nativeMatchMedia('(prefers-color-scheme: dark)');
     if (web.theme === 'auto' && typeof darkQuery.addEventListener === 'function') {
-        darkQuery.addEventListener('change', function () {
+        darkQuery.addEventListener('change', () => {
             location.reload();
         });
     }
 
-    var bar = document.getElementById('webBar');
+    const bar = document.getElementById('webBar');
     function syncBarHeight() {
-        document.documentElement.style.setProperty('--web-bar-height', bar.offsetHeight + 'px');
+        document.documentElement.style.setProperty('--web-bar-height', `${bar.offsetHeight  }px`);
     }
     syncBarHeight();
     if (typeof ResizeObserver === 'function') new ResizeObserver(syncBarHeight).observe(bar);
 
-    var SETTINGS_KEY = 'alertmap.settings';
+    const SETTINGS_KEY = 'alertmap.settings';
     function loadSettings() {
         try {
             return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {};
@@ -120,98 +120,98 @@
         } catch (err) {}
     }
 
-    web.whenMapReady(function (api) {
-        var credits = api.map.attributionControl && api.map.attributionControl.getContainer();
+    web.whenMapReady((api) => {
+        const credits = api.map.attributionControl && api.map.attributionControl.getContainer();
         if (credits) document.getElementById('webCredits').appendChild(credits);
 
-        var settings = loadSettings();
-        var saved = settings.layers || {};
-        var narrow = window.matchMedia('(max-width: 560px)').matches;
+        const settings = loadSettings();
+        const saved = settings.layers || {};
+        const narrow = window.matchMedia('(max-width: 560px)').matches;
 
         if (api.map.hasLayer(api.layers.hints)) api.map.removeLayer(api.layers.hints);
         api.layersControl.removeLayer(api.layers.hints);
         delete api.layers.hints;
 
-        Object.keys(api.layers).forEach(function (name) {
-            var wanted = name in saved ? saved[name] : !(narrow && (name === 'legend' || name === 'hints'));
+        Object.keys(api.layers).forEach((name) => {
+            const wanted = name in saved ? saved[name] : !(narrow && (name === 'legend' || name === 'hints'));
             if (!wanted && api.map.hasLayer(api.layers[name])) api.map.removeLayer(api.layers[name]);
         });
 
-        api.map.on('overlayadd overlayremove', function (event) {
-            var classes = api.map.getContainer().classList;
+        api.map.on('overlayadd overlayremove', (event) => {
+            const classes = api.map.getContainer().classList;
             if (classes.contains('kyiv-mode-active') || classes.contains('map-transitioning')) return;
 
-            var name = Object.keys(api.layers).find(function (key) {
+            const name = Object.keys(api.layers).find((key) => {
                 return api.layers[key] === event.layer;
             });
             if (!name) return;
 
-            var current = loadSettings();
+            const current = loadSettings();
             current.layers = current.layers || {};
             current.layers[name] = event.type === 'overlayadd';
             saveSettings(current);
         });
     });
 
-    var languageBox = document.getElementById('webLanguage');
+    const languageBox = document.getElementById('webLanguage');
     [
         ['Ukrainian', 'UA'],
         ['English', 'EN'],
-    ].forEach(function (entry) {
-        var button = el('button', { type: 'button', text: entry[1], 'aria-pressed': String(web.language === entry[0]) });
-        button.addEventListener('click', function () {
+    ].forEach((entry) => {
+        const button = el('button', { type: 'button', text: entry[1], 'aria-pressed': String(web.language === entry[0]) });
+        button.addEventListener('click', () => {
             if (web.language !== entry[0]) web.setLanguage(entry[0]);
         });
         languageBox.appendChild(button);
     });
 
-    var THEME_ORDER = ['auto', 'light', 'dark'];
-    var THEME_ICON = { auto: '\u25D0', light: '\u2600', dark: '\u263E' };
-    var themeLabels = isEnglish
+    const THEME_ORDER = ['auto', 'light', 'dark'];
+    const THEME_ICON = { auto: '\u25D0', light: '\u2600', dark: '\u263E' };
+    const themeLabels = isEnglish
         ? { auto: 'Theme: automatic', light: 'Theme: light', dark: 'Theme: dark' }
         : { auto: 'Тема: автоматична', light: 'Тема: світла', dark: 'Тема: темна' };
-    var themeButton = document.getElementById('webTheme');
+    const themeButton = document.getElementById('webTheme');
     themeButton.textContent = THEME_ICON[web.theme];
     themeButton.title = themeLabels[web.theme];
     themeButton.setAttribute('aria-label', themeLabels[web.theme]);
-    themeButton.addEventListener('click', function () {
+    themeButton.addEventListener('click', () => {
         web.setTheme(THEME_ORDER[(THEME_ORDER.indexOf(web.theme) + 1) % THEME_ORDER.length]);
     });
 
-    var statusButton = document.getElementById('webStatus');
+    const statusButton = document.getElementById('webStatus');
     statusButton.title = text.statusTitle;
-    web.onStatus(function (status) {
-        var mode = status.stale ? 'stale' : status.live ? 'live' : 'polling';
-        statusButton.className = 'web-chip' + (mode === 'stale' ? ' stale' : '');
+    web.onStatus((status) => {
+        const mode = status.stale ? 'stale' : status.live ? 'live' : 'polling';
+        statusButton.className = `web-chip${  mode === 'stale' ? ' stale' : ''}`;
         statusButton.replaceChildren(
             el('span', { class: 'dot' }),
             el('span', { class: 'label', text: mode === 'stale' ? text.statusStale : mode === 'live' ? text.statusLive : text.statusPolling })
         );
     });
 
-    var aboutButton = document.getElementById('webAbout');
+    const aboutButton = document.getElementById('webAbout');
     aboutButton.textContent = text.about;
 
-    var dialog = document.getElementById('aboutDialog');
+    const dialog = document.getElementById('aboutDialog');
     document.getElementById('aboutClose').setAttribute('aria-label', text.close);
 
     function buildAbout() {
-        var features = web.getFeatures();
-        var dataList = el('ul', {}, [
-            el('li', {}, [text.alertsLine + ' ', link('https://alerts.in.ua/', 'alerts.in.ua'), ' - ' + text.alertsNote]),
+        const features = web.getFeatures();
+        const dataList = el('ul', {}, [
+            el('li', {}, [`${text.alertsLine  } `, link('https://alerts.in.ua/', 'alerts.in.ua'), ` - ${  text.alertsNote}`]),
         ]);
 
         if (features.threats) {
-            dataList.appendChild(el('li', {}, [text.neptunLine + ' ', link('https://neptun.in.ua/', 'NEPTUN'), ' (' + text.neptunNote + ' - NEPTUN)']));
+            dataList.appendChild(el('li', {}, [`${text.neptunLine  } `, link('https://neptun.in.ua/', 'NEPTUN'), ` (${  text.neptunNote  } - NEPTUN)`]));
         }
         if (features.occupied) {
-            dataList.appendChild(el('li', {}, [text.frontLine + ' ', link('https://deepstatemap.live/', 'DeepStateMap.live')]));
+            dataList.appendChild(el('li', {}, [`${text.frontLine  } `, link('https://deepstatemap.live/', 'DeepStateMap.live')]));
         }
 
-        var body = document.getElementById('aboutBody');
+        const body = document.getElementById('aboutBody');
         body.replaceChildren(
             el('h2', { id: 'aboutTitle', text: text.title }),
-            el('div', { class: 'about-warning' }, [el('strong', { text: text.warningTitle + '. ' }), text.warning]),
+            el('div', { class: 'about-warning' }, [el('strong', { text: `${text.warningTitle  }. ` }), text.warning]),
             el('h3', { text: text.dataTitle }),
             dataList,
             el('h3', { text: text.mapTitle }),
@@ -219,16 +219,16 @@
             el('h3', { text: text.privacyTitle }),
             el('p', { text: text.privacyText }),
             el('h3', { text: text.openSourceTitle }),
-            el('p', {}, [text.openSourceText + ' ', link('https://github.com/sergeiown/Alert_Server', 'github.com/sergeiown/Alert_Server')])
+            el('p', {}, [`${text.openSourceText  } `, link('https://github.com/sergeiown/Alert_Server', 'github.com/sergeiown/Alert_Server')])
         );
     }
 
-    aboutButton.addEventListener('click', function () {
+    aboutButton.addEventListener('click', () => {
         buildAbout();
         if (typeof dialog.showModal === 'function') dialog.showModal();
     });
 
-    dialog.addEventListener('click', function (event) {
+    dialog.addEventListener('click', (event) => {
         if (event.target === dialog) dialog.close();
     });
 })();

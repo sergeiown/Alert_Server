@@ -4,33 +4,33 @@
 (function () {
     'use strict';
 
-    var LANGUAGE_KEY = 'alertmap.language';
-    var POLL_MS = 10000;
-    var MAX_RECONNECT_MS = 60000;
-    var ALLOWED_LINK_HOSTS = ['www.openstreetmap.org', 'neptun.in.ua', 'alerts.in.ua', 'deepstatemap.live', 'github.com', 'www.naturalearthdata.com', 'creativecommons.org'];
+    const LANGUAGE_KEY = 'alertmap.language';
+    const POLL_MS = 10000;
+    const MAX_RECONNECT_MS = 60000;
+    const ALLOWED_LINK_HOSTS = ['www.openstreetmap.org', 'neptun.in.ua', 'alerts.in.ua', 'deepstatemap.live', 'github.com', 'www.naturalearthdata.com', 'creativecommons.org'];
 
     function detectLanguage() {
-        var stored = null;
+        let stored = null;
         try {
             stored = localStorage.getItem(LANGUAGE_KEY);
         } catch (err) {}
         if (stored === 'English' || stored === 'Ukrainian') return stored;
-        var browser = (navigator.language || 'uk').toLowerCase();
+        const browser = (navigator.language || 'uk').toLowerCase();
         return browser.indexOf('uk') === 0 || browser.indexOf('ru') === 0 ? 'Ukrainian' : 'English';
     }
 
-    var THEME_KEY = 'alertmap.theme';
-    var nativeMatchMedia = window.matchMedia.bind(window);
+    const THEME_KEY = 'alertmap.theme';
+    const nativeMatchMedia = window.matchMedia.bind(window);
 
     function detectTheme() {
-        var stored = null;
+        let stored = null;
         try {
             stored = localStorage.getItem(THEME_KEY);
         } catch (err) {}
         return stored === 'light' || stored === 'dark' ? stored : 'auto';
     }
 
-    var themePreference = detectTheme();
+    const themePreference = detectTheme();
     if (themePreference !== 'auto') document.documentElement.setAttribute('data-theme', themePreference);
 
     function effectiveDark() {
@@ -43,33 +43,33 @@
                 matches: effectiveDark(),
                 media: query,
                 onchange: null,
-                addEventListener: function () {},
-                removeEventListener: function () {},
-                addListener: function () {},
-                removeListener: function () {},
+                addEventListener () {},
+                removeEventListener () {},
+                addListener () {},
+                removeListener () {},
             };
         }
         return nativeMatchMedia(query);
     };
 
-    var language = detectLanguage();
+    const language = detectLanguage();
     document.documentElement.lang = language === 'English' ? 'en' : 'uk';
 
-    var state = null;
-    var features = { threats: false, occupied: false };
-    var threats = [];
-    var occupied = { geojson: null, date: null };
-    var alertTypes = {};
-    var threatListeners = [];
-    var socket = null;
-    var reconnectAttempts = 0;
-    var pollTimer = null;
-    var statusListeners = [];
-    var connection = { live: false, stale: true };
+    let state = null;
+    let features = { threats: false, occupied: false };
+    let threats = [];
+    let occupied = { geojson: null, date: null };
+    const alertTypes = {};
+    const threatListeners = [];
+    let socket = null;
+    let reconnectAttempts = 0;
+    let pollTimer = null;
+    const statusListeners = [];
+    const connection = { live: false, stale: true };
 
     function fetchJson(url) {
-        return fetch(url, { cache: 'no-cache' }).then(function (response) {
-            if (!response.ok) throw new Error('HTTP ' + response.status);
+        return fetch(url, { cache: 'no-cache' }).then((response) => {
+            if (!response.ok) throw new Error(`HTTP ${  response.status}`);
             return response.json();
         });
     }
@@ -83,14 +83,14 @@
     function withNames(entry) {
         return Object.assign({}, entry, {
             alertTypeName: entry.alertType ? typeName(entry.alertType) : null,
-            threats: (entry.threats || []).map(function (threat) {
+            threats: (entry.threats || []).map((threat) => {
                 return { level: threat.level, description: threat.alertType ? typeName(threat.alertType) : null };
             }),
         });
     }
 
     function notifyStatus() {
-        statusListeners.forEach(function (listener) {
+        statusListeners.forEach((listener) => {
             listener({ live: connection.live, stale: connection.stale || (state ? state.stale : true) });
         });
     }
@@ -104,7 +104,7 @@
 
     function applyThreats(payload) {
         threats = (payload && payload.threats) || [];
-        threatListeners.forEach(function (listener) {
+        threatListeners.forEach((listener) => {
             listener(threats);
         });
     }
@@ -112,24 +112,24 @@
     function refreshOccupied() {
         if (!features.occupied) return Promise.resolve();
         return fetchJson('/public/occupied')
-            .then(function (geojson) {
-                occupied = { geojson: geojson, date: null };
+            .then((geojson) => {
+                occupied = { geojson, date: null };
             })
-            .catch(function () {});
+            .catch(() => {});
     }
 
-    var languageCode = language === 'English' ? 'en' : 'uk';
-    var firstPoll = true;
+    const languageCode = language === 'English' ? 'en' : 'uk';
+    let firstPoll = true;
 
     function poll() {
-        var query = '?l=' + languageCode + (firstPoll ? '&s=1' : '');
+        const query = `?l=${  languageCode  }${firstPoll ? '&s=1' : ''}`;
         firstPoll = false;
-        return fetchJson('/public/state' + query)
+        return fetchJson(`/public/state${  query}`)
             .then(applyState)
-            .then(function () {
+            .then(() => {
                 if (features.threats) return fetchJson('/public/threats').then(applyThreats);
             })
-            .catch(function () {
+            .catch(() => {
                 connection.stale = true;
                 notifyStatus();
             });
@@ -147,25 +147,25 @@
     }
 
     function connectSocket() {
-        var protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-        var ws;
+        const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        let ws;
         try {
-            ws = new WebSocket(protocol + '//' + location.host + '/public/ws?l=' + languageCode);
+            ws = new WebSocket(`${protocol  }//${  location.host  }/public/ws?l=${  languageCode}`);
         } catch (err) {
             scheduleReconnect();
             return;
         }
         socket = ws;
 
-        ws.addEventListener('open', function () {
+        ws.addEventListener('open', () => {
             reconnectAttempts = 0;
             connection.live = true;
             stopPolling();
             notifyStatus();
         });
 
-        ws.addEventListener('message', function (event) {
-            var message;
+        ws.addEventListener('message', (event) => {
+            let message;
             try {
                 message = JSON.parse(event.data);
             } catch (err) {
@@ -179,7 +179,7 @@
             }
         });
 
-        ws.addEventListener('close', function () {
+        ws.addEventListener('close', () => {
             if (socket !== ws) return;
             connection.live = false;
             notifyStatus();
@@ -187,30 +187,30 @@
             scheduleReconnect();
         });
 
-        ws.addEventListener('error', function () {});
+        ws.addEventListener('error', () => {});
     }
 
     function scheduleReconnect() {
-        var delay = Math.min(3000 * Math.pow(2, reconnectAttempts), MAX_RECONNECT_MS);
+        const delay = Math.min(3000 * Math.pow(2, reconnectAttempts), MAX_RECONNECT_MS);
         reconnectAttempts += 1;
         setTimeout(connectSocket, delay);
     }
 
-    var mapApi = null;
-    var mapReadyListeners = [];
+    let mapApi = null;
+    const mapReadyListeners = [];
 
-    var strings = null;
-    var ready = Promise.all([
-        fetchJson('i18n/' + (language === 'English' ? 'en' : 'uk') + '.json').then(function (data) {
+    let strings = null;
+    const ready = Promise.all([
+        fetchJson(`i18n/${  language === 'English' ? 'en' : 'uk'  }.json`).then((data) => {
             strings = data;
         }),
         fetchJson('data/alertTypes.json')
-            .then(function (list) {
-                list.forEach(function (entry) {
+            .then((list) => {
+                list.forEach((entry) => {
                     alertTypes[entry.id] = entry.name;
                 });
             })
-            .catch(function () {}),
+            .catch(() => {}),
         poll(),
     ]).then(refreshOccupied);
 
@@ -220,7 +220,7 @@
 
     function openExternal(url) {
         try {
-            var parsed = new URL(url);
+            const parsed = new URL(url);
             if (parsed.protocol !== 'https:' || ALLOWED_LINK_HOSTS.indexOf(parsed.hostname) === -1) return Promise.resolve();
             window.open(parsed.href, '_blank', 'noopener,noreferrer');
         } catch (err) {}
@@ -234,33 +234,33 @@
         get threatIconScale() {
             return window.matchMedia('(max-width: 560px)').matches ? 0.75 : 1;
         },
-        getStrings: function () {
-            return ready.then(function () {
+        getStrings () {
+            return ready.then(() => {
                 return strings;
             });
         },
-        getSettings: function () {
-            return Promise.resolve({ language: language, alertSourceProvider: 'alerts.in.ua', theme: 'system' });
+        getSettings () {
+            return Promise.resolve({ language, alertSourceProvider: 'alerts.in.ua', theme: 'system' });
         },
-        getBaseMapUrl: function () {
+        getBaseMapUrl () {
             return Promise.resolve(effectiveDark() ? 'basemap-dark.svg' : 'basemap-light.svg');
         },
-        getActiveAlertCount: function () {
-            return ready.then(function () {
+        getActiveAlertCount () {
+            return ready.then(() => {
                 return state ? state.total : 0;
             });
         },
-        getDailyPeaks: function () {
-            return ready.then(function () {
+        getDailyPeaks () {
+            return ready.then(() => {
                 return state ? state.peaks : { alertPeak: 0, threatPeak: 0 };
             });
         },
-        getActiveAlertSource: function () {
+        getActiveAlertSource () {
             return Promise.resolve('alerts.in.ua');
         },
-        getAlertedRegions: function () {
-            return ready.then(function () {
-                var regions = state ? state.regions : { oblasts: [], raions: [], kyivRaions: [] };
+        getAlertedRegions () {
+            return ready.then(() => {
+                const regions = state ? state.regions : { oblasts: [], raions: [], kyivRaions: [] };
                 return {
                     oblasts: regions.oblasts.map(withNames),
                     raions: regions.raions.map(withNames),
@@ -268,64 +268,64 @@
                 };
             });
         },
-        getOccupiedTerritory: function () {
-            return ready.then(function () {
+        getOccupiedTerritory () {
+            return ready.then(() => {
                 return occupied;
             });
         },
-        getThreats: function () {
-            return ready.then(function () {
+        getThreats () {
+            return ready.then(() => {
                 return threats;
             });
         },
-        onThreatsUpdated: function (callback) {
+        onThreatsUpdated (callback) {
             threatListeners.push(callback);
         },
-        takeScreenshot: function () {
+        takeScreenshot () {
             return Promise.resolve(false);
         },
-        openExternal: openExternal,
-        getTitleBarAccentColor: function () {
+        openExternal,
+        getTitleBarAccentColor () {
             return Promise.resolve(null);
         },
-        onTitleBarAccentColorChanged: function () {},
-        onForceKyivMode: function () {},
-        onMapReady: function (api) {
+        onTitleBarAccentColorChanged () {},
+        onForceKyivMode () {},
+        onMapReady (api) {
             mapApi = api;
-            mapReadyListeners.forEach(function (listener) {
+            mapReadyListeners.forEach((listener) => {
                 listener(api);
             });
         },
-        consumePendingKyivMode: function () {
+        consumePendingKyivMode () {
             return Promise.resolve(location.hash === '#kyiv');
         },
     };
 
     window.alertMapWeb = {
-        language: language,
+        language,
         theme: themePreference,
-        nativeMatchMedia: nativeMatchMedia,
-        setTheme: function (next) {
+        nativeMatchMedia,
+        setTheme (next) {
             try {
                 localStorage.setItem(THEME_KEY, next);
             } catch (err) {}
             location.reload();
         },
-        setLanguage: function (next) {
+        setLanguage (next) {
             try {
                 localStorage.setItem(LANGUAGE_KEY, next);
             } catch (err) {}
             location.reload();
         },
-        ready: ready,
-        whenMapReady: function (listener) {
+        ready,
+        whenMapReady (listener) {
             if (mapApi) listener(mapApi);
             else mapReadyListeners.push(listener);
         },
-        getFeatures: function () {
+        getFeatures () {
             return features;
         },
-        onStatus: function (listener) {
+        onStatus (listener) {
             statusListeners.push(listener);
             listener({ live: connection.live, stale: connection.stale });
         },
