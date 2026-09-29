@@ -231,7 +231,7 @@
         kyivBase: {
             imageryUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             labelsUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-            attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics',
+            attribution: 'Imagery &copy; <a href="https://www.esri.com/" target="_blank" rel="noopener noreferrer">Esri</a>, Maxar, Earthstar Geographics',
         },
         regionsRefreshMs: 5000,
         minZoom: 3,
