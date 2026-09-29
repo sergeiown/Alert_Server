@@ -1,0 +1,1 @@
+{"name":"web-map","private":true,"devDependencies":{"esbuild":"^0.28.2","protomaps-leaflet":"^5.1.0"}}

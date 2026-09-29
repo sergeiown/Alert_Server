@@ -345,6 +345,27 @@ body {
     font-size: 8px;
 }
 
+.kyiv-raion-labels {
+    pointer-events: none;
+}
+
+.kyiv-raion-label {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #3a3629;
+    text-shadow:
+        -1px -1px 2px #f3f1ea,
+        1px -1px 2px #f3f1ea,
+        -1px 1px 2px #f3f1ea,
+        1px 1px 2px #f3f1ea;
+}
+
 .raion-border {
     stroke: #6b6349;
 }
@@ -515,6 +536,15 @@ body {
 @media (prefers-color-scheme: dark) {
     #map {
         background: #10151c;
+    }
+
+    .kyiv-raion-label {
+        color: #d6dbe4;
+        text-shadow:
+            -1px -1px 2px #15181d,
+            1px -1px 2px #15181d,
+            -1px 1px 2px #15181d,
+            1px 1px 2px #15181d;
     }
 
     .threat-icon {

@@ -10,6 +10,7 @@ import { ready as alertedRegionsReady } from './alertedRegionsStore.js';
 import { startStatusBar } from './statusBar.js';
 import { addScreenshotControl } from './screenshot.js';
 import { KYIV_RAION_BORDERS } from './kyivRaionBorders.js';
+import { createKyivRaionLabels } from './kyivRaionLabels.js';
 import { applyTitleBarAccentColor } from './chromeTint.js';
 
 const UKRAINE_BOUNDS = [
@@ -40,6 +41,7 @@ function computeKyivBounds() {
 
 const KYIV_BOUNDS = computeKyivBounds();
 
+const KYIV_TILES_URL = 'https://alert-proxy-ua.duckdns.org/live/tiles/kyiv.pmtiles';
 const MAP_MIN_ZOOM = window.alertServerLiveMap.minZoom || 5;
 const UKRAINE_MAX_ZOOM = 12;
 const KYIV_MAX_ZOOM = 14;
@@ -148,19 +150,14 @@ async function main() {
 
     const isDarkMap = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    const kyivBase = window.alertServerLiveMap.kyivBase || {
-        imageryUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        labelsUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-        attribution: `<a href="#" id="esriAttribution">${strings.liveMapEsriAttribution}</a>`,
-    };
-    const kyivImageryLayer = L.tileLayer(kyivBase.imageryUrl, {
-        attribution: kyivBase.attribution,
-        maxZoom: 19,
+    const kyivTilesUrl = window.alertServerLiveMap.kyivTilesUrl || KYIV_TILES_URL;
+    const kyivImageryLayer = window.alertOsmBasemap.create({
+        url: kyivTilesUrl,
+        dark: isDarkMap,
+        lang: settings.language === 'English' ? 'en' : 'uk',
+        attribution: `<a href="#" id="osmAttribution">${strings.liveMapOsmAttribution}</a>`,
     });
-    const kyivLabelsLayer = L.tileLayer(kyivBase.labelsUrl, {
-        attribution: kyivBase.attribution,
-        maxZoom: 19,
-    });
+    const kyivLabelsLayer = createKyivRaionLabels(settings.language === 'English');
 
     let riverLayerWasOn = true;
     let occupiedTerritoryLayerWasOn = true;
@@ -318,7 +315,7 @@ async function main() {
             if (occupiedTerritoryLayerWasOn) map.removeLayer(occupiedTerritoryLayer);
             kyivImageryLayer.addTo(map);
             kyivLabelsLayer.addTo(map);
-            bindAttributionLink('esriAttribution', 'https://www.esri.com/');
+            bindAttributionLink('osmAttribution', 'https://www.openstreetmap.org/copyright');
 
             kyivMask.addTo(map);
             kyivMask.bringToBack();

@@ -7,7 +7,7 @@
     var LANGUAGE_KEY = 'alertmap.language';
     var POLL_MS = 10000;
     var MAX_RECONNECT_MS = 60000;
-    var ALLOWED_LINK_HOSTS = ['neptun.in.ua', 'alerts.in.ua', 'deepstatemap.live', 'github.com', 'www.naturalearthdata.com', 'creativecommons.org'];
+    var ALLOWED_LINK_HOSTS = ['www.openstreetmap.org', 'neptun.in.ua', 'alerts.in.ua', 'deepstatemap.live', 'github.com', 'www.naturalearthdata.com', 'creativecommons.org'];
 
     function detectLanguage() {
         var stored = null;
@@ -228,11 +228,7 @@
     }
 
     window.alertServerLiveMap = {
-        kyivBase: {
-            imageryUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            labelsUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-            attribution: '<a href="https://www.esri.com/" target="_blank" rel="noopener noreferrer">Imagery &copy; Esri, Maxar, Earthstar Geographics</a>',
-        },
+        kyivTilesUrl: new URL('tiles/kyiv.pmtiles', location.href).href,
         regionsRefreshMs: 5000,
         minZoom: 3,
         get threatIconScale() {

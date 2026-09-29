@@ -84,7 +84,7 @@ copyFile(path.join(RESOURCES, 'icons', 'app-icon-256.png'), path.join(OUT, 'icon
 const cssFile = path.join(OUT, 'index.css');
 fs.writeFileSync(cssFile, forceableDarkTheme(fs.readFileSync(cssFile, 'utf-8')));
 
-const forbidden = ['mapsvg'];
+const forbidden = ['arcgisonline', 'mapsvg'];
 const offenders = [];
 (function scan(directory) {
     fs.readdirSync(directory, { withFileTypes: true }).forEach((entry) => {

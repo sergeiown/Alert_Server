@@ -28,7 +28,7 @@
     "liveMapExitFullScreenTitle": "Вимкнути повноекранний режим",
     "liveMapAlertsAttributionPrefix": "Тривоги:",
     "liveMapNeptunAttribution": "Дані про загрози: Neptun",
-    "liveMapEsriAttribution": "Супутникові знімки: Esri",
+    "liveMapOsmAttribution": "© OpenStreetMap contributors",
     "liveMapDeepStateAttribution": "Лінія фронту: DeepState",
     "liveMapUpdated": "Оновлено",
     "liveMapConfidenceHigh": "висока",
