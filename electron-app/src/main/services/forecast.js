@@ -46,12 +46,12 @@ function logHistoryOriginIssue(uid, status) {
     if (status === historyLastLoggedStatus && now - historyLastLoggedAt < HISTORY_ORIGIN_ISSUE_LOG_COOLDOWN_MS) return;
     historyLastLoggedStatus = status;
     historyLastLoggedAt = now;
-    logEvent(`alert-proxy history origin issue (uid ${uid} via alerts.in.ua): ${status} (${describeOriginStatus(status)})`, 'NETWORK');
+    logEvent(`alerts.in.ua history origin issue (uid ${uid}): ${status} (${describeOriginStatus(status)})`, 'NETWORK');
 }
 
 function noteHistoryOriginHealthy() {
     if (historyLastLoggedStatus === null) return;
-    logEvent('alert-proxy history origin recovered (alerts.in.ua)', 'NETWORK');
+    logEvent('alerts.in.ua history origin recovered', 'NETWORK');
     historyLastLoggedStatus = null;
 }
 

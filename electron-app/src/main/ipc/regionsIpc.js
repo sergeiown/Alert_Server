@@ -13,7 +13,7 @@ const { notifyRegionsChanged } = require('../windows/forecastWindow');
 const { logEvent } = require('../services/logger');
 
 function prefetchForecastHistory(uid) {
-    fetchHistoryAlerts(uid).catch((err) => logEvent(`Forecast prefetch failed for uid ${uid} (alert-proxy): ${err.message}`, 'NETWORK'));
+    fetchHistoryAlerts(uid).catch((err) => logEvent(`Forecast prefetch failed for uid ${uid}: ${err.message}`, 'NETWORK'));
 }
 
 let cachedTree = null;

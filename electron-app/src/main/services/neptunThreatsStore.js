@@ -181,7 +181,7 @@ function connect() {
     socket = ws;
 
     ws.addEventListener('open', () => {
-        logEvent(`Neptun threats connected${viaProxy ? ' (via alert-proxy)' : ' (direct)'}`, 'NETWORK');
+        logEvent('Neptun threats connected', 'NETWORK');
         resetHeartbeatWatch();
     });
 
@@ -223,7 +223,7 @@ function connect() {
         if (viaProxy && !gotMessage) {
             useProxy = false;
             directSince = Date.now();
-            logEvent('Neptun threats: alert-proxy stream unavailable - switching to direct connection', 'NETWORK');
+            logEvent('Neptun threats: stream unavailable - switching connection', 'NETWORK');
         }
         startFallbackPolling();
         scheduleReconnect();

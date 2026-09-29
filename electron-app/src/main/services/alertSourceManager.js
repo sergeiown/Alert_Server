@@ -13,11 +13,11 @@ const RECOVERY_RETRY_MS = 5 * 60 * 1000;
 
 const SOURCES = {
     ukrainealarm: {
-        label: 'UkraineAlarm via alert-proxy',
+        label: 'UkraineAlarm',
         start: (clientKey, onUpdate, onHealthChange) => startUkraineAlarmPolling(clientKey, onUpdate, onHealthChange),
     },
     'alerts.in.ua': {
-        label: 'alerts.in.ua via alert-proxy',
+        label: 'alerts.in.ua',
         start: (clientKey, onUpdate, onHealthChange) => startAlertsInUaPolling(clientKey, onUpdate, onHealthChange),
     },
     neptun: {
