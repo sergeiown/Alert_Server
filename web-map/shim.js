@@ -235,6 +235,9 @@
         },
         regionsRefreshMs: 5000,
         minZoom: 3,
+        get threatIconScale() {
+            return window.matchMedia('(max-width: 560px)').matches ? 0.75 : 1;
+        },
         getStrings: function () {
             return ready.then(function () {
                 return strings;

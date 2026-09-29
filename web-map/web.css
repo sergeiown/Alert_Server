@@ -139,8 +139,8 @@ a.web-chip {
     text-align: center;
 }
 
-.leaflet-bottom {
-    bottom: var(--web-bar-height, 44px);
+#map {
+    height: calc(100% - var(--web-bar-height, 44px));
 }
 
 #aboutDialog {

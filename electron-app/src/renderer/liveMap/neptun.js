@@ -158,7 +158,7 @@ function iconHtml(typeKey, rotationDeg, lifecycle, sizePx = DEFAULT_ICON_SIZE_PX
 function threatIcon(threat, sizeMultiplier = 1) {
     const typeKey = resolveTypeKey(threat);
     const rotation = typeof threat.heading === 'number' ? threat.heading : undefined;
-    const sizePx = Math.round((MAP_ICON_SIZE_OVERRIDES[typeKey] || DEFAULT_ICON_SIZE_PX) * sizeMultiplier);
+    const sizePx = Math.round((MAP_ICON_SIZE_OVERRIDES[typeKey] || DEFAULT_ICON_SIZE_PX) * sizeMultiplier * (window.alertServerLiveMap.threatIconScale || 1));
 
     return L.divIcon({
         className: 'threat-icon-wrapper',
