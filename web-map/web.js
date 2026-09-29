@@ -81,6 +81,9 @@
 
     document.getElementById('webNotice').textContent = text.notice;
 
+    var root = document.documentElement;
+    if (!(root.requestFullscreen || root.webkitRequestFullscreen)) root.classList.add('no-fullscreen');
+
     var fullscreenProto = L.Control.FullScreenButton && L.Control.FullScreenButton.prototype;
     if (fullscreenProto) {
         var enterOrExit = fullscreenProto._toggleFullScreenElement;

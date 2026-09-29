@@ -3,7 +3,8 @@
     "short_name": "Alert map",
     "start_url": "./",
     "scope": "./",
-    "display": "standalone",
+    "display": "fullscreen",
+    "display_override": ["fullscreen", "standalone"],
     "background_color": "#0b1416",
     "theme_color": "#0b1416",
     "icons": [{ "src": "icon-256.png", "sizes": "256x256", "type": "image/png", "purpose": "any" }]

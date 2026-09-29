@@ -231,3 +231,7 @@ a.web-chip {
         scroll-behavior: auto !important;
     }
 }
+
+.no-fullscreen .leaflet-control-fullscreen {
+    display: none;
+}
