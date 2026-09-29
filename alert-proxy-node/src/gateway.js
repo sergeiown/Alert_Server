@@ -100,6 +100,11 @@ function totalConnections() {
     return sockets.alerts.size + sockets.active.size + neptun.socketCount();
 }
 
+function getActiveBody() {
+    const cache = state.activeCache;
+    return { body: cache ? cache.body : null, fetchedAt: cache ? cache.fetchedAt : null, error: state.activeOriginError };
+}
+
 function socketCount(tag) {
     return sockets[tag].size;
 }
@@ -829,6 +834,7 @@ function buildStatus() {
             neptun: neptun.getStatusInfo(),
             occupied: occupied.getStatusInfo(),
             geoip: geoip.getStatusInfo(),
+            publicApi: require('./publicApi').getStatusInfo(),
             backfill: { complete: trends.isBackfillComplete() },
             peaks: trends.getDailyPeaks(),
             archive: archive.getStats(),
@@ -926,6 +932,7 @@ async function getWeaponStats() {
 }
 
 module.exports = {
+    getActiveBody,
     isUkraineAlarmUnavailable,
     checkHealth,
     totalConnections,

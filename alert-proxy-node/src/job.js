@@ -8,6 +8,7 @@ const backup = require('./backup');
 const archive = require('./archive');
 const users = require('./users');
 const geoip = require('./geoip');
+const publicApi = require('./publicApi');
 const trends = require('./trends');
 const occupied = require('./occupied');
 const lib = require('./lib');
@@ -107,6 +108,7 @@ function startRecurringJob() {
     neptun.start();
     occupied.start();
     geoip.start();
+    publicApi.start();
     historyBackfillLoop();
     maintenanceLoop();
     healthLoop();

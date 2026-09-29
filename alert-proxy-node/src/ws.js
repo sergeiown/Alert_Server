@@ -6,12 +6,15 @@ const gateway = require('./gateway');
 const neptun = require('./neptun');
 const users = require('./users');
 const ratelimit = require('./ratelimit');
+const publicApi = require('./publicApi');
+const config = require('./config');
 const { checkClientKey } = require('./auth');
 
 function attachWebSockets(server) {
     const alertsWss = new WebSocketServer({ noServer: true });
     const activeWss = new WebSocketServer({ noServer: true });
     const neptunWss = new WebSocketServer({ noServer: true });
+    const publicWss = new WebSocketServer({ noServer: true, maxPayload: 1024 });
 
     alertsWss.on('connection', (ws) => {
         gateway.acceptAlertsSocket(ws);
@@ -34,8 +37,34 @@ function attachWebSockets(server) {
         ws.on('message', () => {});
     });
 
+    publicWss.on('connection', (ws) => {
+        publicApi.acceptSocket(ws);
+        ws.on('close', () => publicApi.unregisterSocket(ws));
+        ws.on('error', () => {});
+        ws.on('message', () => {});
+    });
+
     server.on('upgrade', (request, socket, head) => {
         const url = new URL(request.url, 'http://localhost');
+
+        if (url.pathname === '/public/ws') {
+            const forwardedFor = request.headers['x-forwarded-for'];
+            const publicIp = forwardedFor ? forwardedFor.split(',')[0].trim() : request.socket.remoteAddress;
+
+            if (!config.PUBLIC_API_ENABLED || !publicApi.originAllowed(request.headers.origin)) {
+                socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
+                socket.destroy();
+                return;
+            }
+            if (!publicApi.canAcceptSocket() || !ratelimit.openPublicSocket(publicIp)) {
+                socket.write('HTTP/1.1 429 Too Many Requests\r\n\r\n');
+                socket.destroy();
+                return;
+            }
+            socket.once('close', () => ratelimit.closePublicSocket(publicIp));
+            publicWss.handleUpgrade(request, socket, head, (ws) => publicWss.emit('connection', ws, request));
+            return;
+        }
 
         if (!checkClientKey(url, request.headers)) {
             socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');

@@ -75,6 +75,11 @@ async function recordRequest(ip, route, version) {
     record(await lib.hashIp(ip), route, version, geoip.lookup(ip));
 }
 
+function recordHit(route) {
+    const now = new Date();
+    upsertHit.run(lib.kyivDateKey(now), kyivHourNow(now), route);
+}
+
 function notePeak(totalConnections) {
     const day = lib.kyivDateKey(new Date());
     if (peak.day !== day) {
@@ -226,4 +231,4 @@ function getStats(currentConnections) {
     };
 }
 
-module.exports = { record, recordRequest, notePeak, prune, getStats };
+module.exports = { record, recordRequest, recordHit, notePeak, prune, getStats };

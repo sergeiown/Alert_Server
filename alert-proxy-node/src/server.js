@@ -14,6 +14,8 @@ const users = require('./users');
 const forecast = require('./forecast');
 const trends = require('./trends');
 const occupied = require('./occupied');
+const publicApi = require('./publicApi');
+const config = require('./config');
 
 function getClientIp(req) {
     const forwarded = req.headers['x-forwarded-for'];
@@ -58,6 +60,36 @@ async function handleRequest(req, res) {
     const requesterIp = getClientIp(req);
     if (!ratelimit.allowRequest(requesterIp)) {
         send(res, { status: 429, headers: { 'Retry-After': '60' }, body: 'Too many requests' });
+        return;
+    }
+
+    if (url.pathname.startsWith('/public/')) {
+        const publicHeaders = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
+        if (!config.PUBLIC_API_ENABLED) {
+            res.writeHead(404, publicHeaders);
+            res.end('Not found');
+            return;
+        }
+        if (req.method !== 'GET') {
+            res.writeHead(405, publicHeaders);
+            res.end('Method not allowed');
+            return;
+        }
+        if (!ratelimit.allowPublicRequest(requesterIp)) {
+            res.writeHead(429, { ...publicHeaders, 'Retry-After': '60' });
+            res.end('Too many requests');
+            return;
+        }
+
+        const result = publicApi.handle(url.pathname);
+        if (!result) {
+            res.writeHead(404, publicHeaders);
+            res.end('Not found');
+            return;
+        }
+        users.recordHit(url.pathname);
+        res.writeHead(result.status, result.headers);
+        res.end(result.body);
         return;
     }
 

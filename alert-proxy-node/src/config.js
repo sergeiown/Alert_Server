@@ -13,6 +13,11 @@ const ADMIN_KEY = process.env.ADMIN_KEY || '';
 const UKRAINEALARM_TOKEN = process.env.UKRAINEALARM_TOKEN || '';
 const UKRAINEALARM_WEBHOOK_PUBLIC_KEY = (process.env.UKRAINEALARM_WEBHOOK_PUBLIC_KEY || '').replace(/\\n/g, '\n');
 const UKRAINEALARM_WEBHOOK_PATH = process.env.UKRAINEALARM_WEBHOOK_PATH || '';
+const PUBLIC_API_ENABLED = process.env.PUBLIC_API_ENABLED !== 'false';
+const PUBLIC_THREATS_ENABLED = process.env.PUBLIC_THREATS_ENABLED === 'true';
+const PUBLIC_OCCUPIED_ENABLED = process.env.PUBLIC_OCCUPIED_ENABLED === 'true';
+const PUBLIC_ORIGIN = process.env.PUBLIC_ORIGIN || 'https://alert-proxy-ua.duckdns.org';
+const PUBLIC_WS_MAX = Number(process.env.PUBLIC_WS_MAX) || 2000;
 const KAGGLE_TOKEN = process.env.KAGGLE_TOKEN || '';
 const KAGGLE_USERNAME = process.env.KAGGLE_USERNAME || '';
 const KAGGLE_KEY = process.env.KAGGLE_KEY || '';
@@ -27,6 +32,11 @@ module.exports = {
     UKRAINEALARM_TOKEN,
     UKRAINEALARM_WEBHOOK_PUBLIC_KEY,
     UKRAINEALARM_WEBHOOK_PATH,
+    PUBLIC_API_ENABLED,
+    PUBLIC_THREATS_ENABLED,
+    PUBLIC_OCCUPIED_ENABLED,
+    PUBLIC_ORIGIN,
+    PUBLIC_WS_MAX,
     KAGGLE_TOKEN,
     KAGGLE_USERNAME,
     KAGGLE_KEY,
