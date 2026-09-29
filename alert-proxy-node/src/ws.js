@@ -7,6 +7,7 @@ const neptun = require('./neptun');
 const users = require('./users');
 const ratelimit = require('./ratelimit');
 const publicApi = require('./publicApi');
+const webstats = require('./webstats');
 const config = require('./config');
 const { checkClientKey } = require('./auth');
 
@@ -62,6 +63,7 @@ function attachWebSockets(server) {
                 return;
             }
             socket.once('close', () => ratelimit.closePublicSocket(publicIp));
+            webstats.recordVisitor(publicIp, url.searchParams.get('l'));
             publicWss.handleUpgrade(request, socket, head, (ws) => publicWss.emit('connection', ws, request));
             return;
         }

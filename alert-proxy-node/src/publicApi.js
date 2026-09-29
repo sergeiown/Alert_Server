@@ -8,6 +8,7 @@ const occupied = require('./occupied');
 const trends = require('./trends');
 const regions = require('./regions');
 const ratelimit = require('./ratelimit');
+const webstats = require('./webstats');
 
 const STALE_AFTER_MS = 120 * 1000;
 const TICK_MS = 2000;
@@ -113,6 +114,7 @@ function threatsPayload() {
 
 function acceptSocket(ws) {
     sockets.add(ws);
+    webstats.notePeak(sockets.size);
     sendMessage(ws, { type: 'state', data: buildState() });
     if (config.PUBLIC_THREATS_ENABLED) sendMessage(ws, { type: 'threats', data: threatsPayload() });
 }
@@ -158,6 +160,10 @@ function start() {
     setInterval(tick, TICK_MS).unref();
 }
 
+function socketCount() {
+    return sockets.size;
+}
+
 function getStatusInfo() {
     return {
         enabled: config.PUBLIC_API_ENABLED,
@@ -169,4 +175,4 @@ function getStatusInfo() {
     };
 }
 
-module.exports = { handle, start, acceptSocket, unregisterSocket, canAcceptSocket, originAllowed, getStatusInfo };
+module.exports = { handle, socketCount, start, acceptSocket, unregisterSocket, canAcceptSocket, originAllowed, getStatusInfo };

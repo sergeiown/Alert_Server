@@ -15,6 +15,7 @@ const forecast = require('./forecast');
 const trends = require('./trends');
 const occupied = require('./occupied');
 const publicApi = require('./publicApi');
+const webstats = require('./webstats');
 const config = require('./config');
 
 function getClientIp(req) {
@@ -70,7 +71,7 @@ async function handleRequest(req, res) {
             res.end('Not found');
             return;
         }
-        if (req.method !== 'GET') {
+        if (req.method !== 'GET' && req.method !== 'HEAD') {
             res.writeHead(405, publicHeaders);
             res.end('Method not allowed');
             return;
@@ -88,8 +89,12 @@ async function handleRequest(req, res) {
             return;
         }
         users.recordHit(url.pathname);
+        if (url.pathname === '/public/state') {
+            webstats.recordVisitor(requesterIp, url.searchParams.get('l'));
+            if (url.searchParams.get('s') === '1') webstats.recordSession();
+        }
         res.writeHead(result.status, result.headers);
-        res.end(result.body);
+        res.end(req.method === 'HEAD' ? undefined : result.body);
         return;
     }
 
@@ -109,7 +114,8 @@ async function handleRequest(req, res) {
         return;
     }
 
-    const isAdminRoute = url.pathname === '/status' || url.pathname === '/ukrainealarm-status' || url.pathname === '/users-stats';
+    const isAdminRoute =
+        url.pathname === '/status' || url.pathname === '/ukrainealarm-status' || url.pathname === '/users-stats' || url.pathname === '/web-stats';
     if (isAdminRoute && ratelimit.isAdminBlocked(requesterIp)) {
         send(res, { status: 429, headers: { 'Retry-After': '600' }, body: 'Too many failed attempts' });
         return;
@@ -195,6 +201,11 @@ async function handleRequest(req, res) {
     if (url.pathname === '/archive/alerts') {
         const rows = archive.getAlertsSince(url.searchParams.get('since'), url.searchParams.get('uid'));
         send(res, { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ alerts: rows }) });
+        return;
+    }
+
+    if (url.pathname === '/web-stats') {
+        send(res, { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(webstats.getStats(publicApi.socketCount())) });
         return;
     }
 

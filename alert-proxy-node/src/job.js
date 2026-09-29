@@ -9,6 +9,7 @@ const archive = require('./archive');
 const users = require('./users');
 const geoip = require('./geoip');
 const publicApi = require('./publicApi');
+const webstats = require('./webstats');
 const trends = require('./trends');
 const occupied = require('./occupied');
 const lib = require('./lib');
@@ -84,6 +85,7 @@ async function maintenanceLoop() {
             backup.runBackupIfDue();
             archive.pruneOldThreats();
             users.prune();
+            webstats.prune();
         } catch (err) {
             logError('maintenance', err);
         }
