@@ -3,7 +3,7 @@
 
 import { normalizeOblastName, normalizeRaionName } from './regionNameUtils.js';
 
-const REFRESH_MS = 30000;
+const REFRESH_MS = window.alertServerLiveMap.regionsRefreshMs || 30000;
 
 let latest = { oblasts: [], raions: [], kyivRaions: [] };
 const listeners = new Set();

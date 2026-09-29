@@ -147,21 +147,19 @@ async function main() {
 
     const isDarkMap = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    const ESRI_ATTRIBUTION_HTML = `<a href="#" id="esriAttribution">${strings.liveMapEsriAttribution}</a>`;
-    const kyivImageryLayer = L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        {
-            attribution: ESRI_ATTRIBUTION_HTML,
-            maxZoom: 19,
-        }
-    );
-    const kyivLabelsLayer = L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-        {
-            attribution: ESRI_ATTRIBUTION_HTML,
-            maxZoom: 19,
-        }
-    );
+    const kyivBase = window.alertServerLiveMap.kyivBase || {
+        imageryUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        labelsUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+        attribution: `<a href="#" id="esriAttribution">${strings.liveMapEsriAttribution}</a>`,
+    };
+    const kyivImageryLayer = L.tileLayer(kyivBase.imageryUrl, {
+        attribution: kyivBase.attribution,
+        maxZoom: 19,
+    });
+    const kyivLabelsLayer = L.tileLayer(kyivBase.labelsUrl, {
+        attribution: kyivBase.attribution,
+        maxZoom: 19,
+    });
 
     let riverLayerWasOn = true;
     let occupiedTerritoryLayerWasOn = true;
@@ -459,6 +457,22 @@ async function main() {
             [strings.liveMapHintTitle]: threatsLayer.hintLayer,
         })
         .addTo(map);
+
+    if (window.alertServerLiveMap.onMapReady) {
+        window.alertServerLiveMap.onMapReady({
+            map,
+            layers: {
+                alerts: regionStatusLayer,
+                occupied: occupiedTerritoryLayer,
+                threats: threatsLayer,
+                rivers: riverLayer,
+                labels: labelsLayer,
+                legend: threatsLayer.legendLayer,
+                hints: threatsLayer.hintLayer,
+            },
+            applyKyivMode,
+        });
+    }
 
     const initialRevealToken = sceneToken;
     await Promise.all([waitForSceneReady(kyivModeActive), alertedRegionsReady, occupiedTerritoryLayer.ready]);

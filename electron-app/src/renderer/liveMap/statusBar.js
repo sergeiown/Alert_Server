@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const CLOCK_TICK_MS = 1000;
-const ALERT_COUNT_REFRESH_MS = 30000;
+const ALERT_COUNT_REFRESH_MS = window.alertServerLiveMap.regionsRefreshMs || 30000;
 
 function formatClock(now, language) {
     const locale = language === 'English' ? 'en-US' : 'uk-UA';

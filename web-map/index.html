@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Unofficial live map of air-raid alerts in Ukraine / Неофіційна жива мапа повітряних тривог в Україні" />
+    <meta name="theme-color" content="#f3f6f7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b1416" media="(prefers-color-scheme: dark)" />
+    <title>Alert Server</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon-256.png" />
+    <link rel="apple-touch-icon" href="icon-256.png" />
+    <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="index.css" />
+    <link rel="stylesheet" href="web.css" />
+</head>
+<body>
+    <div id="map">
+        <div id="statusBar">
+            <div id="statusClock"></div>
+            <div id="statusAlertCount"></div>
+        </div>
+        <div id="screenshotToast" class="hidden"></div>
+    </div>
+
+    <div id="webBar">
+        <div id="webChrome">
+            <div id="webLanguage" role="group" aria-label="Language"></div>
+            <button id="webTheme" type="button" class="web-chip web-chip-icon"></button>
+            <button id="webStatus" type="button" class="web-chip" aria-live="polite"></button>
+            <button id="webAbout" type="button" class="web-chip"></button>
+        </div>
+        <p id="webNotice"></p>
+    </div>
+
+    <dialog id="aboutDialog" aria-labelledby="aboutTitle">
+        <form method="dialog">
+            <button id="aboutClose" class="about-close" aria-label="Close">&times;</button>
+        </form>
+        <div id="aboutBody"></div>
+    </dialog>
+
+    <script src="shim.js"></script>
+    <script src="vendor/leaflet/leaflet.js"></script>
+    <script src="vendor/leaflet.fullscreen.js"></script>
+    <script type="module" src="index.js"></script>
+    <script src="web.js"></script>
+</body>
+</html>
