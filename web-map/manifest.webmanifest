@@ -5,7 +5,7 @@
     "scope": "./",
     "display": "fullscreen",
     "display_override": ["fullscreen", "standalone"],
-    "background_color": "#0b1416",
-    "theme_color": "#0b1416",
+    "background_color": "#202020",
+    "theme_color": "#202020",
     "icons": [{ "src": "icon-256.png", "sizes": "256x256", "type": "image/png", "purpose": "any" }]
 }
