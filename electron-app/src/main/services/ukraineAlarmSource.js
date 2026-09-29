@@ -4,8 +4,10 @@
 const { logEvent } = require('./logger');
 const { setLatestAlertData, getLatestAlertData } = require('./activeAlertData');
 
-const WS_URL = 'wss://alert-proxy.alert-proxy-ua.workers.dev/ws';
-const FALLBACK_POLL_URL = 'https://alert-proxy.alert-proxy-ua.workers.dev/ukrainealarm-alerts';
+const { PROXY_URL, PROXY_WS_URL } = require('./proxyConfig');
+
+const WS_URL = `${PROXY_WS_URL}/ws`;
+const FALLBACK_POLL_URL = `${PROXY_URL}/ukrainealarm-alerts`;
 const RECONNECT_DELAY_MS = 5000;
 const MAX_RECONNECT_DELAY_MS = 60000;
 const HEARTBEAT_TIMEOUT_MS = 8 * 60 * 1000;

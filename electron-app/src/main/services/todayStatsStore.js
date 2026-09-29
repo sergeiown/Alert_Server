@@ -6,7 +6,7 @@ const { loadLocalConfig } = require('./localConfig');
 const { getLocationLookup } = require('./locationFilter');
 const historyStore = require('./forecastHistoryStore');
 
-const PROXY_URL = 'https://alert-proxy.alert-proxy-ua.workers.dev';
+const { PROXY_URL } = require('./proxyConfig');
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 const TODAY_STATS_TIMEZONE = 'Europe/Kyiv';
 

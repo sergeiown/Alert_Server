@@ -8,7 +8,7 @@ const { getLocationLookup } = require('./locationFilter');
 const { getUserDataFile } = require('./appPaths');
 const historyStore = require('./forecastHistoryStore');
 
-const PROXY_URL = 'https://alert-proxy.alert-proxy-ua.workers.dev';
+const { PROXY_URL } = require('./proxyConfig');
 const BACKFILL_DAYS = 30;
 const TIMEZONE = 'Europe/Kyiv';
 

@@ -17,7 +17,8 @@ const defaultSettings = {
     massAttackThreshold: 75,
     updateCheckIntervalHours: 24,
 
-    alertSourceProvider: 'ukrainealarm',
+    alertSourceProvider: 'alerts.in.ua',
+    alertSourceMigratedToAlertsInUa: false,
 };
 
 let settings = null;
@@ -41,6 +42,12 @@ function load() {
             settings.alertSoundMode = parsed.alertSound ? 'siren' : 'none';
         }
         delete settings.alertSound;
+
+        if (!parsed.alertSourceMigratedToAlertsInUa) {
+            settings.alertSourceProvider = 'alerts.in.ua';
+            settings.alertSourceMigratedToAlertsInUa = true;
+            save();
+        }
 
         settings.massAttackThreshold = Math.max(50, Math.min(100, settings.massAttackThreshold));
     } catch (err) {

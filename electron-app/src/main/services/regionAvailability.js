@@ -4,7 +4,7 @@
 const { loadLocalConfig } = require('./localConfig');
 const { logEvent } = require('./logger');
 
-const PROXY_URL = 'https://alert-proxy.alert-proxy-ua.workers.dev';
+const { PROXY_URL } = require('./proxyConfig');
 
 let bitmap = null;
 let loadPromise = null;

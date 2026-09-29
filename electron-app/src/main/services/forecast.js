@@ -16,7 +16,7 @@ function weekdayName(weekdayIndex, language) {
     return reference.toLocaleDateString(locale, { weekday: 'long', timeZone: 'UTC' });
 }
 
-const PROXY_URL = 'https://alert-proxy.alert-proxy-ua.workers.dev';
+const { PROXY_URL } = require('./proxyConfig');
 const HISTORY_CACHE_TTL_MS = 15 * 60 * 1000;
 const MIN_ORIGIN_GAP_MS = 35000;
 

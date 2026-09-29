@@ -4,7 +4,7 @@
 const { logEvent } = require('./logger');
 const { loadLocalConfig } = require('./localConfig');
 
-const PROXY_URL = 'https://alert-proxy.alert-proxy-ua.workers.dev';
+const { PROXY_URL } = require('./proxyConfig');
 const REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 let cached = null;
