@@ -40,7 +40,7 @@ function computeKyivBounds() {
 
 const KYIV_BOUNDS = computeKyivBounds();
 
-const MAP_MIN_ZOOM = 5;
+const MAP_MIN_ZOOM = window.alertServerLiveMap.minZoom || 5;
 const UKRAINE_MAX_ZOOM = 12;
 const KYIV_MAX_ZOOM = 14;
 
@@ -133,7 +133,8 @@ async function main() {
         map.setMaxBounds(null);
         const bounds = kyivModeActive ? KYIV_BOUNDS : UKRAINE_BOUNDS;
 
-        map.fitBounds(bounds, { animate: false });
+        const fitPadding = kyivModeActive ? [0, 0] : window.alertServerLiveMap.fitPadding || [0, 0];
+        map.fitBounds(bounds, { animate: false, padding: fitPadding });
         map.setMinZoom(map.getZoom());
     }
 

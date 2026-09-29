@@ -234,6 +234,7 @@
             attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics',
         },
         regionsRefreshMs: 5000,
+        minZoom: 3,
         getStrings: function () {
             return ready.then(function () {
                 return strings;
