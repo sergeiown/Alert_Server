@@ -1,0 +1,6 @@
+node_modules/
+data/
+.env
+HANDOFF.md
+message.md
+DEPLOY.md

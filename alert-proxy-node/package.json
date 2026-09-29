@@ -1,0 +1,18 @@
+{
+  "name": "alert-proxy-node",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Node.js port of the alert-proxy Cloudflare Worker, for self-hosting outside Cloudflare",
+  "author": "Serhii I. Myshko",
+  "license": "MIT",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node --env-file=.env src/server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}

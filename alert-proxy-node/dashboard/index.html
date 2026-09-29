@@ -1,0 +1,805 @@
+<title>Вартовий</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%230e2f33'/%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%230e7c8c' stroke-width='1.5'/%3E%3Ccircle cx='16' cy='16' r='6' fill='none' stroke='%230e7c8c' stroke-width='1.5'/%3E%3Cpath d='M16 16 L16 1 A15 15 0 0 1 29.5 21 Z' fill='%233fd0c9' fill-opacity='0.35'/%3E%3Ccircle cx='21' cy='10' r='1.6' fill='%233fd0c9'/%3E%3C/svg%3E">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f3f6f7;
+    --surface: #ffffff;
+    --surface-2: #e9eef0;
+    --border: #d7dfe2;
+    --text: #16232a;
+    --text-dim: #5c6f78;
+    --accent: #0e7c8c;
+    --accent-soft: rgba(14, 124, 140, 0.12);
+    --ok: #1f8a4c;
+    --ok-soft: rgba(31, 138, 76, 0.12);
+    --warn: #96650a;
+    --warn-soft: rgba(176, 125, 16, 0.14);
+    --critical: #c23b3b;
+    --critical-soft: rgba(194, 59, 59, 0.12);
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b1416;
+      --surface: #111c1f;
+      --surface-2: #162326;
+      --border: #223236;
+      --text: #e6eef0;
+      --text-dim: #8fa3aa;
+      --accent: #3ecbde;
+      --accent-soft: rgba(62, 203, 222, 0.14);
+      --ok: #35d488;
+      --ok-soft: rgba(53, 212, 136, 0.14);
+      --warn: #f0b429;
+      --warn-soft: rgba(240, 180, 41, 0.16);
+      --critical: #ff6b6b;
+      --critical-soft: rgba(255, 107, 107, 0.14);
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0b1416;
+    --surface: #111c1f;
+    --surface-2: #162326;
+    --border: #223236;
+    --text: #e6eef0;
+    --text-dim: #8fa3aa;
+    --accent: #3ecbde;
+    --accent-soft: rgba(62, 203, 222, 0.14);
+    --ok: #35d488;
+    --ok-soft: rgba(53, 212, 136, 0.14);
+    --warn: #f0b429;
+    --warn-soft: rgba(240, 180, 41, 0.16);
+    --critical: #ff6b6b;
+    --critical-soft: rgba(255, 107, 107, 0.14);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline: 20px;
+    padding-block: 20px 40px;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  header.top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 28px;
+    font-weight: 600;
+    margin: 4px 0 2px;
+    text-wrap: balance;
+  }
+
+  .subtitle { color: var(--text-dim); font-size: 13px; }
+
+  .top-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    white-space: nowrap;
+  }
+
+  .pill.ok { color: var(--ok); background: var(--ok-soft); border-color: transparent; }
+  .pill.warn { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
+  .pill.critical { color: var(--critical); background: var(--critical-soft); border-color: transparent; }
+
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+
+  button {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover { opacity: 0.9; color: #fff; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  #settingsPanel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+    display: grid;
+    gap: 10px;
+  }
+  #settingsPanel[hidden] { display: none; }
+
+  .field-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .field { flex: 1 1 220px; display: grid; gap: 4px; }
+  .field label { font-size: 12px; color: var(--text-dim); }
+  .field input {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+    width: 100%;
+  }
+  .field-actions { display: flex; gap: 8px; align-items: end; }
+
+  .banner {
+    padding: 10px 14px;
+    border-radius: 9px;
+    font-size: 13px;
+    margin-bottom: 18px;
+    background: var(--critical-soft);
+    color: var(--critical);
+    border: 1px solid transparent;
+  }
+  .banner[hidden] { display: none; }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  .kpi .label { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
+  .kpi .value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 30px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .kpi .sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+  .progress-track {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 999px; }
+  .progress-fill.warn { background: var(--warn); }
+  .progress-fill.critical { background: var(--critical); }
+
+  .columns {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 16px;
+    align-items: start;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 760px) {
+    .columns { grid-template-columns: 1fr; }
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .source-row {
+    display: grid;
+    grid-template-columns: 120px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-top: 1px solid var(--border);
+  }
+  .source-row:first-of-type { border-top: none; padding-top: 0; }
+  .source-name { font-size: 13px; font-weight: 500; }
+  .source-meta { font-size: 12px; color: var(--text-dim); }
+  .source-meta .mono { color: var(--text); }
+
+  .gauge-row { display: flex; align-items: center; gap: 8px; min-width: 120px; }
+  .gauge-row .progress-track { flex: 1; margin-top: 0; }
+  .gauge-row .gauge-pct { font-size: 12px; font-family: 'IBM Plex Mono', monospace; width: 34px; text-align: right; }
+
+  .status-chip {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+  }
+  .status-chip.ok { background: var(--ok-soft); color: var(--ok); }
+  .status-chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .status-chip.critical { background: var(--critical-soft); color: var(--critical); }
+
+  .resource-item { margin-bottom: 14px; }
+  .resource-item:last-child { margin-bottom: 0; }
+  .resource-top { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; }
+  .resource-top .val { font-family: 'IBM Plex Mono', monospace; color: var(--text-dim); }
+
+  .meta-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-dim);
+    padding: 6px 0;
+    border-top: 1px solid var(--border);
+  }
+  .meta-line:first-of-type { border-top: none; }
+  .meta-line .mono { color: var(--text); }
+
+  .chart-card { margin-bottom: 16px; }
+  #usersChart { width: 100%; height: 140px; overflow: visible; }
+  .chart-empty { color: var(--text-dim); font-size: 13px; padding: 30px 0; text-align: center; }
+
+  table.observations { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.observations th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
+    font-weight: 500;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.observations td { padding: 8px 0; border-bottom: 1px solid var(--border); }
+  table.observations tr:last-child td { border-bottom: none; }
+  .table-wrap { overflow-x: auto; }
+
+  .empty-note { color: var(--text-dim); font-size: 13px; }
+
+  footer.foot {
+    margin-top: 24px;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: center;
+  }
+</style>
+
+<header class="top">
+  <div>
+    <div class="eyebrow">Alert Proxy · панель для власника</div>
+    <h1>Вартовий</h1>
+    <div class="subtitle" id="lastUpdated">ще не оновлювалось</div>
+  </div>
+  <div class="top-right">
+    <span class="pill" id="connectionPill"><span class="dot"></span><span>Демо-дані</span></span>
+    <button id="refreshBtn">Оновити</button>
+    <button id="settingsBtn">Підключення</button>
+  </div>
+</header>
+
+<div id="settingsPanel" hidden>
+  <div class="field-row">
+    <div class="field">
+      <label for="baseUrlInput">Базовий URL сервера</label>
+      <input id="baseUrlInput" type="text" placeholder="https://your-subdomain.duckdns.org" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="adminKeyInput">Адмін-ключ (ADMIN_KEY)</label>
+      <input id="adminKeyInput" type="password" placeholder="••••••••" autocomplete="off">
+    </div>
+  </div>
+  <div class="field-row field-actions">
+    <button class="primary" id="saveSettingsBtn">Зберегти й підключитись</button>
+    <button id="forgetSettingsBtn">Забути</button>
+    <span class="empty-note" id="settingsNote">Значення зберігаються лише в цьому браузері.</span>
+  </div>
+</div>
+
+<div class="banner" id="errorBanner" hidden></div>
+
+<section class="kpi-grid">
+  <div class="card kpi">
+    <div class="label">Активних тривог зараз</div>
+    <div class="value" id="kpiActiveNow">—</div>
+    <div class="sub" id="kpiActiveNowSub">&nbsp;</div>
+  </div>
+  <div class="card kpi">
+    <div class="label">Покриття "сьогодні"</div>
+    <div class="value" id="kpiCoverage">—</div>
+    <div class="progress-track"><div class="progress-fill" id="kpiCoverageBar" style="width:0%"></div></div>
+  </div>
+  <div class="card kpi">
+    <div class="label">Унікальних сьогодні</div>
+    <div class="value" id="kpiUsersToday">—</div>
+    <div class="sub" id="kpiUsersTodaySub">&nbsp;</div>
+  </div>
+  <div class="card kpi">
+    <div class="label">Унікальних за весь час</div>
+    <div class="value" id="kpiUsersAllTime">—</div>
+    <div class="sub">лічильник ніколи не скидається</div>
+  </div>
+</section>
+
+<div class="columns">
+  <div class="card">
+    <div class="section-title">Джерела даних</div>
+    <div id="sourcesList"></div>
+  </div>
+  <div class="card">
+    <div class="section-title">Ресурси сервера</div>
+    <div id="resourcesList"></div>
+    <div style="margin-top:14px">
+      <div class="meta-line"><span>Аптайм</span><span class="mono" id="resUptime">—</span></div>
+      <div class="meta-line"><span>Node.js</span><span class="mono" id="resNode">—</span></div>
+      <div class="meta-line"><span>Платформа</span><span class="mono" id="resPlatform">—</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="card chart-card">
+  <div class="section-title">Унікальні користувачі за днями</div>
+  <div id="usersChartWrap"></div>
+</div>
+
+<div class="columns">
+  <div class="card">
+    <div class="section-title">
+      <span>Застряглі тривоги UkraineAlarm</span>
+      <span class="status-chip" id="staleChip"></span>
+    </div>
+    <div class="table-wrap">
+      <table class="observations" id="observationsTable">
+        <thead>
+          <tr><th>Область</th><th>Тип</th><th>Не оновлювалась</th><th>Спостережень</th></tr>
+        </thead>
+        <tbody id="observationsBody"></tbody>
+      </table>
+    </div>
+    <div class="empty-note" id="observationsEmpty" hidden>Немає застряглих тривог - усе оновлюється штатно.</div>
+  </div>
+  <div class="card">
+    <div class="section-title">Вебхук UkraineAlarm</div>
+    <div class="meta-line"><span>Налаштовано</span><span class="mono" id="webhookConfigured">—</span></div>
+    <div class="meta-line"><span>Останній виклик</span><span class="mono" id="webhookLast">—</span></div>
+  </div>
+</div>
+
+<footer class="foot">Дані оновлюються що 30 секунд, поки сторінка відкрита. Тільки для власника проєкту.</footer>
+
+<script>
+(function () {
+  var DEMO = {
+    status: {
+      generatedAt: new Date().toISOString(),
+      active: { softLimitPerMinute: 9, hardLimitPerMinute: 12, requestsLastMinute: 3, percentOfSoftLimit: 33, percentOfHardLimit: 25, minGapMs: 5000, cacheTtlMs: 30000, lastOriginFetchAgeMs: 12000, cacheAgeMs: 8000, currentError: null },
+      history: { limitPerMinute: 2, requestsLastMinute: 1, percentOfLimit: 50, minGapMs: 35000, cacheTtlMs: 900000, lastOriginFetchAgeMs: 240000, cachedUidCount: 18, currentErrors: {} },
+      regionStatuses: { minGapMs: 5000, cacheTtlMs: 21600000, lastOriginFetchAgeMs: 1800000, cacheAgeMs: 1800000, currentError: null },
+      weaponStats: { cacheTtlMs: 86400000, lastOriginFetchAgeMs: 3600000, cacheAgeMs: 3600000, currentError: null },
+      todayStats: { date: '2026-09-28', oblastsCovered: 14, oblastsTotal: 26, complete: false, refreshIntervalMs: 300000 },
+      ukraineAlarmTodayStats: { date: '2026-09-28', hasCache: true, lastOriginFetchAgeMs: 60000, consecutiveFailures: 0, backingOff: false, retryIntervalMs: 120000, currentError: null },
+      uniqueUsers: {
+        date: '2026-09-28', allTime: 812, today: 96,
+        history: Array.from({ length: 14 }).map(function (_, i) {
+          var d = new Date(); d.setDate(d.getDate() - (13 - i));
+          return { date: d.toISOString().slice(0, 10), count: 60 + Math.round(Math.random() * 50) };
+        })
+      },
+      system: { cpuLoadAvg: [0.4, 0.3, 0.25], cpuCount: 4, cpuUsagePercent: 14.5, memory: { totalBytes: 25769803776, freeBytes: 19327352832, usedBytes: 6442450944, usedPercent: 25 }, disk: { totalBytes: 214748364800, freeBytes: 193273528320, usedBytes: 21474836480, usedPercent: 10 }, uptimeSec: 273600, nodeVersion: 'v22.13.0', platform: 'linux/arm64' }
+    },
+    ukraineAlarmStatus: {
+      staleAlertObservations: [],
+      webhookConfigured: true,
+      lastWebhookPayload: { receivedAt: new Date(Date.now() - 5 * 60000).toISOString() }
+    }
+  };
+
+  var els = {};
+  document.querySelectorAll('[id]').forEach(function (el) { els[el.id] = el; });
+
+  var timer = null;
+
+  function loadSettings() {
+    try {
+      return {
+        baseUrl: localStorage.getItem('vartovyi.baseUrl') || '',
+        adminKey: localStorage.getItem('vartovyi.adminKey') || ''
+      };
+    } catch (err) {
+      return { baseUrl: '', adminKey: '' };
+    }
+  }
+
+  function saveSettings(baseUrl, adminKey) {
+    try {
+      localStorage.setItem('vartovyi.baseUrl', baseUrl);
+      localStorage.setItem('vartovyi.adminKey', adminKey);
+    } catch (err) {}
+  }
+
+  function clearSettings() {
+    try {
+      localStorage.removeItem('vartovyi.baseUrl');
+      localStorage.removeItem('vartovyi.adminKey');
+    } catch (err) {}
+  }
+
+  function formatBytes(bytes) {
+    if (bytes === null || bytes === undefined) return '—';
+    var gb = bytes / (1024 * 1024 * 1024);
+    return gb.toFixed(1) + ' ГБ';
+  }
+
+  function formatAgo(ms) {
+    if (ms === null || ms === undefined) return '—';
+    if (ms < 60000) return Math.round(ms / 1000) + 'с тому';
+    if (ms < 3600000) return Math.round(ms / 60000) + ' хв тому';
+    if (ms < 86400000) return Math.round(ms / 3600000) + ' год тому';
+    return Math.round(ms / 86400000) + ' дн тому';
+  }
+
+  function formatUptime(sec) {
+    var d = Math.floor(sec / 86400);
+    var h = Math.floor((sec % 86400) / 3600);
+    var m = Math.floor((sec % 3600) / 60);
+    var parts = [];
+    if (d) parts.push(d + 'д');
+    if (h || d) parts.push(h + 'г');
+    parts.push(m + 'хв');
+    return parts.join(' ');
+  }
+
+  function levelFromPercent(pct) {
+    if (pct >= 90) return 'critical';
+    if (pct >= 70) return 'warn';
+    return 'ok';
+  }
+
+  function setBar(el, pct, level) {
+    el.style.width = Math.min(100, Math.max(0, pct)) + '%';
+    el.classList.remove('warn', 'critical');
+    if (level === 'warn') el.classList.add('warn');
+    if (level === 'critical') el.classList.add('critical');
+  }
+
+  function renderSourceRow(name, meta, pct, errorObj) {
+    var row = document.createElement('div');
+    row.className = 'source-row';
+
+    var nameEl = document.createElement('div');
+    nameEl.className = 'source-name';
+    nameEl.textContent = name;
+    row.appendChild(nameEl);
+
+    var metaEl = document.createElement('div');
+    metaEl.className = 'source-meta';
+    metaEl.innerHTML = meta;
+    row.appendChild(metaEl);
+
+    var right = document.createElement('div');
+    if (errorObj) {
+      var chip = document.createElement('span');
+      chip.className = 'status-chip critical';
+      chip.textContent = 'HTTP ' + errorObj.status;
+      right.appendChild(chip);
+    } else if (pct !== null) {
+      var gr = document.createElement('div');
+      gr.className = 'gauge-row';
+      var track = document.createElement('div');
+      track.className = 'progress-track';
+      var fill = document.createElement('div');
+      fill.className = 'progress-fill';
+      setBar(fill, pct, levelFromPercent(pct));
+      track.appendChild(fill);
+      gr.appendChild(track);
+      var pctLabel = document.createElement('span');
+      pctLabel.className = 'gauge-pct mono';
+      pctLabel.textContent = Math.round(pct) + '%';
+      gr.appendChild(pctLabel);
+      right.appendChild(gr);
+    } else {
+      var chipOk = document.createElement('span');
+      chipOk.className = 'status-chip ok';
+      chipOk.textContent = 'OK';
+      right.appendChild(chipOk);
+    }
+    row.appendChild(right);
+    return row;
+  }
+
+  function renderUsersChart(history) {
+    var wrap = els.usersChartWrap;
+    wrap.innerHTML = '';
+    if (!history || !history.length) {
+      var empty = document.createElement('div');
+      empty.className = 'chart-empty';
+      empty.textContent = 'Історія ще накопичується.';
+      wrap.appendChild(empty);
+      return;
+    }
+
+    var w = 900, h = 140, padL = 30, padB = 20, padT = 10, padR = 6;
+    var max = Math.max.apply(null, history.map(function (p) { return p.count; })) || 1;
+    var innerW = w - padL - padR;
+    var innerH = h - padT - padB;
+    var barGap = 4;
+    var barW = Math.max(2, innerW / history.length - barGap);
+
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    svg.setAttribute('id', 'usersChart');
+    svg.setAttribute('preserveAspectRatio', 'none');
+
+    var textColor = getComputedStyle(document.body).getPropertyValue('--text-dim').trim() || '#888';
+    var accent = getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#0e7c8c';
+    var borderColor = getComputedStyle(document.body).getPropertyValue('--border').trim() || '#ccc';
+
+    [0, 0.5, 1].forEach(function (f) {
+      var y = padT + innerH * (1 - f);
+      var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', padL);
+      line.setAttribute('x2', w - padR);
+      line.setAttribute('y1', y);
+      line.setAttribute('y2', y);
+      line.setAttribute('stroke', borderColor);
+      line.setAttribute('stroke-width', '1');
+      svg.appendChild(line);
+
+      var label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      label.setAttribute('x', 4);
+      label.setAttribute('y', y + 4);
+      label.setAttribute('font-size', '9');
+      label.setAttribute('font-family', 'IBM Plex Mono, monospace');
+      label.setAttribute('fill', textColor);
+      label.textContent = Math.round(max * f);
+      svg.appendChild(label);
+    });
+
+    history.forEach(function (point, i) {
+      var x = padL + i * (innerW / history.length) + barGap / 2;
+      var barH = (point.count / max) * innerH;
+      var y = padT + innerH - barH;
+
+      var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', x);
+      rect.setAttribute('y', y);
+      rect.setAttribute('width', barW);
+      rect.setAttribute('height', Math.max(1, barH));
+      rect.setAttribute('rx', '2');
+      rect.setAttribute('fill', i === history.length - 1 ? accent : accent);
+      rect.setAttribute('opacity', i === history.length - 1 ? '1' : '0.55');
+      svg.appendChild(rect);
+
+      if (i === 0 || i === history.length - 1 || history.length <= 10) {
+        var dLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        dLabel.setAttribute('x', x + barW / 2);
+        dLabel.setAttribute('y', h - 4);
+        dLabel.setAttribute('font-size', '9');
+        dLabel.setAttribute('font-family', 'IBM Plex Mono, monospace');
+        dLabel.setAttribute('fill', textColor);
+        dLabel.setAttribute('text-anchor', 'middle');
+        dLabel.textContent = point.date.slice(5);
+        svg.appendChild(dLabel);
+      }
+    });
+
+    wrap.appendChild(svg);
+  }
+
+  function render(status, uaStatus, isDemo) {
+    els.connectionPill.className = 'pill ' + (isDemo ? '' : 'ok');
+    els.connectionPill.querySelector('span:last-child').textContent = isDemo ? 'Демо-дані' : 'Підключено';
+    els.lastUpdated.textContent = 'Оновлено: ' + new Date(status.generatedAt).toLocaleString('uk-UA');
+
+    els.kpiActiveNow.textContent = status.todayStats.oblastsCovered !== undefined
+      ? (uaStatus.currentActiveAlertCount !== null && uaStatus.currentActiveAlertCount !== undefined ? uaStatus.currentActiveAlertCount : '—')
+      : '—';
+    els.kpiActiveNowSub.textContent = 'областей з активними подіями (UkraineAlarm)';
+
+    var coveragePct = status.todayStats.oblastsTotal
+      ? (status.todayStats.oblastsCovered / status.todayStats.oblastsTotal) * 100
+      : 0;
+    els.kpiCoverage.textContent = status.todayStats.oblastsCovered + '/' + status.todayStats.oblastsTotal;
+    setBar(els.kpiCoverageBar, coveragePct, status.todayStats.complete ? 'ok' : null);
+
+    els.kpiUsersToday.textContent = status.uniqueUsers.today;
+    els.kpiUsersTodaySub.textContent = status.uniqueUsers.date;
+    els.kpiUsersAllTime.textContent = status.uniqueUsers.allTime;
+
+    els.sourcesList.innerHTML = '';
+    els.sourcesList.appendChild(renderSourceRow(
+      'alerts.in.ua (активні)',
+      'кеш ' + formatAgo(status.active.cacheAgeMs) + ' · запит ' + formatAgo(status.active.lastOriginFetchAgeMs),
+      status.active.percentOfHardLimit,
+      status.active.currentError
+    ));
+    els.sourcesList.appendChild(renderSourceRow(
+      'alerts.in.ua (історія)',
+      'кеш областей: <span class="mono">' + status.history.cachedUidCount + '</span> · запит ' + formatAgo(status.history.lastOriginFetchAgeMs),
+      status.history.percentOfLimit,
+      Object.keys(status.history.currentErrors || {}).length ? { status: 'декілька' } : null
+    ));
+    els.sourcesList.appendChild(renderSourceRow(
+      'Статуси регіонів',
+      'кеш ' + formatAgo(status.regionStatuses.cacheAgeMs),
+      null,
+      status.regionStatuses.currentError
+    ));
+    els.sourcesList.appendChild(renderSourceRow(
+      'Статистика зброї (Kaggle)',
+      'кеш ' + formatAgo(status.weaponStats.cacheAgeMs),
+      null,
+      status.weaponStats.currentError
+    ));
+    els.sourcesList.appendChild(renderSourceRow(
+      'UkraineAlarm "сьогодні"',
+      status.ukraineAlarmTodayStats.backingOff
+        ? 'бекофф після ' + status.ukraineAlarmTodayStats.consecutiveFailures + ' невдач'
+        : 'запит ' + formatAgo(status.ukraineAlarmTodayStats.lastOriginFetchAgeMs),
+      null,
+      status.ukraineAlarmTodayStats.currentError
+    ));
+
+    var sys = status.system;
+    els.resourcesList.innerHTML = '';
+    [
+      { label: 'CPU (' + sys.cpuCount + ' ядер)', pct: sys.cpuUsagePercent, val: (sys.cpuUsagePercent === null ? '—' : sys.cpuUsagePercent + '%') },
+      { label: 'Пам\'ять', pct: sys.memory.usedPercent, val: formatBytes(sys.memory.usedBytes) + ' / ' + formatBytes(sys.memory.totalBytes) },
+      { label: 'Диск', pct: sys.disk ? sys.disk.usedPercent : null, val: sys.disk ? formatBytes(sys.disk.usedBytes) + ' / ' + formatBytes(sys.disk.totalBytes) : '—' }
+    ].forEach(function (item) {
+      var wrap = document.createElement('div');
+      wrap.className = 'resource-item';
+      var top = document.createElement('div');
+      top.className = 'resource-top';
+      top.innerHTML = '<span>' + item.label + '</span><span class="val">' + item.val + '</span>';
+      wrap.appendChild(top);
+      var track = document.createElement('div');
+      track.className = 'progress-track';
+      var fill = document.createElement('div');
+      fill.className = 'progress-fill';
+      setBar(fill, item.pct || 0, levelFromPercent(item.pct || 0));
+      track.appendChild(fill);
+      wrap.appendChild(track);
+      els.resourcesList.appendChild(wrap);
+    });
+
+    els.resUptime.textContent = formatUptime(sys.uptimeSec);
+    els.resNode.textContent = sys.nodeVersion;
+    els.resPlatform.textContent = sys.platform;
+
+    renderUsersChart(status.uniqueUsers.history);
+
+    var obs = uaStatus.staleAlertObservations || [];
+    els.observationsBody.innerHTML = '';
+    if (!obs.length) {
+      els.observationsTable.hidden = true;
+      els.observationsEmpty.hidden = false;
+      els.staleChip.className = 'status-chip ok';
+      els.staleChip.textContent = '0';
+    } else {
+      els.observationsTable.hidden = false;
+      els.observationsEmpty.hidden = true;
+      els.staleChip.className = 'status-chip ' + (obs.length > 20 ? 'warn' : 'ok');
+      els.staleChip.textContent = String(obs.length);
+      obs.slice(0, 15).forEach(function (o) {
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + (o.regionName || o.regionId) + '</td><td>' + o.alertType + '</td>' +
+          '<td class="mono">' + o.ageDays + ' дн</td><td class="mono">' + o.timesSeen + '</td>';
+        els.observationsBody.appendChild(tr);
+      });
+    }
+
+    els.webhookConfigured.textContent = uaStatus.webhookConfigured ? 'Так' : 'Ні';
+    els.webhookLast.textContent = uaStatus.lastWebhookPayload
+      ? formatAgo(Date.now() - new Date(uaStatus.lastWebhookPayload.receivedAt).getTime())
+      : 'Ще не надходив';
+
+    els.errorBanner.hidden = true;
+  }
+
+  function showError(message) {
+    els.errorBanner.hidden = false;
+    els.errorBanner.textContent = message;
+    els.connectionPill.className = 'pill critical';
+    els.connectionPill.querySelector('span:last-child').textContent = "Немає зв'язку";
+  }
+
+  async function fetchLive(baseUrl, adminKey) {
+    var headers = { 'X-Admin-Key': adminKey };
+    var statusRes = await fetch(baseUrl.replace(/\/$/, '') + '/status', { headers: headers });
+    if (!statusRes.ok) throw new Error('/status повернув HTTP ' + statusRes.status);
+    var status = await statusRes.json();
+
+    var uaRes = await fetch(baseUrl.replace(/\/$/, '') + '/ukrainealarm-status', { headers: headers });
+    if (!uaRes.ok) throw new Error('/ukrainealarm-status повернув HTTP ' + uaRes.status);
+    var uaStatus = await uaRes.json();
+
+    return { status: status, uaStatus: uaStatus };
+  }
+
+  function refresh() {
+    var settings = loadSettings();
+    if (!settings.baseUrl || !settings.adminKey) {
+      render(DEMO.status, DEMO.ukraineAlarmStatus, true);
+      return;
+    }
+
+    fetchLive(settings.baseUrl, settings.adminKey)
+      .then(function (data) { render(data.status, data.uaStatus, false); })
+      .catch(function (err) { showError(err.message); });
+  }
+
+  function scheduleAutoRefresh() {
+    if (timer) clearInterval(timer);
+    timer = setInterval(refresh, 30000);
+  }
+
+  els.settingsBtn.addEventListener('click', function () {
+    var settings = loadSettings();
+    els.baseUrlInput.value = settings.baseUrl;
+    els.adminKeyInput.value = settings.adminKey;
+    els.settingsPanel.hidden = !els.settingsPanel.hidden;
+  });
+
+  els.saveSettingsBtn.addEventListener('click', function () {
+    saveSettings(els.baseUrlInput.value.trim(), els.adminKeyInput.value.trim());
+    els.settingsPanel.hidden = true;
+    refresh();
+  });
+
+  els.forgetSettingsBtn.addEventListener('click', function () {
+    clearSettings();
+    els.baseUrlInput.value = '';
+    els.adminKeyInput.value = '';
+    refresh();
+  });
+
+  els.refreshBtn.addEventListener('click', refresh);
+
+  refresh();
+  scheduleAutoRefresh();
+})();
+</script>
