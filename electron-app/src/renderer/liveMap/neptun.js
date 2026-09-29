@@ -656,7 +656,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                 pane: UNCERTAINTY_PANE,
                 radius: threat.uncertaintyKm * 1000,
                 color: UNCERTAINTY_CIRCLE_COLOR,
-                weight: 1.5,
+                weight: 1,
                 opacity: 0.85,
                 dashArray: '4 5',
                 fill: false,
