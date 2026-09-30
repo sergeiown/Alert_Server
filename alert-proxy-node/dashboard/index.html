@@ -293,6 +293,8 @@
 
   .bar-row { display: grid; grid-template-columns: minmax(70px, 130px) 1fr auto; gap: 10px; align-items: center; padding: 5px 0; font-size: 13px; }
   .bar-row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-row.wide { grid-template-columns: minmax(150px, 45%) 1fr auto; }
+  .bar-row.wide .name { font-family: 'IBM Plex Mono', monospace; font-size: 12px; white-space: normal; overflow-wrap: anywhere; }
   .bar-row .track { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
   .bar-row .fill { height: 100%; background: var(--accent); border-radius: 999px; }
   .bar-row .num { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-dim); }
@@ -507,11 +509,11 @@
     return `<div class="card kpi"><div class="label">${esc(label)}</div><div class="value">${value}</div>${
       sub ? `<div class="sub">${sub}</div>` : ''}${extra || ''}</div>`;
   }
-  function barRows(items, nameKey, valueKey, max) {
+  function barRows(items, nameKey, valueKey, max, wide) {
     if (!items.length) return '<div class="empty-note">Даних ще немає</div>';
     const top = max || Math.max.apply(null, items.map((i) => { return i[valueKey]; })) || 1;
     return items.map((item) => {
-      return `<div class="bar-row"><span class="name" title="${esc(item[nameKey])}">${esc(item[nameKey]) 
+      return `<div class="bar-row${wide ? ' wide' : ''}"><span class="name" title="${esc(item[nameKey])}">${esc(item[nameKey]) 
         }</span><span class="track"><span class="fill" style="width:${Math.round((item[valueKey] / top) * 100)}%;display:block"></span></span><span class="num">${
         fmtNum(item[valueKey])}</span></div>`;
     }).join('');
@@ -841,7 +843,7 @@
         COUNTRY_PERIODS.map((p) => { return `<button data-period="${p[0]}" aria-pressed="false">${p[1]}</button>`; }).join('') 
         }</div></div><div id="countryList"></div>` +
         `<p class="settings-note" style="margin-top:10px">Країна визначається за IP під час запиту (локальна база DB-IP), сама адреса не зберігається.</p></div>` +
-      `<div class="card" style="margin-bottom:12px"><h2>Маршрути сьогодні</h2>${barRows(u.routesToday.map((r) => { return { name: r.route, value: r.count }; }), 'name', 'value')}</div>` +
+      `<div class="card" style="margin-bottom:12px"><h2>Маршрути сьогодні</h2>${barRows(u.routesToday.map((r) => { return { name: r.route, value: r.count }; }), 'name', 'value', undefined, true)}</div>` +
       userListCard();
 
     bindUserList();
