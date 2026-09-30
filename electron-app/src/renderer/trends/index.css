@@ -42,6 +42,10 @@ header h1 {
     margin: 0;
 }
 
+#trendsRange:empty {
+    display: none;
+}
+
 #trendsRange {
     margin: 4px 0 0;
     font-size: 11px;
@@ -89,8 +93,46 @@ main {
     margin-top: 2px;
 }
 
+.chart-frame {
+    display: flex;
+    align-items: flex-start;
+}
+
+.chart-axis {
+    flex: 0 0 auto;
+}
+
 .chart-scroll {
+    flex: 1 1 auto;
+    min-width: 0;
     overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--muted) transparent;
+}
+
+.chart-grid {
+    stroke: var(--border);
+    stroke-width: 1;
+    shape-rendering: crispEdges;
+}
+
+.chart-label {
+    fill: var(--muted);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+
+.chart-seg {
+    stroke: var(--card-bg);
+    stroke-width: 0.75;
+}
+
+.chart-hit {
+    fill: transparent;
+}
+
+.chart-hit:hover {
+    fill: rgba(127, 127, 127, 0.14);
 }
 
 .chart-legend {

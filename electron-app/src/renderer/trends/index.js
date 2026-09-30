@@ -67,7 +67,8 @@ function formatPercent(numerator, denominator) {
 function monthLabel(month, isEnglish) {
     const [year, m] = month.split('-');
     const date = new Date(Date.UTC(Number(year), Number(m) - 1, 1));
-    return date.toLocaleDateString(isEnglish ? 'en-US' : 'uk-UA', { month: 'short', year: '2-digit', timeZone: 'UTC' });
+    const name = date.toLocaleDateString(isEnglish ? 'en-US' : 'uk-UA', { month: 'short', timeZone: 'UTC' }).replace(/\.$/, '');
+    return `${name} ${year.slice(2)}`;
 }
 
 function buildSummaryCard(stats, strings) {
@@ -126,6 +127,52 @@ function buildCategoryCard(stats, strings, isEnglish) {
     return card;
 }
 
+const CHART = { top: 12, bottom: 26, axisWidth: 46, barWidth: 16, gap: 6, pad: 8, padEnd: 28 };
+
+function niceScale(maxValue, tickCount = 4) {
+    const rawStep = Math.max(1, maxValue) / tickCount;
+    const magnitude = 10 ** Math.floor(Math.log10(rawStep));
+    const normalized = rawStep / magnitude;
+    const step = (normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10) * magnitude;
+    const max = Math.ceil(maxValue / step) * step;
+    const ticks = [];
+    for (let value = 0; value <= max; value += step) ticks.push(value);
+    return { max, ticks };
+}
+
+function compactNumber(value, isEnglish) {
+    return new Intl.NumberFormat(isEnglish ? 'en-US' : 'uk-UA', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+}
+
+function escapeHtml(text) {
+    return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function buildChartFrame({ scale, plotHeight, plotWidth, isEnglish, scrollToEnd, draw }) {
+    const totalHeight = CHART.top + plotHeight + CHART.bottom;
+    const y = (value) => CHART.top + plotHeight - (value / scale.max) * plotHeight;
+    const crisp = (value) => Math.round(value) + 0.5;
+
+    const grid = scale.ticks
+        .map((tick) => `<line class="chart-grid" x1="0" x2="${plotWidth}" y1="${crisp(y(tick))}" y2="${crisp(y(tick))}"/>`)
+        .join('');
+    const axisLabels = scale.ticks
+        .map((tick) => `<text class="chart-label" x="${CHART.axisWidth - 8}" y="${y(tick) + 4}" text-anchor="end">${compactNumber(tick, isEnglish)}</text>`)
+        .join('');
+
+    const frame = document.createElement('div');
+    frame.className = 'chart-frame';
+    frame.innerHTML = `<svg class="chart-axis" width="${CHART.axisWidth}" height="${totalHeight}" viewBox="0 0 ${CHART.axisWidth} ${totalHeight}">${axisLabels}</svg><div class="chart-scroll"><svg width="${plotWidth}" height="${totalHeight}" viewBox="0 0 ${plotWidth} ${totalHeight}">${grid}${draw(y)}</svg></div>`;
+
+    if (scrollToEnd) {
+        requestAnimationFrame(() => {
+            const scroller = frame.querySelector('.chart-scroll');
+            scroller.scrollLeft = scroller.scrollWidth;
+        });
+    }
+    return frame;
+}
+
 function buildMonthlyChart(stats, strings, isEnglish) {
     const card = document.createElement('section');
     card.className = 'card';
@@ -135,38 +182,51 @@ function buildMonthlyChart(stats, strings, isEnglish) {
 
     const months = stats.monthly;
     const categories = stats.byCategory.map((c) => c.category);
-    const maxLaunched = Math.max(1, ...months.map((m) => m.launched));
+    const scale = niceScale(Math.max(1, ...months.map((m) => m.launched)));
+    const step = CHART.barWidth + CHART.gap;
+    const plotWidth = CHART.pad + CHART.padEnd + months.length * step - CHART.gap;
+    const plotHeight = 200;
 
-    const barWidth = 14;
-    const gap = 4;
-    const chartHeight = 200;
-    const width = months.length * (barWidth + gap) + gap;
-    const height = chartHeight + 24;
+    const frame = buildChartFrame({
+        scale,
+        plotHeight,
+        plotWidth,
+        isEnglish,
+        scrollToEnd: true,
+        draw: (y) => {
+            const parts = [];
+            months.forEach((entry, index) => {
+                const x = CHART.pad + index * step;
+                let cumulative = 0;
+                const lines = [];
 
-    const svgParts = [];
-    months.forEach((entry, index) => {
-        const x = gap + index * (barWidth + gap);
-        let yCursor = chartHeight;
-        categories.forEach((category) => {
-            const value = entry.categories[category] || 0;
-            if (!value) return;
-            const barHeight = (value / maxLaunched) * chartHeight;
-            yCursor -= barHeight;
-            svgParts.push(
-                `<rect x="${x}" y="${yCursor.toFixed(1)}" width="${barWidth}" height="${barHeight.toFixed(1)}" fill="${categoryColor(category)}"><title>${monthLabel(entry.month, isEnglish)}: ${categoryName(category, isEnglish)} - ${formatNumber(value)}</title></rect>`
-            );
-        });
-        if (index % 6 === 0) {
-            svgParts.push(
-                `<text x="${x + barWidth / 2}" y="${chartHeight + 16}" font-size="9" text-anchor="middle" fill="currentColor" opacity="0.7">${monthLabel(entry.month, isEnglish)}</text>`
-            );
-        }
+                categories.forEach((category) => {
+                    const value = entry.categories[category] || 0;
+                    if (!value) return;
+                    const top = y(cumulative + value);
+                    const bottom = y(cumulative);
+                    parts.push(
+                        `<rect class="chart-seg" x="${x}" y="${top.toFixed(1)}" width="${CHART.barWidth}" height="${(bottom - top).toFixed(1)}" fill="${categoryColor(category)}"/>`
+                    );
+                    cumulative += value;
+                    lines.push(`${categoryName(category, isEnglish)}: ${formatNumber(value)}`);
+                });
+
+                const title = escapeHtml(`${monthLabel(entry.month, isEnglish)} - ${formatNumber(entry.launched)}\n${lines.join('\n')}`);
+                parts.push(
+                    `<rect class="chart-hit" x="${x - CHART.gap / 2}" y="${CHART.top}" width="${step}" height="${plotHeight}"><title>${title}</title></rect>`
+                );
+
+                if ((months.length - 1 - index) % 3 === 0) {
+                    parts.push(
+                        `<text class="chart-label" x="${x + CHART.barWidth / 2}" y="${CHART.top + plotHeight + 17}" text-anchor="middle">${monthLabel(entry.month, isEnglish)}</text>`
+                    );
+                }
+            });
+            return parts.join('');
+        },
     });
-
-    const wrapper = document.createElement('div');
-    wrapper.className = 'chart-scroll';
-    wrapper.innerHTML = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="color:var(--fg)">${svgParts.join('')}</svg>`;
-    card.appendChild(wrapper);
+    card.appendChild(frame);
 
     const legend = document.createElement('div');
     legend.className = 'chart-legend';
@@ -229,38 +289,51 @@ function buildTodayAlertsCard(total, strings) {
     return card;
 }
 
-function buildHourlyChart(byHour, strings) {
+function buildHourlyChart(byHour, strings, isEnglish) {
     const card = document.createElement('section');
     card.className = 'card';
     const h2 = document.createElement('h2');
     h2.textContent = strings.trendsTodayByHourTitle;
     card.appendChild(h2);
 
-    const barWidth = 18;
-    const gap = 4;
-    const chartHeight = 120;
-    const width = 24 * (barWidth + gap) + gap;
-    const height = chartHeight + 20;
-    const maxCount = Math.max(1, ...byHour);
+    const scale = niceScale(Math.max(1, ...byHour));
+    const barWidth = 20;
+    const gap = 8;
+    const step = barWidth + gap;
+    const plotWidth = CHART.pad * 2 + 24 * step - gap;
+    const plotHeight = 130;
 
-    const svgParts = [];
-    byHour.forEach((count, hour) => {
-        const x = gap + hour * (barWidth + gap);
-        const barHeight = (count / maxCount) * chartHeight;
-        svgParts.push(
-            `<rect x="${x}" y="${(chartHeight - barHeight).toFixed(1)}" width="${barWidth}" height="${barHeight.toFixed(1)}" fill="#2563eb"><title>${hour}:00 - ${count}</title></rect>`
-        );
-        if (hour % 3 === 0) {
-            svgParts.push(
-                `<text x="${x + barWidth / 2}" y="${chartHeight + 14}" font-size="9" text-anchor="middle" fill="currentColor" opacity="0.7">${hour}</text>`
-            );
-        }
-    });
-
-    const wrapper = document.createElement('div');
-    wrapper.className = 'chart-scroll';
-    wrapper.innerHTML = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="color:var(--fg)">${svgParts.join('')}</svg>`;
-    card.appendChild(wrapper);
+    card.appendChild(
+        buildChartFrame({
+            scale,
+            plotHeight,
+            plotWidth,
+            isEnglish,
+            scrollToEnd: false,
+            draw: (y) => {
+                const parts = [];
+                byHour.forEach((count, hour) => {
+                    const x = CHART.pad + hour * step;
+                    const label = String(hour).padStart(2, '0');
+                    if (count) {
+                        const top = y(count);
+                        parts.push(
+                            `<rect class="chart-seg" x="${x}" y="${top.toFixed(1)}" width="${barWidth}" height="${(y(0) - top).toFixed(1)}" fill="#2563eb"/>`
+                        );
+                    }
+                    parts.push(
+                        `<rect class="chart-hit" x="${x - gap / 2}" y="${CHART.top}" width="${step}" height="${plotHeight}"><title>${label}:00 - ${formatNumber(count)}</title></rect>`
+                    );
+                    if (hour % 3 === 0) {
+                        parts.push(
+                            `<text class="chart-label" x="${x + barWidth / 2}" y="${CHART.top + plotHeight + 17}" text-anchor="middle">${label}</text>`
+                        );
+                    }
+                });
+                return parts.join('');
+            },
+        })
+    );
     return card;
 }
 
@@ -280,7 +353,7 @@ function buildCountTable(entries, titleKey, columnKey, strings, emptyKey) {
     }
 
     const table = document.createElement('table');
-    table.innerHTML = `<thead><tr><th>${strings[columnKey]}</th><th class="numeric">${strings.trendsTodayAlertsLabel}</th></tr></thead>`;
+    table.innerHTML = `<thead><tr><th>${strings[columnKey]}</th><th class="numeric">${strings.trendsTodayCountColumn}</th></tr></thead>`;
     const tbody = document.createElement('tbody');
     entries.forEach(({ label, count }) => {
         const tr = document.createElement('tr');
@@ -336,12 +409,11 @@ async function main() {
     const stats = await window.alertServerTrends.getWeaponStats().catch(() => null);
     const todayStats = await window.alertServerTrends.getTodayStats().catch(() => null);
 
-    if (stats) {
-        const rangeText = strings.trendsRangeLabel
-            .replace('{from}', stats.dateRange.from)
-            .replace('{to}', stats.dateRange.to);
-        document.getElementById('trendsRange').textContent = rangeText;
-    }
+    const rangeElement = document.getElementById('trendsRange');
+    const rangeText = stats
+        ? strings.trendsRangeLabel.replace('{from}', stats.dateRange.from).replace('{to}', stats.dateRange.to)
+        : '';
+    rangeElement.textContent = rangeText;
 
     function renderAllTime() {
         content.innerHTML = '';
@@ -378,7 +450,7 @@ async function main() {
             : statusText;
         content.appendChild(notice);
         content.appendChild(buildTodayAlertsCard(todayStats.total, strings));
-        content.appendChild(buildHourlyChart(todayStats.byHour, strings));
+        content.appendChild(buildHourlyChart(todayStats.byHour, strings, isEnglish));
         content.appendChild(
             buildCountTable(
                 todayStats.byOblast.map((e) => ({ label: displayOblastName(e.oblast, isEnglish), count: e.count })),
@@ -401,7 +473,13 @@ async function main() {
 
     document
         .getElementById('tabsHost')
-        .replaceWith(buildTabs(strings, (key) => (key === 'today' ? renderToday() : renderAllTime())));
+        .replaceWith(
+            buildTabs(strings, (key) => {
+                rangeElement.textContent = key === 'today' ? '' : rangeText;
+                if (key === 'today') renderToday();
+                else renderAllTime();
+            })
+        );
 
     renderAllTime();
 }
