@@ -8,7 +8,6 @@ const geoip = require('./geoip');
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 const HISTORY_DAYS = 30;
-const TOP_USERS = 10;
 const RETENTION_DAYS = 120;
 
 db.exec(`CREATE TABLE IF NOT EXISTS users (
@@ -136,7 +135,7 @@ function prune() {
     db.prepare('DELETE FROM user_days WHERE day < ?').run(cutoffDay);
 }
 
-function getStats(currentConnections) {
+function getStats(currentConnections, connectedUsers) {
     const now = Date.now();
     const today = lib.kyivDateKey(new Date(now));
     const one = (sql, ...params) => db.prepare(sql).get(...params);
@@ -170,11 +169,10 @@ function getStats(currentConnections) {
         today
     ).map((row) => ({ route: row.route, count: row.c }));
 
-    const versions = all(
-        `SELECT COALESCE(version, 'unknown') AS version, COUNT(*) AS c FROM users
-         WHERE last_seen >= ? GROUP BY COALESCE(version, 'unknown') ORDER BY c DESC LIMIT 12`,
-        now - 7 * DAY_MS
-    ).map((row) => ({ version: row.version, users: row.c }));
+    const versionTotals = all("SELECT COALESCE(version, 'unknown') AS version, COUNT(*) AS c FROM users GROUP BY COALESCE(version, 'unknown') ORDER BY c DESC").map((row) => ({
+        version: row.version,
+        users: row.c,
+    }));
 
     const countryRows = (sql, ...params) =>
         all(sql, ...params).map((row) => ({ code: row.country || 'unknown', users: row.c }));
@@ -190,15 +188,6 @@ function getStats(currentConnections) {
         ),
         allTime: countryRows('SELECT country, COUNT(*) AS c FROM users GROUP BY country ORDER BY c DESC LIMIT 15'),
     };
-
-    const top = all('SELECT id, first_seen, last_seen, requests, version, country FROM users ORDER BY requests DESC LIMIT ?', TOP_USERS).map((row) => ({
-        id: row.id,
-        firstSeen: new Date(row.first_seen).toISOString(),
-        lastSeen: new Date(row.last_seen).toISOString(),
-        requests: row.requests,
-        version: row.version,
-        country: row.country,
-    }));
 
     notePeak(currentConnections);
 
@@ -220,15 +209,33 @@ function getStats(currentConnections) {
             avgActiveDays: avgDays ? Math.round(avgDays * 10) / 10 : 0,
             stickiness: active30 ? Math.round((todayActive / active30) * 100) : 0,
         },
-        connections: { now: currentConnections, peakToday: peak.day === today ? peak.connections : currentConnections },
+        connections: { now: currentConnections, users: connectedUsers || 0, peakToday: peak.day === today ? peak.connections : currentConnections },
         daily,
         hourlyRequestsToday: hourly,
         routesToday: routes,
-        versions,
+        versionTotals,
         countries,
         versionHistory: getVersionHistory(),
-        topUsers: top,
     };
 }
 
-module.exports = { record, recordRequest, recordHit, notePeak, prune, getStats };
+function getUserList() {
+    return db
+        .prepare(
+            `SELECT u.id AS id, u.first_seen AS first_seen, u.last_seen AS last_seen, u.requests AS requests, u.version AS version, u.country AS country,
+                (SELECT COUNT(*) FROM user_days d WHERE d.id = u.id) AS active_days
+             FROM users u ORDER BY u.last_seen DESC LIMIT 20000`
+        )
+        .all()
+        .map((row) => ({
+            id: row.id,
+            country: row.country,
+            version: row.version,
+            activeDays: row.active_days,
+            requests: row.requests,
+            firstSeen: new Date(row.first_seen).toISOString(),
+            lastSeen: new Date(row.last_seen).toISOString(),
+        }));
+}
+
+module.exports = { record, recordRequest, recordHit, notePeak, prune, getStats, getUserList };

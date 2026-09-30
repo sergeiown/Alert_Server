@@ -72,6 +72,10 @@ function openSocket(ip) {
     return true;
 }
 
+function connectedClientCount() {
+    return openSockets.size;
+}
+
 function closeSocket(ip) {
     const current = openSockets.get(ip) || 0;
     if (current <= 1) openSockets.delete(ip);
@@ -98,6 +102,7 @@ module.exports = {
     noteAdminFailure,
     openSocket,
     closeSocket,
+    connectedClientCount,
     openPublicSocket,
     closePublicSocket,
 };

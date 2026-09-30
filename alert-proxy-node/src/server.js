@@ -115,7 +115,7 @@ async function handleRequest(req, res) {
     }
 
     const isAdminRoute =
-        url.pathname === '/status' || url.pathname === '/ukrainealarm-status' || url.pathname === '/users-stats' || url.pathname === '/web-stats';
+        url.pathname === '/status' || url.pathname === '/ukrainealarm-status' || url.pathname === '/users-stats' || url.pathname === '/users-list' || url.pathname === '/web-stats';
     if (isAdminRoute && ratelimit.isAdminBlocked(requesterIp)) {
         send(res, { status: 429, headers: { 'Retry-After': '600' }, body: 'Too many failed attempts' });
         return;
@@ -161,8 +161,13 @@ async function handleRequest(req, res) {
         return;
     }
 
+    if (url.pathname === '/users-list') {
+        send(res, { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ users: users.getUserList() }) });
+        return;
+    }
+
     if (url.pathname === '/users-stats') {
-        send(res, { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(users.getStats(gateway.totalConnections())) });
+        send(res, { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(users.getStats(gateway.totalConnections(), ratelimit.connectedClientCount())) });
         return;
     }
 

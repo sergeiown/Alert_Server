@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const config = require('./config');
+const ratelimit = require('./ratelimit');
 const store = require('./store');
 const lib = require('./lib');
 const system = require('./system');
@@ -830,7 +831,12 @@ function buildStatus() {
                 history: store.get('uniqueUsersHistory') || [],
             },
             system: system.getSystemMetrics(),
-            connections: { alerts: socketCount('alerts'), active: socketCount('active'), neptun: neptun.socketCount() },
+            connections: {
+                alerts: socketCount('alerts'),
+                active: socketCount('active'),
+                neptun: neptun.socketCount(),
+                users: ratelimit.connectedClientCount(),
+            },
             neptun: neptun.getStatusInfo(),
             occupied: occupied.getStatusInfo(),
             geoip: geoip.getStatusInfo(),

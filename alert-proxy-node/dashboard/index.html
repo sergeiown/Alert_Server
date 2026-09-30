@@ -160,6 +160,12 @@
   button:hover { border-color: var(--accent); color: var(--accent); }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   button.primary:hover { opacity: 0.9; color: #fff; }
+  .user-list summary { cursor: pointer; display: flex; align-items: baseline; gap: 10px; list-style: none; }
+  .user-list summary::-webkit-details-marker { display: none; }
+  .user-list summary h2 { margin: 0; }
+  .user-list summary::before { content: '\25B8'; color: var(--text-dim); }
+  .user-list[open] summary::before { content: '\25BE'; }
+  .ul-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
   button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   #settingsPanel {
@@ -449,7 +455,7 @@
   const STORE_URL = 'vartovyi.baseUrl';
   const STORE_TAB = 'vartovyi.tab';
 
-  const state = { web: null, webTimer: null, webBusy: false, webPeriod: 'last7d', countryPeriod: 'last7d', status: null, ua: null, users: null, tab: 'overview', timer: null, usersTimer: null, busy: false, usersBusy: false };
+  const state = { userList: null, userListOpen: false, userListBusy: false, web: null, webTimer: null, webBusy: false, webPeriod: 'last7d', countryPeriod: 'last7d', status: null, ua: null, users: null, tab: 'overview', timer: null, usersTimer: null, busy: false, usersBusy: false };
 
   function $(id) { return document.getElementById(id); }
   function esc(v) {
@@ -642,7 +648,7 @@
 
     $('overviewKpis').innerHTML =
       kpi('Користувачів сьогодні', fmtNum(u.today), `за весь час: ${fmtNum(u.allTime)}`) +
-      kpi('Зараз підключено', fmtNum(totalConn), 'WebSocket-з’єднань') +
+      kpi('Зараз підключено', fmtNum(c.users), `користувачів · з’єднань: ${fmtNum(totalConn)}`) +
       kpi('Запитів до alerts.in.ua', `${s.active.requestsLastMinute}<span class="dim" style="font-size:14px"> /хв</span>`, `${s.active.percentOfSoftLimit}% м’якого ліміту`, gauge(s.active.percentOfSoftLimit)) +
       kpi('Загроз на мапі (Neptun)', fmtNum(n.threats.active), n.stream.connected ? 'стрім підключено' : 'стрім не підключено') +
       kpi('Пік за сьогодні', fmtNum(s.peaks.alertPeak), `тривог одночасно · загроз: ${fmtNum(s.peaks.threatPeak)}`) +
@@ -811,7 +817,7 @@
     body.innerHTML =
       `<div class="kpi-grid">${
         kpi('Сьогодні', fmtNum(t.today), `нових: ${fmtNum(t.newToday)} · повернулись: ${fmtNum(t.returningToday)}`) 
-        }${kpi('Онлайн зараз', fmtNum(u.connections.now), `пік сьогодні: ${fmtNum(u.connections.peakToday)}`) 
+        }${kpi('Онлайн зараз', fmtNum(u.connections.users), `з’єднань: ${fmtNum(u.connections.now)} · пік з’єднань: ${fmtNum(u.connections.peakToday)}`) 
         }${kpi('Повертаються', `${e.multiDayShare}%`, `були активні 2+ дні: ${fmtNum(e.multiDayUsers)}`) 
         }${kpi('Днів активності', String(e.avgActiveDays), 'у середньому на користувача') 
         }${kpi('Липкість', `${e.stickiness}%`, 'частка щоденних серед місячних') 
@@ -827,30 +833,122 @@
       `<div class="card" style="margin-bottom:12px"><h2>Запити за годинами сьогодні (час Києва)</h2>${
         barChart([{ cls: 'bar-c', values: u.hourlyRequestsToday }], hourLabels, { label: 'Запити за годинами', width: chartWidth, height: 160 }) 
       }</div>` +
-      `<div class="card" style="margin-bottom:12px"><h2>Історія версій застосунку за днями</h2>` +
+      `<div class="card" style="margin-bottom:12px"><h2>Історія версій застосунку</h2>` +
         `<div class="legend">${u.versionHistory.versions.slice(0, 8).map((v, i) => { return `<span><i style="background:var(--${VERSION_COLORS[i]})"></i>${esc(v === 'unknown' ? 'невідомо' : v)}</span>`; }).join('')}</div>${
         stackedChart(u.versionHistory.days, u.versionHistory.versions.slice(0, 8), chartWidth) 
-      }</div>` +
+      }${versionTable(u)}</div>` +
       `<div class="card" style="margin-bottom:12px"><div class="card-head"><h2>Країни клієнтів</h2><div class="seg" id="countryTabs">${
         COUNTRY_PERIODS.map((p) => { return `<button data-period="${p[0]}" aria-pressed="false">${p[1]}</button>`; }).join('') 
         }</div></div><div id="countryList"></div>` +
         `<p class="settings-note" style="margin-top:10px">Країна визначається за IP під час запиту (локальна база DB-IP), сама адреса не зберігається.</p></div>` +
-      `<div class="columns">` +
-        `<div class="card"><h2>Версії застосунку (активні за 7 днів)</h2>${barRows(u.versions.map((v) => { return { name: v.version === 'unknown' ? 'невідомо' : v.version, value: v.users }; }), 'name', 'value')}</div>` +
-        `<div class="card"><h2>Маршрути сьогодні</h2>${barRows(u.routesToday.map((r) => { return { name: r.route, value: r.count }; }), 'name', 'value')}</div>` +
-      `</div>` +
-      `<div class="card"><h2>Найактивніші пристрої</h2>${
-        u.topUsers.length
-          ? `<div class="table-wrap"><table class="data"><thead><tr><th>Ідентифікатор</th><th class="num">Запитів</th><th>Версія</th><th>Країна</th><th>Уперше</th><th>Востаннє</th></tr></thead><tbody>${
-            u.topUsers.map((x) => {
-              return `<tr><td class="mono">${esc(x.id)}</td><td class="num mono">${fmtNum(x.requests)}</td><td>${esc(x.version || 'невідомо')}</td><td>${esc(countryName(x.country))}</td><td>${fmtDate(x.firstSeen)}</td><td>${fmtDate(x.lastSeen)}</td></tr>`;
-            }).join('')}</tbody></table></div>`
-          : '<div class="empty-note">Даних ще немає</div>' 
-        }<p class="settings-note" style="margin-top:10px">Пристрої розрізняються за хешем IP-адреси, самі адреси не зберігаються. Статистика накопичується від моменту запуску нового сервера.</p>` +
-      `</div>`;
+      `<div class="card" style="margin-bottom:12px"><h2>Маршрути сьогодні</h2>${barRows(u.routesToday.map((r) => { return { name: r.route, value: r.count }; }), 'name', 'value')}</div>` +
+      userListCard();
 
+    bindUserList();
     bindCountryTabs();
 
+  }
+
+  const USER_LIST_SHOWN = 500;
+
+  function versionTable(u) {
+    const history = u.versionHistory;
+    const versions = history.versions.slice(0, 8);
+    const days = history.days.slice(-7);
+    if (!versions.length || !days.length) return '<div class="empty-note">Даних ще немає</div>';
+
+    const totals = new Map((u.versionTotals || []).map((v) => [v.version, v.users]));
+    const head = days.map((d) => `<th class="num">${esc(d.day.slice(5).replace('-', '.'))}</th>`).join('');
+    const rows = versions.map((v) => {
+      const cells = days.map((d) => `<td class="num mono">${d.versions[v] ? fmtNum(d.versions[v]) : '-'}</td>`).join('');
+      return `<tr><td class="mono">${esc(v === 'unknown' ? 'невідомо' : v)}</td>${cells}<td class="num mono">${fmtNum(totals.get(v) || 0)}</td></tr>`;
+    }).join('');
+
+    return `<div class="table-wrap"><table class="data"><thead><tr><th>Версія</th>${head}<th class="num">Зараз на версії</th></tr></thead><tbody>${rows}</tbody></table></div><p class="settings-note" style="margin-top:10px">Числа за днями - унікальні пристрої за добу. Остання колонка - скільки пристроїв за весь час востаннє працювали саме на цій версії.</p>`;
+  }
+
+  function userListTable() {
+    if (!state.userList) return '<div class="empty-note">Завантаження…</div>';
+    const rows = state.userList.users;
+    if (!rows.length) return '<div class="empty-note">Даних ще немає</div>';
+
+    const shown = rows.slice(0, USER_LIST_SHOWN);
+    const body = shown.map((x) => `<tr><td class="mono">${esc(x.id.slice(0, 12))}</td><td>${esc(countryName(x.country))}</td><td>${esc(x.version || 'невідомо')}</td><td class="num mono">${fmtNum(x.activeDays)}</td><td class="num mono">${fmtNum(x.requests)}</td><td>${fmtDate(x.firstSeen)}</td><td>${fmtDate(x.lastSeen)}</td></tr>`).join('');
+    const more = rows.length > shown.length ? `<p class="settings-note">Показано ${fmtNum(shown.length)} з ${fmtNum(rows.length)}, повний список є в експорті.</p>` : '';
+
+    return `<div class="ul-actions"><button type="button" data-export="csv">Експорт CSV</button><button type="button" data-export="json">Експорт JSON</button></div><div class="table-wrap"><table class="data"><thead><tr><th>Ідентифікатор</th><th>Країна</th><th>Версія</th><th class="num">Днів</th><th class="num">Запитів</th><th>Уперше</th><th>Востаннє</th></tr></thead><tbody>${body}</tbody></table></div>${more}<p class="settings-note" style="margin-top:10px">Пристрої розрізняються за хешем IP-адреси, самі адреси не зберігаються. Повний ідентифікатор входить лише в експорт.</p>`;
+  }
+
+  function userListCard() {
+    const total = state.userList ? state.userList.users.length : state.users.totals.allTime;
+    return `<details class="card user-list" id="userList"${state.userListOpen ? ' open' : ''}><summary><h2>Усі користувачі</h2><span class="dim">${fmtNum(total)}</span></summary><div id="userListBody">${userListTable()}</div></details>`;
+  }
+
+  function exportUsers(kind) {
+    const rows = state.userList ? state.userList.users : [];
+    const stamp = new Date().toISOString().slice(0, 10);
+    let text;
+    let type;
+
+    if (kind === 'json') {
+      text = JSON.stringify(rows, null, 2);
+      type = 'application/json';
+    } else {
+      const keys = ['id', 'country', 'version', 'activeDays', 'requests', 'firstSeen', 'lastSeen'];
+      const cell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+      text = [keys.join(','), ...rows.map((row) => keys.map((key) => cell(row[key])).join(','))].join('\n');
+      type = 'text/csv';
+    }
+
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([text], { type: `${type};charset=utf-8` }));
+    link.download = `alert-proxy-users-${stamp}.${kind}`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  }
+
+  function bindExportButtons() {
+    document.querySelectorAll('#userList [data-export]').forEach((button) => {
+      button.addEventListener('click', () => exportUsers(button.dataset.export));
+    });
+  }
+
+  function loadUserList() {
+    const cfg = settings();
+    const fresh = state.userList && Date.now() - state.userList.at < 30000;
+    if (state.userListBusy || fresh || !cfg.baseUrl || !cfg.adminKey) return Promise.resolve();
+
+    state.userListBusy = true;
+    return api('/users-list', cfg)
+      .then((data) => {
+        state.userList = { users: data.users, at: Date.now() };
+        const body = $('userListBody');
+        if (body) {
+          body.innerHTML = userListTable();
+          bindExportButtons();
+        }
+      })
+      .catch(() => {
+        const body = $('userListBody');
+        if (body) body.innerHTML = '<div class="notice critical">Не вдалося завантажити список користувачів.</div>';
+      })
+      .then(() => {
+        state.userListBusy = false;
+      });
+  }
+
+  function bindUserList() {
+    const details = $('userList');
+    if (!details) return;
+
+    details.addEventListener('toggle', () => {
+      state.userListOpen = details.open;
+      if (details.open) loadUserList();
+    });
+    bindExportButtons();
+    if (state.userListOpen) loadUserList();
   }
 
   function renderWeb() {
@@ -876,7 +974,7 @@
       ? line('Публічний API', st.enabled ? chip('ok', 'увімкнено') : chip('critical', 'вимкнено')) +
         line('Шар загроз (Neptun)', st.threatsEnabled ? chip('ok', 'увімкнено') : chip('info', 'вимкнено')) +
         line('Шар окупованої території (DeepState)', st.occupiedEnabled ? chip('ok', 'увімкнено') : chip('info', 'вимкнено')) +
-        line('WebSocket-з’єднань зараз / ліміт', `${fmtNum(st.webSockets)} / ${fmtNum(st.maxWebSockets)}`) +
+        line('WebSocket-з’єднань вебмапи зараз / ліміт', `${fmtNum(st.webSockets)} / ${fmtNum(st.maxWebSockets)}`) +
         line('Дозволений Origin', esc(st.allowedOrigin))
       : '<div class="empty-note">Даних немає</div>';
 
@@ -899,7 +997,7 @@
         }</div></div>` +
         `<div class="columns"><div><h2>Країни</h2>${barRows(countryRows, 'name', 'value')}</div><div><h2>Мови інтерфейсу</h2>${barRows(languageRows, 'name', 'value')}</div></div>` +
         `<p class="settings-note" style="margin-top:10px">Відвідувачі рахуються за хешем IP із випадковою сіллю, яка живе лише в пам’яті й змінюється щодоби; ані IP, ані хеші не зберігаються. У базі лишаються тільки підсумкові числа.</p></div>` +
-      `<div class="card"><h2>Стан публічної частини</h2>${flags}</div>`;
+      `<div class="card"><h2>Стан публічної частини</h2>${flags}<p class="settings-note" style="margin-top:10px">Ліміт з’єднань задано самим сервером (змінна PUBLIC_WS_MAX) як захист від перевантаження публічної вебмапи. Це не обмеження Oracle: сервер тримає з’єднання в пам’яті, і на цьому VM їх могло б бути значно більше. Клієнтів застосунку цей ліміт не стосується.</p></div>`;
 
     body.querySelectorAll('#webPeriodTabs button').forEach((b) => {
       b.addEventListener('click', () => {
