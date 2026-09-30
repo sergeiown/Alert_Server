@@ -42,6 +42,40 @@ async function requestForecast(uid) {
     return data;
 }
 
+const BATCH_SIZE = 300;
+
+async function requestForecastBatch(uids) {
+    const { alertProxyClientKey } = loadLocalConfig();
+    if (!alertProxyClientKey) return;
+
+    const response = await fetch(`${PROXY_URL}/forecast?uids=${uids.join(',')}`, {
+        headers: { 'X-Client-Key': alertProxyClientKey, 'X-Client-Version': getClientVersion() },
+    });
+    if (!response.ok) throw new Error(`status ${response.status}`);
+
+    const data = await response.json();
+    if (!data || typeof data.forecasts !== 'object') throw new Error('unexpected response');
+
+    Object.entries(data.forecasts).forEach(([uid, forecast]) => {
+        if (forecast && Array.isArray(forecast.durations)) forecastCache.set(uid, { data: forecast, fetchedAt: Date.now() });
+    });
+}
+
+async function prefetchForecasts(uids) {
+    const stale = Array.from(new Set(uids.map(String))).filter((uid) => {
+        const cached = forecastCache.get(uid);
+        return !cached || Date.now() - cached.fetchedAt >= FORECAST_CACHE_TTL_MS;
+    });
+
+    for (let i = 0; i < stale.length; i += BATCH_SIZE) {
+        try {
+            await requestForecastBatch(stale.slice(i, i + BATCH_SIZE));
+        } catch (err) {
+            logFetchError('batch', err.message);
+        }
+    }
+}
+
 async function fetchRegionForecast(uid) {
     const key = String(uid);
     const cached = forecastCache.get(key);
@@ -271,5 +305,6 @@ module.exports = {
     buildActiveDurationText,
     buildActiveDurationLines,
     prefetchForecast,
+    prefetchForecasts,
     formatDuration,
 };

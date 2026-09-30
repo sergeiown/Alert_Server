@@ -70,4 +70,11 @@ function getForecast(uid) {
     return data;
 }
 
-module.exports = { getForecast };
+const MAX_BATCH = 300;
+
+function getForecasts(uids) {
+    const unique = Array.from(new Set(uids.map(String))).slice(0, MAX_BATCH);
+    return Object.fromEntries(unique.map((uid) => [uid, getForecast(uid)]));
+}
+
+module.exports = { getForecast, getForecasts };

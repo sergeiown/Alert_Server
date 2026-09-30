@@ -171,6 +171,16 @@ async function handleRequest(req, res) {
         return;
     }
 
+    if (url.pathname === '/forecast') {
+        const uids = (url.searchParams.get('uids') || '').split(',').filter((uid) => /^\d{1,12}$/.test(uid));
+        if (!uids.length) {
+            send(res, { status: 400, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'uids required' }) });
+            return;
+        }
+        send(res, { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ forecasts: forecast.getForecasts(uids) }) });
+        return;
+    }
+
     const forecastMatch = url.pathname.match(/^\/forecast\/(\d+)$/);
     if (forecastMatch) {
         send(res, { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(forecast.getForecast(forecastMatch[1])) });

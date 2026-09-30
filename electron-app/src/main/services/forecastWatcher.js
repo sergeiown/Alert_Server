@@ -5,7 +5,7 @@ const { logEvent } = require('./logger');
 const regionsStore = require('./regionsStore');
 const settingsStore = require('./settingsStore');
 const DEFAULT_LOOKAHEAD_MINUTES = 120;
-const { getRegionSoonestPrediction, formatDuration } = require('./forecast');
+const { getRegionSoonestPrediction, prefetchForecasts, formatDuration } = require('./forecast');
 const { getLatestAlertData } = require('./activeAlertData');
 const { getLocationLookup, getAlertCoverageUids } = require('./locationFilter');
 const { alertTypeName } = require('./alertTypes');
@@ -95,6 +95,7 @@ async function runCheck() {
     const { language } = settingsStore.getSettings();
     const selectedUids = regionsStore.getSelectedUids();
     pruneToSelectedUids(selectedUids);
+    await prefetchForecasts(selectedUids);
 
     const candidates = [];
     for (const uid of selectedUids) {
