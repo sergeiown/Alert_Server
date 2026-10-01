@@ -120,6 +120,37 @@
         } catch (err) {}
     }
 
+    const threatSheet = document.getElementById('threatSheet');
+    const threatSheetBody = document.getElementById('threatSheetBody');
+    const threatClose = document.getElementById('threatClose');
+    threatClose.setAttribute('aria-label', text.close);
+
+    function hideThreatSheet() {
+        threatSheet.hidden = true;
+    }
+
+    threatClose.addEventListener('click', hideThreatSheet);
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') hideThreatSheet();
+    });
+
+    web.whenMapReady((api) => {
+        window.alertMapWeb.setThreatSelectHandler((info, latlng, updateOnly) => {
+            if (!info) {
+                hideThreatSheet();
+                return;
+            }
+            threatSheetBody.innerHTML = info;
+            threatSheet.hidden = false;
+            if (!updateOnly && latlng) {
+                api.map.panInside(latlng, {
+                    paddingTopLeft: [70, 110],
+                    paddingBottomRight: [30, threatSheet.offsetHeight + 24],
+                });
+            }
+        });
+    });
+
     web.whenMapReady((api) => {
         const credits = api.map.attributionControl && api.map.attributionControl.getContainer();
         if (credits) document.getElementById('webCredits').appendChild(credits);

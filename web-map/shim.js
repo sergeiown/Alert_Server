@@ -227,9 +227,14 @@
         return Promise.resolve();
     }
 
+    let threatSelectHandler = null;
+
     window.alertServerLiveMap = {
         kyivTilesUrl: new URL('tiles/kyiv.pmtiles', location.href).href,
         regionsRefreshMs: 5000,
+        onThreatSelect: (info, latlng, updateOnly) => {
+            if (threatSelectHandler) threatSelectHandler(info, latlng, updateOnly);
+        },
         minZoom: 3,
         get threatIconScale() {
             return window.matchMedia('(max-width: 560px)').matches ? 0.75 : 1;
@@ -302,6 +307,9 @@
     };
 
     window.alertMapWeb = {
+        setThreatSelectHandler: (handler) => {
+            threatSelectHandler = handler;
+        },
         language,
         theme: themePreference,
         nativeMatchMedia,

@@ -236,3 +236,51 @@ a.web-chip {
 .no-fullscreen .leaflet-control-fullscreen {
     display: none;
 }
+
+#threatSheet {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: calc(var(--web-bar-height, 44px) + 8px);
+    z-index: 1050;
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 12px 52px 12px 14px;
+    border-radius: 10px;
+    background: var(--map-chrome-bg, #f3f3f3);
+    color: var(--map-chrome-text, #1f1f1f);
+    border: 1px solid var(--map-chrome-border, rgba(0, 0, 0, 0.2));
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+#threatSheetBody strong {
+    font-size: 15px;
+}
+
+#threatSheetBody small {
+    opacity: 0.75;
+}
+
+#threatClose {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    font-size: 22px;
+    line-height: 1;
+}
+
+@media (min-width: 561px) {
+    #threatSheet {
+        left: 50%;
+        right: auto;
+        width: 440px;
+        transform: translateX(-50%);
+    }
+}

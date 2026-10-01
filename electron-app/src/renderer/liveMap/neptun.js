@@ -328,6 +328,17 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const hintLayer = new ControlLayer(hint);
     hintLayer.addTo(map);
 
+    const selectHandler = window.alertServerLiveMap.onThreatSelect;
+    let selectedThreatId = null;
+
+    function clearSelectedThreat() {
+        if (!selectHandler || selectedThreatId === null) return;
+        selectedThreatId = null;
+        selectHandler(null);
+    }
+
+    if (selectHandler) map.on('click', clearSelectedThreat);
+
     map.on('tooltipopen', (e) => {
         const el = e.tooltip.getElement();
         if (!el) return;
@@ -673,6 +684,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             if (!currentIds.has(id)) {
                 fadeOutAndRemove(marker);
                 activeMarkers.delete(id);
+                if (selectedThreatId === id) clearSelectedThreat();
                 if (!isExtrapolation) driftById.delete(id);
             }
         });
@@ -701,19 +713,33 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                 } else {
                     applyIconRotation(existing, threat, true);
                 }
-                existing.setTooltipContent(tooltipContent(threat, strings, isEnglish));
+                const info = tooltipContent(threat, strings, isEnglish);
+                if (selectHandler) {
+                    if (selectedThreatId === threat.id) selectHandler(info, existing._truePos, true);
+                } else {
+                    existing.setTooltipContent(info);
+                }
                 return;
             }
 
-            const marker = L.marker(displayLatLng, { icon: threatIcon(threat, sizeMultiplier), pane: THREATS_PANE })
-                .bindTooltip(tooltipContent(threat, strings, isEnglish))
-                .on('mouseover', () => map.closePopup())
-                .on('click', () => {
-                    const cityZoom = kyivMode ? KYIV_THREAT_CLICK_ZOOM : RAION_MIN_ZOOM;
-                    const targetZoom = Math.min(Math.max(map.getZoom(), cityZoom), map.getMaxZoom());
-                    map.flyTo(marker._truePos, targetZoom, { animate: true, duration: 0.8 });
-                })
-                .addTo(layer);
+            const info = tooltipContent(threat, strings, isEnglish);
+            const marker = L.marker(displayLatLng, { icon: threatIcon(threat, sizeMultiplier), pane: THREATS_PANE });
+            if (selectHandler) {
+                marker.on('click', () => {
+                    selectedThreatId = threat.id;
+                    selectHandler(info, marker._truePos);
+                });
+            } else {
+                marker
+                    .bindTooltip(info)
+                    .on('mouseover', () => map.closePopup())
+                    .on('click', () => {
+                        const cityZoom = kyivMode ? KYIV_THREAT_CLICK_ZOOM : RAION_MIN_ZOOM;
+                        const targetZoom = Math.min(Math.max(map.getZoom(), cityZoom), map.getMaxZoom());
+                        map.flyTo(marker._truePos, targetZoom, { animate: true, duration: 0.8 });
+                    });
+            }
+            marker.addTo(layer);
             marker._typeSig = typeSig;
             marker._headingDeg = typeof threat.heading === 'number' ? threat.heading : undefined;
             marker._truePos = [threat.lat, threat.lon];
