@@ -5,7 +5,7 @@ const { logEvent } = require('./logger');
 const { loadLocalConfig } = require('./localConfig');
 const { alertTypeName } = require('./alertTypes');
 const { t } = require('../../i18n/i18n');
-const { PROXY_URL, getClientVersion } = require('./proxyConfig');
+const { PROXY_URL, getClientVersion, proxyFetch, describeError } = require('./proxyConfig');
 
 const FORECAST_CACHE_TTL_MS = 60 * 1000;
 const FETCH_ERROR_LOG_COOLDOWN_MS = 10 * 60 * 1000;
@@ -32,7 +32,7 @@ async function requestForecast(uid) {
     const { alertProxyClientKey } = loadLocalConfig();
     if (!alertProxyClientKey) return null;
 
-    const response = await fetch(`${PROXY_URL}/forecast/${uid}`, {
+    const response = await proxyFetch(`${PROXY_URL}/forecast/${uid}`, {
         headers: { 'X-Client-Key': alertProxyClientKey, 'X-Client-Version': getClientVersion() },
     });
     if (!response.ok) throw new Error(`status ${response.status}`);
@@ -48,7 +48,7 @@ async function requestForecastBatch(uids) {
     const { alertProxyClientKey } = loadLocalConfig();
     if (!alertProxyClientKey) return;
 
-    const response = await fetch(`${PROXY_URL}/forecast?uids=${uids.join(',')}`, {
+    const response = await proxyFetch(`${PROXY_URL}/forecast?uids=${uids.join(',')}`, {
         headers: { 'X-Client-Key': alertProxyClientKey, 'X-Client-Version': getClientVersion() },
     });
     if (!response.ok) throw new Error(`status ${response.status}`);
@@ -71,7 +71,7 @@ async function prefetchForecasts(uids) {
         try {
             await requestForecastBatch(stale.slice(i, i + BATCH_SIZE));
         } catch (err) {
-            logFetchError('batch', err.message);
+            logFetchError('batch', describeError(err));
         }
     }
 }
@@ -88,7 +88,7 @@ async function fetchRegionForecast(uid) {
             return data;
         })
         .catch((err) => {
-            logFetchError(key, err.message);
+            logFetchError(key, describeError(err));
             return cached ? cached.data : null;
         })
         .finally(() => inflight.delete(key));

@@ -73,12 +73,21 @@ app.whenReady().then(() => {
 
     const { alertSourceProvider } = settingsStore.getSettings();
     let forecastWatcherStarted = false;
+    const UNCHANGED_LOG_INTERVAL_MS = 10 * 60 * 1000;
+    let lastAlertsLogLine = '';
+    let lastAlertsLogAt = 0;
 
     function onAlertsUpdated(sourceLabel, alertData, meta = {}) {
         const matched = filterAlerts(alertData);
         discoverUnknownLocations(alertData.alerts);
         if (!meta.heartbeat) {
-            logEvent(`Update (${sourceLabel}): ${alertData.alerts.length} active alerts (${matched.length} in monitored regions)`, 'NETWORK');
+            const line = `Update (${sourceLabel}): ${alertData.alerts.length} active alerts (${matched.length} in monitored regions)`;
+            const now = Date.now();
+            if (line !== lastAlertsLogLine || now - lastAlertsLogAt >= UNCHANGED_LOG_INTERVAL_MS) {
+                lastAlertsLogLine = line;
+                lastAlertsLogAt = now;
+                logEvent(line, 'NETWORK');
+            }
         }
         setLatestMatchedAlerts(matched);
         setLatestTotalAlertCount(alertData.alerts.length);

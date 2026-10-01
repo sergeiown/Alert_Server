@@ -4,7 +4,7 @@
 const { logEvent } = require('./logger');
 const { loadLocalConfig } = require('./localConfig');
 
-const { PROXY_URL } = require('./proxyConfig');
+const { PROXY_URL, proxyFetch, describeError } = require('./proxyConfig');
 const REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 let cached = null;
@@ -14,7 +14,7 @@ async function refresh() {
         const { alertProxyClientKey } = loadLocalConfig();
         if (!alertProxyClientKey) return;
 
-        const response = await fetch(`${PROXY_URL}/weapon-stats`, {
+        const response = await proxyFetch(`${PROXY_URL}/weapon-stats`, {
             headers: { 'X-Client-Key': alertProxyClientKey },
         });
         if (!response.ok) {
@@ -32,7 +32,7 @@ async function refresh() {
         cached = data;
         logEvent(`Weapon stats updated (Kaggle): through ${cached.dateRange.to}`, 'NETWORK');
     } catch (err) {
-        logEvent(`Weapon stats fetch error (Kaggle): ${err.message}`, 'NETWORK');
+        logEvent(`Weapon stats fetch error (Kaggle): ${describeError(err)}`, 'NETWORK');
     }
 }
 

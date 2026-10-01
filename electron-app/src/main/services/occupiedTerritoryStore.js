@@ -3,7 +3,7 @@
 
 const { logEvent } = require('./logger');
 const { loadLocalConfig } = require('./localConfig');
-const { PROXY_URL, getClientVersion } = require('./proxyConfig');
+const { PROXY_URL, getClientVersion, proxyFetch, describeError } = require('./proxyConfig');
 
 const DIRECT_URL = 'https://raw.githubusercontent.com/cyterat/deepstate-map-data/main/data/deepstatemap_data_';
 const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
@@ -22,7 +22,7 @@ async function fetchFromServer() {
     const { alertProxyClientKey } = loadLocalConfig();
     if (!alertProxyClientKey) return null;
 
-    const response = await fetch(`${PROXY_URL}/map/occupied`, {
+    const response = await proxyFetch(`${PROXY_URL}/map/occupied`, {
         headers: { 'X-Client-Key': alertProxyClientKey, 'X-Client-Version': getClientVersion() },
     });
     if (!response.ok) return null;
@@ -47,14 +47,14 @@ async function refresh() {
     try {
         result = await fetchFromServer();
     } catch (err) {
-        logEvent(`Occupied territory fetch failed (DeepState): ${err.message}`, 'NETWORK');
+        logEvent(`Occupied territory fetch failed (DeepState): ${describeError(err)}`, 'NETWORK');
     }
 
     if (!result) {
         try {
             result = await fetchDirect();
         } catch (err) {
-            logEvent(`Occupied territory fetch failed (DeepState): ${err.message}`, 'NETWORK');
+            logEvent(`Occupied territory fetch failed (DeepState): ${describeError(err)}`, 'NETWORK');
         }
     }
 

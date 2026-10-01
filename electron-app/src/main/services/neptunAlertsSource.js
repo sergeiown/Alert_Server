@@ -5,7 +5,7 @@ const { getResourcePath } = require('./appPaths');
 const { logEvent } = require('./logger');
 const { setLatestAlertData, getLatestAlertData } = require('./activeAlertData');
 const regionsStore = require('./regionsStore');
-const { PROXY_URL, getClientVersion } = require('./proxyConfig');
+const { PROXY_URL, getClientVersion, proxyFetch, describeError } = require('./proxyConfig');
 const { getLocationLookup } = require('./locationFilter');
 
 const ALERTS_URL = 'https://neptun.in.ua/api/v1/alerts';
@@ -147,7 +147,7 @@ function warnAboutUncoveredMonitoredRegions() {
 async function fetchAlerts(clientKey) {
     if (clientKey) {
         try {
-            const viaProxy = await fetch(`${PROXY_URL}/neptun/alerts`, {
+            const viaProxy = await proxyFetch(`${PROXY_URL}/neptun/alerts`, {
                 headers: { 'X-Client-Key': clientKey, 'X-Client-Version': getClientVersion() },
             });
             if (viaProxy.ok) return viaProxy;
@@ -174,7 +174,7 @@ async function pollOnce(clientKey, onHealthChange) {
         if (onHealthChange) onHealthChange(true);
         return data;
     } catch (err) {
-        logEvent(`Neptun alerts request error: ${err.message}`, 'NETWORK');
+        logEvent(`Neptun alerts request error: ${describeError(err)}`, 'NETWORK');
         if (onHealthChange) onHealthChange(false);
         return getLatestAlertData();
     }

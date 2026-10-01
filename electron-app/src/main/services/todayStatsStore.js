@@ -3,7 +3,7 @@
 
 const { logEvent } = require('./logger');
 const { loadLocalConfig } = require('./localConfig');
-const { PROXY_URL, getClientVersion } = require('./proxyConfig');
+const { PROXY_URL, getClientVersion, proxyFetch, describeError } = require('./proxyConfig');
 
 const CACHE_TTL_MS = 30 * 1000;
 const ERROR_LOG_COOLDOWN_MS = 10 * 60 * 1000;
@@ -19,7 +19,7 @@ async function getLatestTodayStats(monitoredUids) {
     if (cached && cached.uids === uids && Date.now() - cached.fetchedAt < CACHE_TTL_MS) return cached.data;
 
     try {
-        const response = await fetch(`${PROXY_URL}/trends/today?uids=${encodeURIComponent(uids)}`, {
+        const response = await proxyFetch(`${PROXY_URL}/trends/today?uids=${encodeURIComponent(uids)}`, {
             headers: { 'X-Client-Key': alertProxyClientKey, 'X-Client-Version': getClientVersion() },
         });
         if (!response.ok) throw new Error(`status ${response.status}`);
@@ -33,7 +33,7 @@ async function getLatestTodayStats(monitoredUids) {
         const now = Date.now();
         if (now - lastErrorLoggedAt >= ERROR_LOG_COOLDOWN_MS) {
             lastErrorLoggedAt = now;
-            logEvent(`Today stats fetch failed: ${err.message}`, 'NETWORK');
+            logEvent(`Today stats fetch failed: ${describeError(err)}`, 'NETWORK');
         }
         return cached ? cached.data : null;
     }

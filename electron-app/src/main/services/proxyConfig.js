@@ -12,4 +12,18 @@ function getClientVersion() {
     }
 }
 
-module.exports = { PROXY_URL, PROXY_WS_URL, getClientVersion };
+async function proxyFetch(url, options) {
+    try {
+        return await fetch(url, options);
+    } catch (err) {
+        return fetch(url, options);
+    }
+}
+
+function describeError(err) {
+    const cause = err && err.cause;
+    const detail = cause && (cause.code || cause.message);
+    return detail ? `${err.message} (${detail})` : err.message;
+}
+
+module.exports = { PROXY_URL, PROXY_WS_URL, getClientVersion, proxyFetch, describeError };

@@ -4,14 +4,14 @@
 const { loadLocalConfig } = require('./localConfig');
 const { logEvent } = require('./logger');
 
-const { PROXY_URL } = require('./proxyConfig');
+const { PROXY_URL, proxyFetch, describeError } = require('./proxyConfig');
 
 let bitmap = null;
 let loadPromise = null;
 
 async function fetchBitmap() {
     const { alertProxyClientKey } = loadLocalConfig();
-    const response = await fetch(`${PROXY_URL}/region-statuses`, {
+    const response = await proxyFetch(`${PROXY_URL}/region-statuses`, {
         headers: { 'X-Client-Key': alertProxyClientKey },
     });
 
@@ -28,7 +28,7 @@ function ensureLoaded() {
     if (bitmap !== null) return Promise.resolve();
     if (!loadPromise) {
         loadPromise = fetchBitmap().catch((err) => {
-            logEvent(`Region availability request error (alerts.in.ua): ${err.message}`, 'NETWORK');
+            logEvent(`Region availability request error (alerts.in.ua): ${describeError(err)}`, 'NETWORK');
         });
     }
     return loadPromise;

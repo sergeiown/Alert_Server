@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const { loadLocalConfig } = require('./localConfig');
-const { PROXY_URL, getClientVersion } = require('./proxyConfig');
+const { PROXY_URL, getClientVersion, proxyFetch } = require('./proxyConfig');
 
 const CACHE_TTL_MS = 15 * 1000;
 const EMPTY_PEAKS = { alertPeak: 0, threatPeak: 0 };
@@ -16,7 +16,7 @@ async function getDailyPeaks() {
         const { alertProxyClientKey } = loadLocalConfig();
         if (!alertProxyClientKey) return EMPTY_PEAKS;
 
-        const response = await fetch(`${PROXY_URL}/daily-peaks`, {
+        const response = await proxyFetch(`${PROXY_URL}/daily-peaks`, {
             headers: { 'X-Client-Key': alertProxyClientKey, 'X-Client-Version': getClientVersion() },
         });
         if (!response.ok) throw new Error(`status ${response.status}`);

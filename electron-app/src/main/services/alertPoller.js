@@ -6,7 +6,7 @@ const { getUserDataFile } = require('./appPaths');
 const { logEvent } = require('./logger');
 const { setLatestAlertData, getLatestAlertData } = require('./activeAlertData');
 
-const { PROXY_URL, PROXY_WS_URL, getClientVersion } = require('./proxyConfig');
+const { PROXY_URL, PROXY_WS_URL, getClientVersion, proxyFetch, describeError } = require('./proxyConfig');
 
 const WS_URL = `${PROXY_WS_URL}/ws-alerts-in-ua`;
 const FALLBACK_POLL_URL = PROXY_URL;
@@ -64,7 +64,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
 
     async function fallbackPollOnce() {
         try {
-            const response = await fetch(FALLBACK_POLL_URL, { headers: { 'X-Client-Key': clientKey, 'X-Client-Version': getClientVersion() } });
+            const response = await proxyFetch(FALLBACK_POLL_URL, { headers: { 'X-Client-Key': clientKey, 'X-Client-Version': getClientVersion() } });
 
             if (!response.ok) {
                 logOriginIssue(response.status);
@@ -81,7 +81,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
             else noteOriginHealthy();
             if (onHealthChange) onHealthChange(true);
         } catch (err) {
-            logEvent(`alerts.in.ua fallback request error: ${err.message}`, 'NETWORK');
+            logEvent(`alerts.in.ua fallback request error: ${describeError(err)}`, 'NETWORK');
             if (onHealthChange) onHealthChange(false);
         }
     }
@@ -126,7 +126,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
         try {
             ws = new WebSocket(`${WS_URL}?key=${encodeURIComponent(clientKey)}&v=${encodeURIComponent(getClientVersion())}`);
         } catch (err) {
-            logEvent(`alerts.in.ua connection failed: ${err.message}`, 'NETWORK');
+            logEvent(`alerts.in.ua connection failed: ${describeError(err)}`, 'NETWORK');
             startFallbackPolling();
             scheduleReconnect();
             return;

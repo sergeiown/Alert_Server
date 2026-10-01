@@ -4,7 +4,7 @@
 const { logEvent } = require('./logger');
 const { getLiveMapWindow } = require('../windows/liveMapWindow');
 const { loadLocalConfig } = require('./localConfig');
-const { PROXY_URL, PROXY_WS_URL, getClientVersion } = require('./proxyConfig');
+const { PROXY_URL, PROXY_WS_URL, getClientVersion, proxyFetch, describeError } = require('./proxyConfig');
 
 const THREATS_URL = 'https://neptun.in.ua/api/v1/threats';
 const STREAM_URL = 'wss://neptun.in.ua/api/v1/stream';
@@ -15,6 +15,7 @@ const HEARTBEAT_TIMEOUT_MS = 120000;
 const SNAPSHOT_REFRESH_MS = 60000;
 const PUBLISH_DEBOUNCE_MS = 500;
 const LOG_MIN_INTERVAL_MS = 60000;
+const LOG_UNCHANGED_INTERVAL_MS = 10 * 60 * 1000;
 
 let latestThreats = [];
 let threatsById = new Map();
@@ -25,6 +26,7 @@ let fallbackTimer = null;
 let usingFallback = false;
 let publishDebounceTimer = null;
 let lastLoggedAt = 0;
+let lastLoggedCount = -1;
 let logCatchupTimer = null;
 let useProxy = true;
 let directSince = 0;
@@ -74,11 +76,13 @@ function applyRemove(id) {
 
 function logCurrentCount() {
     lastLoggedAt = Date.now();
+    lastLoggedCount = threatsById.size;
     logEvent(`Update (Neptun threats): ${threatsById.size} active threats`, 'NETWORK');
 }
 
 function maybeLogUpdate() {
     const elapsed = Date.now() - lastLoggedAt;
+    if (threatsById.size === lastLoggedCount && elapsed < LOG_UNCHANGED_INTERVAL_MS) return;
     if (elapsed >= LOG_MIN_INTERVAL_MS) {
         if (logCatchupTimer) {
             clearTimeout(logCatchupTimer);
@@ -91,7 +95,7 @@ function maybeLogUpdate() {
     if (logCatchupTimer) return;
     logCatchupTimer = setTimeout(() => {
         logCatchupTimer = null;
-        logCurrentCount();
+        if (threatsById.size !== lastLoggedCount) logCurrentCount();
     }, LOG_MIN_INTERVAL_MS - elapsed);
 }
 
@@ -108,7 +112,7 @@ async function fetchSnapshot() {
     try {
         const viaProxy = proxyEnabled();
         const response = viaProxy
-            ? await fetch(`${PROXY_URL}/neptun/threats`, { headers: { 'X-Client-Key': getClientKey(), 'X-Client-Version': getClientVersion() } })
+            ? await proxyFetch(`${PROXY_URL}/neptun/threats`, { headers: { 'X-Client-Key': getClientKey(), 'X-Client-Version': getClientVersion() } })
             : await fetch(THREATS_URL);
         if (!response.ok) {
             logEvent(`Neptun threats fallback fetch failed: ${response.status}`, 'NETWORK');
@@ -119,7 +123,7 @@ async function fetchSnapshot() {
         maybeLogUpdate();
         publishThreats(Array.from(threatsById.values()));
     } catch (err) {
-        logEvent(`Neptun threats fallback request error: ${err.message}`, 'NETWORK');
+        logEvent(`Neptun threats fallback request error: ${describeError(err)}`, 'NETWORK');
     }
 }
 
@@ -168,7 +172,7 @@ function connect() {
                 : STREAM_URL
         );
     } catch (err) {
-        logEvent(`Neptun threats connection failed: ${err.message}`, 'NETWORK');
+        logEvent(`Neptun threats connection failed: ${describeError(err)}`, 'NETWORK');
         if (viaProxy) {
             useProxy = false;
             directSince = Date.now();

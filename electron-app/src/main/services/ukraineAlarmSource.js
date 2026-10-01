@@ -4,7 +4,7 @@
 const { logEvent } = require('./logger');
 const { setLatestAlertData, getLatestAlertData } = require('./activeAlertData');
 
-const { PROXY_URL, PROXY_WS_URL, getClientVersion } = require('./proxyConfig');
+const { PROXY_URL, PROXY_WS_URL, getClientVersion, proxyFetch, describeError } = require('./proxyConfig');
 
 const WS_URL = `${PROXY_WS_URL}/ws`;
 const FALLBACK_POLL_URL = `${PROXY_URL}/ukrainealarm-alerts`;
@@ -32,7 +32,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
 
     async function fallbackPollOnce() {
         try {
-            const response = await fetch(FALLBACK_POLL_URL, { headers: { 'X-Client-Key': clientKey, 'X-Client-Version': getClientVersion() } });
+            const response = await proxyFetch(FALLBACK_POLL_URL, { headers: { 'X-Client-Key': clientKey, 'X-Client-Version': getClientVersion() } });
             if (!response.ok) {
                 logEvent(`UkraineAlarm fallback fetch failed: ${response.status}`, 'NETWORK');
                 if (onHealthChange) onHealthChange(false);
@@ -44,7 +44,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
             onUpdate(data);
             if (onHealthChange) onHealthChange(true);
         } catch (err) {
-            logEvent(`UkraineAlarm fallback request error: ${err.message}`, 'NETWORK');
+            logEvent(`UkraineAlarm fallback request error: ${describeError(err)}`, 'NETWORK');
             if (onHealthChange) onHealthChange(false);
         }
     }
@@ -89,7 +89,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
         try {
             ws = new WebSocket(`${WS_URL}?key=${encodeURIComponent(clientKey)}&v=${encodeURIComponent(getClientVersion())}`);
         } catch (err) {
-            logEvent(`UkraineAlarm connection failed: ${err.message}`, 'NETWORK');
+            logEvent(`UkraineAlarm connection failed: ${describeError(err)}`, 'NETWORK');
             startFallbackPolling();
             scheduleReconnect();
             return;
