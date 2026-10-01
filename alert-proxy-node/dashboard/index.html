@@ -320,6 +320,11 @@
   .seg { display: flex; gap: 4px; }
   .seg button { padding: 5px 10px; font-size: 12px; }
   .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+  .sub-title { margin: 14px 0 6px; font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+  .bar-row .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; }
+  .more { margin-top: 10px; }
+  .more summary { cursor: pointer; font-size: 13px; color: var(--text-dim); padding: 6px 0; }
+  .more summary:hover { color: var(--accent); }
   .legend { display: flex; gap: 14px; font-size: 12px; color: var(--text-dim); margin-bottom: 8px; flex-wrap: wrap; }
   .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
 
@@ -457,7 +462,7 @@
   const STORE_URL = 'vartovyi.baseUrl';
   const STORE_TAB = 'vartovyi.tab';
 
-  const state = { userList: null, userListOpen: false, userListBusy: false, web: null, webTimer: null, webBusy: false, webPeriod: 'last7d', countryPeriod: 'last7d', status: null, ua: null, users: null, tab: 'overview', timer: null, usersTimer: null, busy: false, usersBusy: false };
+  const state = { versionsOpen: false, userList: null, userListOpen: false, userListBusy: false, web: null, webTimer: null, webBusy: false, webPeriod: 'last7d', countryPeriod: 'last7d', status: null, ua: null, users: null, tab: 'overview', timer: null, usersTimer: null, busy: false, usersBusy: false };
 
   function $(id) { return document.getElementById(id); }
   function esc(v) {
@@ -527,7 +532,7 @@
     return step * 4;
   }
 
-  function stackedChart(days, versions, width) {
+  function stackedChart(days, versions, width, labelOf) {
     const W = width || 600, H = 200, padL = 36, padR = 8, padT = 10, padB = 24;
     const n = days.length;
     if (!n) return '<div class="empty-note">Даних ще немає</div>';
@@ -551,7 +556,7 @@
         const h = (plotH * count) / max;
         acc += h;
         out += `<rect class="seg-${Math.min(vi, 7)}" x="${x.toFixed(1)}" y="${(padT + plotH - acc).toFixed(1)}" width="${barW.toFixed(1) 
-          }" height="${h.toFixed(1)}"><title>${esc(`${d.day} · ${v}: ${count}`)}</title></rect>`;
+          }" height="${h.toFixed(1)}"><title>${esc(`${d.day} · ${labelOf ? labelOf(v) : v}: ${count}`)}</title></rect>`;
       });
     });
     const step = Math.ceil(n / Math.max(2, Math.floor(plotW / 46)));
@@ -816,6 +821,7 @@
     const hourLabels = u.hourlyRequestsToday.map((_, h) => { return String(h); });
 
     const chartWidth = Math.max(300, Math.min(1100, body.clientWidth - 30)) || 600;
+    const versions = versionModel(u);
     body.innerHTML =
       `<div class="kpi-grid">${
         kpi('Сьогодні', fmtNum(t.today), `нових: ${fmtNum(t.newToday)} · повернулись: ${fmtNum(t.returningToday)}`) 
@@ -835,10 +841,11 @@
       `<div class="card" style="margin-bottom:12px"><h2>Запити за годинами сьогодні (час Києва)</h2>${
         barChart([{ cls: 'bar-c', values: u.hourlyRequestsToday }], hourLabels, { label: 'Запити за годинами', width: chartWidth, height: 160 }) 
       }</div>` +
-      `<div class="card" style="margin-bottom:12px"><h2>Історія версій застосунку</h2>` +
-        `<div class="legend">${u.versionHistory.versions.slice(0, 8).map((v, i) => { return `<span><i style="background:var(--${VERSION_COLORS[i]})"></i>${esc(v === 'unknown' ? 'невідомо' : v)}</span>`; }).join('')}</div>${
-        stackedChart(u.versionHistory.days, u.versionHistory.versions.slice(0, 8), chartWidth) 
-      }${versionTable(u)}</div>` +
+      `<div class="card" style="margin-bottom:12px"><h2>Історія версій застосунку</h2>${versionDistribution(versions)}` +
+        `<p class="sub-title">Динаміка за ${VERSION_CHART_DAYS} днів</p>` +
+        `<div class="legend">${versions.groups.map((group, index) => { return `<span><i style="background:var(--${VERSION_COLORS[index]})"></i>${esc(versions.labelOf(group))}</span>`; }).join('')}</div>` +
+        `${stackedChart(versions.days, versions.groups, chartWidth, versions.labelOf)}` +
+        `<details class="more" id="versionDetails"${state.versionsOpen ? ' open' : ''}><summary>Таблиця по днях</summary>${versionTable(versions)}</details></div>` +
       `<div class="card" style="margin-bottom:12px"><div class="card-head"><h2>Країни клієнтів</h2><div class="seg" id="countryTabs">${
         COUNTRY_PERIODS.map((p) => { return `<button data-period="${p[0]}" aria-pressed="false">${p[1]}</button>`; }).join('') 
         }</div></div><div id="countryList"></div>` +
@@ -847,26 +854,84 @@
       userListCard();
 
     bindUserList();
+    bindVersionDetails();
     bindCountryTabs();
 
   }
 
   const USER_LIST_SHOWN = 500;
 
-  function versionTable(u) {
-    const history = u.versionHistory;
-    const versions = history.versions.slice(0, 8);
-    const days = history.days.slice(-7);
-    if (!versions.length || !days.length) return '<div class="empty-note">Даних ще немає</div>';
+  const VERSION_SHOWN = 5;
+  const VERSION_CHART_DAYS = 14;
 
-    const totals = new Map((u.versionTotals || []).map((v) => [v.version, v.users]));
-    const head = days.map((d) => `<th class="num">${esc(d.day.slice(5).replace('-', '.'))}</th>`).join('');
-    const rows = versions.map((v) => {
-      const cells = days.map((d) => `<td class="num mono">${d.versions[v] ? fmtNum(d.versions[v]) : '-'}</td>`).join('');
-      return `<tr><td class="mono">${esc(v === 'unknown' ? 'невідомо' : v)}</td>${cells}<td class="num mono">${fmtNum(totals.get(v) || 0)}</td></tr>`;
-    }).join('');
+  function compareVersions(a, b) {
+    const pa = a.split('.').map(Number);
+    const pb = b.split('.').map(Number);
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+      const diff = (pb[i] || 0) - (pa[i] || 0);
+      if (diff) return diff;
+    }
+    return 0;
+  }
 
-    return `<div class="table-wrap"><table class="data"><thead><tr><th>Версія</th>${head}<th class="num">Зараз на версії</th></tr></thead><tbody>${rows}</tbody></table></div><p class="settings-note" style="margin-top:10px">Числа за днями - унікальні пристрої за добу. Остання колонка - скільки пристроїв за весь час востаннє працювали саме на цій версії.</p>`;
+  function versionModel(u) {
+    const seen = new Set([...u.versionHistory.versions, ...(u.versionTotals || []).map((v) => v.version)]);
+    const known = Array.from(seen).filter((v) => v !== 'unknown').sort(compareVersions);
+    const shown = known.slice(0, VERSION_SHOWN);
+    const groups = [...shown];
+    if (known.length > shown.length) groups.push('older');
+    if (seen.has('unknown')) groups.push('unknown');
+
+    const groupOf = (version) => (shown.includes(version) ? version : version === 'unknown' ? 'unknown' : 'older');
+    const labelOf = (group) => (group === 'older' ? 'старіші' : group === 'unknown' ? 'невідомо' : group);
+
+    const days = u.versionHistory.days.slice(-VERSION_CHART_DAYS).map((d) => {
+      const versions = {};
+      Object.entries(d.versions).forEach(([version, count]) => {
+        const group = groupOf(version);
+        versions[group] = (versions[group] || 0) + count;
+      });
+      return { day: d.day, versions };
+    });
+
+    const totals = {};
+    (u.versionTotals || []).forEach(({ version, users }) => {
+      const group = groupOf(version);
+      totals[group] = (totals[group] || 0) + users;
+    });
+
+    return { groups, labelOf, days, totals, latest: shown[0] };
+  }
+
+  function versionDistribution(model) {
+    const sum = Object.values(model.totals).reduce((total, count) => total + count, 0);
+    if (!sum) return '<div class="empty-note">Даних ще немає</div>';
+
+    return model.groups
+      .filter((group) => model.totals[group])
+      .map((group) => {
+        const color = VERSION_COLORS[model.groups.indexOf(group)];
+        const share = Math.round((model.totals[group] / sum) * 100);
+        const latest = group === model.latest ? ` ${chip('ok', 'остання')}` : '';
+        return `<div class="bar-row wide"><span class="name mono"><i class="swatch" style="background:var(--${color})"></i>${esc(model.labelOf(group))}${latest}</span><span class="track"><span class="fill" style="width:${share}%;display:block;background:var(--${color})"></span></span><span class="num">${fmtNum(model.totals[group])} · ${share}%</span></div>`;
+      })
+      .join('');
+  }
+
+  function versionTable(model) {
+    if (!model.days.length) return '<div class="empty-note">Даних ще немає</div>';
+
+    const head = model.groups.map((group) => `<th class="num">${esc(model.labelOf(group))}</th>`).join('');
+    const rows = model.days
+      .slice()
+      .reverse()
+      .map((d) => {
+        const cells = model.groups.map((group) => `<td class="num mono">${d.versions[group] ? fmtNum(d.versions[group]) : '-'}</td>`).join('');
+        return `<tr><td class="mono">${esc(d.day.slice(5).replace('-', '.'))}</td>${cells}</tr>`;
+      })
+      .join('');
+
+    return `<div class="table-wrap"><table class="data"><thead><tr><th>День</th>${head}</tr></thead><tbody>${rows}</tbody></table></div><p class="settings-note" style="margin-top:10px">Унікальні пристрої за добу, окремо по версіях.</p>`;
   }
 
   function userListTable() {
@@ -939,6 +1004,11 @@
       .then(() => {
         state.userListBusy = false;
       });
+  }
+
+  function bindVersionDetails() {
+    const details = $('versionDetails');
+    if (details) details.addEventListener('toggle', () => { state.versionsOpen = details.open; });
   }
 
   function bindUserList() {
