@@ -284,3 +284,52 @@ a.web-chip {
         transform: translateX(-50%);
     }
 }
+
+@media (max-height: 500px) {
+    #webBar {
+        gap: 10px;
+        padding-top: 4px;
+        padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+    }
+
+    #webNotice {
+        display: none;
+    }
+
+    #webCredits {
+        font-size: 10px;
+        line-height: 1.3;
+        text-align: right;
+    }
+
+    #webLanguage button,
+    .web-chip {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    #threatSheet {
+        left: auto;
+        right: 8px;
+        width: min(320px, 46vw);
+        max-width: none;
+        max-height: calc(100% - var(--web-bar-height, 44px) - 16px);
+        margin: 0;
+        transform: none;
+        overflow-y: auto;
+        padding: 6px 46px 6px 10px;
+        font-size: 13px;
+        line-height: 1.35;
+    }
+
+    #threatSheetBody strong {
+        font-size: 14px;
+    }
+
+    #threatClose {
+        top: 4px;
+        right: 4px;
+        width: 32px;
+        height: 32px;
+    }
+}

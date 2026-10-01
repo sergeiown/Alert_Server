@@ -140,13 +140,18 @@
                 hideThreatSheet();
                 return;
             }
+            if (updateOnly && threatSheet.hidden) return;
+
             threatSheetBody.innerHTML = info;
             threatSheet.hidden = false;
             if (!updateOnly && latlng) {
-                api.map.panInside(latlng, {
-                    paddingTopLeft: [70, 110],
-                    paddingBottomRight: [30, threatSheet.offsetHeight + 24],
-                });
+                const sideLayout = window.matchMedia('(max-height: 500px)').matches;
+                api.map.panInside(
+                    latlng,
+                    sideLayout
+                        ? { paddingTopLeft: [70, 40], paddingBottomRight: [threatSheet.offsetWidth + 24, 24] }
+                        : { paddingTopLeft: [70, 110], paddingBottomRight: [30, threatSheet.offsetHeight + 24] }
+                );
             }
         });
     });
@@ -157,7 +162,7 @@
 
         const settings = loadSettings();
         const saved = settings.layers || {};
-        const narrow = window.matchMedia('(max-width: 560px)').matches;
+        const narrow = window.matchMedia('(max-width: 560px)').matches || window.matchMedia('(max-height: 500px)').matches;
 
         if (api.map.hasLayer(api.layers.hints)) api.map.removeLayer(api.layers.hints);
         api.layersControl.removeLayer(api.layers.hints);
