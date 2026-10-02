@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
-const { app, nativeTheme } = require('electron');
+const { app, nativeTheme, Notification } = require('electron');
 const { registerSettingsIpc } = require('./ipc/settingsIpc');
 const { registerRegionsIpc } = require('./ipc/regionsIpc');
 const { registerSystemIpc } = require('./ipc/systemIpc');
@@ -14,6 +14,7 @@ const { importLegacyConfig } = require('./migration/importLegacyConfig');
 const settingsStore = require('./services/settingsStore');
 const regionsStore = require('./services/regionsStore');
 const { logEvent } = require('./services/logger');
+const { t } = require('../i18n/i18n');
 const { startAlertSourceManager } = require('./services/alertSourceManager');
 const { filterAlerts, discoverUnknownLocations } = require('./services/locationFilter');
 const { loadLocalConfig } = require('./services/localConfig');
@@ -35,6 +36,15 @@ const LEGACY_APP_DIR = 'd:\\Projects\\Current_Alert';
 if (!app.requestSingleInstanceLock()) {
     app.exit(0);
 }
+
+app.on('second-instance', () => {
+    const { language } = settingsStore.getSettings();
+    new Notification({
+        title: t('notificationStartTitle', language),
+        body: t('notificationAlreadyRunningBody', language),
+    }).show();
+    logEvent('Second launch attempt ignored: the application is already running', 'INFO');
+});
 
 app.setAppUserModelId('com.sergeiown.alertserver');
 

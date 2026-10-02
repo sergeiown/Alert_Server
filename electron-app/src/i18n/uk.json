@@ -21,6 +21,7 @@
     "trayActiveTooltip": "Активних тривог",
     "notificationStartTitle": "Alert Server",
     "notificationStartBody": "Застосунок запущено",
+    "notificationAlreadyRunningBody": "Застосунок уже запущено - шукайте іконку в треї",
     "menuLiveMap": "Live-мапа",
     "liveMapWindowTitle": "Alert Server - Live-мапа",
     "liveMapFullScreenTitle": "Перемкнути повноекранний режим",
