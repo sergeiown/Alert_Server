@@ -21,6 +21,7 @@
     "trayActiveTooltip": "Active alerts",
     "notificationStartTitle": "Alert Server",
     "notificationStartBody": "The application has started",
+    "notificationAlreadyRunningBody": "The application is already running - look for its tray icon",
     "menuLiveMap": "Live map",
     "liveMapWindowTitle": "Alert Server - Live map",
     "liveMapFullScreenTitle": "Toggle fullscreen",
