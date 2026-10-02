@@ -12,3 +12,8 @@ tools/
 alert-proxy/README.md
 
 web-map/dist/
+
+# local-only: personal code signing (not for the public repo)
+electron-app/local/
+electron-app/electron-builder.local.yml
+electron-app/electron-builder.msix.yml
