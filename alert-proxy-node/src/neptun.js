@@ -49,6 +49,13 @@ function broadcast(raw) {
     });
 }
 
+const CLIENT_HEARTBEAT_MS = 30 * 1000;
+const CLIENT_HEARTBEAT_MESSAGE = '{"type":"heartbeat"}';
+
+setInterval(() => {
+    if (sockets.size) broadcast(CLIENT_HEARTBEAT_MESSAGE);
+}, CLIENT_HEARTBEAT_MS).unref();
+
 function applySnapshot(threats) {
     const incoming = (threats || []).filter((t) => t && t.id);
     const incomingIds = new Set(incoming.map((t) => String(t.id)));
