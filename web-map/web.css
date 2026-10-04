@@ -1,5 +1,10 @@
 /* Copyright (c) 2024-2026 Serhii I. Myshko. Licensed under the MIT License. See LICENSE for details. */
 
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
 html,
 body {
     margin: 0;
@@ -7,15 +12,27 @@ body {
     background: var(--map-chrome-bg, #f3f3f3);
 }
 
+body {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
 .leaflet-control-screenshot-wrapper {
     display: none;
 }
 
 #webBar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    position: relative;
+    flex: none;
     z-index: 1100;
     display: flex;
     align-items: center;
@@ -141,7 +158,9 @@ a.web-chip {
 }
 
 #map {
-    height: calc(100% - var(--web-bar-height, 44px));
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
 }
 
 #aboutDialog {
@@ -331,5 +350,11 @@ a.web-chip {
         right: 4px;
         width: 32px;
         height: 32px;
+    }
+}
+
+@media (pointer: coarse) {
+    .leaflet-control-fullscreen {
+        display: none;
     }
 }

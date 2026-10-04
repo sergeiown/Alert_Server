@@ -2,10 +2,11 @@
 <html lang="uk">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Вартовий</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%230e2f33'/%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%230e7c8c' stroke-width='1.5'/%3E%3Ccircle cx='16' cy='16' r='6' fill='none' stroke='%230e7c8c' stroke-width='1.5'/%3E%3Cpath d='M16 16 L16 1 A15 15 0 0 1 29.5 21 Z' fill='%233fd0c9' fill-opacity='0.35'/%3E%3Ccircle cx='21' cy='10' r='1.6' fill='%233fd0c9'/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="icon-64.png">
+<link rel="apple-touch-icon" href="icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -81,7 +82,19 @@
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
 
-  html { -webkit-text-size-adjust: 100%; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; background: var(--bg); }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top, 0px);
+    background: var(--bg);
+    z-index: 20;
+    pointer-events: none;
+  }
 
   body {
     margin: 0;
@@ -89,11 +102,45 @@
     color: var(--text);
     font-family: 'IBM Plex Sans', system-ui, sans-serif;
     font-size: 14px;
-    padding-inline: 16px;
-    padding-block: 16px 40px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-top: calc(16px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
     max-width: 1180px;
     margin-inline: auto;
   }
+
+  #gearBtn {
+    position: fixed;
+    left: max(14px, env(safe-area-inset-left, 0px));
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    z-index: 30;
+    width: 46px;
+    height: 46px;
+    padding: 0;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  }
+  #gearBtn svg { width: 22px; height: 22px; }
+  @media (max-width: 700px) {
+    #gearBtn {
+      position: absolute;
+      top: calc(14px + env(safe-area-inset-top, 0px));
+      right: max(14px, env(safe-area-inset-right, 0px));
+      bottom: auto;
+      left: auto;
+      width: 40px;
+      height: 40px;
+      box-shadow: none;
+    }
+    header.top .top-right { margin-right: 50px; }
+  }
+  #gearBtn:hover, #gearBtn[aria-expanded='true'] { color: var(--accent); border-color: var(--accent); }
 
   .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
   .dim { color: var(--text-dim); }
@@ -368,7 +415,6 @@
   </div>
   <div class="top-right">
     <span class="pill" id="healthPill"><span class="dot"></span><span>Немає даних</span></span>
-    <button id="settingsBtn">Підключення</button>
   </div>
 </header>
 
@@ -452,6 +498,9 @@
 
 <footer class="foot" id="footer">Вартовий · дані оновлюються автоматично</footer>
 
+<button id="gearBtn" type="button" aria-label="Налаштування підключення" aria-expanded="false" title="Налаштування підключення">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.65 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06A2 2 0 1 1 7.08 4.14l.06.06a1.7 1.7 0 0 0 1.87.34h0A1.7 1.7 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56h0a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v0A1.7 1.7 0 0 0 20.91 10H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.56 1z"/></svg>
+</button>
 <script>
 (function () {
   'use strict';
@@ -461,6 +510,18 @@
   const STORE_KEY = 'vartovyi.adminKey';
   const STORE_URL = 'vartovyi.baseUrl';
   const STORE_TAB = 'vartovyi.tab';
+
+  let scrollBeforeRotation = 0;
+  function settleViewport() {
+    const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    window.scrollTo(0, Math.min(scrollBeforeRotation, max));
+    window.dispatchEvent(new Event('resize'));
+  }
+  window.addEventListener('scroll', () => { scrollBeforeRotation = window.scrollY; }, { passive: true });
+  window.addEventListener('orientationchange', () => {
+    [100, 400, 900].forEach((delay) => setTimeout(settleViewport, delay));
+  });
+  window.addEventListener('pageshow', settleViewport);
 
   const state = { versionsOpen: false, userList: null, userListOpen: false, userListBusy: false, web: null, webTimer: null, webBusy: false, webPeriod: 'last7d', countryPeriod: 'last7d', status: null, ua: null, users: null, tab: 'overview', timer: null, usersTimer: null, busy: false, usersBusy: false };
 
@@ -1233,12 +1294,18 @@
     if (state.tab === 'web') refreshWeb();
   });
 
-  $('settingsBtn').addEventListener('click', () => {
+  function toggleSettings() {
     const panel = $('settingsPanel');
     panel.hidden = !panel.hidden;
     const cfg = settings();
     $('baseUrlInput').value = cfg.baseUrl;
     $('adminKeyInput').value = cfg.adminKey;
+  }
+  $('gearBtn').addEventListener('click', () => {
+    toggleSettings();
+    const open = !$('settingsPanel').hidden;
+    $('gearBtn').setAttribute('aria-expanded', String(open));
+    if (open) window.scrollTo({ top: 0, behavior: 'smooth' });
   });
   $('saveBtn').addEventListener('click', () => {
     write(STORE_URL, $('baseUrlInput').value.trim());

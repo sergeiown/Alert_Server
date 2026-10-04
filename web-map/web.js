@@ -99,6 +99,15 @@
         });
     }
 
+    const resetViewport = () => {
+        window.scrollTo(0, 0);
+        window.dispatchEvent(new Event('resize'));
+    };
+    window.addEventListener('orientationchange', () => {
+        [100, 400, 900].forEach((delay) => setTimeout(resetViewport, delay));
+    });
+    window.addEventListener('pageshow', resetViewport);
+
     const bar = document.getElementById('webBar');
     function syncBarHeight() {
         document.documentElement.style.setProperty('--web-bar-height', `${bar.offsetHeight}px`);
@@ -162,14 +171,15 @@
 
         const settings = loadSettings();
         const saved = settings.layers || {};
-        const narrow = window.matchMedia('(max-width: 560px)').matches || window.matchMedia('(max-height: 500px)').matches;
 
         if (api.map.hasLayer(api.layers.hints)) api.map.removeLayer(api.layers.hints);
         api.layersControl.removeLayer(api.layers.hints);
         delete api.layers.hints;
 
+        const touchDevice = window.matchMedia('(pointer: coarse)').matches;
+
         Object.keys(api.layers).forEach((name) => {
-            const wanted = name in saved ? saved[name] : !(narrow && (name === 'legend' || name === 'hints'));
+            const wanted = name in saved ? saved[name] : name !== 'legend' || !touchDevice;
             if (!wanted && api.map.hasLayer(api.layers[name])) api.map.removeLayer(api.layers[name]);
         });
 

@@ -76,6 +76,7 @@ copyDirectory(LEAFLET, path.join(OUT, 'vendor', 'leaflet'), (name) => /^(leaflet
 ['en', 'uk'].forEach((code) => copyFile(path.join(I18N, `${code}.json`), path.join(OUT, 'i18n', `${code}.json`)));
 copyFile(path.join(RESOURCES, 'data', 'alertTypes.json'), path.join(OUT, 'data', 'alertTypes.json'));
 copyFile(path.join(RESOURCES, 'icons', 'app-icon-256.png'), path.join(OUT, 'icon-256.png'));
+copyDirectory(path.join(__dirname, 'icons'), path.join(OUT, 'icons'));
 
 ['index.html', 'shim.js', 'web.js', 'web.css', 'manifest.webmanifest', 'basemap-light.svg', 'basemap-dark.svg'].forEach((name) =>
     copyFile(path.join(__dirname, name), path.join(OUT, name))

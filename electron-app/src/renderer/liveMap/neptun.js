@@ -727,7 +727,17 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             if (selectHandler) {
                 marker.on('click', () => {
                     selectedThreatId = threat.id;
-                    selectHandler(info, marker._truePos);
+                    const cityZoom = kyivMode ? KYIV_THREAT_CLICK_ZOOM : RAION_MIN_ZOOM;
+                    const targetZoom = Math.min(Math.max(map.getZoom(), cityZoom), map.getMaxZoom());
+                    let shown = false;
+                    const showCard = () => {
+                        if (shown || selectedThreatId !== threat.id) return;
+                        shown = true;
+                        selectHandler(tooltipContent(threat, strings, isEnglish), marker._truePos);
+                    };
+                    map.once('moveend', showCard);
+                    setTimeout(showCard, 1200);
+                    map.flyTo(marker._truePos, targetZoom, { animate: true, duration: 0.8 });
                 });
             } else {
                 marker
