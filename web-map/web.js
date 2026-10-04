@@ -27,7 +27,7 @@
               frontLine: 'Front line:',
               mapTitle: 'Map',
               mapText:
-                  'Oblast and raion boundaries come from slawomirmatuszak/ukrainian_geodata (CC BY 4.0), the river outline from Natural Earth (public domain), the map engine is Leaflet (BSD-2-Clause).',
+                  'Region and district boundaries come from slawomirmatuszak/ukrainian_geodata (CC BY 4.0), the river outline from Natural Earth (public domain), the map engine is Leaflet (BSD-2-Clause).',
               privacyTitle: 'Privacy',
               privacyText:
                   'No cookies and no trackers. Your language, theme and layer choices are kept only in your browser. IP addresses are not written to logs or a database; they are held briefly in memory only to limit abusive request rates. Only anonymous per-page counters are kept.',
