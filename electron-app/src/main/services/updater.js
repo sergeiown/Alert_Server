@@ -15,7 +15,7 @@ const {
 
 autoUpdater.autoDownload = false;
 
-let lastDeclinedVersion = null;
+let updateBusy = false;
 
 autoUpdater.on('checking-for-update', () => {
     logEvent('Checking for updates (GitHub Releases)', 'NETWORK');
@@ -28,7 +28,8 @@ autoUpdater.on('update-not-available', () => {
 autoUpdater.on('update-available', (info) => {
     logEvent(`Update available: ${info.version}`, 'NETWORK');
 
-    if (info.version === lastDeclinedVersion) return;
+    if (updateBusy) return;
+    updateBusy = true;
 
     const anchor = openUpdateProgressWindow({ visible: false });
 
@@ -47,7 +48,7 @@ autoUpdater.on('update-available', (info) => {
                 autoUpdater.downloadUpdate();
             } else {
                 logEvent(`Update ${info.version} declined by user`, 'INFO');
-                lastDeclinedVersion = info.version;
+                updateBusy = false;
                 closeUpdateProgressWindow();
             }
         });
@@ -72,6 +73,7 @@ autoUpdater.on('update-downloaded', (info) => {
 
 autoUpdater.on('error', (err) => {
     logEvent(`Auto-update error (GitHub Releases): ${err.message}`, 'NETWORK');
+    updateBusy = false;
     clearTemporaryTooltip();
     closeUpdateProgressWindow();
 });
