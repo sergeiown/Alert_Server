@@ -83,7 +83,7 @@ async function maintenanceLoop() {
     for (;;) {
         try {
             backup.runBackupIfDue();
-            archive.pruneOldThreats();
+            archive.pruneOld();
             users.prune();
             webstats.prune();
         } catch (err) {

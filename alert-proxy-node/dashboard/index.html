@@ -238,6 +238,7 @@
     width: 100%;
   }
   .field-actions { display: flex; gap: 8px; }
+  .retention-note { margin: -4px 0 10px; }
   .settings-note { font-size: 12px; color: var(--text-dim); margin: 0; }
 
   nav.tabs {
@@ -555,6 +556,12 @@
     return `${Math.floor(h / 24)} д ${h % 24} год`;
   }
   function fmtAgo(ms) { return ms === null || ms === undefined ? '-' : `${fmtDuration(ms)} тому`; }
+  function fmtDay(iso) {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    if (isNaN(d)) return '-';
+    return d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
   function fmtDate(iso) {
     if (!iso) return '-';
     const d = new Date(iso);
@@ -565,6 +572,12 @@
   }
   function level(pct) { return pct >= 90 ? 'critical' : pct >= 70 ? 'warn' : ''; }
 
+  function retentionNote(collected, limit) {
+    const text = collected >= limit
+      ? `Зберігаємо ${limit} дн., накопичено повністю`
+      : `Зберігаємо ${limit} дн., накопичено ${fmtNum(collected)}`;
+    return `<p class="settings-note retention-note">${esc(text)}</p>`;
+  }
   function line(k, v) { return `<div class="line"><span class="k">${esc(k)}</span><span class="v">${v}</span></div>`; }
   function chip(cls, text) { return `<span class="status-chip ${cls}">${esc(text)}</span>`; }
   function gauge(pct) {
@@ -828,9 +841,10 @@
     $('cardArchive').innerHTML = `<div class="card-head"><h2>Архів на сервері</h2></div>${
       line('Подій тривог (усього / за 30 днів)', `${fmtNum(a.alertEvents.total)} / ${fmtNum(a.alertEvents.last30d)}`) 
       }${line('Відкритих зараз', fmtNum(a.alertEvents.openNow)) 
-      }${line('Найстаріша / найновіша', `${fmtDate(a.alertEvents.oldestStartedAt)} / ${fmtDate(a.alertEvents.newestStartedAt)}`) 
+      }${line('Найстаріша / найновіша', `${fmtDay(a.alertEvents.oldestStartedAt)} / ${fmtDay(a.alertEvents.newestStartedAt)}`) 
       }${line('Загроз Neptun (усього / відкритих)', `${fmtNum(a.neptunThreats.total)} / ${fmtNum(a.neptunThreats.open)}`) 
-      }${line('Розмір бази', fmtBytes(a.dbSizeBytes))}`;
+      }${line('Розмір бази', fmtBytes(a.dbSizeBytes))
+      }${a.retention ? `<p class="settings-note retention-note">${esc(`Тривоги: власний запис сервера зберігаємо ${a.retention.alertsDays} дн., накопичено ${fmtNum(a.retention.alertsCollectedDays)}. Імпортована історія (${fmtNum(a.retention.alertsImportedCount)} подій, з ${fmtDay(a.retention.alertsImportedFrom)}) не чиститься.`)}</p>` + retentionNote(a.retention.threatsCollectedDays, a.retention.threatsDays).replace('Зберігаємо', 'Загрози Neptun: зберігаємо') : ''}`;
 
     $('cardBackup').innerHTML = `<div class="card-head"><h2>Резервні копії</h2>${b.ageMs !== null && b.ageMs < 36 * 3600 * 1000 ? chip('ok', 'свіжа') : chip('warn', 'застаріла')}</div>${
       line('Остання копія', b.lastBackupAt ? `${fmtDate(b.lastBackupAt)} (${fmtAgo(b.ageMs)})` : '-') 
@@ -895,14 +909,14 @@
           line('За останню годину', fmtNum(t.lastHour))}${line('За 24 години', fmtNum(t.last24h))}${line('За 7 днів', fmtNum(t.last7d)) 
           }${line('За 30 днів', fmtNum(t.last30d))}${line('За весь час', fmtNum(t.allTime)) 
       }</div>` +
-      `<div class="card" style="margin-bottom:12px"><h2>Активність за 30 днів</h2>` +
+      `<div class="card" style="margin-bottom:12px"><h2>Активність за 30 днів</h2>${u.retention ? retentionNote(u.retention.activityCollectedDays, u.retention.activityDays) : ''}` +
         `<div class="legend"><span><i style="background:var(--accent)"></i>активні</span><span><i style="background:var(--accent-2)"></i>нові</span></div>${
         barChart([{ cls: 'bar-a', values: u.daily.map((d) => { return d.active; }) }, { cls: 'bar-b', values: u.daily.map((d) => { return d.newUsers; }) }], dailyLabels, { label: 'Активні та нові користувачі за днями', width: chartWidth }) 
       }</div>` +
       `<div class="card" style="margin-bottom:12px"><h2>Запити за годинами сьогодні (час Києва)</h2>${
         barChart([{ cls: 'bar-c', values: u.hourlyRequestsToday }], hourLabels, { label: 'Запити за годинами', width: chartWidth, height: 160 }) 
       }</div>` +
-      `<div class="card" style="margin-bottom:12px"><h2>Історія версій застосунку</h2>${versionDistribution(versions)}` +
+      `<div class="card" style="margin-bottom:12px"><h2>Історія версій застосунку</h2>${u.retention ? retentionNote(u.retention.versionsCollectedDays, u.retention.versionsDays) : ''}${versionDistribution(versions)}` +
         `<p class="sub-title">Динаміка за ${VERSION_CHART_DAYS} днів</p>` +
         `<div class="legend">${versions.groups.map((group, index) => { return `<span><i style="background:var(--${VERSION_COLORS[index]})"></i>${esc(versions.labelOf(group))}</span>`; }).join('')}</div>` +
         `${stackedChart(versions.days, versions.groups, chartWidth, versions.labelOf)}` +
@@ -1118,7 +1132,7 @@
         }${kpi('Онлайн зараз', fmtNum(t.connectionsNow), `пік сьогодні: ${fmtNum(t.peakConnections)}`) 
         }${kpi('За весь час', fmtNum(w.totals.visitors), `сума добових унікальних · сесій: ${fmtNum(w.totals.sessions)}`) 
       }</div>` +
-      `<div class="card" style="margin-bottom:12px"><h2>Відвідувачі за 30 днів</h2>` +
+      `<div class="card" style="margin-bottom:12px"><h2>Відвідувачі за 30 днів</h2>${w.retention ? retentionNote(w.retention.collectedDays, w.retention.days) : ''}` +
         `<div class="legend"><span><i style="background:var(--accent)"></i>відвідувачі</span><span><i style="background:var(--accent-2)"></i>сесії</span></div>${
         barChart([{ cls: 'bar-a', values: w.daily.map((d) => { return d.visitors; }) }, { cls: 'bar-b', values: w.daily.map((d) => { return d.sessions; }) }], dailyLabels, { label: 'Відвідувачі та сесії вебмапи за днями', width: chartWidth }) 
       }</div>` +

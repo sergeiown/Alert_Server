@@ -8,7 +8,7 @@ const geoip = require('./geoip');
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 const HISTORY_DAYS = 30;
-const RETENTION_DAYS = 120;
+const RETENTION_DAYS = 365;
 
 db.exec(`CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
@@ -89,7 +89,7 @@ function notePeak(totalConnections) {
 }
 
 const VERSION_HISTORY_DAYS = 60;
-const VERSION_RETENTION_DAYS = 730;
+const VERSION_RETENTION_DAYS = 365;
 
 function snapshotVersions(sinceDay) {
     const rows = db
@@ -133,6 +133,13 @@ function prune() {
     const cutoffDay = lib.kyivDateKey(new Date(Date.now() - RETENTION_DAYS * DAY_MS));
     db.prepare('DELETE FROM route_hits WHERE day < ?').run(cutoffDay);
     db.prepare('DELETE FROM user_days WHERE day < ?').run(cutoffDay);
+    db.prepare('DELETE FROM users WHERE last_seen < ?').run(Date.now() - RETENTION_DAYS * DAY_MS);
+}
+
+function collectedDays(oldestDay) {
+    if (!oldestDay) return 0;
+    const oldestMs = new Date(`${oldestDay}T12:00:00Z`).getTime();
+    return Number.isFinite(oldestMs) ? Math.floor((Date.now() - oldestMs) / DAY_MS) + 1 : 0;
 }
 
 function getStats(currentConnections, connectedUsers) {
@@ -157,6 +164,15 @@ function getStats(currentConnections, connectedUsers) {
          WHERE d.day >= ? GROUP BY d.day ORDER BY d.day`,
         sinceDay
     ).map((row) => ({ day: row.day, active: row.active, newUsers: row.fresh }));
+
+    const oldestActivityDay = one('SELECT MIN(day) AS d FROM user_days').d;
+    const oldestVersionDay = one("SELECT MIN(day) AS d FROM version_daily WHERE day <> '0000-00-00'").d;
+    const retention = {
+        activityDays: RETENTION_DAYS,
+        activityCollectedDays: Math.min(collectedDays(oldestActivityDay), RETENTION_DAYS),
+        versionsDays: VERSION_RETENTION_DAYS,
+        versionsCollectedDays: Math.min(collectedDays(oldestVersionDay), VERSION_RETENTION_DAYS),
+    };
 
     const hourlyRows = all('SELECT hour, SUM(count) AS c FROM route_hits WHERE day = ? GROUP BY hour', today);
     const hourly = Array.from({ length: 24 }, (_, hour) => {
@@ -210,6 +226,7 @@ function getStats(currentConnections, connectedUsers) {
             stickiness: active30 ? Math.round((todayActive / active30) * 100) : 0,
         },
         connections: { now: currentConnections, users: connectedUsers || 0, peakToday: peak.day === today ? peak.connections : currentConnections },
+        retention,
         daily,
         hourlyRequestsToday: hourly,
         routesToday: routes,

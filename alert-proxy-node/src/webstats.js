@@ -8,7 +8,7 @@ const geoip = require('./geoip');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HISTORY_DAYS = 30;
-const RETENTION_DAYS = 400;
+const RETENTION_DAYS = 365;
 const LANGUAGES = new Set(['uk', 'en']);
 
 db.exec(`CREATE TABLE IF NOT EXISTS web_days (
@@ -107,6 +107,13 @@ function getStats(currentConnections) {
         }));
     };
 
+    const oldestDay = db.prepare('SELECT MIN(day) AS d FROM web_days').get().d;
+    const oldestMs = oldestDay ? new Date(`${oldestDay}T12:00:00Z`).getTime() : null;
+    const retention = {
+        days: RETENTION_DAYS,
+        collectedDays: oldestMs ? Math.min(Math.floor((now - oldestMs) / DAY_MS) + 1, RETENTION_DAYS) : 0,
+    };
+
     const totals = db.prepare('SELECT COALESCE(SUM(visitors), 0) AS visitors, COALESCE(SUM(sessions), 0) AS sessions FROM web_days').get();
 
     const hourlyRows = rows("SELECT hour, SUM(count) AS c FROM route_hits WHERE day = ? AND route LIKE '/public/%' GROUP BY hour", today);
@@ -123,6 +130,7 @@ function getStats(currentConnections) {
             peakConnections: Math.max(todayRow ? todayRow.peak_ws : 0, currentConnections),
             connectionsNow: currentConnections,
         },
+        retention,
         totals: { visitors: totals.visitors, sessions: totals.sessions },
         daily,
         countries: { today: grouped('web_country_days', 'country', 1), last7d: grouped('web_country_days', 'country', 7), allTime: grouped('web_country_days', 'country', 0) },

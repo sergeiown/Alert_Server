@@ -5,7 +5,10 @@ const fs = require('node:fs');
 const { db } = require('./store');
 const { DB_PATH } = require('./config');
 
-const THREAT_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const THREAT_RETENTION_DAYS = 90;
+const ALERT_RETENTION_DAYS = 365;
+const THREAT_RETENTION_MS = THREAT_RETENTION_DAYS * DAY_MS;
 const ALERTS_QUERY_LIMIT = 5000;
 const TRACK_SAMPLE_MS = 3 * 60 * 1000;
 
@@ -192,6 +195,22 @@ function pruneOldThreats() {
     db.prepare('DELETE FROM neptun_track WHERE t < ?').run(cutoff);
 }
 
+function pruneOldAlerts() {
+    const cutoffIso = new Date(Date.now() - ALERT_RETENTION_DAYS * DAY_MS).toISOString();
+    db.prepare(
+        `DELETE FROM alert_events WHERE started_at IS NOT NULL AND started_at < ? AND finished_at IS NOT NULL AND first_seen - CAST(strftime('%s', started_at) AS INTEGER) * 1000 >= 2000`
+    ).run(cutoffIso);
+}
+
+function pruneOld() {
+    pruneOldThreats();
+    pruneOldAlerts();
+}
+
+function daysSince(ms) {
+    return ms ? Math.min(Math.floor((Date.now() - ms) / DAY_MS) + 1, 100000) : 0;
+}
+
 function getThreatsSince(sinceMs) {
     return db
         .prepare(
@@ -244,11 +263,24 @@ function getStats() {
         dbSizeBytes = fs.statSync(DB_PATH).size;
     } catch (err) {}
 
+    const oldestThreat = db.prepare('SELECT MIN(first_seen) AS oldest FROM neptun_threats').get().oldest;
+    const liveRow = db.prepare(`SELECT MIN(first_seen) AS oldest, COUNT(*) AS total FROM alert_events WHERE first_seen - CAST(strftime('%s', started_at) AS INTEGER) * 1000 >= 2000`).get();
+    const importedRow = db.prepare(`SELECT MIN(started_at) AS oldest, COUNT(*) AS total FROM alert_events WHERE NOT (first_seen - CAST(strftime('%s', started_at) AS INTEGER) * 1000 >= 2000)`).get();
+
     return {
+        retention: {
+            alertsDays: ALERT_RETENTION_DAYS,
+            alertsCollectedDays: Math.min(daysSince(liveRow.oldest), ALERT_RETENTION_DAYS),
+            alertsLiveCount: liveRow.total,
+            alertsImportedCount: importedRow.total,
+            alertsImportedFrom: importedRow.oldest,
+            threatsDays: THREAT_RETENTION_DAYS,
+            threatsCollectedDays: Math.min(daysSince(oldestThreat), THREAT_RETENTION_DAYS),
+        },
         alertEvents: { last30d, total: alertRow.total, oldestStartedAt: alertRow.oldest, newestStartedAt: alertRow.newest, openNow: activeIds.size },
         neptunThreats: { total: threatRow.total, open: threatRow.open || 0 },
         dbSizeBytes,
     };
 }
 
-module.exports = { recordActiveAlerts, upsertMany, getRegionAlerts, getAlertsFromDay, getCoverage, recordThreats, pruneOldThreats, getAlertsSince, getStats, getThreatsSince, getAlertStartsSince, getTrackStats };
+module.exports = { recordActiveAlerts, upsertMany, getRegionAlerts, getAlertsFromDay, getCoverage, recordThreats, pruneOldThreats, pruneOld, getAlertsSince, getStats, getThreatsSince, getAlertStartsSince, getTrackStats };
