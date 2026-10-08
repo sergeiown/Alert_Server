@@ -144,3 +144,12 @@ main {
     font-size: 11px;
 }
 
+
+.forecast-note {
+    margin: 12px 0 6px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+}

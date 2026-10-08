@@ -12,6 +12,7 @@ const searchInput = document.getElementById('search');
 const summary = document.getElementById('summary');
 const clearRegionsButton = document.getElementById('clearRegionsButton');
 const runAtStartupInput = document.getElementById('runAtStartup');
+const minimizeToTrayOnCloseInput = document.getElementById('minimizeToTrayOnClose');
 const visualNotificationsEnabledInput = document.getElementById('visualNotificationsEnabled');
 const activeAlertNotifyEnabledInput = document.getElementById('activeAlertNotifyEnabled');
 const showLiveMapOnAlertInput = document.getElementById('showLiveMapOnAlert');
@@ -28,6 +29,7 @@ const alertSourceProviderInput = document.getElementById('alertSourceProvider');
 function applyStrings(strings) {
     document.title = strings.windowTitle;
     document.getElementById('runAtStartupLabel').textContent = strings.runAtStartupLabel;
+    document.getElementById('minimizeToTrayOnCloseLabel').textContent = strings.minimizeToTrayOnCloseLabel;
     document.getElementById('visualNotificationsLabel').textContent = strings.visualNotificationsLabel;
     document.getElementById('activeAlertNotifyLabel').textContent = strings.activeAlertNotifyLabel;
     document.getElementById('showLiveMapOnAlertLabel').textContent = strings.showLiveMapOnAlertLabel;
@@ -76,6 +78,7 @@ function updateSoundCountDisabledState() {
 }
 
 async function initGeneralSettings(settings) {
+    minimizeToTrayOnCloseInput.checked = settings.minimizeToTrayOnClose;
     visualNotificationsEnabledInput.checked = settings.visualNotificationsEnabled;
     activeAlertNotifyEnabledInput.checked = settings.activeAlertNotifyEnabled;
     showLiveMapOnAlertInput.checked = settings.showLiveMapOnAlert;
@@ -142,6 +145,10 @@ async function initGeneralSettings(settings) {
     alertSourceProviderInput.addEventListener('change', () => {
         window.alertServer.setSetting('alertSourceProvider', alertSourceProviderInput.value);
     });
+    minimizeToTrayOnCloseInput.addEventListener('change', () => {
+        window.alertServer.setSetting('minimizeToTrayOnClose', minimizeToTrayOnCloseInput.checked);
+    });
+
     runAtStartupInput.addEventListener('change', async () => {
         runAtStartupInput.checked = await window.alertServer.setLoginItem(runAtStartupInput.checked);
     });

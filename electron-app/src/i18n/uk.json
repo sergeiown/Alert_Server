@@ -187,5 +187,21 @@
     "hourBucket_evening": "ввечері (18:00-24:00)",
     "unitDay": "д",
     "unitHour": "г",
-    "unitMinute": "хв"
+    "unitMinute": "хв",
+    "forecastWhileActiveNote": "Зараз у цьому регіоні триває тривога. Якщо вона закінчиться прямо зараз, то наступну очікуємо за таким прогнозом (відлік іде від моменту відбою), і так далі:",
+    "minimizeToTrayOnCloseLabel": "При закритті вікна згортати в трей",
+    "menuStatus": "Поточний статус",
+    "menuAbout": "Про застосунок",
+    "hubMenu": "Головне меню",
+    "hubBack": "Назад",
+    "hubClose": "Закрити",
+    "hubMinimize": "Згорнути",
+    "hubMaximize": "Розгорнути",
+    "hubRestore": "Відновити розмір",
+    "hubShowOnStartup": "Завжди показувати це вікно при запуску",
+    "hubStatusCalm": "Все спокійно",
+    "hubStatusCalmHint": "У вибраних регіонах тривог немає",
+    "hubStatusActive": "Тривога: {count}",
+    "hubStatusActiveHint": "Натисни, щоб побачити деталі",
+    "hubWelcome": "Оберіть розділ"
 }

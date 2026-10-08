@@ -187,5 +187,21 @@
     "hourBucket_evening": "evening (18:00-24:00)",
     "unitDay": "d",
     "unitHour": "h",
-    "unitMinute": "m"
+    "unitMinute": "m",
+    "forecastWhileActiveNote": "An alert is active in this region right now. If it ends right now, the next one is expected according to this forecast (counted from the moment it ends), and so on:",
+    "minimizeToTrayOnCloseLabel": "Minimize to the tray when the window is closed",
+    "menuStatus": "Current status",
+    "menuAbout": "About the app",
+    "hubMenu": "Main menu",
+    "hubBack": "Back",
+    "hubClose": "Close",
+    "hubMinimize": "Minimize",
+    "hubMaximize": "Maximize",
+    "hubRestore": "Restore",
+    "hubShowOnStartup": "Always show this window at startup",
+    "hubStatusCalm": "All quiet",
+    "hubStatusCalmHint": "No alerts in the selected regions",
+    "hubStatusActive": "Alert: {count}",
+    "hubStatusActiveHint": "Click for details",
+    "hubWelcome": "Choose a section"
 }

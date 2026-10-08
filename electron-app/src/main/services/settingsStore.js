@@ -16,6 +16,8 @@ const defaultSettings = {
     forecastNotifyLookaheadMinutes: 120,
     massAttackThreshold: 75,
     updateCheckIntervalHours: 24,
+    minimizeToTrayOnClose: true,
+    showHubOnStartup: true,
 
     alertSourceProvider: 'alerts.in.ua',
     alertSourceMigratedToAlertsInUa: false,

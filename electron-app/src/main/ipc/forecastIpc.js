@@ -65,6 +65,8 @@ function registerForecastIpc() {
                 text: buildActiveDurationText(durationStats, language),
                 lines: buildActiveDurationLines(durationStats, language),
                 alertLevel: worstLevelAmong(activeAlertsHere),
+                forecastText: await getRegionForecastText(uid, language),
+                etaMs: getRegionSoonestEtaMs(uid),
             };
         }
 

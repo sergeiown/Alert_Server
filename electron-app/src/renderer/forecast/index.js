@@ -95,6 +95,18 @@ async function renderRegionsList() {
             } else {
                 pre.textContent = result.text || strings.forecastActiveAlert;
             }
+
+            if (result.forecastText) {
+                const note = document.createElement('p');
+                note.className = 'forecast-note';
+                note.textContent = strings.forecastWhileActiveNote;
+                card.appendChild(note);
+
+                const forecastPre = document.createElement('pre');
+                forecastPre.textContent = result.forecastText;
+                card.appendChild(forecastPre);
+                addCopyButton(card, forecastPre, strings);
+            }
         } else if (result.status === 'ok') {
             card.className = 'region-card';
             pre.textContent = result.text;
