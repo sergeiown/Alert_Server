@@ -227,4 +227,4 @@ function updateTrayState(activeCount, totalCount) {
     trayInstance.setToolTip(lines.join('\n'));
 }
 
-module.exports = { createTray, updateTrayState, setTemporaryTooltip, clearTemporaryTooltip };
+module.exports = { createTray, updateTrayState, setTemporaryTooltip, clearTemporaryTooltip, buildMenu };

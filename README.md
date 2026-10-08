@@ -83,6 +83,11 @@ The tray icon itself automatically matches the Windows light/dark taskbar theme 
     <img src="docs/images/trends-en-light.png" alt="trends">
   </picture>
 
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/trends-threats-en-dark.png">
+    <img src="docs/images/trends-threats-en-light.png" alt="trends, threats tab">
+  </picture>
+
 - **Settings** opens a two-column settings window: regions to monitor on the left (a clickable map of Ukraine's regions above a searchable tree going down to individual community - selecting a region on either one selects it on the other; checking a higher-level region selects everything nested inside it; a button clears the whole selection at once), and everything else on the right, grouped into three sections - **General** (interface language, light/dark/auto theme, launching at Windows startup, how often the app checks for a new version), **Notifications** (separate toggles for active-alert notifications and forecast-approach notifications with how many minutes ahead to warn, the nationwide alert-count threshold for the mass-attack tray indicator, sound notification mode - none, siren, or voice - and its repeat count), and **Data source** (which feed the current-alerts data everything else in the app is built on comes from - [alerts.in.ua](https://alerts.in.ua/) by default, held over a persistent WebSocket connection to the project's server so updates arrive the moment they happen rather than on a fixed interval, falling back to brief polling only for as long as that connection is down, with automatic failover to [UkraineAlarm](https://api.ukrainealarm.com/) (when it is enabled on the server) and then [Neptun](https://neptun.in.ua) if the preferred one stops responding, retrying it in the background so the app switches back on its own once it recovers - a preference, not an exclusive choice; switching it manually still relaunches the app). Dependent options grey out automatically (e.g. the sound repeat count when sound is off).
 
   <picture>
@@ -99,6 +104,11 @@ Notifications for an alert starting or ending appear through the Windows Notific
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/alert-en-dark.png">
   <img src="docs/images/alert-en-light.png" alt="alert notification">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/cancel-en-dark.png">
+  <img src="docs/images/cancel-en-light.png" alt="alert cancelled notification">
 </picture>
 
 Left-clicking the tray icon opens the main window straight on **Current status**: any active alerts (each with how long it's already been running, plus that alert type's average duration over the last 24 hours and over the whole observed history) or a calm "All quiet", with a shortcut to the Forecast for anything upcoming - handy for a quick glance. Hovering the tray icon shows the nearest upcoming forecast as a tooltip when there's no active alert. If enabled in Settings (on by default), the app also sends a notification - with a blue region map, no alert sound - when a forecasted alert time is approaching, separate from the alert/cancellation notifications above; at most 3 fire per check, soonest first, to avoid a flood if many regions qualify at once.

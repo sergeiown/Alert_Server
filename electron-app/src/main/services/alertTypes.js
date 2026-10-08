@@ -13,10 +13,15 @@ function getAlertTypes() {
     return alertTypes;
 }
 
+function humanizeId(id) {
+    const text = String(id).replace(/_/g, ' ');
+    return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 function alertTypeName(alertTypeId, language) {
     const type = getAlertTypes().find((entry) => entry.id === alertTypeId);
     if (!type) return alertTypeId;
-    return language === 'English' ? type.id : type.name;
+    return language === 'English' ? humanizeId(type.id) : type.name;
 }
 
 module.exports = { alertTypeName };

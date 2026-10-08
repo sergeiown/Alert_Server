@@ -155,6 +155,7 @@ function createRichNotification({ title, bodyLines, heroImagePath, iconName, onC
     notification.on('failed', release);
 
     notification.show();
+    return notification;
 }
 
 async function notifyWithMap({ uid, uids, title, bodyLines, iconName, color, onClick }) {
@@ -169,7 +170,7 @@ async function notifyWithMap({ uid, uids, title, bodyLines, iconName, color, onC
         }
     }
 
-    createRichNotification({ title, bodyLines, heroImagePath, iconName, onClick });
+    return createRichNotification({ title, bodyLines, heroImagePath, iconName, onClick });
 }
 
 function showAlertDetails(title, language, locationName, typeName, startedAt) {
