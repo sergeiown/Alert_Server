@@ -51,6 +51,8 @@ function load() {
             save();
         }
 
+        if (settings.alertSourceProvider === 'ukrainealarm') settings.alertSourceProvider = 'alerts.in.ua';
+
         settings.massAttackThreshold = Math.max(50, Math.min(100, settings.massAttackThreshold));
     } catch (err) {
         settings = { ...defaultSettings };

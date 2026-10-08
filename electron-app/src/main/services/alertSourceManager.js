@@ -7,6 +7,8 @@ const { startPolling: startAlertsInUaPolling } = require('./alertPoller');
 const { startPolling: startNeptunPolling } = require('./neptunAlertsSource');
 const { setActiveAlertSource } = require('./alertState');
 
+const UKRAINEALARM_ENABLED = false;
+
 const FAILURE_THRESHOLD = 3;
 
 const RECOVERY_RETRY_MS = 5 * 60 * 1000;
@@ -27,8 +29,9 @@ const SOURCES = {
 };
 
 function buildChain(preferred) {
-    const rest = Object.keys(SOURCES).filter((key) => key !== preferred);
-    return [preferred, ...rest];
+    const available = Object.keys(SOURCES).filter((key) => UKRAINEALARM_ENABLED || key !== 'ukrainealarm');
+    const first = available.includes(preferred) ? preferred : 'alerts.in.ua';
+    return [first, ...available.filter((key) => key !== first)];
 }
 
 function startAlertSourceManager(preferredProvider, clientKey, onAlertsUpdated) {
