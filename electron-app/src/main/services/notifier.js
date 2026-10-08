@@ -79,6 +79,22 @@ function formatStartedAt(startedAt, language) {
     return new Date(startedAt).toLocaleString(locale);
 }
 
+function describeDurationRange(entries, language) {
+    const durations = entries
+        .filter((entry) => entry.startedAt)
+        .map((entry) => Date.now() - new Date(entry.startedAt).getTime())
+        .filter((ms) => Number.isFinite(ms) && ms >= 0);
+    if (!durations.length) return [];
+
+    const shortest = Math.min(...durations);
+    const longest = Math.max(...durations);
+    const label = t('alertDuration', language);
+    if (formatDuration(shortest, language) === formatDuration(longest, language)) {
+        return [`${label}: ${formatDuration(longest, language)}`];
+    }
+    return [`${label}: ${formatDuration(shortest, language)} - ${formatDuration(longest, language)}`];
+}
+
 function playRepeated(playFn, mode, language, count, intervalMs) {
     for (let i = 0; i < count; i++) {
         setTimeout(() => playFn(mode, language), i * intervalMs);
@@ -263,7 +279,7 @@ function processAlerts(matchedAlerts, allAlerts) {
         notifyWithMap({
             uids: newlyCancelled.map((value) => value.locationUid),
             title: t('massAlertCancelTitle', language).replace('{count}', newlyCancelled.length),
-            bodyLines: [`${t('activeInMonitored', language)}: ${alertCount}`],
+            bodyLines: describeDurationRange(newlyCancelled, language),
             iconName: 'cancel.png',
             color: CANCEL_COLOR,
         });
@@ -283,7 +299,6 @@ function processAlerts(matchedAlerts, allAlerts) {
                 title,
                 bodyLines: [
                     `${t('location', language)}: ${locationName}`,
-                    `${t('activeInMonitored', language)}: ${alertCount}`,
                     durationText ? `${t('alertDuration', language)}: ${durationText}` : null,
                 ].filter(Boolean),
                 iconName: 'cancel.png',
@@ -391,7 +406,7 @@ function processKyivDistricts(kyivRaions) {
         notifyWithMap({
             uid: KYIV_CITY_UID,
             title: t('massKyivDistrictAlertCancelTitle', language).replace('{count}', newlyEnded.length),
-            bodyLines: [],
+            bodyLines: describeDurationRange(newlyEnded, language),
             iconName: 'cancel.png',
             color: CANCEL_COLOR,
         });

@@ -28,6 +28,7 @@ const { startOccupiedTerritoryRefresh } = require('./services/occupiedTerritoryS
 const { startWeaponStatsRefresh } = require('./services/weaponStatsStore');
 const { startNeptunThreatsTracking } = require('./services/neptunThreatsStore');
 const { installHandlers } = require('./services/crashRestart');
+const { startConnectivityMonitor } = require('./services/connectivityMonitor');
 const { delayedCheckForUpdates } = require('./services/updater');
 const { destroySettingsWindow } = require('./windows/settingsWindow');
 
@@ -50,6 +51,7 @@ app.setAppUserModelId('com.sergeiown.alertserver');
 
 app.whenReady().then(() => {
     installHandlers();
+    startConnectivityMonitor();
     logEvent(`Application started (v${app.getVersion()})`, 'INFO');
 
     const result = importLegacyConfig(LEGACY_APP_DIR, { settingsStore, regionsStore });
