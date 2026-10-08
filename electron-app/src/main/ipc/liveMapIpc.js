@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
-const { ipcMain, clipboard, BrowserWindow, systemPreferences } = require('electron');
+const { ipcMain, clipboard, systemPreferences } = require('electron');
 const { getResourcePath } = require('../services/appPaths');
 const { getLatestTotalAlertCount, getLatestAlertedRegions, getActiveAlertSource } = require('../services/alertState');
 const { getLatestOccupiedTerritory } = require('../services/occupiedTerritoryStore');
@@ -63,11 +63,8 @@ function registerLiveMapIpc() {
     }
 
     ipcMain.handle('liveMap:takeScreenshot', async (event) => {
-        const win = BrowserWindow.fromWebContents(event.sender);
-        if (!win) return false;
-
         try {
-            const image = await win.webContents.capturePage();
+            const image = await event.sender.capturePage();
             clipboard.writeImage(image);
             return true;
         } catch (err) {

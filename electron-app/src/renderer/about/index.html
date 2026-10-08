@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <title>Alert Server</title>
     <link rel="stylesheet" href="index.css" />
+    <link rel="stylesheet" href="../shared/theme.css" />
 </head>
 <body>
     <img id="icon" alt="" />
@@ -11,8 +12,22 @@
     <p id="body"></p>
     <p id="license"></p>
     <p id="copyright"></p>
-    <a id="githubLink" href="#"></a>
-    <a id="webMapLink" href="#"></a>
+    <div id="links">
+        <button id="githubLink" class="link-button" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.500 7 L3.500 12 L8.500 17 M15.500 7 L20.500 12 L15.500 17 M13.500 5 L10.500 19" /></svg>
+            <span class="link-text">
+                <span class="link-title" id="githubTitle"></span>
+                <span class="link-hint" id="githubHint"></span>
+            </span>
+        </button>
+        <button id="webMapLink" class="link-button" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.500" /><path d="M3.500 12 H20.500 M12 3.500 C15 7 15 17 12 20.500 C9 17 9 7 12 3.500" /></svg>
+            <span class="link-text">
+                <span class="link-title" id="webMapTitle"></span>
+                <span class="link-hint" id="webMapHint"></span>
+            </span>
+        </button>
+    </div>
     <script type="module" src="index.js"></script>
 </body>
 </html>

@@ -204,7 +204,7 @@ function daysWord(count, language) {
 }
 
 function buildActiveDurationLines(durationStats, language) {
-    const lines = [{ text: t('forecastActiveDurationNotApplicable', language), level: null }];
+    const lines = [];
 
     durationStats.forEach((entry) => {
         const typeName = alertTypeName(entry.type, language);

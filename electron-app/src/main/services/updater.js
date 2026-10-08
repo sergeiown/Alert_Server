@@ -82,6 +82,19 @@ function checkForUpdates() {
     autoUpdater.checkForUpdates();
 }
 
+async function checkForUpdatesNow() {
+    if (updateBusy) return { status: 'busy' };
+
+    try {
+        const result = await autoUpdater.checkForUpdates();
+        if (!result) return { status: 'unavailable' };
+        if (result.isUpdateAvailable) return { status: 'available', version: result.updateInfo.version };
+        return { status: 'upToDate' };
+    } catch (err) {
+        return { status: 'error' };
+    }
+}
+
 function scheduleNextCheck() {
     const hours = settingsStore.getSettings().updateCheckIntervalHours;
     const intervalMs = Math.max(1, hours) * 60 * 60 * 1000;
@@ -96,4 +109,4 @@ function delayedCheckForUpdates(delayMs = 10000) {
     scheduleNextCheck();
 }
 
-module.exports = { delayedCheckForUpdates };
+module.exports = { delayedCheckForUpdates, checkForUpdatesNow };

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8" />
+    <title>Alert Server</title>
+    <link rel="stylesheet" href="index.css" />
+</head>
+<body>
+    <header id="titleBar">
+        <img id="appIcon" alt="" />
+        <span id="windowTitle">Alert Server</span>
+        <span class="spacer"></span>
+        <button id="minimizeButton" class="window-button" type="button">
+            <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6 H10" /></svg>
+        </button>
+        <button id="maximizeButton" class="window-button" type="button">
+            <svg id="maximizeGlyph" viewBox="0 0 12 12" aria-hidden="true"><rect x="2.500" y="2.500" width="7" height="7" rx="1" /></svg>
+            <svg id="restoreGlyph" viewBox="0 0 12 12" aria-hidden="true" hidden><rect x="2" y="4" width="6" height="6" rx="1" /><path d="M4 4 V3 a1 1 0 0 1 1 -1 H9 a1 1 0 0 1 1 1 V7 a1 1 0 0 1 -1 1 H8" /></svg>
+        </button>
+        <button id="closeButton" class="window-button window-close" type="button">
+            <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.500 2.500 L9.500 9.500 M9.500 2.500 L2.500 9.500" /></svg>
+        </button>
+    </header>
+
+    <nav id="navBar">
+        <button id="menuButton" class="nav-button" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.500" height="6.500" rx="1.500" /><rect x="13.500" y="4" width="6.500" height="6.500" rx="1.500" /><rect x="4" y="13.500" width="6.500" height="6.500" rx="1.500" /><rect x="13.500" y="13.500" width="6.500" height="6.500" rx="1.500" /></svg>
+            <span id="menuLabel"></span>
+        </button>
+        <button id="backButton" class="nav-button" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.500 5 L7.500 12 L14.500 19 M8 12 H20" /></svg>
+            <span id="backLabel"></span>
+        </button>
+        <h1 id="sectionTitle"></h1>
+        <button id="updateButton" class="nav-button" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.500 12 a7.500 7.500 0 1 1 -2.200 -5.300 M19.500 4.500 V8.500 H15.500" /></svg>
+            <span id="updateLabel"></span>
+        </button>
+        <div id="updateToast" role="status" hidden></div>
+</nav>
+
+    <main id="home">
+        <p id="welcome"></p>
+        <section id="tiles">
+            <button class="tile status-tile" data-view="status" type="button">
+                <span class="tile-icon" id="statusIcon"></span>
+                <span class="status-text">
+                    <span class="tile-caption" id="statusCaption"></span>
+                    <span class="status-line" id="statusLine"></span>
+                    <span class="status-hint" id="statusHint"></span>
+                </span>
+            </button>
+            <button class="tile" data-view="liveMap" type="button">
+                <span class="tile-icon"></span>
+                <span class="tile-caption"></span>
+            </button>
+            <button class="tile" data-view="forecast" type="button">
+                <span class="tile-icon"></span>
+                <span class="tile-caption"></span>
+            </button>
+            <button class="tile" data-view="trends" type="button">
+                <span class="tile-icon"></span>
+                <span class="tile-caption"></span>
+            </button>
+            <button class="tile" data-view="settings" type="button">
+                <span class="tile-icon"></span>
+                <span class="tile-caption"></span>
+            </button>
+            <button class="tile" data-view="log" type="button">
+                <span class="tile-icon"></span>
+                <span class="tile-caption"></span>
+            </button>
+            <button class="tile" data-view="about" type="button">
+                <span class="tile-icon"></span>
+                <span class="tile-caption"></span>
+            </button>
+        </section>
+        <label id="startupOption"><input type="checkbox" id="showOnStartup" /> <span id="showOnStartupLabel"></span></label>
+    </main>
+
+    <script type="module" src="index.js"></script>
+</body>
+</html>

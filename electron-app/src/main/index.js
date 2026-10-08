@@ -6,7 +6,8 @@ const { registerSettingsIpc } = require('./ipc/settingsIpc');
 const { registerRegionsIpc } = require('./ipc/regionsIpc');
 const { registerSystemIpc } = require('./ipc/systemIpc');
 const { registerForecastIpc } = require('./ipc/forecastIpc');
-const { registerTrayPopupIpc } = require('./ipc/trayPopupIpc');
+const { registerStatusIpc } = require('./ipc/statusIpc');
+const { registerHubIpc } = require('./ipc/hubIpc');
 const { registerLogIpc } = require('./ipc/logIpc');
 const { registerLiveMapIpc } = require('./ipc/liveMapIpc');
 const { registerTrendsIpc } = require('./ipc/trendsIpc');
@@ -30,7 +31,7 @@ const { startNeptunThreatsTracking } = require('./services/neptunThreatsStore');
 const { installHandlers } = require('./services/crashRestart');
 const { startConnectivityMonitor } = require('./services/connectivityMonitor');
 const { delayedCheckForUpdates } = require('./services/updater');
-const { destroySettingsWindow } = require('./windows/settingsWindow');
+const { showHub } = require('./windows/hubWindow');
 
 const LEGACY_APP_DIR = 'd:\\Projects\\Current_Alert';
 
@@ -45,6 +46,7 @@ app.on('second-instance', () => {
         body: t('notificationAlreadyRunningBody', language),
     }).show();
     logEvent('Second launch attempt ignored: the application is already running', 'INFO');
+    showHub('home');
 });
 
 app.setAppUserModelId('com.sergeiown.alertserver');
@@ -71,12 +73,14 @@ app.whenReady().then(() => {
     registerRegionsIpc();
     registerSystemIpc();
     registerForecastIpc();
-    registerTrayPopupIpc();
+    registerStatusIpc();
+    registerHubIpc();
     registerLogIpc();
     registerLiveMapIpc();
     registerTrendsIpc();
 
     createTray();
+    if (settingsStore.getSettings().showHubOnStartup) showHub('home');
     delayedCheckForUpdates();
     startOccupiedTerritoryRefresh();
     startWeaponStatsRefresh();
@@ -121,6 +125,3 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {});
 
-app.on('before-quit', () => {
-    destroySettingsWindow();
-});

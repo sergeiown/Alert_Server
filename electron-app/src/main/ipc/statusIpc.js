@@ -8,15 +8,13 @@ const { alertTypeName } = require('../services/alertTypes');
 const { getResourcePath } = require('../services/appPaths');
 const { getRegionDurationStats, formatDuration } = require('../services/forecast');
 const { getThreatLines } = require('../services/alertLevels');
-const { openForecastWindow } = require('../windows/forecastWindow');
-const { setContentHeight } = require('../windows/trayPopupWindow');
 
-function registerTrayPopupIpc() {
-    ipcMain.handle('trayPopup:getIcon', () =>
+function registerStatusIpc() {
+    ipcMain.handle('app:getIcon', () =>
         nativeImage.createFromPath(getResourcePath('icons', 'app-icon-256.png')).toDataURL()
     );
 
-    ipcMain.handle('trayPopup:getAlerts', async () => {
+    ipcMain.handle('status:getAlerts', async () => {
         const language = settingsStore.getSettings().language;
 
         return Promise.all(getLatestMatchedAlerts().map(async (alert) => {
@@ -34,14 +32,6 @@ function registerTrayPopupIpc() {
         }));
     });
 
-    ipcMain.handle('trayPopup:openForecast', () => {
-        openForecastWindow();
-    });
-
-    ipcMain.handle('trayPopup:setContentHeight', (event, height) => {
-        if (typeof height !== 'number' || !Number.isFinite(height)) return height;
-        return setContentHeight(height);
-    });
 }
 
-module.exports = { registerTrayPopupIpc };
+module.exports = { registerStatusIpc };

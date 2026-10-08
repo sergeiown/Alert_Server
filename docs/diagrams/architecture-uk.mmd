@@ -35,14 +35,16 @@ flowchart LR
         tray[tray]
         stores[regionsStore, settingsStore]
         updater[updater]
+        connectivity[connectivityMonitor]
     end
 
-    subgraph win[Вікна рендерера]
+    subgraph win["Головне вікно (хаб із плитками)"]
+        hubShell[Оболонка хаба: плитки та навігація]
+        statusWin[Поточний статус]
         settingsWin[Налаштування]
         forecastWin[Прогноз]
         trendsWin[Тенденції]
         liveMapWin[Жива мапа]
-        popup[Спливаюче вікно трея]
         logWin[Журнал]
         aboutWin[Про застосунок]
     end
@@ -92,9 +94,9 @@ flowchart LR
 
     activeData --> watcher
     forecast --> watcher
-    forecast --> popup
+    forecast --> statusWin
     watcher --> tray
-    watcher --> popup
+    activeData --> statusWin
 
     regionStatus --> liveMapWin
     threatsStore --> liveMapWin
@@ -105,13 +107,15 @@ flowchart LR
     stores --> settingsWin
     forecast --> forecastWin
 
-    tray --> settingsWin
-    tray --> forecastWin
-    tray --> trendsWin
-    tray --> liveMapWin
-    tray --> logWin
-    tray --> aboutWin
-    tray --> popup
+    tray --> hubShell
+    hubShell --> statusWin
+    hubShell --> settingsWin
+    hubShell --> forecastWin
+    hubShell --> trendsWin
+    hubShell --> liveMapWin
+    hubShell --> logWin
+    hubShell --> aboutWin
+    connectivity -. події сну та мережі .-> logWin
 
     updater --> gh
 
@@ -123,8 +127,8 @@ flowchart LR
 
     class api,ukrainealarm,neptun,deepstate,kaggle,gh extNode
     class pollers,archive,forecastEngine,trendsEngine,srvCache,gateway srvNode
-    class sourceManager,uaSource,poller,altSource,threatsStore,activeData,notifier,regionStatus,todayStats,occupied,forecast,watcher,weaponStats,tray,stores,updater mainNode
-    class settingsWin,forecastWin,trendsWin,liveMapWin,popup,logWin,aboutWin winNode
+    class sourceManager,uaSource,poller,altSource,threatsStore,activeData,notifier,regionStatus,todayStats,occupied,forecast,watcher,weaponStats,tray,stores,updater,connectivity mainNode
+    class hubShell,statusWin,settingsWin,forecastWin,trendsWin,liveMapWin,logWin,aboutWin winNode
     class levelNote noteNode
 
     style ext fill:#eff6ff,stroke:#93c5fd

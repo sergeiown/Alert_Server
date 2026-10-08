@@ -39,31 +39,81 @@ body {
 }
 
 #appTitle {
-    font-size: 16px;
+    font-size: 20px;
     margin: 0 0 8px;
 }
 
 #body {
-    color: var(--muted);
-    margin: 0 0 12px;
+    color: var(--fg);
+    max-width: 760px;
+    margin: 0 0 14px;
+    font-size: 17px;
+    line-height: 1.5;
 }
 
 #license,
 #copyright {
     color: var(--muted);
     margin: 2px 0;
+    font-size: 14px;
 }
 
-#githubLink,
-#webMapLink {
-    color: var(--link);
-    margin-top: 6px;
-    text-decoration: none;
+
+
+#links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 22px;
+}
+
+.link-button {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 340px;
+    min-height: 76px;
+    padding: 12px 20px 12px 16px;
+    border-radius: 16px;
+    border: 1px solid var(--btn-border);
+    background: var(--btn-bg);
+    color: var(--fg);
+    font: inherit;
+    text-align: left;
     cursor: pointer;
-    word-break: break-all;
+    box-shadow: 0 6px 14px -8px rgba(35, 70, 115, 0.5);
+    transition: background 0.15s, transform 0.12s;
 }
 
-#githubLink:hover,
-#webMapLink:hover {
-    text-decoration: underline;
+.link-button:hover {
+    background: var(--btn-hover);
+    transform: translateY(-2px);
+}
+
+.link-button svg {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    fill: none;
+    stroke: var(--link);
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.link-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.link-title {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.link-hint {
+    font-size: 12px;
+    color: var(--muted);
 }

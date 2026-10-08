@@ -9,7 +9,7 @@ const { openForecastWindow } = require('../windows/forecastWindow');
 const { openTrendsWindow } = require('../windows/trendsWindow');
 const { openLogWindow } = require('../windows/logWindow');
 const { openAboutWindow } = require('../windows/aboutWindow');
-const { toggleTrayPopup } = require('../windows/trayPopupWindow');
+const { showHub, toggleStatus } = require('../windows/hubWindow');
 const settingsStore = require('./settingsStore');
 const { logEvent } = require('./logger');
 const { formatDuration } = require('./forecast');
@@ -135,17 +135,19 @@ function refreshIconForCurrentState() {
 
 function buildMenu(language) {
     return Menu.buildFromTemplate([
-        { label: t('appName', language), icon: getMenuIcon('app-icon-256.png'), click: () => openAboutWindow() },
+        { label: t('appName', language), icon: getMenuIcon('app-icon-256.png'), click: () => showHub('home') },
         { type: 'separator' },
-        { label: t('menuLiveMap', language), icon: getMenuIcon('Live_map.png'), click: () => openLiveMapWindow() },
-        { label: t('menuForecast', language), icon: getMenuIcon('Forecast.png'), click: () => openForecastWindow() },
-        { label: t('menuTrends', language), icon: getMenuIcon('Trends.png'), click: () => openTrendsWindow() },
-        { label: t('menuSettings', language), icon: getMenuIcon('Settings.png'), click: () => openSettingsWindow() },
-        { label: t('menuLog', language), icon: getMenuIcon('Event_log.png'), click: () => openLogWindow() },
+        { label: t('menuStatus', language), icon: getMenuIcon('menu_status.png'), click: () => showHub('status') },
+        { label: t('menuLiveMap', language), icon: getMenuIcon('menu_liveMap.png'), click: () => openLiveMapWindow() },
+        { label: t('menuForecast', language), icon: getMenuIcon('menu_forecast.png'), click: () => openForecastWindow() },
+        { label: t('menuTrends', language), icon: getMenuIcon('menu_trends.png'), click: () => openTrendsWindow() },
+        { label: t('menuSettings', language), icon: getMenuIcon('menu_settings.png'), click: () => openSettingsWindow() },
+        { label: t('menuLog', language), icon: getMenuIcon('menu_log.png'), click: () => openLogWindow() },
+        { label: t('menuAbout', language), icon: getMenuIcon('menu_about.png'), click: () => openAboutWindow() },
         { type: 'separator' },
         {
             label: t('menuExit', language),
-            icon: getMenuIcon('Exit.png'),
+            icon: getMenuIcon('menu_exit.png'),
             click: () => {
                 logEvent('Exit requested from tray menu', 'INFO');
                 app.quit();
@@ -160,7 +162,7 @@ function createTray() {
     trayInstance = new Tray(loadIcon(staticIconFile(0, false)));
     trayInstance.setToolTip(t('trayDefaultTooltip', language));
     trayInstance.setContextMenu(buildMenu(language));
-    trayInstance.on('click', (event, bounds) => toggleTrayPopup(bounds));
+    trayInstance.on('click', () => toggleStatus());
 
     nativeTheme.on('updated', refreshIconForCurrentState);
     screen.on('display-metrics-changed', refreshIconForCurrentState);

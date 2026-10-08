@@ -8,21 +8,35 @@ const openExcelButton = document.getElementById('openExcelButton');
 const content = document.getElementById('content');
 
 const AUTO_REFRESH_MS = 2000;
+const KNOWN_LEVELS = ['INFO', 'WARNING', 'ERROR', 'NETWORK', 'ALERT'];
 
 let strings = null;
+let lastText = null;
 
 function formatSize(bytes) {
     if (bytes < 1024) return `${bytes} B`;
     return `${(bytes / 1024).toFixed(1)} KB`;
 }
 
+function buildLines(text) {
+    const lines = text.split(/\r?\n/);
+    return lines.map((line, index) => {
+        const span = document.createElement('span');
+        const level = line.split(',')[2];
+        span.className = KNOWN_LEVELS.includes(level) ? `line level-${level}` : 'line meta';
+        span.textContent = index < lines.length - 1 ? `${line}\n` : line;
+        return span;
+    });
+}
+
 async function render() {
     const wasAtBottom = content.scrollTop + content.clientHeight >= content.scrollHeight - 4;
 
     const { content: text, size } = await window.alertServerLog.getContent();
-    if (text === content.textContent) return;
+    if (text === lastText) return;
+    lastText = text;
 
-    content.textContent = text;
+    content.replaceChildren(...buildLines(text));
     sizeLabel.textContent = `${strings.logSizeLabel}: ${formatSize(size)}`;
     if (wasAtBottom) content.scrollTop = content.scrollHeight;
 }

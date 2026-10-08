@@ -4,6 +4,7 @@
 const { ipcMain, app, clipboard, shell, nativeImage } = require('electron');
 const { logEvent } = require('../services/logger');
 const { getResourcePath } = require('../services/appPaths');
+const { checkForUpdatesNow } = require('../services/updater');
 
 function registerSystemIpc() {
     ipcMain.handle('system:getLoginItem', () => app.getLoginItemSettings().openAtLogin);
@@ -15,6 +16,7 @@ function registerSystemIpc() {
     ipcMain.handle('system:copyToClipboard', (event, text) => {
         clipboard.writeText(text);
     });
+    ipcMain.handle('system:checkForUpdates', () => checkForUpdatesNow());
     ipcMain.handle('system:getVersion', () => app.getVersion());
     ipcMain.handle('system:openExternal', (event, url) => shell.openExternal(url));
     ipcMain.handle('system:getAboutIcon', () =>

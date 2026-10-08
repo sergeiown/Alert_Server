@@ -1,40 +1,10 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
-const path = require('path');
-const { BrowserWindow } = require('electron');
-
-let aboutWindow = null;
+const { showHub } = require('./hubWindow');
 
 function openAboutWindow() {
-    if (aboutWindow) {
-        aboutWindow.show();
-        aboutWindow.focus();
-        return aboutWindow;
-    }
-
-    aboutWindow = new BrowserWindow({
-        width: 360,
-        height: 420,
-        resizable: false,
-        title: 'Alert Server - About',
-        icon: path.join(__dirname, '..', '..', '..', 'resources', 'icons', 'app-icon-256.png'),
-        webPreferences: {
-            preload: path.join(__dirname, '..', '..', 'preload', 'aboutPreload.js'),
-            contextIsolation: true,
-            sandbox: true,
-            nodeIntegration: false,
-        },
-    });
-
-    aboutWindow.setMenuBarVisibility(false);
-    aboutWindow.loadFile(path.join(__dirname, '..', '..', 'renderer', 'about', 'index.html'));
-
-    aboutWindow.on('closed', () => {
-        aboutWindow = null;
-    });
-
-    return aboutWindow;
+    return showHub('about');
 }
 
 module.exports = { openAboutWindow };
