@@ -642,3 +642,18 @@ body {
             1px 1px 2px #333a42;
     }
 }
+
+.detail-map-on .leaflet-image-layer {
+    opacity: 0 !important;
+    transition: opacity 0.25s ease;
+}
+
+.detail-map-on .river-line,
+.detail-map-on .river-area {
+    display: none;
+}
+
+.detail-map-on .city-label,
+.detail-map-on .city-dot {
+    display: none;
+}

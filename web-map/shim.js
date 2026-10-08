@@ -231,6 +231,7 @@
 
     window.alertServerLiveMap = {
         kyivTilesUrl: new URL('tiles/kyiv.pmtiles', location.href).href,
+        detailTilesUrl: new URL('tiles/ukraine.pmtiles', location.href).href,
         regionsRefreshMs: 5000,
         onThreatSelect: (info, latlng, updateOnly) => {
             if (threatSelectHandler) threatSelectHandler(info, latlng, updateOnly);

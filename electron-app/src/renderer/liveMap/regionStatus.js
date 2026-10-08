@@ -297,7 +297,7 @@ const RegionStatusLayer = L.LayerGroup.extend({
 
         const raionTier = this._map.getZoom() >= RAION_MIN_ZOOM;
 
-        Object.entries(OBLAST_BORDERS).forEach(([name, rings]) => {
+        Object.entries(raionTier ? {} : OBLAST_BORDERS).forEach(([name, rings]) => {
             const startedAt = getOblastStartedAt(name);
             const alertTypeName = getOblastAlertTypeName(name);
             const alertLevel = getOblastAlertLevel(name);

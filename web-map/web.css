@@ -358,3 +358,17 @@ a.web-chip {
         display: none;
     }
 }
+
+body {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#aboutDialog,
+#aboutDialog * {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+}

@@ -11,6 +11,7 @@ import { startStatusBar } from './statusBar.js';
 import { addScreenshotControl } from './screenshot.js';
 import { KYIV_RAION_BORDERS } from './kyivRaionBorders.js';
 import { createKyivRaionLabels } from './kyivRaionLabels.js';
+import { UKRAINE_OUTLINE } from './ukraineOutline.js';
 import { applyTitleBarAccentColor } from './chromeTint.js';
 
 const UKRAINE_BOUNDS = [
@@ -42,6 +43,7 @@ function computeKyivBounds() {
 const KYIV_BOUNDS = computeKyivBounds();
 
 const KYIV_TILES_URL = 'https://alert-proxy-ua.duckdns.org/live/tiles/kyiv.pmtiles';
+const DETAIL_TILES_URL = 'https://alert-proxy-ua.duckdns.org/live/tiles/ukraine.pmtiles';
 const MAP_MIN_ZOOM = window.alertServerLiveMap.minZoom || 5;
 const UKRAINE_MAX_ZOOM = 12;
 const KYIV_MAX_ZOOM = 14;
@@ -158,6 +160,75 @@ async function main() {
         lang: settings.language === 'English' ? 'en' : 'uk',
         attribution: `<a href="#" id="osmAttribution">${strings.liveMapOsmAttribution}</a>`,
     });
+    const DETAIL_MIN_ZOOM = 9;
+    const detailTilesUrl = window.alertServerLiveMap.detailTilesUrl || DETAIL_TILES_URL;
+    const detailLayer = detailTilesUrl
+        ? window.alertOsmBasemap.create({
+              url: detailTilesUrl,
+              dark: isDarkMap,
+              lang: settings.language === 'English' ? 'en' : 'uk',
+              attribution: '<a href="#" id="osmDetailAttribution">© OpenStreetMap contributors</a>',
+              labels: window.matchMedia('(pointer: coarse)').matches ? 'places-major' : 'places',
+              boundaries: false,
+              maxDataZoom: 12,
+          })
+        : null;
+
+    const outsideMaskPane = map.createPane('outsideMaskPane');
+    outsideMaskPane.style.zIndex = 250;
+    outsideMaskPane.style.pointerEvents = 'none';
+    const outsideMaskRenderer = L.svg({ pane: 'outsideMaskPane', padding: 2 });
+    const outsideUkraineMask = L.polygon(
+        [
+            [
+                [-85, -180],
+                [-85, 180],
+                [85, 180],
+                [85, -180],
+            ],
+            ...UKRAINE_OUTLINE,
+        ],
+        {
+            pane: 'outsideMaskPane',
+            renderer: outsideMaskRenderer,
+            stroke: false,
+            fillColor: isDarkMap ? '#10151c' : '#aad3df',
+            fillOpacity: 1,
+            interactive: false,
+        }
+    );
+
+    const outsideMaskFade = L.layerGroup(
+        [56, 44, 34, 25, 17, 10, 5].map((weight) =>
+            L.polygon(UKRAINE_OUTLINE, {
+                pane: 'outsideMaskPane',
+            renderer: outsideMaskRenderer,
+                fill: false,
+                color: isDarkMap ? '#10151c' : '#aad3df',
+                weight,
+                opacity: 0.16,
+                lineJoin: 'round',
+                interactive: false,
+            })
+        )
+    );
+
+    function syncDetailLayer() {
+        if (!detailLayer) return;
+        const wanted = !kyivModeActive && map.getZoom() >= DETAIL_MIN_ZOOM;
+        map.getContainer().classList.toggle('detail-map-on', wanted);
+        if (wanted && !map.hasLayer(detailLayer)) {
+            detailLayer.addTo(map);
+            outsideUkraineMask.addTo(map);
+            outsideMaskFade.addTo(map);
+            bindAttributionLink('osmDetailAttribution', 'https://www.openstreetmap.org/copyright');
+        }
+        else if (!wanted && map.hasLayer(detailLayer)) {
+            map.removeLayer(detailLayer);
+            map.removeLayer(outsideUkraineMask);
+            map.removeLayer(outsideMaskFade);
+        }
+    }
     const kyivLabelsLayer = createKyivRaionLabels(settings.language === 'English');
 
     let riverLayerWasOn = true;
@@ -343,6 +414,7 @@ async function main() {
 
     fitAndLockMinZoom();
     map.attributionControl.setPrefix(false);
+    map.on('zoomend', syncDetailLayer);
 
     function bindAttributionLink(id, url) {
         document.getElementById(id)?.addEventListener('click', (event) => {
@@ -399,6 +471,7 @@ async function main() {
 
     function applyKyivMode(active) {
         kyivModeActive = active;
+        syncDetailLayer();
         kyivToggle.setActive(active);
 
         map.getContainer().classList.toggle('kyiv-mode-active', active);

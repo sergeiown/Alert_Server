@@ -64,15 +64,31 @@ const LIGHT = {
     buildings: '#dcd7cd',
 };
 
-function create({ url, dark, lang, attribution }) {
+const MAJOR_PLACES = ['city', 'town'];
+
+function buildLabelRules(flavor, lang, labels) {
+    const all = labelRules(flavor, lang);
+    if (labels === true) return all;
+    if (labels !== 'places' && labels !== 'places-major') return [];
+
+    return all
+        .filter((rule) => rule.dataLayer === 'places' && rule.minzoom >= 9)
+        .map((rule) => {
+            if (labels !== 'places-major') return rule;
+            const original = rule.filter;
+            return { ...rule, filter: (zoom, feature) => (!original || original(zoom, feature)) && MAJOR_PLACES.includes(feature.props.kind_detail) };
+        });
+}
+
+function create({ url, dark, lang, attribution, labels = true, boundaries = true, maxDataZoom = 15 }) {
     const flavor = dark ? DARK : LIGHT;
     return leafletLayer({
         url,
-        paintRules: paintRules(flavor),
-        labelRules: labelRules(flavor, lang),
+        paintRules: paintRules(flavor).filter((rule) => boundaries || rule.dataLayer !== 'boundaries'),
+        labelRules: buildLabelRules(flavor, lang, labels),
         backgroundColor: flavor.background,
         attribution,
-        maxDataZoom: 15,
+        maxDataZoom,
     });
 }
 
