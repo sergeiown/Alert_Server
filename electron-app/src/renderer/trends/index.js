@@ -3,6 +3,7 @@
 
 import { normalizeOblastName, oblastDisplayName, normalizeRaionName, raionDisplayName } from '../liveMap/regionNameUtils.js';
 import { transliterate } from '../liveMap/transliterate.js';
+import { buildThreatsTab } from './threats.js';
 
 const KYIV_RAW_NAME = 'м. Київ';
 
@@ -369,27 +370,22 @@ function buildTabs(strings, onSelect) {
     const bar = document.createElement('div');
     bar.id = 'tabsHost';
 
-    const allTimeTab = document.createElement('button');
-    allTimeTab.className = 'tab active';
-    allTimeTab.textContent = strings.trendsTabAllTime;
-
-    const todayTab = document.createElement('button');
-    todayTab.className = 'tab';
-    todayTab.textContent = strings.trendsTabToday;
-
-    [
-        [allTimeTab, todayTab, 'allTime'],
-        [todayTab, allTimeTab, 'today'],
-    ].forEach(([active, inactive, key]) => {
-        active.addEventListener('click', () => {
-            active.classList.add('active');
-            inactive.classList.remove('active');
+    const definitions = [
+        ['allTime', strings.trendsTabAllTime],
+        ['today', strings.trendsTabToday],
+        ['threats', strings.trendsTabThreats],
+    ];
+    const buttons = definitions.map(([key, label], index) => {
+        const button = document.createElement('button');
+        button.className = index === 0 ? 'tab active' : 'tab';
+        button.textContent = label;
+        button.addEventListener('click', () => {
+            buttons.forEach((other) => other.classList.toggle('active', other === button));
             onSelect(key);
         });
+        bar.appendChild(button);
+        return button;
     });
-
-    bar.appendChild(allTimeTab);
-    bar.appendChild(todayTab);
     return bar;
 }
 
@@ -402,43 +398,56 @@ async function main() {
     document.getElementById('trendsHeader').textContent = strings.trendsHeader;
 
     const content = document.getElementById('content');
-    // Independent of each other - the Today tab (this app's own alert-count tracking) has nothing
-    // to do with the Kaggle-sourced weapon stats, so one failing to load must not take the other
-    // tab (or the tab bar itself) down with it - each is fetched in its own try/catch rather than
-    // letting an IPC rejection abort main() before the tabs are even built.
-    const stats = await window.alertServerTrends.getWeaponStats().catch(() => null);
-    const todayStats = await window.alertServerTrends.getTodayStats().catch(() => null);
-
     const rangeElement = document.getElementById('trendsRange');
-    const rangeText = stats
-        ? strings.trendsRangeLabel.replace('{from}', stats.dateRange.from).replace('{to}', stats.dateRange.to)
-        : '';
-    rangeElement.textContent = rangeText;
 
-    function renderAllTime() {
+    // Independent of each other - each source is fetched in its own try/catch so one failing to load
+    // never takes the others (or the tab bar) down. All three requests start right away in parallel,
+    // but only the tab on screen is awaited, so the first tab appears as soon as its own data is in.
+    const weaponPromise = window.alertServerTrends.getWeaponStats().catch(() => null);
+    const todayPromise = window.alertServerTrends.getTodayStats().catch(() => null);
+    const threatsPromise = window.alertServerTrends.getThreatTrends().catch(() => null);
+
+    let activeTab = 'allTime';
+    let rangeText = '';
+
+    function showMessage(text, id) {
         content.innerHTML = '';
+        const p = document.createElement('p');
+        if (id) p.id = id;
+        p.textContent = text;
+        content.appendChild(p);
+    }
+
+    async function renderAllTime() {
+        showMessage(strings.trendsLoading, 'loadingText');
+        const stats = await weaponPromise;
+        if (activeTab !== 'allTime') return;
+
+        if (stats) {
+            rangeText = strings.trendsRangeLabel.replace('{from}', stats.dateRange.from).replace('{to}', stats.dateRange.to);
+            rangeElement.textContent = rangeText;
+        }
         if (!stats) {
-            const p = document.createElement('p');
-            p.id = 'errorText';
-            p.textContent = strings.trendsNoData;
-            content.appendChild(p);
+            showMessage(strings.trendsNoData, 'errorText');
             return;
         }
+        content.innerHTML = '';
         content.appendChild(buildSummaryCard(stats, strings));
         content.appendChild(buildMonthlyChart(stats, strings, isEnglish));
         content.appendChild(buildCategoryCard(stats, strings, isEnglish));
         content.appendChild(buildModelsCard(stats, strings, isEnglish));
     }
 
-    function renderToday() {
-        content.innerHTML = '';
+    async function renderToday() {
+        showMessage(strings.trendsLoading, 'loadingText');
+        const todayStats = await todayPromise;
+        if (activeTab !== 'today') return;
+
         if (!todayStats) {
-            const p = document.createElement('p');
-            p.id = 'errorText';
-            p.textContent = strings.trendsNoData;
-            content.appendChild(p);
+            showMessage(strings.trendsNoData, 'errorText');
             return;
         }
+        content.innerHTML = '';
         const notice = document.createElement('p');
         notice.className = 'muted-note';
         const statusText = todayStats.complete
@@ -471,12 +480,27 @@ async function main() {
         );
     }
 
+    async function renderThreats() {
+        showMessage(strings.trendsLoading, 'loadingText');
+        const threatTrends = await threatsPromise;
+        if (activeTab !== 'threats') return;
+
+        if (!threatTrends) {
+            showMessage(strings.trendsNoData, 'errorText');
+            return;
+        }
+        content.innerHTML = '';
+        content.appendChild(buildThreatsTab(threatTrends, strings, isEnglish));
+    }
+
     document
         .getElementById('tabsHost')
         .replaceWith(
             buildTabs(strings, (key) => {
-                rangeElement.textContent = key === 'today' ? '' : rangeText;
+                activeTab = key;
+                rangeElement.textContent = key === 'allTime' ? rangeText : '';
                 if (key === 'today') renderToday();
+                else if (key === 'threats') renderThreats();
                 else renderAllTime();
             })
         );

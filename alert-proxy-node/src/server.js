@@ -13,6 +13,7 @@ const archive = require('./archive');
 const users = require('./users');
 const forecast = require('./forecast');
 const trends = require('./trends');
+const threatAnalytics = require('./threatAnalytics');
 const occupied = require('./occupied');
 const publicApi = require('./publicApi');
 const webstats = require('./webstats');
@@ -190,6 +191,11 @@ async function handleRequest(req, res) {
     if (url.pathname === '/trends/today') {
         const uids = (url.searchParams.get('uids') || '').split(',').filter((uid) => /^\d+$/.test(uid)).slice(0, 200);
         send(res, { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(trends.getTodayStats(uids)) });
+        return;
+    }
+
+    if (url.pathname === '/trends/threats') {
+        send(res, { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(threatAnalytics.getThreatAnalytics(url.searchParams.get('days'))) });
         return;
     }
 

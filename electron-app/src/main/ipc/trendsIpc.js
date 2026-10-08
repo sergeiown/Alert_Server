@@ -4,10 +4,12 @@
 const { ipcMain } = require('electron');
 const { getLatestWeaponStats } = require('../services/weaponStatsStore');
 const { getLatestTodayStats } = require('../services/todayStatsStore');
+const { getThreatTrends } = require('../services/threatTrendsStore');
 const regionsStore = require('../services/regionsStore');
 
 function registerTrendsIpc() {
     ipcMain.handle('trends:getWeaponStats', () => getLatestWeaponStats());
+    ipcMain.handle('trends:getThreatTrends', (event, days) => getThreatTrends(Number.isFinite(days) ? days : undefined));
     ipcMain.handle('trends:getTodayStats', () => getLatestTodayStats(regionsStore.getSelectedUids()));
 }
 

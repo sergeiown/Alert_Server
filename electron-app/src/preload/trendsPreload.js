@@ -7,5 +7,6 @@ contextBridge.exposeInMainWorld('alertServerTrends', {
     getStrings: () => ipcRenderer.invoke('i18n:getStrings'),
     getSettings: () => ipcRenderer.invoke('settings:get'),
     getWeaponStats: () => ipcRenderer.invoke('trends:getWeaponStats'),
+    getThreatTrends: (days) => ipcRenderer.invoke('trends:getThreatTrends', days),
     getTodayStats: () => ipcRenderer.invoke('trends:getTodayStats'),
 });

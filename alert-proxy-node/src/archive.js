@@ -7,6 +7,7 @@ const { DB_PATH } = require('./config');
 
 const THREAT_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 const ALERTS_QUERY_LIMIT = 5000;
+const TRACK_SAMPLE_MS = 3 * 60 * 1000;
 
 db.exec(`CREATE TABLE IF NOT EXISTS alert_events (
     id TEXT PRIMARY KEY,
@@ -32,6 +33,21 @@ db.exec(`CREATE TABLE IF NOT EXISTS neptun_threats (
     removed_at INTEGER,
     data TEXT NOT NULL
 )`);
+
+const threatColumns = db.prepare('PRAGMA table_info(neptun_threats)').all().map((column) => column.name);
+if (!threatColumns.includes('first_region')) db.exec('ALTER TABLE neptun_threats ADD COLUMN first_region TEXT');
+if (!threatColumns.includes('first_lat')) db.exec('ALTER TABLE neptun_threats ADD COLUMN first_lat REAL');
+if (!threatColumns.includes('first_lon')) db.exec('ALTER TABLE neptun_threats ADD COLUMN first_lon REAL');
+db.exec('CREATE INDEX IF NOT EXISTS idx_neptun_threats_first_seen ON neptun_threats(first_seen)');
+db.exec(`CREATE TABLE IF NOT EXISTS neptun_track (
+    threat_id TEXT NOT NULL,
+    t INTEGER NOT NULL,
+    lat REAL NOT NULL,
+    lon REAL NOT NULL,
+    heading REAL
+)`);
+db.exec('CREATE INDEX IF NOT EXISTS idx_neptun_track_threat ON neptun_track(threat_id, t)');
+db.exec('CREATE INDEX IF NOT EXISTS idx_neptun_track_t ON neptun_track(t)');
 
 const upsertAlert = db.prepare(`INSERT INTO alert_events
     (id, location_uid, location_title, location_oblast, location_type, alert_type, started_at, finished_at, updated_at, deleted_at, first_seen, last_seen)
@@ -65,9 +81,11 @@ function runUpsert(alert, firstSeen, lastSeen) {
     return id;
 }
 const finishAlert = db.prepare('UPDATE alert_events SET finished_at = ? WHERE id = ? AND finished_at IS NULL');
-const upsertThreat = db.prepare(`INSERT INTO neptun_threats (id, first_seen, last_seen, removed_at, data)
-    VALUES (?, ?, ?, NULL, ?)
+const upsertThreat = db.prepare(`INSERT INTO neptun_threats (id, first_seen, last_seen, removed_at, data, first_region, first_lat, first_lon)
+    VALUES (?, ?, ?, NULL, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET last_seen = excluded.last_seen, removed_at = NULL, data = excluded.data`);
+const insertTrackPoint = db.prepare('INSERT INTO neptun_track (threat_id, t, lat, lon, heading) VALUES (?, ?, ?, ?, ?)');
+const lastTrackAt = new Map();
 const removeThreat = db.prepare('UPDATE neptun_threats SET removed_at = ? WHERE id = ? AND removed_at IS NULL');
 
 let activeIds = new Set(db.prepare('SELECT id FROM alert_events WHERE finished_at IS NULL').all().map((row) => row.id));
@@ -152,14 +170,47 @@ function recordThreats(threats, removedIds) {
     const now = Date.now();
     inTransaction(() => {
         (threats || []).forEach((threat) => {
-            if (threat && threat.id) upsertThreat.run(String(threat.id), now, now, JSON.stringify(threat));
+            if (!threat || !threat.id) return;
+            const id = String(threat.id);
+            const hasPosition = Number.isFinite(threat.lat) && Number.isFinite(threat.lon);
+            upsertThreat.run(id, now, now, JSON.stringify(threat), threat.region || null, hasPosition ? threat.lat : null, hasPosition ? threat.lon : null);
+            if (hasPosition && now - (lastTrackAt.get(id) || 0) >= TRACK_SAMPLE_MS) {
+                lastTrackAt.set(id, now);
+                insertTrackPoint.run(id, now, threat.lat, threat.lon, Number.isFinite(threat.heading) ? threat.heading : null);
+            }
         });
-        (removedIds || []).forEach((id) => removeThreat.run(now, String(id)));
+        (removedIds || []).forEach((id) => {
+            removeThreat.run(now, String(id));
+            lastTrackAt.delete(String(id));
+        });
     });
 }
 
 function pruneOldThreats() {
-    db.prepare('DELETE FROM neptun_threats WHERE removed_at IS NOT NULL AND removed_at < ?').run(Date.now() - THREAT_RETENTION_MS);
+    const cutoff = Date.now() - THREAT_RETENTION_MS;
+    db.prepare('DELETE FROM neptun_threats WHERE (removed_at IS NOT NULL AND removed_at < ?) OR last_seen < ?').run(cutoff, cutoff);
+    db.prepare('DELETE FROM neptun_track WHERE t < ?').run(cutoff);
+}
+
+function getThreatsSince(sinceMs) {
+    return db
+        .prepare(
+            `SELECT id, first_seen, last_seen, removed_at, first_region, first_lat, first_lon,
+                json_extract(data, '$.type') AS type, json_extract(data, '$.title') AS title,
+                json_extract(data, '$.region') AS last_region, json_extract(data, '$.lat') AS last_lat, json_extract(data, '$.lon') AS last_lon
+             FROM neptun_threats WHERE first_seen >= ? ORDER BY first_seen`
+        )
+        .all(sinceMs);
+}
+
+function getAlertStartsSince(sinceIso) {
+    return db
+        .prepare('SELECT location_oblast, started_at FROM alert_events WHERE started_at >= ? AND deleted_at IS NULL AND location_oblast IS NOT NULL')
+        .all(sinceIso);
+}
+
+function getTrackStats() {
+    return db.prepare('SELECT COUNT(*) AS points, MIN(t) AS oldest FROM neptun_track').get();
 }
 
 function getAlertsSince(sinceIso, uid) {
@@ -200,4 +251,4 @@ function getStats() {
     };
 }
 
-module.exports = { recordActiveAlerts, upsertMany, getRegionAlerts, getAlertsFromDay, getCoverage, recordThreats, pruneOldThreats, getAlertsSince, getStats };
+module.exports = { recordActiveAlerts, upsertMany, getRegionAlerts, getAlertsFromDay, getCoverage, recordThreats, pruneOldThreats, getAlertsSince, getStats, getThreatsSince, getAlertStartsSince, getTrackStats };
