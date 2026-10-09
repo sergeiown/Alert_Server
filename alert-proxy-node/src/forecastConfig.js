@@ -3,6 +3,7 @@
 
 module.exports = {
     WINDOW_DAYS: 30,
+    GAP_WINDOW_DAYS: 60,
     HALF_LIFE_DAYS: 1,
 
     PROBABILITY_WINDOW_HOURS: 3,

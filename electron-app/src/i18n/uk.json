@@ -142,7 +142,7 @@
     "forecastProbabilityToday": "Ймовірність хоча б однієї тривоги протягом найближчих 3 годин, на основі статистики",
     "forecastProbabilityPrefix": "з вірогідністю",
     "forecastProbabilityNearCertain": "близько до 100",
-    "forecastExpectedTodayLabel": "Загалом очікується приблизно {count} тривог сьогодні",
+    "forecastExpectedTodayLabel": "Розрахункова кількість тривог на сьогодні: {count}",
     "forecastEtaLabel": "орієнтовно через",
     "forecastRangeLabel": "типово",
     "forecastDisclaimer": "Пам'ятайте - це аналіз статистики, а не передбачення.",

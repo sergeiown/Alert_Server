@@ -131,6 +131,13 @@ function formatShortDateTime(dateValue, language) {
     return new Date(dateValue).toLocaleString(locale, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
+function remainingDayFraction() {
+    const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Kyiv', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
+    const hour = Number(parts.find((part) => part.type === 'hour').value);
+    const minute = Number(parts.find((part) => part.type === 'minute').value);
+    return Math.max(0, 1 - (hour + minute / 60) / 24);
+}
+
 function buildForecastText(stats, language, source, extra = {}) {
     const lines = [];
     const allTime = extra.allTime && extra.allTime.total ? extra.allTime : null;
@@ -188,7 +195,11 @@ function buildForecastText(stats, language, source, extra = {}) {
         lines.push(`  - ${typeName}: ${t('forecastProbabilityPrefix', language)} ${formatProbabilityPercent(entry.probabilityToday, language)}%${etaText}${rangeText}`);
     });
 
-    const expectedTotal = Math.round(stats.typeBreakdown.reduce((sum, entry) => sum + entry.expectedToday, 0));
+    const expectedPerDay = stats.typeBreakdown.reduce((sum, entry) => sum + entry.expectedToday, 0);
+    const expectedTotal =
+        typeof extra.todayCount === 'number'
+            ? extra.todayCount + Math.round(expectedPerDay * remainingDayFraction())
+            : Math.round(expectedPerDay);
     const soFar =
         typeof extra.todayCount === 'number'
             ? ` ${t('forecastExpectedTodaySoFar', language).replace('{count}', extra.todayCount)}`

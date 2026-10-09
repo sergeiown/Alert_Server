@@ -239,7 +239,9 @@ function computeStats(alerts, nowMs, config) {
             const probabilityToday = 1 - Math.exp(-lambdaType * (config.PROBABILITY_WINDOW_HOURS / 24));
 
             const expectedToday = lambdaType;
-            const gaps = gapStats(typeAlertsFull, config);
+            const recentCutoffMs = nowMs - config.GAP_WINDOW_DAYS * DAY_MS;
+            const recentAlerts = typeAlertsFull.filter((alert) => new Date(alert.started_at).getTime() >= recentCutoffMs);
+            const gaps = gapStats(recentAlerts, config) || gapStats(typeAlertsFull, config);
             const projectedNextMs = gaps ? gaps.median : lambdaType > MIN_MEANINGFUL_LAMBDA ? (1 / lambdaType) * DAY_MS : null;
             const gapRange = gaps ? gaps.range : null;
 
