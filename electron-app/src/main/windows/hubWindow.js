@@ -15,13 +15,13 @@ const preloadDir = path.join(__dirname, '..', '..', 'preload');
 const rendererDir = path.join(__dirname, '..', '..', 'renderer');
 
 const VIEWS = {
-    status: { preload: 'statusPreload.js', page: 'status', reloadOnShow: false },
-    liveMap: { preload: 'liveMapPreload.js', page: 'liveMap', reloadOnShow: true },
-    forecast: { preload: 'forecastPreload.js', page: 'forecast', reloadOnShow: true },
-    trends: { preload: 'trendsPreload.js', page: 'trends', reloadOnShow: true },
-    settings: { preload: 'settingsPreload.js', page: 'settings', reloadOnShow: false },
-    log: { preload: 'logPreload.js', page: 'log', reloadOnShow: true },
-    about: { preload: 'aboutPreload.js', page: 'about', reloadOnShow: true },
+    status: { preload: 'statusPreload.js', page: 'status' },
+    liveMap: { preload: 'liveMapPreload.js', page: 'liveMap' },
+    forecast: { preload: 'forecastPreload.js', page: 'forecast' },
+    trends: { preload: 'trendsPreload.js', page: 'trends' },
+    settings: { preload: 'settingsPreload.js', page: 'settings' },
+    log: { preload: 'logPreload.js', page: 'log' },
+    about: { preload: 'aboutPreload.js', page: 'about' },
 };
 
 let hubWindow = null;
@@ -104,14 +104,31 @@ function ensureView(name) {
     return view;
 }
 
-function applyCurrentView({ fresh = true } = {}) {
+function destroyView(name) {
+    const view = views.get(name);
+    if (!view) return;
+
+    views.delete(name);
+    if (htmlFullscreenView === name) htmlFullscreenView = null;
+    if (hubWindow && !hubWindow.isDestroyed()) hubWindow.contentView.removeChildView(view);
+    view.webContents.close();
+}
+
+function resetToStart() {
+    [...views.keys()].forEach(destroyView);
+    history.length = 0;
+    currentView = 'home';
+    sendState();
+}
+
+function applyCurrentView() {
     if (currentView !== 'home') {
         const alreadyLoaded = views.has(currentView);
         const view = ensureView(currentView);
-        if (alreadyLoaded && fresh && VIEWS[currentView].reloadOnShow) view.webContents.reload();
-        else if (alreadyLoaded && currentView === 'status') view.webContents.send('refresh');
+        if (alreadyLoaded && currentView === 'status') view.webContents.send('refresh');
     }
 
+    [...views.keys()].filter((name) => name !== currentView).forEach(destroyView);
     views.forEach((view, name) => view.setVisible(name === currentView));
     layoutViews();
     sendState();
@@ -183,6 +200,8 @@ function createHubWindow() {
         });
     });
 
+    hubWindow.on('hide', resetToStart);
+
     hubWindow.on('session-end', () => {
         isQuitting = true;
     });
@@ -206,9 +225,8 @@ function createHubWindow() {
 function showHub(view = null) {
     if (!hubWindow || hubWindow.isDestroyed()) createHubWindow();
 
-    const wasShowing = hubWindow.isVisible() && !hubWindow.isMinimized();
     if (view && view !== currentView) navigate(view);
-    else if (view) applyCurrentView({ fresh: !wasShowing });
+    else if (view) applyCurrentView();
 
     if (hubWindow.isMinimized()) hubWindow.restore();
     hubWindow.show();
