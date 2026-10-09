@@ -53,7 +53,8 @@ function buildAllTime(usable, nowMs) {
 function compute(uid) {
     const nowMs = Date.now();
     const stateName = states[String(uid)] || null;
-    const alerts = archive.getRegionAlerts(uid, stateName).filter((alert) => {
+    const allAlerts = archive.getRegionAlerts(uid, stateName);
+    const alerts = allAlerts.filter((alert) => {
         const startedMs = new Date(alert.started_at).getTime();
         return Number.isFinite(startedMs) && nowMs - startedMs <= MAX_HISTORY_AGE_MS;
     });
@@ -67,7 +68,7 @@ function compute(uid) {
         source: 'alerts.in.ua',
         alertCount: alerts.length,
         stats,
-        ...buildAllTime(usable, nowMs),
+        ...buildAllTime(model.filterUsableAlerts(allAlerts), nowMs),
         durations: durationStats(usable, nowMs),
     };
 }
