@@ -165,24 +165,22 @@ function totalRegionsCount(tree) {
     return count;
 }
 
-function districtUidsUnder(district) {
-    return [district.uid, ...district.communities.map((c) => c.uid)];
+function dropCoveredDescendants(uids, tree) {
+    const selected = new Set(uids.map(String));
+    const covered = new Set();
+    tree.states.forEach((state) => {
+        const stateSelected = selected.has(String(state.uid));
+        state.districts.forEach((district) => {
+            const districtSelected = selected.has(String(district.uid));
+            if (stateSelected) covered.add(String(district.uid));
+            district.communities.forEach((community) => {
+                if (stateSelected || districtSelected) covered.add(String(community.uid));
+            });
+        });
+    });
+    return uids.filter((uid) => !covered.has(String(uid)));
 }
 
-function stateUidsUnder(state) {
-    return [state.uid, ...state.districts.flatMap(districtUidsUnder)];
-}
-
-function collectUidsUnder(uid, tree) {
-    for (const state of tree.states) {
-        if (state.uid === uid) return stateUidsUnder(state);
-        for (const district of state.districts) {
-            if (district.uid === uid) return districtUidsUnder(district);
-            if (district.communities.some((c) => c.uid === uid)) return [uid];
-        }
-    }
-    return [uid];
-}
 
 (async () => {
     const strings = applyStrings(await window.alertServer.getStrings());
@@ -190,7 +188,9 @@ function collectUidsUnder(uid, tree) {
     await initGeneralSettings(settings);
 
     const tree = await window.alertServer.getRegionTree();
-    const selectedUids = await window.alertServer.getSelectedRegions();
+    const storedUids = await window.alertServer.getSelectedRegions();
+    const selectedUids = dropCoveredDescendants(storedUids, tree);
+    if (selectedUids.length !== storedUids.length) await window.alertServer.setSelectedRegions(selectedUids);
     const total = totalRegionsCount(tree);
 
     function updateSummary(selectedCount) {
@@ -203,7 +203,7 @@ function collectUidsUnder(uid, tree) {
 
     async function applyToggle(uid, explicitChecked) {
         const checked = explicitChecked !== undefined ? explicitChecked : !selectedUidSet.has(String(uid));
-        const uidsInScope = collectUidsUnder(Number(uid), tree);
+        const uidsInScope = [Number(uid)];
 
         const changed = uidsInScope.filter((u) => {
             const key = String(u);

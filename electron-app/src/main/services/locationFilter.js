@@ -84,8 +84,10 @@ function getAncestorUids(uid) {
 }
 
 function getAlertCoverageUids(alert) {
-    getLocationLookup();
+    const lookup = getLocationLookup();
     const uids = [String(alert.location_uid)];
+    const info = lookup.get(String(alert.location_uid));
+    if (info && info.districtUid !== undefined) uids.push(String(info.districtUid));
     const oblastUid = stateNameToUid.get(alert.location_oblast);
     if (oblastUid !== undefined) uids.push(String(oblastUid));
     return uids;

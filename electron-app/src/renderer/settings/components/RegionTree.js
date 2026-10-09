@@ -26,8 +26,9 @@ function matchesQuery(node, type, query, language) {
     return nodeChildren(node, type).some((child) => matchesQuery(child, childType(type), query, language));
 }
 
-function countSelected(node, type, selectedSet) {
-    let count = selectedSet.has(node.uid) ? 1 : 0;
+function countSelected(node, type, selectedSet, covered = false) {
+    if (covered || selectedSet.has(node.uid)) return countTotal(node, type);
+    let count = 0;
     nodeChildren(node, type).forEach((child) => {
         count += countSelected(child, childType(type), selectedSet);
     });
@@ -47,8 +48,20 @@ export function createRegionTree(container, tree, initialSelectedUids, language,
     const wrapperByUid = new Map();
     const nodeByUid = new Map();
     const typeByUid = new Map();
+    const parentByUid = new Map();
 
-    function buildNodeElement(node, type, query) {
+    function isCovered(uid) {
+        const seen = new Set([uid]);
+        let parent = parentByUid.get(uid);
+        while (parent !== undefined && !seen.has(parent)) {
+            if (selectedSet.has(parent)) return true;
+            seen.add(parent);
+            parent = parentByUid.get(parent);
+        }
+        return false;
+    }
+
+    function buildNodeElement(node, type, query, parentUid) {
         const wrapper = document.createElement('div');
         wrapper.className = type === 'state' ? 'state-node' : 'node';
         wrapper.dataset.uid = String(node.uid);
@@ -56,6 +69,7 @@ export function createRegionTree(container, tree, initialSelectedUids, language,
         nodeByUid.set(node.uid, node);
         typeByUid.set(node.uid, type);
         wrapperByUid.set(node.uid, wrapper);
+        if (parentUid !== undefined && parentUid !== node.uid) parentByUid.set(node.uid, parentUid);
 
         const children = nodeChildren(node, type);
         const hasChildren = children.length > 0;
@@ -70,7 +84,9 @@ export function createRegionTree(container, tree, initialSelectedUids, language,
 
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
-        checkbox.checked = selectedSet.has(node.uid);
+        const covered = isCovered(node.uid);
+        checkbox.checked = selectedSet.has(node.uid) || covered;
+        checkbox.disabled = covered;
         checkbox.addEventListener('change', () => handleToggle(node.uid, checkbox));
         row.appendChild(checkbox);
 
@@ -81,7 +97,7 @@ export function createRegionTree(container, tree, initialSelectedUids, language,
         if (hasChildren) {
             const count = document.createElement('span');
             count.className = 'node-count';
-            count.textContent = `[${countSelected(node, type, selectedSet)}/${countTotal(node, type)}]`;
+            count.textContent = `[${countSelected(node, type, selectedSet, covered)}/${countTotal(node, type)}]`;
             row.appendChild(count);
         }
 
@@ -99,7 +115,7 @@ export function createRegionTree(container, tree, initialSelectedUids, language,
             children.forEach((child) => {
                 const ct = childType(type);
                 if (matchesQuery(child, ct, query, language)) {
-                    childrenContainer.appendChild(buildNodeElement(child, ct, query));
+                    childrenContainer.appendChild(buildNodeElement(child, ct, query, node.uid));
                 }
             });
         }
@@ -113,23 +129,21 @@ export function createRegionTree(container, tree, initialSelectedUids, language,
         return wrapper;
     }
 
-    function updateAncestorCounts(uid) {
-        let wrapper = wrapperByUid.get(uid);
-        while (wrapper) {
-            const parentChildren = wrapper.parentElement;
-            const ancestorWrapper = parentChildren && parentChildren.closest('.node, .state-node');
-            if (!ancestorWrapper) break;
-
-            const ancestorUid = Number(ancestorWrapper.dataset.uid);
-            const ancestorNode = nodeByUid.get(ancestorUid);
-            const ancestorType = typeByUid.get(ancestorUid);
-            const countSpan = ancestorWrapper.querySelector(':scope > .node-row > .node-count');
-            if (countSpan && ancestorNode) {
-                countSpan.textContent = `[${countSelected(ancestorNode, ancestorType, selectedSet)}/${countTotal(ancestorNode, ancestorType)}]`;
+    function refreshStates() {
+        wrapperByUid.forEach((wrapper, uid) => {
+            const covered = isCovered(uid);
+            const checkbox = wrapper.querySelector(':scope > .node-row > input[type="checkbox"]');
+            if (checkbox) {
+                checkbox.checked = selectedSet.has(uid) || covered;
+                checkbox.disabled = covered;
             }
-
-            wrapper = ancestorWrapper;
-        }
+            const countSpan = wrapper.querySelector(':scope > .node-row > .node-count');
+            const node = nodeByUid.get(uid);
+            if (countSpan && node) {
+                const type = typeByUid.get(uid);
+                countSpan.textContent = `[${countSelected(node, type, selectedSet, covered)}/${countTotal(node, type)}]`;
+            }
+        });
     }
 
     function handleToggle(uid, checkbox) {
@@ -137,7 +151,7 @@ export function createRegionTree(container, tree, initialSelectedUids, language,
             checkbox.checked = confirmedSelected;
             if (confirmedSelected) selectedSet.add(uid);
             else selectedSet.delete(uid);
-            updateAncestorCounts(uid);
+            refreshStates();
         });
     }
 
@@ -150,7 +164,7 @@ export function createRegionTree(container, tree, initialSelectedUids, language,
 
         if (checked) selectedSet.add(uid);
         else selectedSet.delete(uid);
-        updateAncestorCounts(uid);
+        refreshStates();
     }
 
     function redrawWithQuery(query) {
@@ -160,7 +174,7 @@ export function createRegionTree(container, tree, initialSelectedUids, language,
         container.innerHTML = '';
         const normalizedQuery = (query || '').trim().toLowerCase();
         tree.states.forEach((state) => {
-            container.appendChild(buildNodeElement(state, 'state', normalizedQuery));
+            container.appendChild(buildNodeElement(state, 'state', normalizedQuery, undefined));
         });
     }
 
