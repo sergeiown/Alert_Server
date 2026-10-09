@@ -29,6 +29,9 @@ let currentView = 'home';
 let isQuitting = false;
 let htmlFullscreenView = null;
 let fullscreenRequestedByPage = false;
+let revealWhenReady = false;
+let rememberedBounds = null;
+let rememberedMaximized = false;
 const history = [];
 const views = new Map();
 
@@ -114,11 +117,19 @@ function destroyView(name) {
     view.webContents.close();
 }
 
-function resetToStart() {
+function closeToTray() {
+    if (!hubWindow || hubWindow.isDestroyed()) return;
+
+    rememberedMaximized = hubWindow.isMaximized();
+    if (!rememberedMaximized && !hubWindow.isFullScreen()) rememberedBounds = hubWindow.getBounds();
+
     [...views.keys()].forEach(destroyView);
     history.length = 0;
     currentView = 'home';
-    sendState();
+    htmlFullscreenView = null;
+    fullscreenRequestedByPage = false;
+    revealWhenReady = false;
+    hubWindow.destroy();
 }
 
 function applyCurrentView() {
@@ -156,7 +167,7 @@ function goBack() {
 
 function requestClose() {
     if (settingsStore.getSettings().minimizeToTrayOnClose) {
-        if (hubWindow && !hubWindow.isDestroyed()) hubWindow.hide();
+        closeToTray();
         return;
     }
     logEvent('Exit requested by closing the main window (minimize to tray is off)', 'INFO');
@@ -165,8 +176,9 @@ function requestClose() {
 
 function createHubWindow() {
     hubWindow = new BrowserWindow({
-        width: 1360,
-        height: 880,
+        width: rememberedBounds ? rememberedBounds.width : 1360,
+        height: rememberedBounds ? rememberedBounds.height : 880,
+        ...(rememberedBounds ? { x: rememberedBounds.x, y: rememberedBounds.y } : {}),
         minWidth: 1000,
         minHeight: 680,
         show: false,
@@ -200,7 +212,13 @@ function createHubWindow() {
         });
     });
 
-    hubWindow.on('hide', resetToStart);
+    hubWindow.once('ready-to-show', () => {
+        if (!revealWhenReady) return;
+        revealWhenReady = false;
+        if (rememberedMaximized) hubWindow.maximize();
+        hubWindow.show();
+        hubWindow.focus();
+    });
 
     hubWindow.on('session-end', () => {
         isQuitting = true;
@@ -223,21 +241,27 @@ function createHubWindow() {
 }
 
 function showHub(view = null) {
-    if (!hubWindow || hubWindow.isDestroyed()) createHubWindow();
+    const isNewWindow = !hubWindow || hubWindow.isDestroyed();
+    if (isNewWindow) {
+        createHubWindow();
+        revealWhenReady = true;
+    }
 
     if (view && view !== currentView) navigate(view);
     else if (view) applyCurrentView();
 
-    if (hubWindow.isMinimized()) hubWindow.restore();
-    hubWindow.show();
-    hubWindow.focus();
+    if (!isNewWindow) {
+        if (hubWindow.isMinimized()) hubWindow.restore();
+        hubWindow.show();
+        hubWindow.focus();
+    }
     return hubWindow;
 }
 
 function toggleStatus() {
     const visible = hubWindow && !hubWindow.isDestroyed() && hubWindow.isVisible() && !hubWindow.isMinimized();
     if (visible && hubWindow.isFocused() && currentView === 'status') {
-        hubWindow.hide();
+        closeToTray();
         return;
     }
     showHub('status');
