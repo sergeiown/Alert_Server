@@ -1,7 +1,6 @@
 flowchart LR
     subgraph ext[External services]
         api[alerts.in.ua]
-        ukrainealarm["UkraineAlarm (optional)"]
         neptun[Neptun]
         deepstate[DeepState]
         kaggle[Kaggle]
@@ -14,13 +13,13 @@ flowchart LR
         archive[(Alert and threat archive)]
         forecastEngine[Forecast engine]
         trendsEngine[Today stats and daily peaks]
+        threatAnalytics[Threat analytics]
         srvCache[Cached datasets]
         gateway[HTTPS and WebSocket API]
     end
 
     subgraph main[Electron main process]
         sourceManager[alertSourceManager]
-        uaSource[ukraineAlarmSource]
         poller[alertPoller]
         altSource[neptunAlertsSource]
         threatsStore[neptunThreatsStore]
@@ -36,6 +35,7 @@ flowchart LR
         stores[regionsStore, settingsStore]
         updater[updater]
         connectivity[connectivityMonitor]
+        threatTrends[threatTrendsStore]
     end
 
     subgraph win["Main window (tiles hub)"]
@@ -50,25 +50,26 @@ flowchart LR
     end
 
     api -->|polled at the fastest pace its API allows| pollers
-    ukrainealarm -. when enabled .-> pollers
     neptun -->|WebSocket stream| pollers
     deepstate --> srvCache
     kaggle --> srvCache
     pollers --> archive
     archive --> forecastEngine
     archive --> trendsEngine
+    archive --> threatAnalytics
+    threatAnalytics --> gateway
     pollers --> gateway
     forecastEngine --> gateway
     trendsEngine --> gateway
     srvCache --> gateway
 
     gateway -->|WebSocket push, persistent connection, polling fallback only while it is down| poller
-    gateway -->|WebSocket push| uaSource
     gateway -->|WebSocket push| threatsStore
     gateway --> altSource
     gateway --> forecast
     gateway --> todayStats
     gateway --> weaponStats
+    gateway --> threatTrends
     gateway --> occupied
     neptun -. direct fallback .-> threatsStore
     neptun -. direct fallback .-> altSource
@@ -79,16 +80,12 @@ flowchart LR
 
     stores -. preferred source .-> sourceManager
     sourceManager -. failover chain .-> poller
-    sourceManager -. failover chain .-> uaSource
     sourceManager -. failover chain .-> altSource
     poller --> activeData
-    uaSource --> activeData
     altSource --> activeData
     poller --> notifier
-    uaSource --> notifier
     altSource --> notifier
     poller --> regionStatus
-    uaSource --> regionStatus
     altSource --> regionStatus
     notifier --> tray
 
@@ -103,6 +100,7 @@ flowchart LR
     occupied --> liveMapWin
     weaponStats --> trendsWin
     todayStats --> trendsWin
+    threatTrends --> trendsWin
 
     stores --> settingsWin
     forecast --> forecastWin
@@ -125,9 +123,9 @@ flowchart LR
     classDef winNode fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
     classDef noteNode fill:#fef9c3,stroke:#ca8a04,color:#713f12,stroke-dasharray:3 3
 
-    class api,ukrainealarm,neptun,deepstate,kaggle,gh extNode
-    class pollers,archive,forecastEngine,trendsEngine,srvCache,gateway srvNode
-    class sourceManager,uaSource,poller,altSource,threatsStore,activeData,notifier,regionStatus,todayStats,occupied,forecast,watcher,weaponStats,tray,stores,updater,connectivity mainNode
+    class api,neptun,deepstate,kaggle,gh extNode
+    class pollers,archive,forecastEngine,trendsEngine,threatAnalytics,srvCache,gateway srvNode
+    class sourceManager,poller,altSource,threatsStore,activeData,notifier,regionStatus,todayStats,occupied,forecast,watcher,weaponStats,tray,stores,updater,connectivity,threatTrends mainNode
     class hubShell,statusWin,settingsWin,forecastWin,trendsWin,liveMapWin,logWin,aboutWin winNode
     class levelNote noteNode
 

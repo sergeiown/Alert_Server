@@ -12,7 +12,6 @@ Alert history lives in an archive on the project's server, not on each computer.
 - **Live alerts.** Every alert the server sees on its continuous poll of the public [alerts.in.ua](https://alerts.in.ua/) API is recorded with its start and finish times, so history keeps growing on its own, indefinitely (the forecast looks at up to about 2 years).
 - **Regional backfill.** On start and then every few hours the server also requests the last month of history for every region from the same API (region level, roughly 30 days, throttled to the API's own limit), so gaps left by a restart are filled in, and a fresh deployment doesn't have to wait weeks to have enough material.
 - **Imported history.** Records collected earlier by desktop installs were imported once, so the archive already reaches back well before the server started.
-- **[UkraineAlarm](https://api.ukrainealarm.com/)** is supported as an additional history source (per-area history) but is currently switched off on the server; when it is enabled, its records join the same archive. A same-type record from any source starting within a few minutes of one already on file is treated as the same event, not a second one, so nothing is counted twice.
 
 The app itself no longer stores history: it asks the server for the finished forecast for each monitored region. The model runs in Kyiv time, so the time-of-day and day-of-week effects described below always refer to Kyiv, regardless of where the computer is.
 
