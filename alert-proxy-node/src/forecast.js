@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const archive = require('./archive');
+const lib = require('./lib');
 const model = require('./forecastModel');
 const forecastConfig = require('./forecastConfig');
 const states = require('../resources/states.json');
@@ -38,6 +39,17 @@ function durationStats(usableAlerts, nowMs) {
     });
 }
 
+function buildAllTime(usable, nowMs) {
+    const byType = {};
+    usable.forEach((alert) => {
+        const type = alert.alert_type || 'unknown';
+        byType[type] = (byType[type] || 0) + 1;
+    });
+    const todayKey = lib.kyivDateKey(new Date(nowMs));
+    const todayCount = usable.filter((alert) => lib.kyivDateKey(new Date(alert.started_at)) === todayKey).length;
+    return { allTime: { total: usable.length, byType }, todayCount };
+}
+
 function compute(uid) {
     const nowMs = Date.now();
     const stateName = states[String(uid)] || null;
@@ -55,6 +67,7 @@ function compute(uid) {
         source: 'alerts.in.ua',
         alertCount: alerts.length,
         stats,
+        ...buildAllTime(usable, nowMs),
         durations: durationStats(usable, nowMs),
     };
 }

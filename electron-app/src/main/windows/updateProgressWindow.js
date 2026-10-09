@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const path = require('path');
+const { lockSelection } = require('../services/selectionLock');
 const { BrowserWindow } = require('electron');
 
 let updateProgressWindow = null;
@@ -29,6 +30,7 @@ function openUpdateProgressWindow({ visible = true } = {}) {
     });
 
     updateProgressWindow.setMenuBarVisibility(false);
+    lockSelection(updateProgressWindow.webContents);
     updateProgressWindow.loadFile(path.join(__dirname, '..', '..', 'renderer', 'updateProgress', 'index.html'));
 
     updateProgressWindow.on('closed', () => {

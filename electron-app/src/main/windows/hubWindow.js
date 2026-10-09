@@ -6,6 +6,7 @@ const { app, BrowserWindow, WebContentsView, nativeTheme } = require('electron')
 const settingsStore = require('../services/settingsStore');
 const { logEvent } = require('../services/logger');
 const { getResourcePath } = require('../services/appPaths');
+const { lockSelection } = require('../services/selectionLock');
 
 const HEADER_HEIGHT = 100;
 const HISTORY_LIMIT = 30;
@@ -77,6 +78,7 @@ function ensureView(name) {
             nodeIntegration: false,
         },
     });
+    lockSelection(view.webContents);
     view.setBackgroundColor(backgroundColor());
     view.setVisible(false);
     hubWindow.contentView.addChildView(view);
@@ -164,6 +166,7 @@ function createHubWindow() {
     });
 
     hubWindow.setMenuBarVisibility(false);
+    lockSelection(hubWindow.webContents);
     hubWindow.loadFile(path.join(rendererDir, 'hub', 'index.html'));
 
     ['resize', 'maximize', 'unmaximize'].forEach((eventName) => {

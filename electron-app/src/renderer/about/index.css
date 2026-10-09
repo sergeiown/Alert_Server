@@ -18,7 +18,15 @@
     box-sizing: border-box;
 }
 
+html {
+    height: 100%;
+    background:
+        linear-gradient(180deg, rgba(0, 87, 183, 0.16) 0 50%, rgba(255, 213, 0, 0.18) 50% 100%),
+        var(--bg);
+}
+
 body {
+    min-height: 100%;
     margin: 0;
     padding: 24px 20px;
     display: flex;
@@ -26,7 +34,6 @@ body {
     align-items: center;
     text-align: center;
     gap: 4px;
-    background: var(--bg);
     color: var(--fg);
     font-family: Segoe UI, Tahoma, sans-serif;
     font-size: 13px;

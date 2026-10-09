@@ -5,22 +5,23 @@ const list = document.getElementById('regionsList');
 
 let strings = null;
 let renderToken = 0;
+let expandedUid = null;
 
 const REGIONS_REFRESH_MS = 60000;
 
-function addCopyButton(card, pre, strings) {
+function addCopyButton(body, textToCopy) {
     const button = document.createElement('button');
     button.className = 'copy-button';
     button.textContent = strings.forecastCopyButton;
     button.addEventListener('click', async () => {
-        await window.alertServerForecast.copyToClipboard(pre.textContent);
+        await window.alertServerForecast.copyToClipboard(textToCopy);
         const original = button.textContent;
         button.textContent = strings.forecastCopied;
         setTimeout(() => {
             button.textContent = original;
         }, 1500);
     });
-    card.appendChild(button);
+    body.appendChild(button);
 }
 
 function sortRank({ result }) {
@@ -29,12 +30,81 @@ function sortRank({ result }) {
     return Infinity;
 }
 
+function summaryText(result) {
+    if (result.status === 'active') return strings.forecastChipActive;
+    if (result.status === 'ok' && result.etaText) return `${strings.forecastEtaLabel} ${result.etaText}`;
+    return strings.forecastNoHistoryShort;
+}
+
+function applyExpansion() {
+    list.querySelectorAll('.region-card[data-uid]').forEach((card) => {
+        card.classList.toggle('expanded', card.dataset.uid === expandedUid);
+    });
+}
+
+function buildCard(region, result, collapsible) {
+    const card = document.createElement('div');
+    card.dataset.uid = String(region.uid);
+
+    const levelClass = result.alertLevel === 'red' ? ' level-red' : result.alertLevel === 'yellow' ? ' level-yellow' : '';
+    if (result.status === 'active') card.className = `region-card active${levelClass}`;
+    else if (result.status === 'ok') card.className = 'region-card';
+    else card.className = 'region-card empty';
+    if (collapsible) card.classList.add('collapsible');
+    else card.classList.add('expanded');
+
+    const header = document.createElement(collapsible ? 'button' : 'div');
+    header.className = 'card-header';
+    const h2 = document.createElement('h2');
+    h2.textContent = region.name;
+    header.appendChild(h2);
+    if (collapsible) {
+        const summary = document.createElement('span');
+        summary.className = 'card-summary';
+        summary.textContent = summaryText(result);
+        header.appendChild(summary);
+        const chevron = document.createElement('span');
+        chevron.className = 'chevron';
+        header.appendChild(chevron);
+        header.addEventListener('click', () => {
+            expandedUid = expandedUid === card.dataset.uid ? null : card.dataset.uid;
+            applyExpansion();
+        });
+    }
+    card.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'card-body';
+
+    if (result.status === 'active') {
+        const note = document.createElement('p');
+        note.className = 'forecast-note';
+        note.textContent = strings.forecastWhileActiveNote;
+        body.appendChild(note);
+    }
+
+    if (result.status === 'empty' || (result.status === 'active' && !result.forecastText)) {
+        const pre = document.createElement('pre');
+        pre.className = 'empty-text';
+        pre.textContent = strings.forecastNoHistory;
+        body.appendChild(pre);
+    } else {
+        const text = result.status === 'active' ? result.forecastText : result.text;
+        const pre = document.createElement('pre');
+        pre.textContent = text;
+        body.appendChild(pre);
+        addCopyButton(body, `${region.name}\n${text}`);
+    }
+
+    card.appendChild(body);
+    return card;
+}
+
 async function renderRegionsList() {
     const token = ++renderToken;
     const isFirstRender = list.children.length === 0;
-    let loading = null;
     if (isFirstRender) {
-        loading = document.createElement('p');
+        const loading = document.createElement('p');
         loading.textContent = strings.forecastLoading;
         list.appendChild(loading);
     }
@@ -63,64 +133,15 @@ async function renderRegionsList() {
 
     entries.sort((a, b) => sortRank(a) - sortRank(b));
 
+    const collapsible = entries.length > 1;
+    if (!collapsible || !entries.some(({ region }) => String(region.uid) === expandedUid)) expandedUid = null;
+
     const fragment = document.createDocumentFragment();
-
-    entries.forEach(({ region, result }) => {
-        const card = document.createElement('div');
-
-        const h2 = document.createElement('h2');
-        h2.textContent = region.name;
-        card.appendChild(h2);
-
-        const pre = document.createElement('pre');
-        card.appendChild(pre);
-
-        if (result.status === 'active') {
-            const levelClass = result.alertLevel === 'red' ? ' level-red' : result.alertLevel === 'yellow' ? ' level-yellow' : '';
-            card.className = `region-card active${levelClass}`;
-
-            if (result.lines && result.lines.length) {
-
-                result.lines.forEach((line, i) => {
-                    if (i > 0) pre.appendChild(document.createTextNode('\n'));
-                    if (line.level === 'red' || line.level === 'yellow') {
-                        const span = document.createElement('span');
-                        span.className = `threat-line level-${line.level}`;
-                        span.textContent = line.text;
-                        pre.appendChild(span);
-                    } else {
-                        pre.appendChild(document.createTextNode(line.text));
-                    }
-                });
-            } else {
-                pre.textContent = result.text || strings.forecastActiveAlert;
-            }
-
-            if (result.forecastText) {
-                const note = document.createElement('p');
-                note.className = 'forecast-note';
-                note.textContent = strings.forecastWhileActiveNote;
-                card.appendChild(note);
-
-                const forecastPre = document.createElement('pre');
-                forecastPre.textContent = result.forecastText;
-                card.appendChild(forecastPre);
-                addCopyButton(card, forecastPre, strings);
-            }
-        } else if (result.status === 'ok') {
-            card.className = 'region-card';
-            pre.textContent = result.text;
-            addCopyButton(card, pre, strings);
-        } else {
-            card.className = 'region-card empty';
-            pre.textContent = strings.forecastNoHistory;
-        }
-
-        fragment.appendChild(card);
-    });
+    entries.forEach(({ region, result }) => fragment.appendChild(buildCard(region, result, collapsible)));
 
     list.innerHTML = '';
     list.appendChild(fragment);
+    applyExpansion();
 }
 
 async function main() {

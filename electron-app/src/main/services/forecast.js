@@ -131,14 +131,16 @@ function formatShortDateTime(dateValue, language) {
     return new Date(dateValue).toLocaleString(locale, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-function buildForecastText(stats, language, source) {
+function buildForecastText(stats, language, source, extra = {}) {
     const lines = [];
+    const allTime = extra.allTime && extra.allTime.total ? extra.allTime : null;
 
     lines.push(`${t('forecastAsOf', language)}: ${formatShortDateTime(Date.now(), language)}`);
 
     const sourceName = HISTORY_SOURCE_DISPLAY[source];
     lines.push(`${t('forecastSourceLabel', language)}: ${sourceName || t('forecastSourceUnknown', language)}`);
 
+    if (allTime) lines.push(`${t('forecastCountAllTime', language)}: ${allTime.total}`);
     lines.push(`${t('forecastCount', language)}: ${stats.count}`);
     lines.push(`${t('forecastPerDay', language)}: ${stats.perDay.toFixed(1)}`);
 
@@ -153,10 +155,16 @@ function buildForecastText(stats, language, source) {
         lines.push(`${t('forecastCommonWeekday', language)}: ${weekdayNames}`);
     }
 
-    const typesLine = stats.typeBreakdown
-        .map((entry) => `${alertTypeName(entry.type, language)} ${entry.percent}% (${entry.count})`)
-        .join(', ');
-    lines.push(`${t('forecastTypes', language)}: ${typesLine}`);
+    if (allTime) {
+        const [mainType, mainCount] = Object.entries(allTime.byType).sort((a, b) => b[1] - a[1])[0];
+        const percent = Math.round((mainCount / allTime.total) * 100);
+        lines.push(`${t('forecastMainType', language)}: ${alertTypeName(mainType, language)} ${percent}% (${mainCount} ${t('forecastOutOf', language)} ${allTime.total})`);
+    } else {
+        const typesLine = stats.typeBreakdown
+            .map((entry) => `${alertTypeName(entry.type, language)} ${entry.percent}% (${entry.count})`)
+            .join(', ');
+        lines.push(`${t('forecastTypes', language)}: ${typesLine}`);
+    }
 
     if (stats.sinceLastMs !== null) {
         lines.push(`${t('forecastSinceLast', language)}: ${formatDuration(stats.sinceLastMs, language)}`);
@@ -178,9 +186,14 @@ function buildForecastText(stats, language, source) {
             ? ` (${t('forecastRangeLabel', language)} ${formatDuration(entry.gapRange.low, language)} - ${formatDuration(entry.gapRange.high, language)})`
             : '';
         lines.push(`  - ${typeName}: ${t('forecastProbabilityPrefix', language)} ${formatProbabilityPercent(entry.probabilityToday, language)}%${etaText}${rangeText}`);
-
-        lines.push(`  - ${t('forecastExpectedTodayLabel', language).replace('{count}', Math.round(entry.expectedToday).toString())}`);
     });
+
+    const expectedTotal = Math.round(stats.typeBreakdown.reduce((sum, entry) => sum + entry.expectedToday, 0));
+    const soFar =
+        typeof extra.todayCount === 'number'
+            ? ` ${t('forecastExpectedTodaySoFar', language).replace('{count}', extra.todayCount)}`
+            : '';
+    lines.push(`  - ${t('forecastExpectedTodayLabel', language).replace('{count}', expectedTotal.toString())}${soFar}`);
 
     lines.push('');
     lines.push(t('forecastDisclaimer', language));
@@ -203,18 +216,26 @@ function daysWord(count, language) {
     return 'діб';
 }
 
+const UK_TYPE_GENDER = { air_raid: 'F', chemical: 'F', nuclear: 'F', artillery_shelling: 'M', urban_fights: 'P' };
+
+function activeSentence(typeId, language) {
+    const typeName = alertTypeName(typeId, language);
+    if (language === 'English') return t('statusActiveHere', language).replace('{type}', typeName);
+    const key = `statusActiveHere${UK_TYPE_GENDER[typeId] || 'F'}`;
+    return t(key, language).replace('{type}', typeName);
+}
+
 function buildActiveDurationLines(durationStats, language) {
     const lines = [];
 
     durationStats.forEach((entry) => {
-        const typeName = alertTypeName(entry.type, language);
         const days = entry.oldestStartedAt ? daysSince(entry.oldestStartedAt) : null;
         const allTimeLabel =
             days !== null
                 ? t('forecastActiveDurationObservationDays', language).replace('{days}', days.toString()).replace('{daysWord}', daysWord(days, language))
                 : t('forecastActiveDurationAllTime', language);
 
-        lines.push({ text: `${t('forecastActiveAlert', language)} ${t('alertTypeLabel', language)}: ${typeName}.`, level: null });
+        lines.push({ text: activeSentence(entry.type, language), level: null });
         (entry.threatLines || []).forEach((threatLine) => lines.push({ text: threatLine.text, level: threatLine.level }));
         lines.push({
             text: `${t('alertStartedAt', language)}: ${formatShortDateTime(entry.ongoingSinceMs, language)}. ${t('alertOngoingDuration', language)}: ${formatDuration(Date.now() - entry.ongoingSinceMs, language)}.`,
@@ -257,7 +278,7 @@ function soonestTypeEntry(typeBreakdown) {
 async function getRegionForecastText(uid, language) {
     const data = await fetchRegionForecast(uid);
     if (!data || !data.stats) return null;
-    return buildForecastText(data.stats, language, data.source);
+    return buildForecastText(data.stats, language, data.source, { allTime: data.allTime, todayCount: data.todayCount });
 }
 
 function getRegionSoonestEtaMs(uid) {
