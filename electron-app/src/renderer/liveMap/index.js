@@ -341,7 +341,7 @@ async function main() {
     }
 
     function sceneLayersFor(active) {
-        return active ? [kyivImageryLayer, kyivLabelsLayer, kyivMask] : [baseMapOverlay];
+        return active ? [kyivImageryLayer, kyivLabelsLayer] : [baseMapOverlay];
     }
 
     async function waitForSceneReady(active) {
