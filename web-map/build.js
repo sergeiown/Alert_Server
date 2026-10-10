@@ -3,6 +3,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 
 const ROOT = path.join(__dirname, '..');
 const RENDERER = path.join(ROOT, 'electron-app', 'src', 'renderer', 'liveMap');
@@ -84,6 +85,18 @@ copyDirectory(path.join(__dirname, 'icons'), path.join(OUT, 'icons'));
 
 const cssFile = path.join(OUT, 'index.css');
 fs.writeFileSync(cssFile, forceableDarkTheme(fs.readFileSync(cssFile, 'utf-8')));
+
+const buildHash = crypto.createHash('sha1');
+(function hashAll(directory) {
+    fs.readdirSync(directory, { withFileTypes: true })
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach((entry) => {
+            const full = path.join(directory, entry.name);
+            if (entry.isDirectory()) return hashAll(full);
+            buildHash.update(path.relative(OUT, full)).update(fs.readFileSync(full));
+        });
+})(OUT);
+fs.writeFileSync(path.join(OUT, 'version.json'), JSON.stringify({ v: buildHash.digest('hex').slice(0, 16) }) + '\n');
 
 const forbidden = ['arcgisonline', 'mapsvg'];
 const offenders = [];

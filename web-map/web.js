@@ -34,6 +34,8 @@
               openSourceTitle: 'Open source',
               openSourceText: 'The code of this map and its server is open:',
               close: 'Close',
+              updateAvailable: 'A new version of the map is available',
+              updateAction: 'Update',
           }
         : {
               notice: 'Неофіційне джерело: дані можуть запізнюватись або бути неповними. Завжди дотримуйтесь офіційних сигналів тривоги.',
@@ -61,6 +63,8 @@
               openSourceTitle: 'Відкритий код',
               openSourceText: 'Код цієї мапи та її сервера відкритий:',
               close: 'Закрити',
+              updateAvailable: 'Доступна нова версія мапи',
+              updateAction: 'Оновити',
           };
 
     function el(tag, attrs, children) {
@@ -276,5 +280,41 @@
 
     dialog.addEventListener('click', (event) => {
         if (event.target === dialog) dialog.close();
+    });
+
+    const VERSION_CHECK_MS = 10 * 60 * 1000;
+    let loadedVersion = null;
+    let updateBanner = null;
+
+    function fetchVersion() {
+        return fetch('version.json', { cache: 'no-store' })
+            .then((response) => (response.ok ? response.json() : null))
+            .then((data) => (data && data.v ? data.v : null))
+            .catch(() => null);
+    }
+
+    function showUpdateBanner() {
+        if (updateBanner) return;
+        const button = el('button', { type: 'button', text: text.updateAction });
+        button.addEventListener('click', () => location.reload());
+        updateBanner = el('div', { id: 'updateBanner', role: 'status' }, [el('span', { text: text.updateAvailable }), button]);
+        document.body.appendChild(updateBanner);
+    }
+
+    function checkVersion() {
+        if (loadedVersion === null || updateBanner) return;
+        fetchVersion().then((version) => {
+            if (version && version !== loadedVersion) showUpdateBanner();
+        });
+    }
+
+    fetchVersion().then((version) => {
+        loadedVersion = version;
+    });
+    setInterval(() => {
+        if (!document.hidden) checkVersion();
+    }, VERSION_CHECK_MS);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) checkVersion();
     });
 })();

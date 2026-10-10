@@ -372,3 +372,34 @@ body {
     user-select: text;
     -webkit-touch-callout: default;
 }
+
+#updateBanner {
+    position: fixed;
+    z-index: 1200;
+    left: 12px;
+    right: 12px;
+    bottom: calc(var(--web-bar-height, 0px) + 10px);
+    margin: 0 auto;
+    max-width: 420px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px 10px 16px;
+    border-radius: 12px;
+    background: var(--map-chrome-bg, #ffffff);
+    color: var(--map-chrome-text, #1f1f1f);
+    box-shadow: 0 0 0 1px var(--map-chrome-border, rgba(0, 0, 0, 0.25)), 0 6px 20px rgba(0, 0, 0, 0.25);
+    font: 600 14px 'Segoe UI', system-ui, sans-serif;
+}
+
+#updateBanner button {
+    flex: none;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 8px;
+    background: #2563eb;
+    color: #ffffff;
+    font: inherit;
+    cursor: pointer;
+}
