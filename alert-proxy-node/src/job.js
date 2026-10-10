@@ -13,6 +13,7 @@ const webstats = require('./webstats');
 const trends = require('./trends');
 const occupied = require('./occupied');
 const lib = require('./lib');
+const logbook = require('./logbook');
 
 const TICK_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -86,6 +87,7 @@ async function maintenanceLoop() {
             archive.pruneOld();
             users.prune();
             webstats.prune();
+            logbook.prune();
         } catch (err) {
             logError('maintenance', err);
         }

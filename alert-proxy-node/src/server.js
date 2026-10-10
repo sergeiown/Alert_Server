@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const http = require('node:http');
+require('./logbook').install();
 const { PORT, UKRAINEALARM_WEBHOOK_PATH } = require('./config');
 const ratelimit = require('./ratelimit');
 const { checkClientKey, checkAdminKey } = require('./auth');
@@ -18,6 +19,7 @@ const occupied = require('./occupied');
 const publicApi = require('./publicApi');
 const webstats = require('./webstats');
 const config = require('./config');
+const logbook = require('./logbook');
 
 function getClientIp(req) {
     const forwarded = req.headers['x-forwarded-for'];
@@ -116,7 +118,7 @@ async function handleRequest(req, res) {
     }
 
     const isAdminRoute =
-        url.pathname === '/status' || url.pathname === '/ukrainealarm-status' || url.pathname === '/users-stats' || url.pathname === '/users-list' || url.pathname === '/web-stats';
+        url.pathname === '/status' || url.pathname === '/ukrainealarm-status' || url.pathname === '/users-stats' || url.pathname === '/users-list' || url.pathname === '/web-stats' || url.pathname === '/log-events';
     if (isAdminRoute && ratelimit.isAdminBlocked(requesterIp)) {
         send(res, { status: 429, headers: { 'Retry-After': '600' }, body: 'Too many failed attempts' });
         return;
@@ -159,6 +161,12 @@ async function handleRequest(req, res) {
 
     if (url.pathname === '/status') {
         send(res, gateway.getStatus());
+        return;
+    }
+
+    if (url.pathname === '/log-events') {
+        const events = logbook.getEvents({ level: url.searchParams.get('level'), limit: url.searchParams.get('limit') });
+        send(res, { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ events, counts: logbook.getCounts() }) });
         return;
     }
 

@@ -9,6 +9,7 @@ const system = require('./system');
 const archive = require('./archive');
 const neptun = require('./neptun');
 const backup = require('./backup');
+const logbook = require('./logbook');
 const health = require('./health');
 const trends = require('./trends');
 const occupied = require('./occupied');
@@ -845,6 +846,7 @@ function buildStatus() {
             peaks: trends.getDailyPeaks(),
             archive: archive.getStats(),
             backup: backup.getStatusInfo(),
+            log: logbook.getCounts(),
     };
 
     status.health = health.evaluate(status, {

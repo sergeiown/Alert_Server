@@ -282,6 +282,28 @@
   .notice.critical { background: var(--critical-soft); color: var(--critical); }
   .notice.warn { background: var(--warn-soft); color: var(--warn); }
   .notice.info { background: var(--info-soft); color: var(--text-dim); }
+
+  .log-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .log-summary { color: var(--text-dim); font-size: 13px; flex: 1 1 260px; }
+  .log-filter { display: flex; gap: 6px; }
+  .log-filter button { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-dim); font: inherit; font-size: 13px; cursor: pointer; }
+  .log-filter button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: transparent; font-weight: 600; }
+  .log-list { display: flex; flex-direction: column; gap: 6px; }
+  .log-row { display: grid; grid-template-columns: auto auto 1fr; gap: 4px 10px; align-items: baseline; padding: 9px 12px; border: 1px solid var(--border); border-left-width: 4px; border-radius: 9px; background: var(--surface); cursor: pointer; }
+  .log-row.error { border-left-color: var(--critical); }
+  .log-row.warn { border-left-color: var(--warn); }
+  .log-time { color: var(--text-dim); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .log-level { font-size: 11px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; }
+  .log-row.error .log-level { color: var(--critical); }
+  .log-row.warn .log-level { color: var(--warn); }
+  .log-source { grid-column: 1 / -1; color: var(--text-dim); font-size: 12px; }
+  .log-message { grid-column: 1 / -1; margin: 0; font-size: 12.5px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 3.0em; overflow: hidden; }
+  .log-row.open .log-message { max-height: none; }
+  @media (min-width: 720px) {
+    .log-row { grid-template-columns: 150px 110px 150px 1fr; }
+    .log-source, .log-message { grid-column: auto; }
+    .log-message { grid-column: 4; }
+  }
   .notice.ok { background: var(--ok-soft); color: var(--ok); }
 
   .kpi-grid {
@@ -443,6 +465,7 @@
   <button role="tab" data-tab="users" aria-selected="false">Користувачі</button>
   <button role="tab" data-tab="web" aria-selected="false">Вебмапа</button>
   <button role="tab" data-tab="system" aria-selected="false">Система</button>
+  <button role="tab" data-tab="log" aria-selected="false">Журнал<span class="badge" id="logBadge" hidden></span></button>
 </nav>
 
 <main>
@@ -485,6 +508,10 @@
     <div id="webBody"><div class="empty-note">Завантаження статистики вебмапи…</div></div>
   </section>
 
+  <section id="tab-log" data-panel="log" hidden>
+    <div id="logBody"><div class="empty-note">Завантаження журналу…</div></div>
+  </section>
+
   <section id="tab-system" data-panel="system" hidden>
     <div class="columns">
       <div class="card" id="cardResources"></div>
@@ -524,7 +551,7 @@
   });
   window.addEventListener('pageshow', settleViewport);
 
-  const state = { versionsOpen: false, userList: null, userListOpen: false, userListBusy: false, web: null, webTimer: null, webBusy: false, webPeriod: 'last7d', countryPeriod: 'last7d', status: null, ua: null, users: null, tab: 'overview', timer: null, usersTimer: null, busy: false, usersBusy: false };
+  const state = { versionsOpen: false, userList: null, userListOpen: false, userListBusy: false, web: null, webTimer: null, webBusy: false, webPeriod: 'last7d', countryPeriod: 'last7d', status: null, ua: null, users: null, tab: 'overview', timer: null, usersTimer: null, busy: false, usersBusy: false, log: null, logLevel: 'all', logBusy: false, logTimer: null, logOpen: new Set() };
 
   function $(id) { return document.getElementById(id); }
   function esc(v) {
@@ -1186,6 +1213,7 @@
     renderOverview();
     renderSources();
     renderSystem();
+    renderLogBadge();
     if (state.tab === 'users') renderUsers();
   }
 
@@ -1261,6 +1289,72 @@
       });
   }
 
+  const LOG_LEVEL_TEXT = { error: 'Помилка', warn: 'Попередження' };
+
+  function fmtLogTime(ms) {
+    return new Date(ms).toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  function renderLogBadge() {
+    const counts = state.status && state.status.log;
+    const badge = $('logBadge');
+    if (!counts || (!counts.errors24h && !counts.warnings24h)) { badge.hidden = true; return; }
+    badge.hidden = false;
+    badge.className = `badge${counts.errors24h ? '' : ' warn'}`;
+    badge.textContent = counts.errors24h || counts.warnings24h;
+  }
+
+  function renderLog() {
+    const data = state.log;
+    if (!data) return;
+    const counts = data.counts;
+    const events = data.events.filter((e) => { return state.logLevel === 'all' || e.level === state.logLevel; });
+    const filters = [['all', 'Усі'], ['error', 'Помилки'], ['warn', 'Попередження']]
+      .map((f) => { return `<button type="button" data-level="${f[0]}" aria-pressed="${state.logLevel === f[0]}">${f[1]}</button>`; })
+      .join('');
+    let html = `<div class="log-toolbar"><div class="log-summary">За 24 години: помилок ${fmtNum(counts.errors24h)}, попереджень ${fmtNum(counts.warnings24h)} · у журналі ${fmtNum(counts.total)} записів, зберігаємо ${counts.retentionDays} днів</div><div class="log-filter">${filters}</div></div>`;
+    if (!events.length) {
+      html += '<div class="notice ok">Записів немає.</div>';
+    } else {
+      html += '<div class="log-list">' + events.map((e) => {
+        return `<div class="log-row ${esc(e.level)}${state.logOpen.has(e.id) ? ' open' : ''}" data-id="${e.id}"><span class="log-time">${esc(fmtLogTime(e.t))}</span><span class="log-level">${esc(LOG_LEVEL_TEXT[e.level] || e.level)}</span><span class="log-source mono">${esc(e.source)}</span><pre class="log-message mono">${esc(e.message)}</pre></div>`;
+      }).join('') + '</div>';
+    }
+    $('logBody').innerHTML = html;
+  }
+
+  function refreshLog() {
+    const cfg = settings();
+    if (state.logBusy || !cfg.baseUrl || !cfg.adminKey) return Promise.resolve();
+    state.logBusy = true;
+    return api('/log-events?limit=500', cfg)
+      .then((data) => {
+        state.log = data;
+        renderLog();
+      })
+      .catch(() => {
+        if (!state.log) $('logBody').innerHTML = '<div class="notice critical">Не вдалося завантажити журнал.</div>';
+      })
+      .then(() => {
+        state.logBusy = false;
+      });
+  }
+
+  $('logBody').addEventListener('click', (event) => {
+    const filter = event.target.closest('[data-level]');
+    if (filter) {
+      state.logLevel = filter.getAttribute('data-level');
+      renderLog();
+      return;
+    }
+    const row = event.target.closest('.log-row');
+    if (!row) return;
+    const id = Number(row.getAttribute('data-id'));
+    if (state.logOpen.has(id)) state.logOpen.delete(id);
+    else state.logOpen.add(id);
+    row.classList.toggle('open');
+  });
+
   function startTimers() {
     if (state.timer) clearInterval(state.timer);
     state.timer = setInterval(refresh, POLL_MS);
@@ -1271,6 +1365,11 @@
     if (state.tab === 'web') {
       refreshWeb();
       state.webTimer = setInterval(refreshWeb, USERS_POLL_MS);
+    }
+    if (state.logTimer) { clearInterval(state.logTimer); state.logTimer = null; }
+    if (state.tab === 'log') {
+      refreshLog();
+      state.logTimer = setInterval(refreshLog, USERS_POLL_MS);
     }
     if (state.usersTimer) { clearInterval(state.usersTimer); state.usersTimer = null; }
     if (state.tab === 'users') {
@@ -1288,6 +1387,7 @@
     document.querySelectorAll('[data-panel]').forEach((p) => { p.hidden = p.getAttribute('data-panel') !== name; });
     if (name === 'users' && state.users) renderUsers();
     if (name === 'web' && state.web) renderWeb();
+    if (name === 'log' && state.log) renderLog();
     syncUsersTimer();
   }
 
@@ -1338,7 +1438,7 @@
 
   $('baseUrlInput').value = settings().baseUrl;
   const savedTab = read(STORE_TAB);
-  selectTab(['overview', 'sources', 'users', 'web', 'system'].indexOf(savedTab) >= 0 ? savedTab : 'overview');
+  selectTab(['overview', 'sources', 'users', 'web', 'system', 'log'].indexOf(savedTab) >= 0 ? savedTab : 'overview');
   refresh();
   startTimers();
 })();
