@@ -1,14 +1,18 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
-const RESOURCE_WARN_PERCENT = 85;
+const RESOURCE_WARN_PERCENT = 80;
+const RESOURCE_CRIT_PERCENT = 90;
+const HEAP_WARN_PERCENT = 60;
+const HEAP_CRIT_PERCENT = 85;
 const ACTIVE_STALE_MS = 90 * 1000;
 const NEPTUN_STREAM_DOWN_MS = 5 * 60 * 1000;
 const NEPTUN_ALERTS_STALE_MS = 5 * 60 * 1000;
 const BACKUP_STALE_MS = 36 * 60 * 60 * 1000;
 const OCCUPIED_STALE_MS = 14 * 60 * 60 * 1000;
 
-let previousCodes = new Set();
+let previousLevels = new Map();
+const SEVERITY = { info: 0, warn: 1, crit: 2 };
 
 function evaluate(status, flags) {
     const issues = [];
@@ -42,9 +46,17 @@ function evaluate(status, flags) {
     }
 
     const sys = status.system;
-    if (sys.cpuUsagePercent >= RESOURCE_WARN_PERCENT) add('warn', 'cpu', `CPU at ${sys.cpuUsagePercent}%`);
-    if (sys.memory.usedPercent >= RESOURCE_WARN_PERCENT) add('warn', 'memory', `memory at ${sys.memory.usedPercent}%`);
-    if (sys.disk.usedPercent >= RESOURCE_WARN_PERCENT) add('warn', 'disk', `disk at ${sys.disk.usedPercent}%`);
+    const checkResource = (code, label, percent, warnAt, critAt) => {
+        if (percent >= critAt) add('crit', code, `${label} at ${percent}%`);
+        else if (percent >= warnAt) add('warn', code, `${label} at ${percent}%`);
+    };
+    checkResource('cpu', 'CPU', sys.cpuUsagePercent, RESOURCE_WARN_PERCENT, RESOURCE_CRIT_PERCENT);
+    checkResource('memory', 'memory', sys.memory.usedPercent, RESOURCE_WARN_PERCENT, RESOURCE_CRIT_PERCENT);
+    checkResource('disk', 'disk', sys.disk.usedPercent, RESOURCE_WARN_PERCENT, RESOURCE_CRIT_PERCENT);
+    if (sys.process && sys.process.heapLimitBytes) {
+        const heapPercent = Math.round((sys.process.heapUsedBytes / sys.process.heapLimitBytes) * 1000) / 10;
+        checkResource('heap', 'server process heap', heapPercent, HEAP_WARN_PERCENT, HEAP_CRIT_PERCENT);
+    }
 
     if (status.backup.ageMs === null || status.backup.ageMs > BACKUP_STALE_MS) {
         add('warn', 'backup', 'no recent database backup');
@@ -54,14 +66,16 @@ function evaluate(status, flags) {
 }
 
 function logTransitions(issues) {
-    const current = new Set(issues.filter((i) => i.level !== 'info').map((i) => i.code));
+    const current = new Map(issues.filter((i) => i.level !== 'info').map((i) => [i.code, i.level]));
     issues.forEach((issue) => {
-        if (issue.level !== 'info' && !previousCodes.has(issue.code)) console.warn(`[health] ${issue.level}: ${issue.message}`);
+        if (issue.level === 'info') return;
+        const before = previousLevels.get(issue.code);
+        if (before === undefined || SEVERITY[issue.level] > SEVERITY[before]) console.warn(`[health] ${issue.level}: ${issue.message}`);
     });
-    previousCodes.forEach((code) => {
+    previousLevels.forEach((level, code) => {
         if (!current.has(code)) console.log(`[health] recovered: ${code}`);
     });
-    previousCodes = current;
+    previousLevels = current;
 }
 
 module.exports = { evaluate, logTransitions };

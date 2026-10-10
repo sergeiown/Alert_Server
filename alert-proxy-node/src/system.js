@@ -41,10 +41,12 @@ function diskUsage() {
 
 function processMemory() {
     const usage = process.memoryUsage();
+    const heapLimitBytes = require('node:v8').getHeapStatistics().heap_size_limit;
     return {
         rssBytes: usage.rss,
         heapUsedBytes: usage.heapUsed,
         heapTotalBytes: usage.heapTotal,
+        heapLimitBytes,
         externalBytes: usage.external,
         arrayBuffersBytes: usage.arrayBuffers,
     };

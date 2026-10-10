@@ -597,7 +597,7 @@
     if (d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
     return d.toLocaleString('uk-UA', opts);
   }
-  function level(pct) { return pct >= 90 ? 'critical' : pct >= 70 ? 'warn' : ''; }
+  function level(pct) { return pct >= 90 ? 'critical' : pct >= 80 ? 'warn' : ''; }
 
   function retentionNote(collected, limit) {
     const text = collected >= limit
@@ -714,6 +714,7 @@
     cpu (i) { return `Високе навантаження процесора. ${i.message}`; },
     memory (i) { return `Мало вільної пам’яті. ${i.message}`; },
     disk (i) { return `Закінчується місце на диску. ${i.message}`; },
+    heap (i) { return `Висока пам’ять процесу сервера. ${i.message}`; },
     backup () { return 'Немає свіжої резервної копії бази даних.'; }
   };
 
