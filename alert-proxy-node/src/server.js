@@ -219,12 +219,6 @@ async function handleRequest(req, res) {
         return;
     }
 
-    if (url.pathname === '/archive/alerts') {
-        const rows = archive.getAlertsSince(url.searchParams.get('since'), url.searchParams.get('uid'));
-        send(res, { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ alerts: rows }) });
-        return;
-    }
-
     if (url.pathname === '/web-stats') {
         send(res, { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(webstats.getStats(publicApi.socketCount())) });
         return;

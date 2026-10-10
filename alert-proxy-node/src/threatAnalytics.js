@@ -197,7 +197,6 @@ function compute(days) {
         if (threat.title && !titles[threat.kind]) titles[threat.kind] = threat.title;
     });
 
-    const track = archive.getTrackStats();
     const originsSince = threats.find((threat) => threat.first_region);
 
     return {
@@ -210,7 +209,6 @@ function compute(days) {
         origins: { ...buildOrigins(threats), since: originsSince ? new Date(originsSince.first_seen).toISOString() : null },
         routes: buildRoutes(threats),
         alertLinks: buildAlertLinks(threats, new Date(sinceMs).toISOString()),
-        tracking: { points: track.points, since: track.oldest ? new Date(track.oldest).toISOString() : null },
     };
 }
 
