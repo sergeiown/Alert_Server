@@ -39,6 +39,17 @@ function diskUsage() {
     }
 }
 
+function processMemory() {
+    const usage = process.memoryUsage();
+    return {
+        rssBytes: usage.rss,
+        heapUsedBytes: usage.heapUsed,
+        heapTotalBytes: usage.heapTotal,
+        externalBytes: usage.external,
+        arrayBuffersBytes: usage.arrayBuffers,
+    };
+}
+
 function getSystemMetrics() {
     const totalMem = os.totalmem();
     const freeMem = os.freemem();
@@ -55,6 +66,7 @@ function getSystemMetrics() {
             usedPercent: Math.round((usedMem / totalMem) * 1000) / 10,
         },
         disk: diskUsage(),
+        process: processMemory(),
         uptimeSec: Math.round(process.uptime()),
         nodeVersion: process.version,
         platform: `${os.platform()}/${os.arch()}`,

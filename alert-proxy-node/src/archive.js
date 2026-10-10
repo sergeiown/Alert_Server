@@ -27,6 +27,7 @@ if (!existingColumns.includes('updated_at')) db.exec('ALTER TABLE alert_events A
 if (!existingColumns.includes('deleted_at')) db.exec('ALTER TABLE alert_events ADD COLUMN deleted_at TEXT');
 db.exec('CREATE INDEX IF NOT EXISTS idx_alert_events_started ON alert_events(started_at)');
 db.exec('CREATE INDEX IF NOT EXISTS idx_alert_events_uid ON alert_events(location_uid)');
+db.exec('CREATE INDEX IF NOT EXISTS idx_alert_events_oblast ON alert_events(location_oblast)');
 db.exec(`CREATE TABLE IF NOT EXISTS neptun_threats (
     id TEXT PRIMARY KEY,
     first_seen INTEGER NOT NULL,
@@ -125,30 +126,17 @@ function upsertMany(alerts) {
     });
 }
 
-function rowToAlert(row) {
-    return {
-        id: row.id,
-        location_uid: row.location_uid,
-        location_title: row.location_title,
-        location_oblast: row.location_oblast,
-        location_type: row.location_type,
-        alert_type: row.alert_type,
-        started_at: row.started_at,
-        finished_at: row.finished_at,
-        updated_at: row.updated_at,
-        deleted_at: row.deleted_at,
-    };
-}
+const ALERT_COLUMNS = 'id, location_uid, location_title, location_oblast, alert_type, started_at, finished_at, deleted_at';
+const selectByStateOrUid = db.prepare(`SELECT ${ALERT_COLUMNS} FROM alert_events WHERE location_oblast = ? OR location_uid = ?`);
+const selectByUid = db.prepare(`SELECT ${ALERT_COLUMNS} FROM alert_events WHERE location_uid = ?`);
+const selectFromDay = db.prepare(`SELECT ${ALERT_COLUMNS} FROM alert_events WHERE started_at >= ?`);
 
 function getRegionAlerts(uid, stateName) {
-    const rows = stateName
-        ? db.prepare('SELECT * FROM alert_events WHERE location_oblast = ? OR location_uid = ?').all(stateName, String(uid))
-        : db.prepare('SELECT * FROM alert_events WHERE location_uid = ?').all(String(uid));
-    return rows.map(rowToAlert);
+    return stateName ? selectByStateOrUid.all(stateName, String(uid)) : selectByUid.all(String(uid));
 }
 
 function getAlertsFromDay(dayKey) {
-    return db.prepare('SELECT * FROM alert_events WHERE started_at >= ?').all(dayKey).map(rowToAlert);
+    return selectFromDay.all(dayKey);
 }
 
 function recordThreats(threats, removedIds) {

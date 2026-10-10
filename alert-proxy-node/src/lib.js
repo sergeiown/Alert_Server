@@ -15,17 +15,19 @@ const UKRAINEALARM_TYPE_MAP = {
     NUCLEAR: 'nuclear',
 };
 
+const kyivDateFormat = new Intl.DateTimeFormat('en-CA', { timeZone: TODAY_STATS_TIMEZONE });
+const kyivHourFormat = new Intl.DateTimeFormat('en-GB', {
+    timeZone: TODAY_STATS_TIMEZONE,
+    hour: '2-digit',
+    hourCycle: 'h23',
+});
+
 function kyivDateKey(date) {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: TODAY_STATS_TIMEZONE }).format(date);
+    return kyivDateFormat.format(date);
 }
 
 function kyivHour(dateStr) {
-    const formatted = new Intl.DateTimeFormat('en-GB', {
-        timeZone: TODAY_STATS_TIMEZONE,
-        hour: '2-digit',
-        hourCycle: 'h23',
-    }).format(new Date(dateStr));
-    return Number(formatted);
+    return Number(kyivHourFormat.format(new Date(dateStr)));
 }
 
 async function sha256Hex(text) {
