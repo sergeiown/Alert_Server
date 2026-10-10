@@ -116,6 +116,7 @@ async function main() {
         maxZoom: UKRAINE_MAX_ZOOM,
         zoomSnap: 0.25,
         zoomDelta: 0.5,
+        bounceAtZoomLimits: false,
         attributionControl: true,
 
         renderer: L.svg({ padding: 1 }),
@@ -156,6 +157,7 @@ async function main() {
     const kyivTilesUrl = window.alertServerLiveMap.kyivTilesUrl || KYIV_TILES_URL;
     const kyivImageryLayer = window.alertOsmBasemap.create({
         url: kyivTilesUrl,
+        bounds: L.latLngBounds(KYIV_BOUNDS).pad(0.15),
         dark: isDarkMap,
         lang: settings.language === 'English' ? 'en' : 'uk',
         attribution: `<a href="#" id="osmAttribution">${strings.liveMapOsmAttribution}</a>`,
@@ -213,9 +215,11 @@ async function main() {
         )
     );
 
+    let sceneSwapping = false;
+
     function syncDetailLayer() {
         if (!detailLayer) return;
-        const wanted = !kyivModeActive && map.getZoom() >= DETAIL_MIN_ZOOM;
+        const wanted = !kyivModeActive && !sceneSwapping && map.getZoom() >= DETAIL_MIN_ZOOM;
         map.getContainer().classList.toggle('detail-map-on', wanted);
         if (wanted && !map.hasLayer(detailLayer)) {
             detailLayer.addTo(map);
@@ -404,6 +408,8 @@ async function main() {
         labelsLayer.setKyivMode(active);
         threatsLayer.setKyivMode(active);
         fitAndLockMinZoom();
+        sceneSwapping = false;
+        syncDetailLayer();
 
         await waitForSceneReady(active);
         if (token !== sceneToken) return;
@@ -471,6 +477,7 @@ async function main() {
 
     function applyKyivMode(active) {
         kyivModeActive = active;
+        sceneSwapping = true;
         syncDetailLayer();
         kyivToggle.setActive(active);
 

@@ -80,7 +80,7 @@ function buildLabelRules(flavor, lang, labels) {
         });
 }
 
-function create({ url, dark, lang, attribution, labels = true, boundaries = true, maxDataZoom = 15 }) {
+function create({ url, dark, lang, attribution, labels = true, boundaries = true, maxDataZoom = 15, bounds }) {
     const flavor = dark ? DARK : LIGHT;
     return leafletLayer({
         url,
@@ -89,6 +89,7 @@ function create({ url, dark, lang, attribution, labels = true, boundaries = true
         backgroundColor: flavor.background,
         attribution,
         maxDataZoom,
+        bounds,
     });
 }
 
