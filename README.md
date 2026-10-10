@@ -14,7 +14,7 @@ A Windows desktop app built with Electron that keeps watch on air-raid alerts ac
 
 ## Architecture
 
-[![architecture](docs/images/architecture-en.svg)](docs/diagrams/architecture-en.mmd)
+<p align="center"><img src="docs/images/architecture-en.svg" width="480" alt="Alert Server architecture"></p>
 
 ## How it works
 

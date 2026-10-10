@@ -14,7 +14,7 @@
 
 ## Архітектура
 
-[![архітектура](docs/images/architecture-uk.svg)](docs/diagrams/architecture-uk.mmd)
+<p align="center"><img src="docs/images/architecture-uk.svg" width="480" alt="Архітектура Alert Server"></p>
 
 ## Як це працює
 
