@@ -12,6 +12,7 @@ import { addScreenshotControl } from './screenshot.js';
 import { KYIV_RAION_BORDERS } from './kyivRaionBorders.js';
 import { createKyivRaionLabels } from './kyivRaionLabels.js';
 import { UKRAINE_OUTLINE } from './ukraineOutline.js';
+import { offsetRing, metersPerPixel } from './outlineOffset.js';
 import { applyTitleBarAccentColor } from './chromeTint.js';
 
 const UKRAINE_BOUNDS = [
@@ -180,16 +181,15 @@ async function main() {
     outsideMaskPane.style.zIndex = 250;
     outsideMaskPane.style.pointerEvents = 'none';
     const outsideMaskRenderer = L.svg({ pane: 'outsideMaskPane', padding: 2 });
+    const WORLD_MASK_RING = [
+        [-85, -180],
+        [-85, 180],
+        [85, 180],
+        [85, -180],
+    ];
+    const FADE_OFFSET_PX = 30;
     const outsideUkraineMask = L.polygon(
-        [
-            [
-                [-85, -180],
-                [-85, 180],
-                [85, 180],
-                [85, -180],
-            ],
-            ...UKRAINE_OUTLINE,
-        ],
+        [WORLD_MASK_RING, ...UKRAINE_OUTLINE],
         {
             pane: 'outsideMaskPane',
             renderer: outsideMaskRenderer,
@@ -215,6 +215,13 @@ async function main() {
         )
     );
 
+    function refreshOutsideMask() {
+        const meters = FADE_OFFSET_PX * metersPerPixel(map.getZoom());
+        const rings = UKRAINE_OUTLINE.map((ring) => offsetRing(ring, meters));
+        outsideUkraineMask.setLatLngs([WORLD_MASK_RING, ...rings]);
+        outsideMaskFade.eachLayer((layer) => layer.setLatLngs(rings));
+    }
+
     let sceneSwapping = false;
 
     function syncDetailLayer() {
@@ -222,6 +229,7 @@ async function main() {
         const wanted = !kyivModeActive && !sceneSwapping && map.getZoom() >= DETAIL_MIN_ZOOM;
         map.getContainer().classList.toggle('detail-map-on', wanted);
         if (wanted && !map.hasLayer(detailLayer)) {
+            refreshOutsideMask();
             detailLayer.addTo(map);
             outsideUkraineMask.addTo(map);
             outsideMaskFade.addTo(map);
@@ -421,6 +429,9 @@ async function main() {
     fitAndLockMinZoom();
     map.attributionControl.setPrefix(false);
     map.on('zoomend', syncDetailLayer);
+    map.on('zoomend', () => {
+        if (map.hasLayer(outsideUkraineMask)) refreshOutsideMask();
+    });
 
     function bindAttributionLink(id, url) {
         document.getElementById(id)?.addEventListener('click', (event) => {

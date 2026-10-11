@@ -4,6 +4,23 @@
 import { normalizeOblastName, oblastDisplayName } from './regionNameUtils.js';
 import { transliterate } from './transliterate.js';
 import { RAION_MIN_ZOOM } from './zoomTiers.js';
+import { KYIV_RAION_BORDERS } from './kyivRaionBorders.js';
+
+function ringContains(ring, lat, lng) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const [latI, lngI] = ring[i];
+        const [latJ, lngJ] = ring[j];
+        if (latI > lat !== latJ > lat && lng < ((lngJ - lngI) * (lat - latI)) / (latJ - latI) + lngI) inside = !inside;
+    }
+    return inside;
+}
+
+const KYIV_RINGS = Object.values(KYIV_RAION_BORDERS);
+
+function isInsideKyiv(position) {
+    return KYIV_RINGS.some((ring) => ringContains(ring, position[0], position[1]));
+}
 
 const TOOLTIP_MAX_WIDTH_PX = 410;
 const TOOLTIP_MIN_WIDTH_PX = 90;
@@ -377,7 +394,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const DRIFT_SPEED_MAX_KMH = 210;
     const MAX_DRIFT_MS = 120000;
     const DRIFTING_TYPE_KEYS = new Set(['uav', 'uav_recon', 'fpv']);
-    const KYIV_THREAT_CLICK_ZOOM = 13;
+    const KYIV_THREAT_CLICK_ZOOM = 12;
 
     function randomDuration(baseMs, spreadMs) {
         return Math.round(baseMs + (Math.random() * 2 - 1) * spreadMs);
@@ -735,6 +752,10 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                         shown = true;
                         selectHandler(tooltipContent(threat, strings, isEnglish), marker._truePos);
                     };
+                    if (kyivMode && !isInsideKyiv(marker._truePos)) {
+                        showCard();
+                        return;
+                    }
                     map.once('moveend', showCard);
                     setTimeout(showCard, 1200);
                     map.flyTo(marker._truePos, targetZoom, { animate: true, duration: 0.8 });
@@ -744,6 +765,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                     .bindTooltip(info)
                     .on('mouseover', () => map.closePopup())
                     .on('click', () => {
+                        if (kyivMode && !isInsideKyiv(marker._truePos)) return;
                         const cityZoom = kyivMode ? KYIV_THREAT_CLICK_ZOOM : RAION_MIN_ZOOM;
                         const targetZoom = Math.min(Math.max(map.getZoom(), cityZoom), map.getMaxZoom());
                         map.flyTo(marker._truePos, targetZoom, { animate: true, duration: 0.8 });
