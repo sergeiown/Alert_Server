@@ -187,7 +187,9 @@ async function main() {
         [85, 180],
         [85, -180],
     ];
-    const FADE_OFFSET_PX = 30;
+    const FADE_OFFSET_PX = 90;
+    const FADE_OFFSET_MIN_M = 3000;
+    const FADE_OFFSET_MAX_M = 7000;
     const outsideUkraineMask = L.polygon(
         [WORLD_MASK_RING, ...UKRAINE_OUTLINE],
         {
@@ -216,7 +218,7 @@ async function main() {
     );
 
     function refreshOutsideMask() {
-        const meters = FADE_OFFSET_PX * metersPerPixel(map.getZoom());
+        const meters = Math.min(FADE_OFFSET_MAX_M, Math.max(FADE_OFFSET_MIN_M, FADE_OFFSET_PX * metersPerPixel(map.getZoom())));
         const rings = UKRAINE_OUTLINE.map((ring) => offsetRing(ring, meters));
         outsideUkraineMask.setLatLngs([WORLD_MASK_RING, ...rings]);
         outsideMaskFade.eachLayer((layer) => layer.setLatLngs(rings));

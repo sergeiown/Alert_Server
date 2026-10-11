@@ -131,7 +131,7 @@ body {
         drop-shadow(3px 5px 3px rgba(0, 0, 0, 0.45));
 }
 
-.kyiv-mode-active .threat-icon {
+.kyiv-mode-active .leaflet-map-pane .threat-icon {
     filter: drop-shadow(0 0 2px rgba(0, 0, 0, 1)) drop-shadow(0 0 4.5px rgba(0, 0, 0, 0.85))
         drop-shadow(4px 6px 5px rgba(0, 0, 0, 0.7));
 }

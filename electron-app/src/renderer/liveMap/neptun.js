@@ -245,7 +245,7 @@ const ALL_TYPE_KEYS = ['uav', 'uav_recon', 'fpv', 'kab', 'missile', 'mig31k', 'u
 
 const APPROX_SWATCH_HTML =
     `<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${UNCERTAINTY_CIRCLE_COLOR}" ` +
-    'stroke-width="1.2" stroke-opacity="0.45" stroke-dasharray="3 2.5"><circle cx="12" cy="12" r="10"/></svg></span>';
+    'stroke-width="1.5" stroke-opacity="0.9" stroke-dasharray="3 2.5"><circle cx="12" cy="12" r="10"/></svg></span>';
 
 function buildLegend(strings) {
     const legend = L.control({ position: 'bottomleft' });
@@ -684,7 +684,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                 pane: UNCERTAINTY_PANE,
                 radius: threat.uncertaintyKm * 1000,
                 color: UNCERTAINTY_CIRCLE_COLOR,
-                weight: 1,
+                weight: 0.5,
                 opacity: 0.85,
                 dashArray: '4 5',
                 fill: false,
