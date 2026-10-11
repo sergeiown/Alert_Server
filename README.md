@@ -1,4 +1,4 @@
-# <img src="docs/images/icon.png" alt="" width="32" align="center" /> Alert Server
+# <img src="docs/images/icon.png" alt="" width="32" height="32" align="absmiddle" /> Alert Server
 
 [![Windows](https://img.shields.io/badge/platform-windows-0078D6?logo=windows&logoColor=white)](https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/sergeiown/Alert_Server/blob/main/LICENSE)
