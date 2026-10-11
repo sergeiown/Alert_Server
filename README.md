@@ -12,6 +12,8 @@
 
 A Windows desktop app built with Electron that keeps watch on air-raid alerts across Ukraine so you don't have to: one main window with tiles for status, map, forecast, trends, settings and log, plus a tray icon that is always at hand. It pulls data from [alerts.in.ua](https://alerts.in.ua/) (automatically falling back to [Neptun](https://neptun.in.ua) if it goes quiet), delivers it straight to the Windows Notification Center for the regions you choose to monitor, and brings a live threat map (also available [in the browser](https://alert-proxy-ua.duckdns.org/live/)) a statistics-based forecast, and nationwide weapon-usage trends together in one place.
 
+> **Still on a version older than 5.4.9?** Those builds reach the backend through a temporary relay that will be switched off on **1 November 2026**, and after that date they will stop receiving data. The app offers to update itself on launch, and answering "Yes" is the least dramatic way to keep your alerts coming (or grab the latest installer from [Releases](https://github.com/sergeiown/Alert_Server/releases/latest)).
+
 ## Architecture
 
 <p align="center"><img src="docs/images/architecture-en.svg" width="480" alt="Alert Server architecture"></p>

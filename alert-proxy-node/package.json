@@ -2,7 +2,7 @@
   "name": "alert-proxy-node",
   "version": "1.0.0",
   "private": true,
-  "description": "Node.js port of the alert-proxy Cloudflare Worker, for self-hosting outside Cloudflare",
+  "description": "Self-hosted Node.js backend for Alert Server: alert polling, archive, forecast and the public API",
   "author": "Serhii I. Myshko",
   "license": "MIT",
   "main": "src/server.js",

@@ -3,13 +3,10 @@ node_modules/
 Alert_Server/
 UID/
 *.log
-.wrangler/
-.dev.vars
 config.local.json
 electron-app/dist/
 data-flow-notes.txt
 tools/
-alert-proxy/README.md
 
 web-map/dist/
 
