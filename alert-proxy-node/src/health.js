@@ -50,7 +50,7 @@ function evaluate(status, flags) {
         if (percent >= critAt) add('crit', code, `${label} at ${percent}%`);
         else if (percent >= warnAt) add('warn', code, `${label} at ${percent}%`);
     };
-    checkResource('cpu', 'CPU', sys.cpuUsagePercent, RESOURCE_WARN_PERCENT, RESOURCE_CRIT_PERCENT);
+    checkResource('cpu', 'CPU', sys.cpuAveragePercent, RESOURCE_WARN_PERCENT, RESOURCE_CRIT_PERCENT);
     checkResource('memory', 'memory', sys.memory.usedPercent, RESOURCE_WARN_PERCENT, RESOURCE_CRIT_PERCENT);
     checkResource('disk', 'disk', sys.disk.usedPercent, RESOURCE_WARN_PERCENT, RESOURCE_CRIT_PERCENT);
     if (sys.process && sys.process.heapLimitBytes) {

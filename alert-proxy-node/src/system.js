@@ -27,6 +27,29 @@ function sampleCpuPercent() {
     return Math.round((1 - idleDelta / totalDelta) * 1000) / 10;
 }
 
+const CPU_AVG_WINDOW_MS = 2 * 60 * 1000;
+const CPU_AVG_MIN_MS = 30 * 1000;
+const cpuHistory = [];
+
+function recordCpuHistory() {
+    const now = Date.now();
+    cpuHistory.push({ at: now, ...cpuUsagePercentSample() });
+    while (cpuHistory.length > 1 && now - cpuHistory[0].at > CPU_AVG_WINDOW_MS) cpuHistory.shift();
+}
+
+function averageCpuPercent() {
+    recordCpuHistory();
+    const first = cpuHistory[0];
+    const last = cpuHistory[cpuHistory.length - 1];
+    if (last.at - first.at < CPU_AVG_MIN_MS) return null;
+    const totalDelta = last.total - first.total;
+    if (totalDelta <= 0) return null;
+    return Math.round((1 - (last.idle - first.idle) / totalDelta) * 1000) / 10;
+}
+
+setInterval(recordCpuHistory, 15 * 1000).unref();
+recordCpuHistory();
+
 function diskUsage() {
     try {
         const stats = fs.statfsSync(DATA_DIR);
@@ -61,6 +84,7 @@ function getSystemMetrics() {
         cpuLoadAvg: os.loadavg(),
         cpuCount: os.cpus().length,
         cpuUsagePercent: sampleCpuPercent(),
+        cpuAveragePercent: averageCpuPercent(),
         memory: {
             totalBytes: totalMem,
             freeBytes: freeMem,
