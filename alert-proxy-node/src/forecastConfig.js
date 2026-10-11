@@ -3,6 +3,7 @@
 
 module.exports = {
     WINDOW_DAYS: 30,
+    PATTERN_WINDOW_DAYS: 90,
     GAP_WINDOW_DAYS: 60,
     HALF_LIFE_DAYS: 1,
 

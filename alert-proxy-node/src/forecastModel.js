@@ -147,7 +147,9 @@ function estimateTypeLambda(typeAlerts, totalCount, regionLambda, nowMs, config)
     return Math.max(recentLambda, baselineLambda) * seasonality * hourOfDay;
 }
 
-function gapStats(alerts, config) {
+const MIN_SURVIVING_GAPS = 3;
+
+function gapStats(alerts, config, elapsedMs = 0) {
     if (alerts.length < config.MIN_GAP_SAMPLES_FOR_RANGE + 1) return null;
 
     const sortedAsc = [...alerts].sort((a, b) => new Date(a.started_at) - new Date(b.started_at));
@@ -158,6 +160,11 @@ function gapStats(alerts, config) {
     if (gaps.length < config.MIN_GAP_SAMPLES_FOR_RANGE) return null;
 
     gaps.sort((a, b) => a - b);
+    const surviving = elapsedMs > 0 ? gaps.filter((gap) => gap > elapsedMs).map((gap) => gap - elapsedMs) : [];
+    if (surviving.length >= MIN_SURVIVING_GAPS) {
+        gaps.length = 0;
+        surviving.forEach((gap) => gaps.push(gap));
+    }
     const pick = (p) => gaps[Math.min(gaps.length - 1, Math.floor(p * gaps.length))];
     const median = pick(0.5);
     const low = pick(config.GAP_RANGE_LOW_PERCENTILE);
@@ -185,8 +192,11 @@ function computeStats(alerts, nowMs, config) {
     }
     const avgGapMs = startTimesAsc.length > 1 ? gapSum / (startTimesAsc.length - 1) : null;
 
+    const patternStartMs = nowMs - config.PATTERN_WINDOW_DAYS * DAY_MS;
+    const patternAlerts = usableAlerts.filter((a) => new Date(a.started_at).getTime() >= patternStartMs);
+
     const hourBuckets = { night: 0, morning: 0, day: 0, evening: 0 };
-    sortedDesc.forEach((a) => {
+    patternAlerts.forEach((a) => {
         const hour = hourOf(new Date(a.started_at).getTime());
         if (hour < 6) hourBuckets.night++;
         else if (hour < 12) hourBuckets.morning++;
@@ -196,13 +206,12 @@ function computeStats(alerts, nowMs, config) {
     const mostCommonBucket = Object.entries(hourBuckets).sort((a, b) => b[1] - a[1])[0][0];
 
     const weekdayOccurrences = [0, 0, 0, 0, 0, 0, 0];
-    for (let d = 0; d < config.WINDOW_DAYS; d++) {
-        const day = weekdayOf(windowStartMs + d * DAY_MS);
-        weekdayOccurrences[day]++;
+    for (let t = patternStartMs; t < nowMs; t += HOUR_MS) {
+        weekdayOccurrences[weekdayOf(t)] += 1 / 24;
     }
 
     const weekdayCounts = [0, 0, 0, 0, 0, 0, 0];
-    sortedDesc.forEach((a) => {
+    patternAlerts.forEach((a) => {
         const day = weekdayOf(new Date(a.started_at).getTime());
         weekdayCounts[day]++;
     });
@@ -241,7 +250,9 @@ function computeStats(alerts, nowMs, config) {
             const expectedToday = lambdaType;
             const recentCutoffMs = nowMs - config.GAP_WINDOW_DAYS * DAY_MS;
             const recentAlerts = typeAlertsFull.filter((alert) => new Date(alert.started_at).getTime() >= recentCutoffMs);
-            const gaps = gapStats(recentAlerts, config) || gapStats(typeAlertsFull, config);
+            const lastStartMs = Math.max(...typeAlertsFull.map((alert) => new Date(alert.started_at).getTime()));
+            const elapsedMs = Math.max(0, nowMs - lastStartMs);
+            const gaps = gapStats(recentAlerts, config, elapsedMs) || gapStats(typeAlertsFull, config, elapsedMs);
             const projectedNextMs = gaps ? gaps.median : lambdaType > MIN_MEANINGFUL_LAMBDA ? (1 / lambdaType) * DAY_MS : null;
             const gapRange = gaps ? gaps.range : null;
 
