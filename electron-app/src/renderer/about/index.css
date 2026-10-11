@@ -23,6 +23,23 @@ html {
     background: var(--bg);
 }
 
+#archer {
+    position: fixed;
+    left: 2vw;
+    top: 2vh;
+    z-index: -2;
+    width: min(56vw, calc(56vh * 1.2074));
+    opacity: 0.2;
+    pointer-events: none;
+    -webkit-user-drag: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    #archer {
+        opacity: 0.26;
+    }
+}
+
 #flag {
     position: fixed;
     left: 50%;
@@ -44,23 +61,18 @@ html {
 }
 
 body {
-    min-height: 100%;
+    min-height: 100vh;
     margin: 0;
-    padding: 56px 20px 24px;
+    padding: 24px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     text-align: center;
     gap: 4px;
     color: var(--fg);
     font-family: Segoe UI, Tahoma, sans-serif;
     font-size: 13px;
-}
-
-#icon {
-    width: 96px;
-    height: 96px;
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
 }
 
 #appTitle {

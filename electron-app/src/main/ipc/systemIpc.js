@@ -20,7 +20,7 @@ function registerSystemIpc() {
     ipcMain.handle('system:getVersion', () => app.getVersion());
     ipcMain.handle('system:openExternal', (event, url) => shell.openExternal(url));
     ipcMain.handle('system:getAboutIcon', () =>
-        nativeImage.createFromPath(getResourcePath('icons', 'sagittarius_1x1.png')).resize({ width: 96, height: 96 }).toDataURL()
+        nativeImage.createFromPath(getResourcePath('icons', 'app-icon-256.png')).resize({ width: 96, height: 96 }).toDataURL()
     );
 }
 
