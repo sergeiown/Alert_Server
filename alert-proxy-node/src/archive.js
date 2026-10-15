@@ -7,7 +7,6 @@ const { DB_PATH } = require('./config');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const THREAT_RETENTION_DAYS = 90;
-const ALERT_RETENTION_DAYS = 365;
 const THREAT_RETENTION_MS = THREAT_RETENTION_DAYS * DAY_MS;
 
 db.exec(`CREATE TABLE IF NOT EXISTS alert_events (
@@ -159,16 +158,8 @@ function pruneOldThreats() {
     db.prepare('DELETE FROM neptun_threats WHERE (removed_at IS NOT NULL AND removed_at < ?) OR last_seen < ?').run(cutoff, cutoff);
 }
 
-function pruneOldAlerts() {
-    const cutoffIso = new Date(Date.now() - ALERT_RETENTION_DAYS * DAY_MS).toISOString();
-    db.prepare(
-        `DELETE FROM alert_events WHERE started_at IS NOT NULL AND started_at < ? AND finished_at IS NOT NULL AND first_seen - CAST(strftime('%s', started_at) AS INTEGER) * 1000 >= 2000`
-    ).run(cutoffIso);
-}
-
 function pruneOld() {
     pruneOldThreats();
-    pruneOldAlerts();
 }
 
 function daysSince(ms) {
@@ -212,8 +203,7 @@ function getStats() {
 
     return {
         retention: {
-            alertsDays: ALERT_RETENTION_DAYS,
-            alertsCollectedDays: Math.min(daysSince(liveRow.oldest), ALERT_RETENTION_DAYS),
+            alertsCollectedDays: daysSince(liveRow.oldest),
             alertsLiveCount: liveRow.total,
             alertsImportedCount: importedRow.total,
             alertsImportedFrom: importedRow.oldest,

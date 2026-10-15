@@ -9,7 +9,6 @@ const states = require('../resources/states.json');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const CACHE_TTL_MS = 60 * 1000;
-const MAX_HISTORY_AGE_MS = 730 * DAY_MS;
 const CACHE_MAX_ENTRIES = 500;
 
 const cache = new Map();
@@ -54,10 +53,7 @@ function compute(uid) {
     const nowMs = Date.now();
     const stateName = states[String(uid)] || null;
     const allAlerts = archive.getRegionAlerts(uid, stateName);
-    const alerts = allAlerts.filter((alert) => {
-        const startedMs = new Date(alert.started_at).getTime();
-        return Number.isFinite(startedMs) && nowMs - startedMs <= MAX_HISTORY_AGE_MS;
-    });
+    const alerts = allAlerts.filter((alert) => Number.isFinite(new Date(alert.started_at).getTime()));
 
     const stats = alerts.length ? model.computeStats(alerts, nowMs, forecastConfig) : null;
     const usable = model.filterUsableAlerts(alerts);

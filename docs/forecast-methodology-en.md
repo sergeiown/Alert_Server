@@ -9,7 +9,7 @@ A description of the forecasting approach: where the data comes from, how the al
 
 Alert history lives in an archive on the project's server, not on each computer. The archive is fed by:
 
-- **Live alerts.** Every alert the server sees on its continuous poll of the public [alerts.in.ua](https://alerts.in.ua/) API is recorded with its start and finish times, so history keeps growing on its own, indefinitely (the forecast looks at up to about 2 years).
+- **Live alerts.** Every alert the server sees on its continuous poll of the public [alerts.in.ua](https://alerts.in.ua/) API is recorded with its start and finish times, so history keeps growing on its own, indefinitely (the forecast uses all of it, back to February 2022).
 - **Regional backfill.** On start and then every few hours the server also requests the last month of history for every region from the same API (region level, roughly 30 days, throttled to the API's own limit), so gaps left by a restart are filled in, and a fresh deployment doesn't have to wait weeks to have enough material.
 - **Imported history.** Records collected earlier by desktop installs were imported once, so the archive already reaches back well before the server started.
 
