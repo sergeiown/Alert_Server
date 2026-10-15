@@ -12,6 +12,7 @@ win:
     target: nsis
     icon: resources/icons/app-icon-256.png
 nsis:
+    warningsAsErrors: false
     oneClick: false
     perMachine: false
     allowToChangeInstallationDirectory: true
