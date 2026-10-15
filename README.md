@@ -45,6 +45,11 @@ Download the latest installer (`Alert Server Setup x.x.x.exe`) from [Releases](h
 
 Future updates are detected through GitHub Releases, and you only need to run the installer by hand once. The app checks shortly after every launch and then every hour for as long as it keeps running (the interval is configurable in Settings, from 1 to 24 hours), so a tray app left open for weeks still hears about new versions. When one appears, a window with the app icon pops up on top of everything else, lists the key changes in that release and asks whether to update now or later. It waits while an alert is active in one of your regions. In rare cases, for example a change the server depends on, an update is marked as mandatory: after a grace period the window loses its Later button, and if it is still ignored the update downloads quietly and installs on the next restart. Air-raid alerts keep working the whole time. A small window shows download progress, and once downloaded the app restarts itself to finish installing - no reboot needed.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/update-prompt-en-dark.png">
+  <img src="docs/images/update-prompt-en-light.png" width="520" alt="update window">
+</picture>
+
 ## Usage
 
 The app lives in the tray, with one big main window behind it. At launch that window opens on a menu of tiles - Current status, Live map, Forecast, Trends, Settings, Event log and About - with a checkbox to always show it at startup. Every section opens inside the same window, and a bar at the top is always there: Main menu, Back (it returns to whatever was open before the current screen) and Check for updates. Minimize works as usual, while the familiar close cross sends the window to the tray, and a checkbox in Settings, on by default, decides whether closing it minimizes to the tray or quits the app.
