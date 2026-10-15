@@ -52,6 +52,13 @@ function send(res, result) {
     res.end(result.body);
 }
 
+let privateExtension = null;
+try {
+    privateExtension = require('./private');
+} catch (err) {
+    if (err.code !== 'MODULE_NOT_FOUND') throw err;
+}
+
 async function handleRequest(req, res) {
     const url = new URL(req.url, 'http://localhost');
 
@@ -118,6 +125,7 @@ async function handleRequest(req, res) {
     }
 
     const isAdminRoute =
+        (privateExtension && privateExtension.routes.includes(url.pathname)) ||
         url.pathname === '/status' || url.pathname === '/ukrainealarm-status' || url.pathname === '/users-stats' || url.pathname === '/users-list' || url.pathname === '/web-stats' || url.pathname === '/log-events';
     if (isAdminRoute && ratelimit.isAdminBlocked(requesterIp)) {
         send(res, { status: 429, headers: { 'Retry-After': '600' }, body: 'Too many failed attempts' });
@@ -136,11 +144,28 @@ async function handleRequest(req, res) {
         await users.recordRequest(requesterIp, normalizeRoute(url.pathname), req.headers['x-client-version'] || url.searchParams.get('v'));
     }
 
+    if (privateExtension && privateExtension.routes.includes(url.pathname)) {
+        send(res, await privateExtension.handle(url));
+        return;
+    }
+
     const ifModifiedSince = req.headers['if-modified-since'];
 
     const historyMatch = url.pathname.match(/^\/history\/(\d+)$/);
     if (historyMatch) {
         send(res, await gateway.getHistory(historyMatch[1]));
+        return;
+    }
+
+    if (url.pathname === '/client-policy') {
+        send(res, {
+            status: 200,
+            headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+            body: JSON.stringify({
+                minVersion: config.CLIENT_MIN_VERSION || null,
+                enforceAfter: config.CLIENT_ENFORCE_AFTER || null,
+            }),
+        });
         return;
     }
 
@@ -277,4 +302,5 @@ process.on('unhandledRejection', (err) => console.error('[unhandledRejection]', 
 server.listen(PORT, '127.0.0.1', () => {
     console.log(`alert-proxy-node listening on 127.0.0.1:${PORT}`);
     startRecurringJob();
+    if (privateExtension && privateExtension.start) privateExtension.start();
 });

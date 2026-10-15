@@ -15,7 +15,8 @@ const defaultSettings = {
     forecastNotifyEnabled: true,
     forecastNotifyLookaheadMinutes: 120,
     massAttackThreshold: 75,
-    updateCheckIntervalHours: 24,
+    updateCheckIntervalHours: 1,
+    updateIntervalMigrated: false,
     minimizeToTrayOnClose: true,
     showHubOnStartup: true,
 
@@ -31,7 +32,7 @@ function load() {
 
     if (!fs.existsSync(filePath)) {
         isFirstRun = true;
-        settings = { ...defaultSettings };
+        settings = { ...defaultSettings, updateIntervalMigrated: true };
         save();
         return settings;
     }
@@ -53,9 +54,16 @@ function load() {
 
         if (settings.alertSourceProvider === 'ukrainealarm') settings.alertSourceProvider = 'alerts.in.ua';
 
+        if (!parsed.updateIntervalMigrated) {
+            if (parsed.updateCheckIntervalHours === undefined || parsed.updateCheckIntervalHours === 24) settings.updateCheckIntervalHours = 1;
+            settings.updateIntervalMigrated = true;
+            save();
+        }
+        settings.updateCheckIntervalHours = Math.max(1, Math.min(24, Math.round(Number(settings.updateCheckIntervalHours)) || 1));
+
         settings.massAttackThreshold = Math.max(50, Math.min(100, settings.massAttackThreshold));
     } catch (err) {
-        settings = { ...defaultSettings };
+        settings = { ...defaultSettings, updateIntervalMigrated: true };
         save();
     }
 

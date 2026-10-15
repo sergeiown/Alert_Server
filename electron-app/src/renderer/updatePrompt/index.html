@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8" />
+    <meta
+        http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:;"
+    />
+    <title>Alert Server</title>
+    <link rel="stylesheet" href="../shared/fonts/fonts.css" />
+    <link rel="stylesheet" href="index.css" />
+    <link rel="stylesheet" href="../shared/theme.css" />
+</head>
+<body>
+    <img id="icon" alt="" />
+    <h1 id="heading"></h1>
+    <p id="message"></p>
+    <p id="note" hidden></p>
+    <div id="highlights" hidden>
+        <h2 id="highlightsTitle"></h2>
+        <ul id="highlightsList"></ul>
+    </div>
+    <p id="hint"></p>
+    <div id="buttons">
+        <button id="laterButton" type="button"></button>
+        <button id="installButton" type="button"></button>
+    </div>
+    <script type="module" src="index.js"></script>
+</body>
+</html>

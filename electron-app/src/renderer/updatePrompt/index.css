@@ -1,0 +1,133 @@
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    overflow: hidden;
+}
+
+body {
+    margin: 0;
+    padding: 26px 32px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'IBM Plex Sans', 'Segoe UI', Tahoma, sans-serif;
+    font-size: 14px;
+    user-select: none;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+#icon {
+    width: 72px;
+    height: 72px;
+    margin-bottom: 14px;
+}
+
+#heading {
+    margin: 0 0 8px;
+    font-size: 19px;
+    font-weight: 600;
+}
+
+#message {
+    margin: 0 0 6px;
+    line-height: 1.45;
+}
+
+#note {
+    margin: 4px 0 0;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--active-border-yellow);
+    background: var(--active-bg-yellow);
+    color: var(--threat-color-yellow);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+#note.forced {
+    border-color: var(--active-border-red);
+    background: var(--active-bg-red);
+    color: var(--threat-color-red);
+}
+
+#highlights {
+    width: 100%;
+    margin-top: 14px;
+    padding: 10px 16px 12px;
+    text-align: left;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card-bg);
+}
+
+#highlightsTitle {
+    margin: 0 0 6px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+#highlightsList {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+#highlightsList li {
+    margin: 3px 0;
+}
+
+#hint {
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.4;
+}
+
+#buttons {
+    margin-top: 20px;
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+
+button {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--btn-border);
+    background: var(--btn-bg);
+    color: var(--fg);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+button:hover {
+    background: var(--btn-hover);
+}
+
+#installButton {
+    border-color: var(--link);
+    background: var(--link);
+    color: var(--bg);
+    font-weight: 600;
+}
+
+#installButton:hover {
+    filter: brightness(1.08);
+    background: var(--link);
+}

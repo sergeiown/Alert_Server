@@ -18,6 +18,8 @@ const PUBLIC_THREATS_ENABLED = process.env.PUBLIC_THREATS_ENABLED === 'true';
 const PUBLIC_OCCUPIED_ENABLED = process.env.PUBLIC_OCCUPIED_ENABLED === 'true';
 const PUBLIC_ORIGIN = process.env.PUBLIC_ORIGIN || 'https://alert-proxy-ua.duckdns.org';
 const PUBLIC_WS_MAX = Number(process.env.PUBLIC_WS_MAX) || 2000;
+const CLIENT_MIN_VERSION = process.env.CLIENT_MIN_VERSION || '';
+const CLIENT_ENFORCE_AFTER = process.env.CLIENT_ENFORCE_AFTER || '';
 const KAGGLE_TOKEN = process.env.KAGGLE_TOKEN || '';
 const KAGGLE_USERNAME = process.env.KAGGLE_USERNAME || '';
 const KAGGLE_KEY = process.env.KAGGLE_KEY || '';
@@ -37,6 +39,8 @@ module.exports = {
     PUBLIC_OCCUPIED_ENABLED,
     PUBLIC_ORIGIN,
     PUBLIC_WS_MAX,
+    CLIENT_MIN_VERSION,
+    CLIENT_ENFORCE_AFTER,
     KAGGLE_TOKEN,
     KAGGLE_USERNAME,
     KAGGLE_KEY,

@@ -130,7 +130,7 @@ async function initGeneralSettings(settings) {
         window.alertServer.setSetting('massAttackThreshold', threshold);
     });
     updateCheckIntervalHoursInput.addEventListener('change', () => {
-        const hours = Math.max(1, Math.min(168, Number(updateCheckIntervalHoursInput.value) || 24));
+        const hours = Math.max(1, Math.min(24, Number(updateCheckIntervalHoursInput.value) || 1));
         updateCheckIntervalHoursInput.value = hours;
         window.alertServer.setSetting('updateCheckIntervalHours', hours);
     });
