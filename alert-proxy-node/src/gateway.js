@@ -35,11 +35,13 @@ const REGION_STATUSES_MIN_GAP_MS = 5 * 1000;
 
 const UKRAINEALARM_BASE_URL = 'https://api.ukrainealarm.com/api/v3';
 const UKRAINEALARM_MIN_GAP_MS = 3 * 60 * 1000;
-const UKRAINEALARM_FORCE_REFRESH_MS = 20 * 60 * 1000;
+const UKRAINEALARM_REQUEST_GAP_MS = 65 * 1000;
+const UKRAINEALARM_ROUTE_MAX_WAIT_MS = 5 * 1000;
 const UKRAINEALARM_STALE_ALERT_THRESHOLD_MS = 24 * 60 * 60 * 1000;
 const UKRAINEALARM_MAX_OBSERVATIONS = 30;
 
 const UKRAINEALARM_WEBHOOK_MAX_TIMESTAMP_AGE_MS = 5 * 60 * 1000;
+const WEBHOOK_LAG_SAMPLES = 300;
 const UKRAINEALARM_WEBHOOK_DEDUPE_WINDOW_MS = 5 * 60 * 1000;
 
 const UKRAINEALARM_TODAY_CACHE_TTL_MS = 2 * 60 * 1000;
@@ -80,6 +82,7 @@ const state = {
     ukraineAlarmRegionHistoryOriginErrors: new Map(),
 
     ukraineAlarmWebhookSeenHashes: new Map(),
+    ukraineAlarmWebhookStats: { startedAt: Date.now(), received: 0, rejected: 0, lagsMs: [] },
     lastBroadcastAlertsBody: null,
     lastBroadcastActiveBody: null,
     activeQueue: Promise.resolve(),
@@ -292,18 +295,52 @@ function recordUniqueUser(ip) {
     return hashPromise;
 }
 
+let ukraineAlarmQueue = Promise.resolve();
+let ukraineAlarmNextSlotAt = 0;
+
+function ukraineAlarmFetch(path, { maxWaitMs = Infinity } = {}) {
+    const run = async () => {
+        const waitMs = ukraineAlarmNextSlotAt - Date.now();
+        if (waitMs > maxWaitMs) {
+            return new Response('Rate limited locally', { status: 429, headers: { 'Retry-After': String(Math.ceil(waitMs / 1000)) } });
+        }
+        if (waitMs > 0) await lib.delay(waitMs);
+
+        const startedAt = Date.now();
+        ukraineAlarmNextSlotAt = startedAt + UKRAINEALARM_REQUEST_GAP_MS;
+        state.ukraineAlarmFetchTimestamps.push(startedAt);
+
+        const response = await fetch(`${UKRAINEALARM_BASE_URL}${path}`, { headers: { Authorization: config.UKRAINEALARM_TOKEN } });
+        if (response.status === 429) {
+            const retryAfterSec = Number(response.headers.get('retry-after')) || 60;
+            ukraineAlarmNextSlotAt = Math.max(ukraineAlarmNextSlotAt, Date.now() + (retryAfterSec + 5) * 1000);
+        }
+        return response;
+    };
+
+    const result = ukraineAlarmQueue.then(run, run);
+    ukraineAlarmQueue = result.catch(() => {});
+    return result;
+}
+
 async function handleUkraineAlarmWebhook(headers, rawBody) {
     const signature = headers['x-webhook-signature'];
     const timestamp = headers['x-webhook-timestamp'];
     const alg = (headers['x-webhook-signature-alg'] || '').toLowerCase();
 
-    if (!signature || !timestamp) return { status: 400, headers: {}, body: 'Missing signature headers' };
-    if (alg && alg !== 'rsa-sha256') return { status: 400, headers: {}, body: 'Unsupported signature algorithm' };
-    if (!config.UKRAINEALARM_WEBHOOK_PUBLIC_KEY) return { status: 503, headers: {}, body: 'Webhook not configured' };
+    const reject = (status, body) => {
+        state.ukraineAlarmWebhookStats.rejected++;
+        console.warn(`[ukrainealarm-webhook] rejected ${status}: ${body}`);
+        return { status, headers: {}, body };
+    };
+
+    if (!signature || !timestamp) return reject(400, 'Missing signature headers');
+    if (alg && alg !== 'rsa-sha256') return reject(400, 'Unsupported signature algorithm');
+    if (!config.UKRAINEALARM_WEBHOOK_PUBLIC_KEY) return reject(503, 'Webhook not configured');
 
     const timestampMs = Number(timestamp) * 1000;
     if (!Number.isFinite(timestampMs) || Math.abs(Date.now() - timestampMs) > UKRAINEALARM_WEBHOOK_MAX_TIMESTAMP_AGE_MS) {
-        return { status: 400, headers: {}, body: 'Timestamp out of range' };
+        return reject(400, 'Timestamp out of range');
     }
 
     let verified = false;
@@ -316,7 +353,7 @@ async function handleUkraineAlarmWebhook(headers, rawBody) {
     } catch (err) {
         verified = false;
     }
-    if (!verified) return { status: 401, headers: {}, body: 'Invalid signature' };
+    if (!verified) return reject(401, 'Invalid signature');
 
     const now = Date.now();
     for (const [hash, seenAt] of state.ukraineAlarmWebhookSeenHashes) {
@@ -340,16 +377,25 @@ async function handleUkraineAlarmWebhook(headers, rawBody) {
         event = null;
     }
 
-    if (event && event.status === 'Activate' && event.regionId !== undefined && event.alarmType && event.createdAt) {
-        await applyUkraineAlarmActivateEvent(event);
+    state.ukraineAlarmWebhookStats.received++;
+    if (event && event.createdAt) {
+        const lags = state.ukraineAlarmWebhookStats.lagsMs;
+        lags.push(Math.max(0, now - new Date(event.createdAt).getTime()));
+        if (lags.length > WEBHOOK_LAG_SAMPLES) lags.shift();
+    }
+    const lagSec = event && event.createdAt ? Math.round((now - new Date(event.createdAt).getTime()) / 1000) : null;
+    console.log(`[ukrainealarm-webhook] ${event ? event.status : 'unparsed'} region=${event ? event.regionId : '-'} type=${event ? event.alarmType : '-'} lag=${lagSec}s`);
+
+    if (event && event.regionId !== undefined && event.alarmType && event.createdAt && Array.isArray(event.activeAlertLevels)) {
+        await applyUkraineAlarmEvent(event);
     } else {
-        await pollUkraineAlarmIfDue({ force: true });
+        await pollUkraineAlarmIfDue();
     }
 
     return { status: 200, headers: {}, body: 'OK' };
 }
 
-async function applyUkraineAlarmActivateEvent(event) {
+async function applyUkraineAlarmEvent(event) {
     const saved = store.get('ukraineAlarmState') || {
         lastFetchAt: 0,
         lastFullFetchAt: 0,
@@ -360,18 +406,23 @@ async function applyUkraineAlarmActivateEvent(event) {
     if (!saved.latestAlerts) saved.latestAlerts = [];
 
     const regionId = String(event.regionId);
+    const levels = event.activeAlertLevels;
     let region = saved.latestAlerts.find((r) => String(r.regionId) === regionId);
+
     if (!region) {
+        if (!levels.length) return;
         region = { regionId, regionType: undefined, regionName: undefined, lastUpdate: event.createdAt, activeAlerts: [] };
         saved.latestAlerts.push(region);
     }
-    if (!region.activeAlerts) region.activeAlerts = [];
+
+    const existing = (region.activeAlerts || []).find((a) => a.type === event.alarmType);
+    region.activeAlerts = (region.activeAlerts || []).filter((a) => a.type !== event.alarmType);
+    if (levels.length) {
+        region.activeAlerts.push({ ...existing, regionId, type: event.alarmType, lastUpdate: event.createdAt, activeAlertLevels: levels });
+    }
     region.lastUpdate = event.createdAt;
 
-    const alreadyActive = region.activeAlerts.some((a) => a.type === event.alarmType);
-    if (!alreadyActive) {
-        region.activeAlerts.push({ regionId, type: event.alarmType, lastUpdate: event.createdAt });
-    }
+    if (!region.activeAlerts.length) saved.latestAlerts = saved.latestAlerts.filter((r) => r !== region);
 
     store.put('ukraineAlarmState', saved);
     broadcastUkraineAlarmAlerts(saved);
@@ -393,43 +444,16 @@ async function pollUkraineAlarmIfDue({ force = false } = {}) {
 
     saved.lastFetchAt = now;
 
-    let indexChanged = true;
-    let dueForSafetyNetRefresh = true;
+    const alertsResponse = await ukraineAlarmFetch('/alerts', { maxWaitMs: force ? UKRAINEALARM_ROUTE_MAX_WAIT_MS : Infinity });
 
-    if (!force) {
-        state.ukraineAlarmFetchTimestamps.push(now);
-
-        const statusResponse = await fetch(`${UKRAINEALARM_BASE_URL}/alerts/status`, {
-            headers: { Authorization: config.UKRAINEALARM_TOKEN },
-        });
-
-        if (!statusResponse.ok) {
-            state.ukraineAlarmOriginError = { status: statusResponse.status, body: await statusResponse.text() };
-            store.put('ukraineAlarmState', saved);
-            return;
-        }
-
+    if (alertsResponse.ok) {
+        const alerts = await alertsResponse.json();
+        saved.latestAlerts = alerts;
+        saved.lastFullFetchAt = now;
         state.ukraineAlarmOriginError = null;
-        const { lastActionIndex } = await statusResponse.json();
-        indexChanged = lastActionIndex !== saved.lastActionIndex;
-        dueForSafetyNetRefresh = now - saved.lastFullFetchAt >= UKRAINEALARM_FORCE_REFRESH_MS;
-        saved.lastActionIndex = lastActionIndex;
-    }
-
-    if (indexChanged || dueForSafetyNetRefresh) {
-        state.ukraineAlarmFetchTimestamps.push(Date.now());
-        const alertsResponse = await fetch(`${UKRAINEALARM_BASE_URL}/alerts`, {
-            headers: { Authorization: config.UKRAINEALARM_TOKEN },
-        });
-
-        if (alertsResponse.ok) {
-            const alerts = await alertsResponse.json();
-            saved.latestAlerts = alerts;
-            saved.lastFullFetchAt = now;
-            recordUkraineAlarmObservations(saved, alerts, now);
-        } else {
-            state.ukraineAlarmOriginError = { status: alertsResponse.status, body: await alertsResponse.text() };
-        }
+        recordUkraineAlarmObservations(saved, alerts, now);
+    } else {
+        state.ukraineAlarmOriginError = { status: alertsResponse.status, body: await alertsResponse.text() };
     }
 
     store.put('ukraineAlarmState', saved);
@@ -471,7 +495,7 @@ function buildUkraineAlarmAlertsBody(saved) {
     (saved && saved.latestAlerts ? saved.latestAlerts : []).forEach((region) => {
         (region.activeAlerts || []).forEach((alert) => {
             const mappedType = lib.UKRAINEALARM_TYPE_MAP[alert.type];
-            if (!mappedType) return;
+            if (!mappedType || lib.UKRAINEALARM_IGNORED_REGION_IDS.has(String(region.regionId))) return;
 
             const ageMs = now - new Date(alert.lastUpdate).getTime();
             if (ageMs > UKRAINEALARM_STALE_ALERT_THRESHOLD_MS) return;
@@ -480,7 +504,7 @@ function buildUkraineAlarmAlertsBody(saved) {
 
             alerts.push({
                 id: `ukrainealarm-${region.regionId}-${mappedType}`,
-                location_uid: Number(region.regionId),
+                location_uid: lib.ukraineAlarmUid(region.regionId),
                 location_title: region.regionName,
                 alert_type: mappedType,
                 started_at: alert.lastUpdate,
@@ -537,9 +561,7 @@ async function getUkraineAlarmAlerts() {
 }
 
 async function fetchUkraineAlarmDateHistory(dateKey) {
-    const response = await fetch(`${UKRAINEALARM_BASE_URL}/alerts/dateHistory?date=${dateKey.replace(/-/g, '')}`, {
-        headers: { Authorization: config.UKRAINEALARM_TOKEN },
-    });
+    const response = await ukraineAlarmFetch(`/alerts/dateHistory?date=${dateKey.replace(/-/g, '')}`, { maxWaitMs: UKRAINEALARM_ROUTE_MAX_WAIT_MS });
 
     if (!response.ok) {
         return { error: { status: response.status, body: await response.text() } };
@@ -551,7 +573,7 @@ async function fetchUkraineAlarmDateHistory(dateKey) {
         .filter((record) => lib.parseDotNetDurationMs(record.duration) <= UKRAINEALARM_TODAY_MAX_DURATION_MS)
         .map((record) => ({
             id: `ukrainealarm-${record.regionId}-${record.startDate}`,
-            location_uid: Number(record.regionId),
+            location_uid: lib.ukraineAlarmUid(record.regionId),
             location_title: record.regionName,
             alert_type: lib.UKRAINEALARM_TYPE_MAP[record.alertType],
             started_at: record.startDate,
@@ -632,9 +654,7 @@ async function getUkraineAlarmRegionHistory(regionId) {
 
     if (!cached || now - cached.fetchedAt >= HISTORY_CACHE_TTL_MS) {
         try {
-            const response = await fetch(`${UKRAINEALARM_BASE_URL}/alerts/regionHistory?regionId=${regionId}`, {
-                headers: { Authorization: config.UKRAINEALARM_TOKEN },
-            });
+            const response = await ukraineAlarmFetch(`/alerts/regionHistory?regionId=${regionId}`, { maxWaitMs: UKRAINEALARM_ROUTE_MAX_WAIT_MS });
 
             if (!response.ok) {
                 state.ukraineAlarmRegionHistoryOriginErrors.set(regionId, { status: response.status, body: await response.text() });
@@ -672,6 +692,19 @@ async function getUkraineAlarmRegionHistory(regionId) {
     return jsonResponse(JSON.stringify({ alerts: state.ukraineAlarmRegionHistoryCache.get(regionId).alerts }));
 }
 
+function summarizeWebhookStats() {
+    const stats = state.ukraineAlarmWebhookStats;
+    const sorted = [...stats.lagsMs].sort((a, b) => a - b);
+    const pick = (p) => (sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))] : null);
+    return {
+        sinceMs: Date.now() - stats.startedAt,
+        received: stats.received,
+        rejected: stats.rejected,
+        samples: sorted.length,
+        lagMs: { p50: pick(0.5), p90: pick(0.9), max: sorted.length ? sorted[sorted.length - 1] : null },
+    };
+}
+
 async function getUkraineAlarmStatus() {
     const now = Date.now();
     const saved = store.get('ukraineAlarmState') || null;
@@ -691,6 +724,7 @@ async function getUkraineAlarmStatus() {
             staleAlertObservations: saved ? saved.observations : [],
             currentError: state.ukraineAlarmOriginError,
             webhookConfigured: Boolean(config.UKRAINEALARM_WEBHOOK_PUBLIC_KEY),
+            webhookStats: summarizeWebhookStats(),
             lastWebhookPayload,
         })
     );

@@ -15,6 +15,13 @@ const UKRAINEALARM_TYPE_MAP = {
     NUCLEAR: 'nuclear',
 };
 
+const UKRAINEALARM_ID_TO_UID = { 9999: 29 };
+const UKRAINEALARM_IGNORED_REGION_IDS = new Set(['0']);
+
+function ukraineAlarmUid(regionId) {
+    return UKRAINEALARM_ID_TO_UID[regionId] || Number(regionId);
+}
+
 const kyivDateFormat = new Intl.DateTimeFormat('en-CA', { timeZone: TODAY_STATS_TIMEZONE });
 const kyivHourFormat = new Intl.DateTimeFormat('en-GB', {
     timeZone: TODAY_STATS_TIMEZONE,
@@ -210,6 +217,8 @@ function buildWeaponStats(attacks, models, topModels) {
 module.exports = {
     ALL_OBLAST_UIDS,
     UKRAINEALARM_TYPE_MAP,
+    UKRAINEALARM_IGNORED_REGION_IDS,
+    ukraineAlarmUid,
     kyivDateKey,
     kyivHour,
     sha256Hex,
