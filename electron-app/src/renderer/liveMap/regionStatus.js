@@ -39,8 +39,8 @@ const YELLOW_DARK_SHADES = ['#5c5230', '#605432', '#655735', '#6a5a37', '#705d39
 const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 const RED_SHADES = isDark ? RED_DARK_SHADES : RED_LIGHT_SHADES;
 const YELLOW_SHADES = isDark ? YELLOW_DARK_SHADES : YELLOW_LIGHT_SHADES;
-const ALERTED_FILL_OPACITY = isDark ? 0.5 : 0.32;
-const NEUTRAL_COLOR = isDark ? '#3a4650' : '#7a8a94';
+const ALERTED_FILL_OPACITY = isDark ? 0.5 : 0.42;
+const NEUTRAL_COLOR = isDark ? '#3a4650' : '#6e6040';
 const NEUTRAL_FILL_OPACITY = isDark ? 0.06 : 0.05;
 
 function shadeFor(startedAt, now, alertLevel) {

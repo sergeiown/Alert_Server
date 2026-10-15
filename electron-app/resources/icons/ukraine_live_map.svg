@@ -11,14 +11,14 @@
 
   <style>
     path {
-      fill: #d9d3c1;
-      stroke: #9a9481;
+      fill: #d4c9ae;
+      stroke: #7a6c4e;
       stroke-width: 0.5;
     }
     @media (prefers-color-scheme: dark) {
       path {
-        fill: #333a42;
-        stroke: #4d5560;
+        fill: #243345;
+        stroke: #3f5470;
       }
     }
   </style>

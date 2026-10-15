@@ -3911,7 +3911,7 @@ const RAION_BORDERS = {
 
 function buildRaionBordersGroup() {
     const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const color = isDark ? '#8c94a0' : '#6b6349';
+    const color = isDark ? '#8c94a0' : '#5e5238';
     const layer = L.layerGroup();
 
     Object.values(RAION_BORDERS).forEach((ring) => {
@@ -3920,7 +3920,7 @@ function buildRaionBordersGroup() {
             color,
             fill: false,
             weight: 1,
-            opacity: 0.4,
+            opacity: isDark ? 0.4 : 0.6,
         }).addTo(layer);
     });
 

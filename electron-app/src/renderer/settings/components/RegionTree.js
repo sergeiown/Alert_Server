@@ -79,7 +79,7 @@ export function createRegionTree(container, tree, initialSelectedUids, language,
 
         const arrow = document.createElement('span');
         arrow.className = 'toggle-arrow' + (hasChildren ? '' : ' leaf');
-        arrow.textContent = hasChildren ? (query ? '▾' : '▸') : '';
+        if (hasChildren && query) arrow.classList.add('open');
         row.appendChild(arrow);
 
         const checkbox = document.createElement('input');
@@ -109,7 +109,7 @@ export function createRegionTree(container, tree, initialSelectedUids, language,
         if (hasChildren) {
             arrow.addEventListener('click', () => {
                 childrenContainer.classList.toggle('collapsed');
-                arrow.textContent = childrenContainer.classList.contains('collapsed') ? '▸' : '▾';
+                arrow.classList.toggle('open', !childrenContainer.classList.contains('collapsed'));
             });
 
             children.forEach((child) => {

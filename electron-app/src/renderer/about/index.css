@@ -71,7 +71,7 @@ body {
     text-align: center;
     gap: 4px;
     color: var(--fg);
-    font-family: Segoe UI, Tahoma, sans-serif;
+    font-family: 'IBM Plex Sans', 'Segoe UI', Tahoma, sans-serif;
     font-size: 13px;
 }
 

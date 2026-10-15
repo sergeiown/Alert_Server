@@ -37,8 +37,8 @@ const paths = Object.entries(borders)
     .join('\n');
 
 const THEMES = {
-    light: { fill: '#d9d3c1', stroke: '#9a9481' },
-    dark: { fill: '#333a42', stroke: '#4d5560' },
+    light: { fill: '#d4c9ae', stroke: '#7a6c4e' },
+    dark: { fill: '#243345', stroke: '#3f5470' },
 };
 
 Object.entries(THEMES).forEach(([theme, colors]) => {

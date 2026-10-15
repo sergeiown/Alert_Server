@@ -1,4 +1,10 @@
 html,
+body,
+.leaflet-container {
+    font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+}
+
+html,
 body {
     margin: 0;
     padding: 0;
@@ -9,22 +15,22 @@ body {
 #map {
     width: 100%;
     height: 100vh;
-    background: #aad3df;
+    background: #a9bcc4;
 }
 
 :root {
-    --map-chrome-bg: #f3f3f3;
-    --map-chrome-border: #d9d9d9;
-    --map-chrome-hover: #e6e6e6;
-    --map-chrome-text: #1f1f1f;
+    --map-chrome-bg: #f6f9fd;
+    --map-chrome-border: #c3d1e2;
+    --map-chrome-hover: #dfe8f3;
+    --map-chrome-text: #36516f;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --map-chrome-bg: #202020;
-        --map-chrome-border: #3a3a3a;
-        --map-chrome-hover: #2b2b2b;
-        --map-chrome-text: #e6e6e6;
+        --map-chrome-bg: #1d2836;
+        --map-chrome-border: #36485f;
+        --map-chrome-hover: #2a3a4f;
+        --map-chrome-text: #c6d9ee;
     }
 }
 
@@ -267,7 +273,7 @@ body {
     left: 50%;
     bottom: 24px;
     transform: translateX(-50%);
-    background: #262b33;
+    background: var(--map-chrome-bg);
     color: #e6e6e6;
     padding: 8px 16px;
     border-radius: 6px;
@@ -367,7 +373,7 @@ body {
 }
 
 .raion-border {
-    stroke: #6b6349;
+    stroke: #5e5238;
 }
 
 .raion-label {
@@ -429,7 +435,7 @@ body {
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
     padding: 8px 14px;
     text-align: center;
-    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
     color: var(--map-chrome-text);
     pointer-events: none;
 }
@@ -535,16 +541,16 @@ body {
 
 @media (prefers-color-scheme: dark) {
     #map {
-        background: #10151c;
+        background: #101720;
     }
 
     .kyiv-raion-label {
         color: #d6dbe4;
         text-shadow:
-            -1px -1px 2px #15181d,
-            1px -1px 2px #15181d,
-            -1px 1px 2px #15181d,
-            1px 1px 2px #15181d;
+            -1px -1px 2px #162030,
+            1px -1px 2px #162030,
+            -1px 1px 2px #162030,
+            1px 1px 2px #162030;
     }
 
     .threat-icon {
@@ -553,7 +559,7 @@ body {
 
     .leaflet-popup-content-wrapper,
     .leaflet-popup-tip {
-        background: #262b33;
+        background: var(--map-chrome-bg);
         color: #e6e6e6;
     }
 
@@ -572,13 +578,13 @@ body {
     }
 
     .leaflet-tooltip {
-        background: #262b33 !important;
+        background: var(--map-chrome-bg) !important;
         border-color: #3a4048 !important;
         color: #e6e6e6 !important;
     }
 
     .leaflet-tooltip-top:before {
-        border-top-color: #262b33 !important;
+        border-top-color: var(--map-chrome-bg) !important;
     }
 
     .leaflet-control-attribution,

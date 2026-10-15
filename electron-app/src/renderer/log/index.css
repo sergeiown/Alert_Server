@@ -25,7 +25,7 @@ body {
     height: 100vh;
     background: radial-gradient(ellipse at center, #06170c 0%, var(--bg) 75%);
     color: var(--fg);
-    font-family: 'Cascadia Mono', Consolas, 'Lucida Console', 'Courier New', monospace;
+    font-family: 'IBM Plex Mono', Consolas, 'Courier New', monospace;
     font-size: 13px;
     letter-spacing: 0.3px;
     text-shadow: var(--glow);

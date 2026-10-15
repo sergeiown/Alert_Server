@@ -1,15 +1,14 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
-const { ipcMain, clipboard, systemPreferences } = require('electron');
+const { ipcMain, clipboard } = require('electron');
 const { getResourcePath } = require('../services/appPaths');
 const { getLatestTotalAlertCount, getLatestAlertedRegions, getActiveAlertSource } = require('../services/alertState');
 const { getLatestOccupiedTerritory } = require('../services/occupiedTerritoryStore');
 const { getLatestThreats } = require('../services/neptunThreatsStore');
 const { getDailyPeaks } = require('../services/dailyPeakStore');
 const { alertTypeName } = require('../services/alertTypes');
-const { getTitleBarAccentColor } = require('../services/accentColor');
-const { getLiveMapWindow, consumePendingKyivMode } = require('../windows/liveMapWindow');
+const { consumePendingKyivMode } = require('../windows/liveMapWindow');
 const settingsStore = require('../services/settingsStore');
 const { logEvent } = require('../services/logger');
 
@@ -51,16 +50,7 @@ function registerLiveMapIpc() {
 
     ipcMain.handle('liveMap:getThreats', () => getLatestThreats());
 
-    ipcMain.handle('liveMap:getTitleBarAccentColor', () => getTitleBarAccentColor());
-
     ipcMain.handle('liveMap:consumePendingKyivMode', () => consumePendingKyivMode());
-
-    if (typeof systemPreferences.on === 'function') {
-        systemPreferences.on('accent-color-changed', () => {
-            const win = getLiveMapWindow();
-            if (win) win.webContents.send('liveMap:titleBarAccentColorChanged', getTitleBarAccentColor());
-        });
-    }
 
     ipcMain.handle('liveMap:takeScreenshot', async (event) => {
         try {

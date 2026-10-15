@@ -78,6 +78,7 @@ copyDirectory(LEAFLET, path.join(OUT, 'vendor', 'leaflet'), (name) => /^(leaflet
 copyFile(path.join(RESOURCES, 'data', 'alertTypes.json'), path.join(OUT, 'data', 'alertTypes.json'));
 copyFile(path.join(RESOURCES, 'icons', 'app-icon-256.png'), path.join(OUT, 'icon-256.png'));
 copyDirectory(path.join(__dirname, 'icons'), path.join(OUT, 'icons'));
+copyDirectory(path.join(ROOT, 'electron-app', 'src', 'renderer', 'shared', 'fonts'), path.join(OUT, 'fonts'));
 
 ['index.html', 'shim.js', 'web.js', 'web.css', 'manifest.webmanifest', 'basemap-light.svg', 'basemap-dark.svg'].forEach((name) =>
     copyFile(path.join(__dirname, name), path.join(OUT, name))

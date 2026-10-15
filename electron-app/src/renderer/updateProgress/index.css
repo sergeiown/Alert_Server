@@ -35,7 +35,7 @@ body {
     gap: 10px;
     background: var(--bg);
     color: var(--fg);
-    font-family: Segoe UI, Tahoma, sans-serif;
+    font-family: 'IBM Plex Sans', 'Segoe UI', Tahoma, sans-serif;
     font-size: 13px;
 }
 

@@ -50,7 +50,7 @@ body {
 body {
     display: flex;
     flex-direction: column;
-    font-family: 'Segoe UI Variable', 'Segoe UI', Tahoma, sans-serif;
+    font-family: 'IBM Plex Sans', 'Segoe UI', Tahoma, sans-serif;
     color: var(--text);
     background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
     user-select: none;

@@ -13,7 +13,6 @@ import { KYIV_RAION_BORDERS } from './kyivRaionBorders.js';
 import { createKyivRaionLabels } from './kyivRaionLabels.js';
 import { UKRAINE_OUTLINE } from './ukraineOutline.js';
 import { offsetRing, metersPerPixel } from './outlineOffset.js';
-import { applyTitleBarAccentColor } from './chromeTint.js';
 
 const UKRAINE_BOUNDS = [
     [44.387017, 22.138577],
@@ -107,9 +106,6 @@ async function main() {
     const alertSourceDisplay = ALERT_SOURCE_DISPLAY[activeAlertSourceKey] || ALERT_SOURCE_DISPLAY['alerts.in.ua'];
     document.title = strings.appName;
 
-    applyTitleBarAccentColor(await window.alertServerLiveMap.getTitleBarAccentColor());
-    window.alertServerLiveMap.onTitleBarAccentColorChanged(applyTitleBarAccentColor);
-
     const map = L.map('map', {
         center: [48.4, 31.2],
         zoom: 6,
@@ -196,7 +192,7 @@ async function main() {
             pane: 'outsideMaskPane',
             renderer: outsideMaskRenderer,
             stroke: false,
-            fillColor: isDarkMap ? '#10151c' : '#aad3df',
+            fillColor: isDarkMap ? '#101720' : '#a9bcc4',
             fillOpacity: 1,
             interactive: false,
         }
@@ -208,7 +204,7 @@ async function main() {
                 pane: 'outsideMaskPane',
             renderer: outsideMaskRenderer,
                 fill: false,
-                color: isDarkMap ? '#10151c' : '#aad3df',
+                color: isDarkMap ? '#101720' : '#a9bcc4',
                 weight,
                 opacity: 0.16,
                 lineJoin: 'round',
@@ -258,7 +254,7 @@ async function main() {
         className: 'kyiv-mask-shape',
         stroke: false,
 
-        fillColor: isDarkMap ? '#10151c' : '#aad3df',
+        fillColor: isDarkMap ? '#101720' : '#a9bcc4',
         fillOpacity: 1,
         interactive: false,
     });

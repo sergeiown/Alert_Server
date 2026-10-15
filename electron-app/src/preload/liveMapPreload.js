@@ -16,9 +16,6 @@ contextBridge.exposeInMainWorld('alertServerLiveMap', {
     onThreatsUpdated: (callback) => ipcRenderer.on('liveMap:threatsUpdated', (event, threats) => callback(threats)),
     takeScreenshot: () => ipcRenderer.invoke('liveMap:takeScreenshot'),
     openExternal: (url) => ipcRenderer.invoke('system:openExternal', url),
-    getTitleBarAccentColor: () => ipcRenderer.invoke('liveMap:getTitleBarAccentColor'),
-    onTitleBarAccentColorChanged: (callback) =>
-        ipcRenderer.on('liveMap:titleBarAccentColorChanged', (event, color) => callback(color)),
     onForceKyivMode: (callback) => ipcRenderer.on('liveMap:forceKyivMode', () => callback()),
     consumePendingKyivMode: () => ipcRenderer.invoke('liveMap:consumePendingKyivMode'),
 });

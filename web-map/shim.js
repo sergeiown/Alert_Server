@@ -291,10 +291,6 @@
             return Promise.resolve(false);
         },
         openExternal,
-        getTitleBarAccentColor () {
-            return Promise.resolve(null);
-        },
-        onTitleBarAccentColorChanged () {},
         onForceKyivMode () {},
         onMapReady (api) {
             mapApi = api;

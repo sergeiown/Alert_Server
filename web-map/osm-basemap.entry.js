@@ -6,8 +6,8 @@ import { namedFlavor } from '@protomaps/basemaps';
 
 const DARK = {
     ...namedFlavor('dark'),
-    background: '#15181d',
-    earth: '#1b1f25',
+    background: '#101720',
+    earth: '#162030',
     park_a: '#1d2c26',
     park_b: '#20382c',
     wood_a: '#1c2b23',
@@ -19,14 +19,14 @@ const DARK = {
     school: '#242229',
     pedestrian: '#242830',
     water: '#1b3a52',
-    buildings: '#2c313a',
-    minor_service_casing: '#14171b',
-    minor_casing: '#14171b',
-    link_casing: '#14171b',
-    major_casing_early: '#14171b',
-    major_casing_late: '#14171b',
-    highway_casing_early: '#14171b',
-    highway_casing_late: '#14171b',
+    buildings: '#233044',
+    minor_service_casing: '#0f1620',
+    minor_casing: '#0f1620',
+    link_casing: '#0f1620',
+    major_casing_early: '#0f1620',
+    major_casing_late: '#0f1620',
+    highway_casing_early: '#0f1620',
+    highway_casing_late: '#0f1620',
     other: '#3b414b',
     minor_service: '#3b414b',
     minor_a: '#4c535f',
@@ -37,13 +37,13 @@ const DARK = {
     railway: '#4a505b',
     boundaries: '#7b859a',
     roads_label_minor: '#8b93a1',
-    roads_label_minor_halo: '#1b1f25',
+    roads_label_minor_halo: '#162030',
     roads_label_major: '#aab2c0',
-    roads_label_major_halo: '#1b1f25',
+    roads_label_major_halo: '#162030',
     subplace_label: '#9aa2b0',
-    subplace_label_halo: '#1b1f25',
+    subplace_label_halo: '#162030',
     city_label: '#c5ccd8',
-    city_label_halo: '#1b1f25',
+    city_label_halo: '#162030',
     ocean_label: '#7d8ba3',
     landcover: {
         grassland: 'rgba(29, 44, 36, 1)',
@@ -58,16 +58,43 @@ const DARK = {
 
 const LIGHT = {
     ...namedFlavor('light'),
-    background: '#d9d6cf',
-    earth: '#eceae4',
-    water: '#a9d4e6',
-    buildings: '#dcd7cd',
+    background: '#c9c0ab',
+    earth: '#ddd5c2',
+    water: '#a3b8c2',
+    buildings: '#cfc6b0',
+    highway: '#f1ece0',
+    major: '#ebe5d7',
+    link: '#ebe5d7',
+    minor_a: '#e4dccb',
+    minor_b: '#dfd7c5',
+    minor_service: '#d9d0bc',
+    other: '#d9d0bc',
 };
 
 const MAJOR_PLACES = ['city', 'town'];
 
+const LABEL_FONT_FAMILY = "'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif";
+const LABEL_FONT_SAMPLE = 'Київ Kyiv';
+
+if (typeof document !== 'undefined' && document.fonts && document.fonts.load) {
+    ['400', '600', '700'].forEach((weight) => document.fonts.load(`${weight} 12px 'IBM Plex Sans'`, LABEL_FONT_SAMPLE).catch(() => {}));
+}
+
+function withPlexFont(rules) {
+    rules.forEach((rule) => {
+        const attr = rule.symbolizer && rule.symbolizer.font;
+        if (!attr || !attr.font) return;
+        const original = attr.font;
+        attr.font =
+            typeof original === 'function'
+                ? (zoom, feature) => String(original(zoom, feature)).replace(/sans-serif/g, LABEL_FONT_FAMILY)
+                : String(original).replace(/sans-serif/g, LABEL_FONT_FAMILY);
+    });
+    return rules;
+}
+
 function buildLabelRules(flavor, lang, labels) {
-    const all = labelRules(flavor, lang);
+    const all = withPlexFont(labelRules(flavor, lang));
     if (labels === true) return all;
     if (labels !== 'places' && labels !== 'places-major') return [];
 
