@@ -904,6 +904,7 @@ function buildStatus() {
             occupied: occupied.getStatusInfo(),
             geoip: geoip.getStatusInfo(),
             publicApi: require('./publicApi').getStatusInfo(),
+            ukraineAlarm: { snapshotAgeMs: ageOrNull((store.get('ukraineAlarmState') || {}).lastFullFetchAt) },
             backfill: { complete: trends.isBackfillComplete() },
             peaks: trends.getDailyPeaks(),
             archive: archive.getStats(),

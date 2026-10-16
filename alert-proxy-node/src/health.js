@@ -6,6 +6,8 @@ const RESOURCE_CRIT_PERCENT = 90;
 const HEAP_WARN_PERCENT = 60;
 const HEAP_CRIT_PERCENT = 85;
 const ACTIVE_STALE_MS = 90 * 1000;
+const UKRAINEALARM_SNAPSHOT_WARN_MS = 20 * 60 * 1000;
+const UKRAINEALARM_SNAPSHOT_CRIT_MS = 60 * 60 * 1000;
 const NEPTUN_STREAM_DOWN_MS = 5 * 60 * 1000;
 const NEPTUN_ALERTS_STALE_MS = 5 * 60 * 1000;
 const BACKUP_STALE_MS = 36 * 60 * 60 * 1000;
@@ -31,7 +33,12 @@ function evaluate(status, flags) {
         add('crit', 'alertsinua-no-token', 'ALERTS_TOKEN is not configured');
     }
 
-    if (!flags.ukraineAlarmConfigured) add('info', 'ukrainealarm-no-token', 'UkraineAlarm token is not configured');
+    if (!flags.ukraineAlarmConfigured) {
+        add('info', 'ukrainealarm-no-token', 'UkraineAlarm token is not configured');
+    } else if (status.ukraineAlarm.snapshotAgeMs !== null) {
+        if (status.ukraineAlarm.snapshotAgeMs > UKRAINEALARM_SNAPSHOT_CRIT_MS) add('crit', 'ukrainealarm-stale', 'UkraineAlarm snapshot has not refreshed for over an hour');
+        else if (status.ukraineAlarm.snapshotAgeMs > UKRAINEALARM_SNAPSHOT_WARN_MS) add('warn', 'ukrainealarm-stale', 'UkraineAlarm snapshot is stale');
+    }
 
     const neptun = status.neptun;
     if (!neptun.stream.connected && (neptun.stream.lastMessageAgeMs === null || neptun.stream.lastMessageAgeMs > NEPTUN_STREAM_DOWN_MS)) {
