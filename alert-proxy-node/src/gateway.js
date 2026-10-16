@@ -37,6 +37,7 @@ const UKRAINEALARM_BASE_URL = 'https://api.ukrainealarm.com/api/v3';
 const UKRAINEALARM_MIN_GAP_MS = 3 * 60 * 1000;
 const UKRAINEALARM_REQUEST_GAP_MS = 65 * 1000;
 const UKRAINEALARM_ROUTE_MAX_WAIT_MS = 5 * 1000;
+const UKRAINEALARM_REQUEST_TIMEOUT_MS = 20 * 1000;
 const UKRAINEALARM_STALE_ALERT_THRESHOLD_MS = 24 * 60 * 60 * 1000;
 const UKRAINEALARM_MAX_OBSERVATIONS = 30;
 
@@ -297,20 +298,38 @@ function recordUniqueUser(ip) {
 
 let ukraineAlarmQueue = Promise.resolve();
 let ukraineAlarmNextSlotAt = 0;
+let ukraineAlarmWaiting = 0;
+
+function ukraineAlarmProjectedWaitMs() {
+    return Math.max(0, ukraineAlarmNextSlotAt - Date.now()) + ukraineAlarmWaiting * UKRAINEALARM_REQUEST_GAP_MS;
+}
 
 function ukraineAlarmFetch(path, { maxWaitMs = Infinity } = {}) {
+    const projectedWaitMs = ukraineAlarmProjectedWaitMs();
+    if (projectedWaitMs > maxWaitMs) {
+        return Promise.resolve(new Response('Rate limited locally', { status: 429, headers: { 'Retry-After': String(Math.ceil(projectedWaitMs / 1000)) } }));
+    }
+
+    ukraineAlarmWaiting++;
     const run = async () => {
+        ukraineAlarmWaiting--;
         const waitMs = ukraineAlarmNextSlotAt - Date.now();
-        if (waitMs > maxWaitMs) {
-            return new Response('Rate limited locally', { status: 429, headers: { 'Retry-After': String(Math.ceil(waitMs / 1000)) } });
-        }
         if (waitMs > 0) await lib.delay(waitMs);
 
         const startedAt = Date.now();
         ukraineAlarmNextSlotAt = startedAt + UKRAINEALARM_REQUEST_GAP_MS;
         state.ukraineAlarmFetchTimestamps.push(startedAt);
 
-        const response = await fetch(`${UKRAINEALARM_BASE_URL}${path}`, { headers: { Authorization: config.UKRAINEALARM_TOKEN } });
+        let response;
+        try {
+            response = await fetch(`${UKRAINEALARM_BASE_URL}${path}`, {
+                headers: { Authorization: config.UKRAINEALARM_TOKEN },
+                signal: AbortSignal.timeout(UKRAINEALARM_REQUEST_TIMEOUT_MS),
+            });
+        } catch (err) {
+            return new Response(err.message, { status: 502 });
+        }
+
         if (response.status === 429) {
             const retryAfterSec = Number(response.headers.get('retry-after')) || 60;
             ukraineAlarmNextSlotAt = Math.max(ukraineAlarmNextSlotAt, Date.now() + (retryAfterSec + 5) * 1000);
@@ -389,7 +408,7 @@ async function handleUkraineAlarmWebhook(headers, rawBody) {
     if (event && event.regionId !== undefined && event.alarmType && event.createdAt && Array.isArray(event.activeAlertLevels)) {
         await applyUkraineAlarmEvent(event);
     } else {
-        await pollUkraineAlarmIfDue();
+        await pollUkraineAlarmIfDue({ maxWaitMs: UKRAINEALARM_ROUTE_MAX_WAIT_MS });
     }
 
     return { status: 200, headers: {}, body: 'OK' };
@@ -428,10 +447,10 @@ async function applyUkraineAlarmEvent(event) {
     broadcastUkraineAlarmAlerts(saved);
 }
 
-async function pollUkraineAlarmIfDue({ force = false } = {}) {
+async function pollUkraineAlarmIfDue({ force = false, maxWaitMs = Infinity } = {}) {
     if (!config.UKRAINEALARM_TOKEN) return;
 
-    let saved = store.get('ukraineAlarmState') || {
+    const saved = store.get('ukraineAlarmState') || {
         lastFetchAt: 0,
         lastFullFetchAt: 0,
         lastActionIndex: null,
@@ -441,23 +460,32 @@ async function pollUkraineAlarmIfDue({ force = false } = {}) {
 
     const now = Date.now();
     if (!force && now - saved.lastFetchAt < UKRAINEALARM_MIN_GAP_MS) return;
+    if (ukraineAlarmProjectedWaitMs() > maxWaitMs) return;
 
     saved.lastFetchAt = now;
+    store.put('ukraineAlarmState', saved);
 
-    const alertsResponse = await ukraineAlarmFetch('/alerts', { maxWaitMs: force ? UKRAINEALARM_ROUTE_MAX_WAIT_MS : Infinity });
+    const alertsResponse = await ukraineAlarmFetch('/alerts', { maxWaitMs });
+
+    const current = store.get('ukraineAlarmState') || saved;
+    current.lastFetchAt = now;
 
     if (alertsResponse.ok) {
-        const alerts = await alertsResponse.json();
-        saved.latestAlerts = alerts;
-        saved.lastFullFetchAt = now;
-        state.ukraineAlarmOriginError = null;
-        recordUkraineAlarmObservations(saved, alerts, now);
+        try {
+            const alerts = await alertsResponse.json();
+            current.latestAlerts = alerts;
+            current.lastFullFetchAt = now;
+            state.ukraineAlarmOriginError = null;
+            recordUkraineAlarmObservations(current, alerts, now);
+        } catch (err) {
+            state.ukraineAlarmOriginError = { status: 0, body: err.message };
+        }
     } else {
-        state.ukraineAlarmOriginError = { status: alertsResponse.status, body: await alertsResponse.text() };
+        state.ukraineAlarmOriginError = { status: alertsResponse.status, body: (await alertsResponse.text()).slice(0, 200) };
     }
 
-    store.put('ukraineAlarmState', saved);
-    broadcastUkraineAlarmAlerts(saved);
+    store.put('ukraineAlarmState', current);
+    broadcastUkraineAlarmAlerts(current);
 }
 
 function recordUkraineAlarmObservations(saved, alerts, now) {
@@ -551,7 +579,7 @@ async function getUkraineAlarmAlerts() {
         return jsonResponse(JSON.stringify({ error: 'UkraineAlarm is not configured on the server' }), 503);
     }
     try {
-        await pollUkraineAlarmIfDue();
+        await pollUkraineAlarmIfDue({ maxWaitMs: UKRAINEALARM_ROUTE_MAX_WAIT_MS });
     } catch (err) {
         state.ukraineAlarmOriginError = { status: 0, body: err.message };
     }
