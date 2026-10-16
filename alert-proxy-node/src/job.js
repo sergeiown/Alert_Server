@@ -83,7 +83,7 @@ async function historyBackfillLoop() {
 async function maintenanceLoop() {
     for (;;) {
         try {
-            backup.runBackupIfDue();
+            await backup.runBackupIfDue();
             archive.pruneOld();
             users.prune();
             webstats.prune();

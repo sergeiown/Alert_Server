@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const fs = require('node:fs');
+const { execFile } = require('node:child_process');
 const path = require('node:path');
 const store = require('./store');
 const { DATA_DIR } = require('./config');
@@ -26,7 +27,18 @@ function listBackups() {
         .sort();
 }
 
-function runBackupIfDue() {
+function writeBackupFile(target) {
+    return new Promise((resolve, reject) => {
+        execFile(
+            process.execPath,
+            ['--no-warnings', path.join(__dirname, 'backupWorker.js'), target],
+            { timeout: 10 * 60 * 1000 },
+            (err, stdout, stderr) => (err ? reject(new Error(stderr || err.message)) : resolve())
+        );
+    });
+}
+
+async function runBackupIfDue() {
     const last = store.get('lastBackup');
     if (last && Date.now() - last.at < BACKUP_INTERVAL_MS) return;
 
@@ -36,7 +48,7 @@ function runBackupIfDue() {
     const target = path.join(BACKUP_DIR, file);
     if (fs.existsSync(target)) fs.unlinkSync(target);
 
-    store.vacuumInto(target);
+    await writeBackupFile(target);
     const sizeBytes = fs.statSync(target).size;
     store.put('lastBackup', { at: now.getTime(), file, sizeBytes });
 

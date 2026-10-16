@@ -14,6 +14,7 @@ const health = require('./health');
 const trends = require('./trends');
 const occupied = require('./occupied');
 const geoip = require('./geoip');
+const uniqueUsers = require('./uniqueUsers');
 
 const UNIQUE_USERS_HISTORY_MAX_DAYS = 90;
 
@@ -263,37 +264,20 @@ async function getHistory(uid) {
     return { status: 200, headers, body };
 }
 
-function archiveUniqueUsersDay(finishedDaily) {
-    if (!finishedDaily || !finishedDaily.date) return;
+function archiveUniqueUsersDay(finishedDay) {
+    if (!finishedDay || !finishedDay.date) return;
     const history = store.get('uniqueUsersHistory') || [];
-    if (history.some((entry) => entry.date === finishedDaily.date)) return;
-    history.push({ date: finishedDaily.date, count: finishedDaily.hashedIps.length });
+    if (history.some((entry) => entry.date === finishedDay.date)) return;
+    history.push({ date: finishedDay.date, count: finishedDay.count });
     history.sort((a, b) => (a.date < b.date ? -1 : 1));
     store.put('uniqueUsersHistory', history.slice(-UNIQUE_USERS_HISTORY_MAX_DAYS));
 }
 
+uniqueUsers.onDayFinished(archiveUniqueUsersDay);
+
 function recordUniqueUser(ip) {
     if (!ip) return;
-    const hashPromise = lib.hashIp(ip).then((hashed) => {
-        const todayKey = lib.kyivDateKey(new Date());
-        let daily = store.get('uniqueUsersState');
-        if (!daily || daily.date !== todayKey) {
-            archiveUniqueUsersDay(daily);
-            daily = { date: todayKey, hashedIps: [] };
-        }
-        if (!daily.hashedIps.includes(hashed)) {
-            daily.hashedIps.push(hashed);
-            store.put('uniqueUsersState', daily);
-        }
-
-        let allTime = store.get('allTimeUniqueUsersState');
-        if (!allTime) allTime = { hashedIps: [] };
-        if (!allTime.hashedIps.includes(hashed)) {
-            allTime.hashedIps.push(hashed);
-            store.put('allTimeUniqueUsersState', allTime);
-        }
-    });
-    return hashPromise;
+    return lib.hashIp(ip).then((hashed) => uniqueUsers.record(hashed));
 }
 
 let ukraineAlarmQueue = Promise.resolve();
@@ -825,8 +809,7 @@ function buildStatus() {
     const todayState = loadTodayStatsState();
     const oblastsRemaining = Math.max(0, lib.ALL_OBLAST_UIDS.length - todayState.cursor);
     const ukraineAlarmTodayState = loadUkraineAlarmTodayState();
-    const uniqueUsersState = store.get('uniqueUsersState');
-    const allTimeUniqueUsersState = store.get('allTimeUniqueUsersState');
+    const uniqueCounts = uniqueUsers.counts();
 
     const generalRequestsLastMinute = lib.pruneAndCount(state.allAlertsInUaFetchTimestamps, now, LOAD_WINDOW_MS);
     const historyRequestsLastMinute = lib.pruneAndCount(state.historyFetchTimestamps, now, LOAD_WINDOW_MS);
@@ -888,9 +871,9 @@ function buildStatus() {
                 currentError: ukraineAlarmTodayState.originError,
             },
             uniqueUsers: {
-                date: uniqueUsersState ? uniqueUsersState.date : lib.kyivDateKey(new Date()),
-                allTime: allTimeUniqueUsersState ? allTimeUniqueUsersState.hashedIps.length : 0,
-                today: uniqueUsersState ? uniqueUsersState.hashedIps.length : 0,
+                date: uniqueCounts.date,
+                allTime: uniqueCounts.allTime,
+                today: uniqueCounts.today,
                 history: store.get('uniqueUsersHistory') || [],
             },
             system: system.getSystemMetrics(),

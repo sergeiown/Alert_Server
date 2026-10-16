@@ -41,16 +41,57 @@ db.exec(`CREATE TABLE IF NOT EXISTS route_hits (
 )`);
 
 const upsertUser = db.prepare(`INSERT INTO users (id, first_seen, first_day, last_seen, requests, version, country)
-    VALUES (?, ?, ?, ?, 1, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
         last_seen = excluded.last_seen,
-        requests = users.requests + 1,
+        requests = users.requests + excluded.requests,
         version = COALESCE(excluded.version, users.version),
         country = COALESCE(excluded.country, users.country)`);
 const upsertDay = db.prepare(`INSERT INTO user_days (day, id, version) VALUES (?, ?, ?)
     ON CONFLICT(day, id) DO UPDATE SET version = COALESCE(excluded.version, user_days.version)`);
-const upsertHit = db.prepare(`INSERT INTO route_hits (day, hour, route, count) VALUES (?, ?, ?, 1)
-    ON CONFLICT(day, hour, route) DO UPDATE SET count = count + 1`);
+const upsertHit = db.prepare(`INSERT INTO route_hits (day, hour, route, count) VALUES (?, ?, ?, ?)
+    ON CONFLICT(day, hour, route) DO UPDATE SET count = count + excluded.count`);
+
+const FLUSH_INTERVAL_MS = 5000;
+const pendingUsers = new Map();
+const pendingDays = new Map();
+const pendingHits = new Map();
+
+function flush() {
+    if (!pendingUsers.size && !pendingDays.size && !pendingHits.size) return;
+    const users = [...pendingUsers.entries()];
+    const days = [...pendingDays.values()];
+    const hits = [...pendingHits.values()];
+    pendingUsers.clear();
+    pendingDays.clear();
+    pendingHits.clear();
+    db.exec('BEGIN');
+    try {
+        users.forEach(([id, u]) => upsertUser.run(id, u.firstSeen, u.firstDay, u.lastSeen, u.count, u.version, u.country));
+        days.forEach((d) => upsertDay.run(d.day, d.id, d.version));
+        hits.forEach((h) => upsertHit.run(h.day, h.hour, h.route, h.count));
+        db.exec('COMMIT');
+    } catch (err) {
+        db.exec('ROLLBACK');
+        throw err;
+    }
+}
+
+function safeFlush() {
+    try {
+        flush();
+    } catch (err) {
+        console.error('[users] flush failed', err && err.stack ? err.stack : err);
+    }
+}
+
+setInterval(safeFlush, FLUSH_INTERVAL_MS).unref();
+['SIGTERM', 'SIGINT'].forEach((signal) =>
+    process.once(signal, () => {
+        safeFlush();
+        process.exit(0);
+    })
+);
 
 const peak = { day: null, connections: 0 };
 
@@ -65,18 +106,41 @@ function record(hashedId, route, version, country) {
 
     const safeCountry = country && /^[A-Z]{2}$/.test(country) && country !== 'ZZ' ? country : null;
 
-    upsertUser.run(hashedId, now.getTime(), day, now.getTime(), safeVersion, safeCountry);
-    upsertDay.run(day, hashedId, safeVersion);
-    upsertHit.run(day, kyivHourNow(now), route);
+    const nowMs = now.getTime();
+    const pending = pendingUsers.get(hashedId);
+    if (pending) {
+        pending.lastSeen = nowMs;
+        pending.count++;
+        if (safeVersion) pending.version = safeVersion;
+        if (safeCountry) pending.country = safeCountry;
+    } else {
+        pendingUsers.set(hashedId, { firstSeen: nowMs, firstDay: day, lastSeen: nowMs, count: 1, version: safeVersion, country: safeCountry });
+    }
+
+    const dayKey = `${day}|${hashedId}`;
+    const pendingDay = pendingDays.get(dayKey);
+    if (pendingDay) {
+        if (safeVersion) pendingDay.version = safeVersion;
+    } else {
+        pendingDays.set(dayKey, { day, id: hashedId, version: safeVersion });
+    }
+    countHit(day, kyivHourNow(now), route);
 }
 
 async function recordRequest(ip, route, version) {
     record(await lib.hashIp(ip), route, version, geoip.lookup(ip));
 }
 
+function countHit(day, hour, route) {
+    const key = `${day}|${hour}|${route}`;
+    const pending = pendingHits.get(key);
+    if (pending) pending.count++;
+    else pendingHits.set(key, { day, hour, route, count: 1 });
+}
+
 function recordHit(route) {
     const now = new Date();
-    upsertHit.run(lib.kyivDateKey(now), kyivHourNow(now), route);
+    countHit(lib.kyivDateKey(now), kyivHourNow(now), route);
 }
 
 function notePeak(totalConnections) {
@@ -92,6 +156,7 @@ const VERSION_HISTORY_DAYS = 60;
 const VERSION_RETENTION_DAYS = 365;
 
 function snapshotVersions(sinceDay) {
+    safeFlush();
     const rows = db
         .prepare("SELECT day, COALESCE(version, 'unknown') AS version, COUNT(*) AS users FROM user_days WHERE day >= ? GROUP BY day, COALESCE(version, 'unknown')")
         .all(sinceDay);
@@ -128,6 +193,7 @@ function getVersionHistory() {
 }
 
 function prune() {
+    safeFlush();
     snapshotVersions('0000-00-00');
     db.prepare('DELETE FROM version_daily WHERE day < ?').run(lib.kyivDateKey(new Date(Date.now() - VERSION_RETENTION_DAYS * DAY_MS)));
     const cutoffDay = lib.kyivDateKey(new Date(Date.now() - RETENTION_DAYS * DAY_MS));
@@ -143,6 +209,7 @@ function collectedDays(oldestDay) {
 }
 
 function getStats(currentConnections, connectedUsers) {
+    safeFlush();
     const now = Date.now();
     const today = lib.kyivDateKey(new Date(now));
     const one = (sql, ...params) => db.prepare(sql).get(...params);
@@ -237,6 +304,7 @@ function getStats(currentConnections, connectedUsers) {
 }
 
 function getUserList() {
+    safeFlush();
     return db
         .prepare(
             `SELECT u.id AS id, u.first_seen AS first_seen, u.last_seen AS last_seen, u.requests AS requests, u.version AS version, u.country AS country,

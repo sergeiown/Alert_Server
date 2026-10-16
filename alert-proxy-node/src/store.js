@@ -8,6 +8,9 @@ const { DATA_DIR, DB_PATH } = require('./config');
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const db = new DatabaseSync(DB_PATH);
+db.exec('PRAGMA journal_mode = WAL');
+db.exec('PRAGMA synchronous = NORMAL');
+db.exec('PRAGMA busy_timeout = 5000');
 db.exec('CREATE TABLE IF NOT EXISTS kv_store (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at INTEGER NOT NULL)');
 
 const getStmt = db.prepare('SELECT value FROM kv_store WHERE key = ?');
@@ -25,8 +28,4 @@ function put(key, value) {
     putStmt.run(key, JSON.stringify(value), Date.now());
 }
 
-function vacuumInto(targetPath) {
-    db.exec(`VACUUM INTO '${targetPath.replace(/'/g, "''")}'`);
-}
-
-module.exports = { get, put, db, vacuumInto };
+module.exports = { get, put, db };
