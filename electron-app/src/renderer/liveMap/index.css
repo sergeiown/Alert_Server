@@ -178,15 +178,6 @@ body {
     pointer-events: none;
 }
 
-.threat-area-hit {
-    pointer-events: stroke !important;
-    cursor: pointer;
-}
-
-.threat-area-ring {
-    pointer-events: none !important;
-}
-
 .threat-explosion {
     position: absolute;
     inset: 0;
@@ -543,8 +534,7 @@ body {
 
 .threats-zoom-hidden .threat-icon-wrapper,
 .threats-zoom-hidden .threat-uncertainty-circle,
-.threats-zoom-hidden .threat-trail,
-.threats-zoom-hidden .threat-area-ring {
+.threats-zoom-hidden .threat-trail {
     opacity: 0 !important;
     transition: none !important;
 }

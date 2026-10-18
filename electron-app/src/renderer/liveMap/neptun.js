@@ -41,8 +41,6 @@ const CLUSTER_RADIUS_DESKTOP_PX = 26;
 const CLUSTER_RADIUS_TOUCH_PX = 38;
 const CLUSTER_ICON_DESKTOP_PX = 28;
 const CLUSTER_ICON_TOUCH_PX = 36;
-const AREA_HIT_WEIGHT_PX = 22;
-const AREA_ONLY_DEFAULT_KM = 70;
 const TYPE_PRIORITY = ['missile', 'mig31k', 'kab', 'uav', 'fpv', 'uav_recon', 'unknown'];
 
 function isTouchDevice() {
@@ -271,7 +269,6 @@ function tooltipContent(threat, strings, isEnglish) {
 
     const lines = [
         `<strong>${escapeHtml(title)}</strong>`,
-        threat.areaOnly ? escapeHtml(strings.liveMapAreaOnlyNote) : '',
         escapeHtml(locationLine),
         escapeHtml(facts.join(' · ')),
         escapeHtml(confirmationsLine),
@@ -302,10 +299,6 @@ function measureTooltipWidth(el) {
 
 const ALL_TYPE_KEYS = ['uav', 'uav_recon', 'fpv', 'kab', 'missile', 'mig31k', 'unknown'];
 
-const AREA_SWATCH_HTML =
-    '<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="#6b7280" fill-opacity="0.18" stroke="#6b7280" ' +
-    'stroke-width="1.5" stroke-dasharray="3 2.5"><circle cx="12" cy="12" r="10"/></svg></span>';
-
 const TRAIL_SWATCH_HTML =
     '<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#6b7280" ' +
     'stroke-width="1.8" stroke-linecap="round" stroke-dasharray="1.5 4"><path d="M3 20 L21 4"/></svg></span>';
@@ -320,16 +313,16 @@ function buildLegend(strings) {
 
     legend.onAdd = () => {
         container = L.DomUtil.create('div', 'threat-legend');
-        legend.update({ confirmedTypeKeys: [], uncertainTypeKeys: [], hasApprox: false, hasArea: false, hasTrail: false });
+        legend.update({ confirmedTypeKeys: [], uncertainTypeKeys: [], hasApprox: false, hasTrail: false });
         return container;
     };
 
-    legend.update = ({ confirmedTypeKeys, uncertainTypeKeys, hasApprox, hasArea, hasTrail }) => {
+    legend.update = ({ confirmedTypeKeys, uncertainTypeKeys, hasApprox, hasTrail }) => {
         if (!container) return;
         const confirmedKeys = ALL_TYPE_KEYS.filter((key) => confirmedTypeKeys.includes(key));
         const uncertainKeys = ALL_TYPE_KEYS.filter((key) => uncertainTypeKeys.includes(key));
 
-        if (!confirmedKeys.length && !uncertainKeys.length && !hasApprox && !hasArea && !hasTrail) {
+        if (!confirmedKeys.length && !uncertainKeys.length && !hasApprox && !hasTrail) {
             container.style.display = 'none';
             return;
         }
@@ -347,13 +340,10 @@ function buildLegend(strings) {
         const approxRow = hasApprox
             ? `<div class="legend-row">${APPROX_SWATCH_HTML}<span>${escapeHtml(strings.liveMapLegendApprox)}</span></div>`
             : '';
-        const areaRow = hasArea
-            ? `<div class="legend-row">${AREA_SWATCH_HTML}<span>${escapeHtml(strings.liveMapLegendArea)}</span></div>`
-            : '';
         const trailRow = hasTrail
             ? `<div class="legend-row">${TRAIL_SWATCH_HTML}<span>${escapeHtml(strings.liveMapLegendTrail)}</span></div>`
             : '';
-        container.innerHTML = `<div class="legend-title">${escapeHtml(strings.liveMapLegendTitle)}</div>${confirmedRows}${uncertainRows}${approxRow}${areaRow}${trailRow}`;
+        container.innerHTML = `<div class="legend-title">${escapeHtml(strings.liveMapLegendTitle)}</div>${confirmedRows}${uncertainRows}${approxRow}${trailRow}`;
     };
 
     return legend;
@@ -412,7 +402,6 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const circlesGroup = L.layerGroup().addTo(layer);
     const activeMarkers = new Map();
     const activeCircles = new Map();
-    const activeAreas = new Map();
     const activeTrails = new Map();
     const activeClusters = new Map();
     let expanded = null;
@@ -815,12 +804,11 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         if (!Array.isArray(threats)) return;
         if (!isExtrapolation) lastThreats = threats;
 
-        const valid = threats.filter((t) => typeof t.lat === 'number' && typeof t.lon === 'number');
+        const valid = threats.filter((t) => typeof t.lat === 'number' && typeof t.lon === 'number' && !t.areaOnly);
 
         if (!isExtrapolation) valid.forEach((threat) => updateVelocityEstimate(threat));
 
-        const areaThreats = valid.filter((t) => t.areaOnly);
-        const pointThreats = valid.filter((t) => !t.areaOnly);
+        const pointThreats = valid;
         const sizeMultiplier = kyivMode ? KYIV_ICON_SCALE : 1;
         const currentIdsAll = new Set(valid.map((t) => t.id));
 
@@ -855,7 +843,6 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             confirmedTypeKeys: pointThreats.filter((t) => t.lifecycle !== 'uncertain').map((t) => resolveTypeKey(t)),
             uncertainTypeKeys: pointThreats.filter((t) => t.lifecycle === 'uncertain').map((t) => resolveTypeKey(t)),
             hasApprox: pointThreats.some((t) => t.positionQuality === 'approx' && typeof t.uncertaintyKm === 'number'),
-            hasArea: areaThreats.length > 0,
             hasTrail: singles.some((threat) => trailPoints(threat)),
         });
         if (typeof onCountChange === 'function') onCountChange(valid.length);
@@ -901,66 +888,6 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             circle._posSig = posSig;
             activeCircles.set(threat.id, circle);
             drawCircleStroke(circle, CIRCLE_DRAW_DELAY_MS);
-        });
-
-        const areaIds = new Set(areaThreats.map((t) => t.id));
-        activeAreas.forEach((entry, id) => {
-            if (!areaIds.has(id)) {
-                fadeOutAndRemoveCircle(entry.ring);
-                circlesGroup.removeLayer(entry.hit);
-                activeAreas.delete(id);
-                if (selectedThreatId === id) clearSelectedThreat();
-            }
-        });
-
-        areaThreats.forEach((threat) => {
-            const radiusM = (typeof threat.uncertaintyKm === 'number' ? threat.uncertaintyKm : AREA_ONLY_DEFAULT_KM) * 1000;
-            const color = TYPE_ICONS[resolveTypeKey(threat)].color;
-            const info = tooltipContent(threat, strings, isEnglish);
-            const center = [threat.lat, threat.lon];
-            const existing = activeAreas.get(threat.id);
-            if (existing) {
-                existing.ring.setLatLng(center).setRadius(radiusM).setStyle({ color, fillColor: color });
-                existing.hit.setLatLng(center).setRadius(radiusM);
-                existing.info = info;
-                if (existing.hit.getTooltip()) existing.hit.setTooltipContent(info);
-                if (selectHandler && selectedThreatId === threat.id) selectHandler(info, center, true);
-                return;
-            }
-
-            const ring = L.circle(center, {
-                pane: UNCERTAINTY_PANE,
-                radius: radiusM,
-                color,
-                weight: 1.6,
-                opacity: 0.9,
-                dashArray: '7 5',
-                fillColor: color,
-                fillOpacity: 0.1,
-                interactive: false,
-                className: 'threat-area-ring',
-            }).addTo(circlesGroup);
-            const hit = L.circle(center, {
-                pane: UNCERTAINTY_PANE,
-                radius: radiusM,
-                weight: AREA_HIT_WEIGHT_PX,
-                opacity: 0,
-                fill: false,
-                interactive: true,
-                bubblingMouseEvents: false,
-                className: 'threat-area-hit',
-            }).addTo(circlesGroup);
-            const entry = { ring, hit, info };
-            if (selectHandler) {
-                hit.on('click', () => {
-                    selectedThreatId = threat.id;
-                    selectHandler(entry.info, center);
-                });
-            } else {
-                hit.bindTooltip(info, { sticky: true });
-            }
-            activeAreas.set(threat.id, entry);
-            drawCircleStroke(ring, CIRCLE_DRAW_DELAY_MS);
         });
 
         const trailIds = new Set();
