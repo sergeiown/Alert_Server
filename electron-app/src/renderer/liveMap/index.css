@@ -543,6 +543,7 @@ body {
 
 .threats-zoom-hidden .threat-icon-wrapper,
 .threats-zoom-hidden .threat-uncertainty-circle,
+.threats-zoom-hidden .threat-trail,
 .threats-zoom-hidden .threat-area-ring {
     opacity: 0 !important;
     transition: none !important;

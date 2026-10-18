@@ -146,6 +146,12 @@ const TYPE_ICONS = {
     },
 };
 
+function headingOf(threat) {
+    if (typeof threat.heading === 'number') return threat.heading;
+    if (threat.velocity && typeof threat.velocity.bearingDeg === 'number') return threat.velocity.bearingDeg;
+    return undefined;
+}
+
 function resolveTypeKey(threat) {
 
     if (threat.type === 'recon') return 'uav_recon';
@@ -180,7 +186,7 @@ function iconHtml(typeKey, rotationDeg, lifecycle, sizePx = DEFAULT_ICON_SIZE_PX
 
 function threatIcon(threat, sizeMultiplier = 1) {
     const typeKey = resolveTypeKey(threat);
-    const rotation = typeof threat.heading === 'number' ? threat.heading : undefined;
+    const rotation = headingOf(threat);
     const sizePx = Math.round((MAP_ICON_SIZE_OVERRIDES[typeKey] || DEFAULT_ICON_SIZE_PX) * sizeMultiplier * (window.alertServerLiveMap.threatIconScale || 1));
 
     return L.divIcon({
@@ -240,11 +246,23 @@ function tooltipContent(threat, strings, isEnglish) {
     const districtPart = isEnglish && threat.district ? transliterate(threat.district) : threat.district;
     const localityRegion = [threat.locality, threat.district, threat.region].filter(Boolean).join(', ');
 
-    const locationLine = isEnglish
-        ? [localityPart, districtPart, oblastPart].filter(Boolean).join(', ')
-        : localityRegion
-          ? `${strings.liveMapDirectionLabel} - ${localityRegion}.`
-          : threat.explanationShort || '';
+    const placeEnglish = [localityPart, districtPart, oblastPart].filter(Boolean).join(', ');
+    let locationLine;
+    if (threat.destination && (isEnglish ? placeEnglish : localityRegion)) {
+        locationLine = isEnglish ? `${strings.liveMapHeadingTo} ${placeEnglish}` : `${strings.liveMapHeadingTo} ${localityRegion}.`;
+    } else if (isEnglish) {
+        locationLine = placeEnglish;
+    } else {
+        locationLine = localityRegion ? `${strings.liveMapDirectionLabel} - ${localityRegion}.` : threat.explanationShort || '';
+    }
+
+    const facts = [];
+    if (typeof threat.count === 'number' && threat.count > 1) facts.push(`${strings.liveMapGroupSize}: ${threat.count}`);
+    if (threat.velocity && typeof threat.velocity.speedKmh === 'number' && threat.velocity.speedKmh > 0) {
+        facts.push(`${strings.liveMapSpeed}: ${Math.round(threat.velocity.speedKmh)} ${strings.liveMapSpeedUnit}`);
+    }
+    if (threat.sea) facts.push(strings.liveMapOverSea);
+    if (threat.presumptiveCourse) facts.push(strings.liveMapCoursePresumptive);
 
     const confirmationsLine =
         !isEnglish && typeof threat.sourceCount === 'number'
@@ -255,6 +273,7 @@ function tooltipContent(threat, strings, isEnglish) {
         `<strong>${escapeHtml(title)}</strong>`,
         threat.areaOnly ? escapeHtml(strings.liveMapAreaOnlyNote) : '',
         escapeHtml(locationLine),
+        escapeHtml(facts.join(' · ')),
         escapeHtml(confirmationsLine),
         `<small>${strings.liveMapConfidenceLabel} ${escapeHtml(confidenceLabel(threat, strings))}${updatedTime ? ` · ${strings.liveMapUpdated}: ${updatedTime}` : ''}</small>`,
     ];
@@ -287,6 +306,10 @@ const AREA_SWATCH_HTML =
     '<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="#6b7280" fill-opacity="0.18" stroke="#6b7280" ' +
     'stroke-width="1.5" stroke-dasharray="3 2.5"><circle cx="12" cy="12" r="10"/></svg></span>';
 
+const TRAIL_SWATCH_HTML =
+    '<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#6b7280" ' +
+    'stroke-width="1.8" stroke-linecap="round" stroke-dasharray="1.5 4"><path d="M3 20 L21 4"/></svg></span>';
+
 const APPROX_SWATCH_HTML =
     `<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${UNCERTAINTY_CIRCLE_COLOR}" ` +
     'stroke-width="1.5" stroke-opacity="0.9" stroke-dasharray="3 2.5"><circle cx="12" cy="12" r="10"/></svg></span>';
@@ -297,16 +320,16 @@ function buildLegend(strings) {
 
     legend.onAdd = () => {
         container = L.DomUtil.create('div', 'threat-legend');
-        legend.update({ confirmedTypeKeys: [], uncertainTypeKeys: [], hasApprox: false, hasArea: false });
+        legend.update({ confirmedTypeKeys: [], uncertainTypeKeys: [], hasApprox: false, hasArea: false, hasTrail: false });
         return container;
     };
 
-    legend.update = ({ confirmedTypeKeys, uncertainTypeKeys, hasApprox, hasArea }) => {
+    legend.update = ({ confirmedTypeKeys, uncertainTypeKeys, hasApprox, hasArea, hasTrail }) => {
         if (!container) return;
         const confirmedKeys = ALL_TYPE_KEYS.filter((key) => confirmedTypeKeys.includes(key));
         const uncertainKeys = ALL_TYPE_KEYS.filter((key) => uncertainTypeKeys.includes(key));
 
-        if (!confirmedKeys.length && !uncertainKeys.length && !hasApprox && !hasArea) {
+        if (!confirmedKeys.length && !uncertainKeys.length && !hasApprox && !hasArea && !hasTrail) {
             container.style.display = 'none';
             return;
         }
@@ -327,7 +350,10 @@ function buildLegend(strings) {
         const areaRow = hasArea
             ? `<div class="legend-row">${AREA_SWATCH_HTML}<span>${escapeHtml(strings.liveMapLegendArea)}</span></div>`
             : '';
-        container.innerHTML = `<div class="legend-title">${escapeHtml(strings.liveMapLegendTitle)}</div>${confirmedRows}${uncertainRows}${approxRow}${areaRow}`;
+        const trailRow = hasTrail
+            ? `<div class="legend-row">${TRAIL_SWATCH_HTML}<span>${escapeHtml(strings.liveMapLegendTrail)}</span></div>`
+            : '';
+        container.innerHTML = `<div class="legend-title">${escapeHtml(strings.liveMapLegendTitle)}</div>${confirmedRows}${uncertainRows}${approxRow}${areaRow}${trailRow}`;
     };
 
     return legend;
@@ -387,6 +413,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const activeMarkers = new Map();
     const activeCircles = new Map();
     const activeAreas = new Map();
+    const activeTrails = new Map();
     const activeClusters = new Map();
     let expanded = null;
     const driftById = new Map();
@@ -457,24 +484,48 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const ICON_SWAP_DURATION_MS = 450;
     const ICON_SWAP_SPREAD_MS = 80;
     const EXTRAPOLATION_TICK_MS = 1000;
-    const DRIFT_SPEED_KMH = 53;
-    const DRIFT_SPEED_REFERENCE_ZOOM = 9;
-    const DRIFT_SPEED_MAX_KMH = 210;
-    const MAX_DRIFT_MS = 120000;
-    const DRIFTING_TYPE_KEYS = new Set(['uav', 'uav_recon', 'fpv']);
+    const DRIFT_LIMIT_MIN = { uav: 12, recon: 12, fpv: 10, missile: 5, kab: 4, ballistic: 1.5, mig31k: 6, unknown: 6 };
+    const DRIFT_MAX_KM = { uav: 18, recon: 12, fpv: 10, missile: 30, kab: 10, ballistic: 20, mig31k: 24, unknown: 10 };
+    const EARTH_RADIUS_KM = 6371;
     const KYIV_THREAT_CLICK_ZOOM = 12;
 
     function randomDuration(baseMs, spreadMs) {
         return Math.round(baseMs + (Math.random() * 2 - 1) * spreadMs);
     }
 
-    function updateVelocityEstimate(threat, now) {
-        const canDrift = DRIFTING_TYPE_KEYS.has(resolveTypeKey(threat)) && typeof threat.heading === 'number';
+    function destinationPoint(lat, lon, bearingDeg, distKm) {
+        const angular = distKm / EARTH_RADIUS_KM;
+        const bearing = (bearingDeg * Math.PI) / 180;
+        const latRad = (lat * Math.PI) / 180;
+        const lonRad = (lon * Math.PI) / 180;
+        const newLat = Math.asin(Math.sin(latRad) * Math.cos(angular) + Math.cos(latRad) * Math.sin(angular) * Math.cos(bearing));
+        const newLon =
+            lonRad +
+            Math.atan2(Math.sin(bearing) * Math.sin(angular) * Math.cos(latRad), Math.cos(angular) - Math.sin(latRad) * Math.sin(newLat));
+        return [(newLat * 180) / Math.PI, (((newLon * 180) / Math.PI + 540) % 360) - 180];
+    }
+
+    function updateVelocityEstimate(threat) {
+        const velocity = threat.velocity;
+        const canDrift =
+            velocity &&
+            typeof velocity.speedKmh === 'number' &&
+            velocity.speedKmh > 0 &&
+            typeof velocity.bearingDeg === 'number' &&
+            threat.status === 'active' &&
+            Number.isFinite(Date.parse(threat.confirmedAt));
         if (!canDrift) {
             driftById.delete(threat.id);
             return;
         }
-        driftById.set(threat.id, { heading: threat.heading, baseLat: threat.lat, baseLon: threat.lon, baseTime: now });
+        driftById.set(threat.id, {
+            type: threat.type,
+            bearing: velocity.bearingDeg,
+            speedKmh: velocity.speedKmh,
+            baseLat: threat.lat,
+            baseLon: threat.lon,
+            anchorMs: Date.parse(threat.confirmedAt),
+        });
     }
 
     function extrapolatedThreats() {
@@ -485,23 +536,14 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             const drift = driftById.get(threat.id);
             if (!drift) return threat;
 
-            const elapsed = Math.min(now - drift.baseTime, MAX_DRIFT_MS);
-            if (elapsed <= 0) return threat;
+            const ageMin = (now - drift.anchorMs) / 60000;
+            if (ageMin <= 0) return threat;
 
-            const marker = activeMarkers.get(threat.id);
-            const facingDeg = marker && typeof marker._headingDeg === 'number' ? marker._headingDeg : drift.heading;
-            const headingRad = (facingDeg * Math.PI) / 180;
-            const zoomFactor = Math.pow(2, map.getZoom() - DRIFT_SPEED_REFERENCE_ZOOM);
-            const speedKmh = Math.min(DRIFT_SPEED_KMH * zoomFactor, DRIFT_SPEED_MAX_KMH);
-            const speedDegPerMs = speedKmh / 3.6 / 1000 / 111320;
-            const distanceDeg = speedDegPerMs * elapsed;
-            const latRad = (drift.baseLat * Math.PI) / 180;
-
-            return {
-                ...threat,
-                lat: drift.baseLat + Math.cos(headingRad) * distanceDeg,
-                lon: drift.baseLon + (Math.sin(headingRad) * distanceDeg) / Math.cos(latRad),
-            };
+            const limitMin = DRIFT_LIMIT_MIN[drift.type] ?? 6;
+            const maxKm = DRIFT_MAX_KM[drift.type] ?? 8;
+            const distKm = Math.min(maxKm, drift.speedKmh * (Math.min(ageMin, limitMin) / 60));
+            const [lat, lon] = destinationPoint(drift.baseLat, drift.baseLon, drift.bearing, distKm);
+            return { ...threat, lat, lon };
         });
     }
 
@@ -633,7 +675,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         const rotateEl = el ? el.querySelector('.threat-icon-rotate') : null;
         if (!rotateEl) return;
 
-        if (typeof threat.heading !== 'number') {
+        const heading = headingOf(threat);
+        if (typeof heading !== 'number') {
             marker._headingDeg = undefined;
             rotateEl.style.transition = '';
             rotateEl.style.transform = '';
@@ -641,13 +684,13 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         }
 
         if (!animate || typeof marker._headingDeg !== 'number') {
-            marker._headingDeg = threat.heading;
+            marker._headingDeg = heading;
             rotateEl.style.transition = '';
-            rotateEl.style.transform = `rotate(${threat.heading}deg)`;
+            rotateEl.style.transform = `rotate(${heading}deg)`;
             return;
         }
 
-        const unwrapped = marker._headingDeg + normalizedDelta(marker._headingDeg % 360, threat.heading);
+        const unwrapped = marker._headingDeg + normalizedDelta(marker._headingDeg % 360, heading);
         const duration = randomDuration(ROTATE_DURATION_MS, ROTATE_SPREAD_MS);
         rotateEl.style.transition = `transform ${duration}ms ease-in-out`;
         rotateEl.style.transform = `rotate(${unwrapped}deg)`;
@@ -695,6 +738,14 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
 
     let zoomHideToken = 0;
 
+    function trailPoints(threat) {
+        if (!Array.isArray(threat.trail)) return null;
+        const points = threat.trail.filter((p) => p && typeof p.lat === 'number' && typeof p.lon === 'number').map((p) => [p.lat, p.lon]);
+        const last = points[points.length - 1];
+        if (!last || last[0] !== threat.lat || last[1] !== threat.lon) points.push([threat.lat, threat.lon]);
+        return points.length >= 2 ? points : null;
+    }
+
     function hideDuringMove(targetLatLng, targetZoom) {
         const zoomChanges = Math.abs(targetZoom - map.getZoom()) >= 0.01;
         const moves = map.latLngToContainerPoint(targetLatLng).distanceTo(map.getSize().divideBy(2)) > 4;
@@ -736,7 +787,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         }
         const maxZoom = map.getMaxZoom();
         const expand = () => {
-            expanded = { seedId: marker._seedId };
+            expanded = { seedId: marker._seedId, ids: new Set(marker._members.map((threat) => threat.id)) };
             renderThreats(lastThreats);
         };
         if (map.getZoom() < maxZoom - 0.01) {
@@ -766,10 +817,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
 
         const valid = threats.filter((t) => typeof t.lat === 'number' && typeof t.lon === 'number');
 
-        if (!isExtrapolation) {
-            const now = Date.now();
-            valid.forEach((threat) => updateVelocityEstimate(threat, now));
-        }
+        if (!isExtrapolation) valid.forEach((threat) => updateVelocityEstimate(threat));
 
         const areaThreats = valid.filter((t) => t.areaOnly);
         const pointThreats = valid.filter((t) => !t.areaOnly);
@@ -808,6 +856,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             uncertainTypeKeys: pointThreats.filter((t) => t.lifecycle === 'uncertain').map((t) => resolveTypeKey(t)),
             hasApprox: pointThreats.some((t) => t.positionQuality === 'approx' && typeof t.uncertaintyKm === 'number'),
             hasArea: areaThreats.length > 0,
+            hasTrail: singles.some((threat) => trailPoints(threat)),
         });
         if (typeof onCountChange === 'function') onCountChange(valid.length);
         hint.update({ hasThreats: valid.length > 0, hasClusters: clusterGroups.length > 0 });
@@ -914,6 +963,34 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             drawCircleStroke(ring, CIRCLE_DRAW_DELAY_MS);
         });
 
+        const trailIds = new Set();
+        singles.forEach((threat) => {
+            const points = trailPoints(threat);
+            if (!points) return;
+            trailIds.add(threat.id);
+            const existingTrail = activeTrails.get(threat.id);
+            if (existingTrail) {
+                existingTrail.setLatLngs(points);
+                return;
+            }
+            const line = L.polyline(points, {
+                pane: UNCERTAINTY_PANE,
+                color: TYPE_ICONS[resolveTypeKey(threat)].color,
+                weight: 1.6,
+                opacity: 0.65,
+                dashArray: '2 5',
+                lineCap: 'round',
+                interactive: false,
+                className: 'threat-trail',
+            }).addTo(circlesGroup);
+            activeTrails.set(threat.id, line);
+        });
+        activeTrails.forEach((line, id) => {
+            if (trailIds.has(id)) return;
+            circlesGroup.removeLayer(line);
+            activeTrails.delete(id);
+        });
+
         const singleIds = new Set(singles.map((t) => t.id));
         activeMarkers.forEach((marker, id) => {
             if (singleIds.has(id)) return;
@@ -990,7 +1067,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                         existing,
                         () => threatIcon(threat, sizeMultiplier),
                         () => {
-                            existing._headingDeg = typeof threat.heading === 'number' ? threat.heading : undefined;
+                            existing._headingDeg = headingOf(threat);
                         }
                     );
                     existing._typeSig = typeSig;
@@ -1011,6 +1088,10 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             if (selectHandler) {
                 marker.on('click', () => {
                     selectedThreatId = threat.id;
+                    if (expanded && expanded.ids.has(threat.id)) {
+                        selectHandler(tooltipContent(threat, strings, isEnglish), marker._truePos);
+                        return;
+                    }
                     const cityZoom = kyivMode ? KYIV_THREAT_CLICK_ZOOM : RAION_MIN_ZOOM;
                     const targetZoom = Math.min(Math.max(map.getZoom(), cityZoom), map.getMaxZoom());
                     let shown = false;
@@ -1033,6 +1114,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                     .bindTooltip(info)
                     .on('mouseover', () => map.closePopup())
                     .on('click', () => {
+                        if (expanded && expanded.ids.has(threat.id)) return;
                         if (kyivMode && !isInsideKyiv(marker._truePos)) return;
                         const cityZoom = kyivMode ? KYIV_THREAT_CLICK_ZOOM : RAION_MIN_ZOOM;
                         const targetZoom = Math.min(Math.max(map.getZoom(), cityZoom), map.getMaxZoom());
@@ -1043,7 +1125,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             }
             marker.addTo(layer);
             marker._typeSig = typeSig;
-            marker._headingDeg = typeof threat.heading === 'number' ? threat.heading : undefined;
+            marker._headingDeg = headingOf(threat);
             marker._truePos = [threat.lat, threat.lon];
             activeMarkers.set(threat.id, marker);
             fadeInMarker(marker);
