@@ -12,6 +12,9 @@ const SNAPSHOT_POLL_MS = 60 * 1000;
 const RECONNECT_BASE_MS = 5 * 1000;
 const RECONNECT_MAX_MS = 60 * 1000;
 const HEARTBEAT_TIMEOUT_MS = 120 * 1000;
+const CONNECT_TIMEOUT_MS = 20 * 1000;
+const WATCHDOG_INTERVAL_MS = 30 * 1000;
+const WATCHDOG_IDLE_MS = RECONNECT_MAX_MS + CONNECT_TIMEOUT_MS + 10 * 1000;
 
 const sockets = new Set();
 const threatsById = new Map();
@@ -27,11 +30,13 @@ const state = {
     reconnectAttempts: 0,
     snapshotFetchedAt: 0,
     snapshotError: null,
+    lastConnectAttemptAt: 0,
 };
 
 let stream = null;
 let reconnectTimer = null;
 let heartbeatTimer = null;
+let connectTimer = null;
 
 function log(message) {
     console.log(`[neptun] ${message}`);
@@ -102,9 +107,14 @@ function scheduleReconnect() {
 }
 
 function connect() {
+    state.lastConnectAttemptAt = Date.now();
     if (reconnectTimer) {
         clearTimeout(reconnectTimer);
         reconnectTimer = null;
+    }
+    if (connectTimer) {
+        clearTimeout(connectTimer);
+        connectTimer = null;
     }
     if (stream) {
         const old = stream;
@@ -124,7 +134,22 @@ function connect() {
     }
     stream = ws;
 
+    connectTimer = setTimeout(() => {
+        connectTimer = null;
+        if (stream !== ws || state.streamConnected) return;
+        log('connect timed out');
+        stream = null;
+        try {
+            ws.close();
+        } catch (err) {}
+        scheduleReconnect();
+    }, CONNECT_TIMEOUT_MS);
+
     ws.addEventListener('open', () => {
+        if (connectTimer) {
+            clearTimeout(connectTimer);
+            connectTimer = null;
+        }
         state.streamConnected = true;
         state.streamSince = Date.now();
         state.reconnectAttempts = 0;
@@ -167,7 +192,16 @@ function connect() {
         scheduleReconnect();
     });
 
-    ws.addEventListener('error', () => {});
+    ws.addEventListener('error', (event) => {
+        log(`stream error: ${(event && event.message) || 'unknown'}`);
+    });
+}
+
+function watchdog() {
+    if (state.streamConnected || reconnectTimer) return;
+    if (Date.now() - state.lastConnectAttemptAt < WATCHDOG_IDLE_MS) return;
+    log('watchdog: no stream and no reconnect pending, reconnecting');
+    connect();
 }
 
 async function pollSnapshot() {
@@ -222,6 +256,7 @@ function loop(fn, intervalMs) {
 
 function start() {
     connect();
+    setInterval(watchdog, WATCHDOG_INTERVAL_MS).unref();
     loop(pollAlerts, ALERTS_POLL_MS);
     loop(pollSnapshot, SNAPSHOT_POLL_MS);
 }
