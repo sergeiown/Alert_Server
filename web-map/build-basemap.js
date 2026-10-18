@@ -37,7 +37,7 @@ const paths = Object.entries(borders)
     .join('\n');
 
 const THEMES = {
-    light: { fill: '#d4c9ae', stroke: '#7a6c4e' },
+    light: { fill: '#d3ccbb', stroke: '#d3ccbb' },
     dark: { fill: '#243345', stroke: '#3f5470' },
 };
 

@@ -75,6 +75,13 @@ body {
     transition: opacity 0.45s ease;
 }
 
+.leaflet-tile-pane,
+.leaflet-overlay-pane,
+.leaflet-outsideMaskPane-pane,
+.leaflet-raionBordersPane-pane {
+    filter: saturate(0.9);
+}
+
 .alert-status-shape {
     transition:
         opacity 0.38s ease,
@@ -145,6 +152,39 @@ body {
 .threat-icon-rotate {
     width: 100%;
     height: 100%;
+}
+
+.threat-cluster {
+    cursor: pointer;
+}
+
+.threat-cluster-badge {
+    position: absolute;
+    right: -7px;
+    bottom: -7px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    box-sizing: border-box;
+    border-radius: 9px;
+    border: 1.5px solid #ffffff;
+    background: #1f2937;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 14px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+    pointer-events: none;
+}
+
+.threat-area-hit {
+    pointer-events: stroke !important;
+    cursor: pointer;
+}
+
+.threat-area-ring {
+    pointer-events: none !important;
 }
 
 .threat-explosion {
@@ -486,16 +526,35 @@ body {
 
 .threat-hint {
     max-width: 230px;
+    padding: 8px 12px;
 }
 
 .hint-title {
     font-weight: 600;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 
 .hint-row {
-    padding: 2px 0;
-    opacity: 0.8;
+    padding: 0;
+    font-size: 11px;
+    line-height: 1.3;
+    opacity: 0.75;
+}
+
+.threats-zoom-hidden .threat-icon-wrapper,
+.threats-zoom-hidden .threat-uncertainty-circle,
+.threats-zoom-hidden .threat-area-ring {
+    opacity: 0 !important;
+    transition: none !important;
+}
+
+.hint-disclaimer {
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid rgba(128, 128, 128, 0.35);
+    font-size: 11px;
+    line-height: 1.3;
+    opacity: 0.75;
 }
 
 .leaflet-control-layers label:has(input:disabled) {
@@ -542,6 +601,13 @@ body {
 @media (prefers-color-scheme: dark) {
     #map {
         background: #101720;
+    }
+
+    .leaflet-tile-pane,
+    .leaflet-overlay-pane,
+    .leaflet-outsideMaskPane-pane,
+    .leaflet-raionBordersPane-pane {
+        filter: none;
     }
 
     .kyiv-raion-label {

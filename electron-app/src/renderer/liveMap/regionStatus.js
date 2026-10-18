@@ -40,7 +40,7 @@ const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 const RED_SHADES = isDark ? RED_DARK_SHADES : RED_LIGHT_SHADES;
 const YELLOW_SHADES = isDark ? YELLOW_DARK_SHADES : YELLOW_LIGHT_SHADES;
 const ALERTED_FILL_OPACITY = isDark ? 0.5 : 0.42;
-const NEUTRAL_COLOR = isDark ? '#3a4650' : '#6e6040';
+const NEUTRAL_COLOR = isDark ? '#3a4650' : '#6b6350';
 const NEUTRAL_FILL_OPACITY = isDark ? 0.06 : 0.05;
 
 function shadeFor(startedAt, now, alertLevel) {

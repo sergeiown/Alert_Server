@@ -5,6 +5,7 @@ import { startNeptunLayer } from './neptun.js';
 import { addRiversLayer } from './rivers.js';
 import { addLabelsLayer } from './labelsLayer.js';
 import { addRegionStatusLayer } from './regionStatus.js';
+import { OBLAST_BORDERS } from './oblastBorders.js';
 import { addOccupiedTerritoryLayer } from './occupiedTerritory.js';
 import { ready as alertedRegionsReady } from './alertedRegionsStore.js';
 import { startStatusBar } from './statusBar.js';
@@ -173,6 +174,30 @@ async function main() {
           })
         : null;
 
+    const raionBordersPane = map.createPane('raionBordersPane');
+    raionBordersPane.style.zIndex = 410;
+    raionBordersPane.style.pointerEvents = 'none';
+    const oblastOutline = L.layerGroup();
+    if (!window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        Object.values(OBLAST_BORDERS).forEach((rings) =>
+            L.polygon(rings, {
+                pane: 'raionBordersPane',
+                interactive: false,
+                fill: false,
+                color: '#a29882',
+                weight: 1,
+                opacity: 0.8,
+                lineJoin: 'round',
+            }).addTo(oblastOutline)
+        );
+    }
+
+    function syncOblastOutline() {
+        const wanted = !kyivModeActive && !map.getContainer().classList.contains('detail-map-on');
+        if (wanted && !map.hasLayer(oblastOutline)) oblastOutline.addTo(map);
+        else if (!wanted && map.hasLayer(oblastOutline)) map.removeLayer(oblastOutline);
+    }
+
     const outsideMaskPane = map.createPane('outsideMaskPane');
     outsideMaskPane.style.zIndex = 250;
     outsideMaskPane.style.pointerEvents = 'none';
@@ -223,7 +248,10 @@ async function main() {
     let sceneSwapping = false;
 
     function syncDetailLayer() {
-        if (!detailLayer) return;
+        if (!detailLayer) {
+            syncOblastOutline();
+            return;
+        }
         const wanted = !kyivModeActive && !sceneSwapping && map.getZoom() >= DETAIL_MIN_ZOOM;
         map.getContainer().classList.toggle('detail-map-on', wanted);
         if (wanted && !map.hasLayer(detailLayer)) {
@@ -238,6 +266,7 @@ async function main() {
             map.removeLayer(outsideUkraineMask);
             map.removeLayer(outsideMaskFade);
         }
+        syncOblastOutline();
     }
     const kyivLabelsLayer = createKyivRaionLabels(settings.language === 'English');
 
@@ -411,6 +440,7 @@ async function main() {
         }
 
         regionStatusLayer.setKyivMode(active);
+        syncOblastOutline();
         labelsLayer.setKyivMode(active);
         threatsLayer.setKyivMode(active);
         fitAndLockMinZoom();
@@ -427,6 +457,7 @@ async function main() {
     fitAndLockMinZoom();
     map.attributionControl.setPrefix(false);
     map.on('zoomend', syncDetailLayer);
+    syncOblastOutline();
     map.on('zoomend', () => {
         if (map.hasLayer(outsideUkraineMask)) refreshOutsideMask();
     });

@@ -37,62 +37,68 @@ const UNCERTAINTY_PANE_Z = 615;
 const UNCERTAINTY_CIRCLE_COLOR = '#6b7280';
 const UNCERTAIN_ICON_COLOR = '#9ca3af';
 
-const MARKER_MIN_GAP_BASE_PX = 18;
-const MARKER_MIN_GAP_JITTER_PX = 6;
-const DECLUTTER_ITERATIONS = 40;
+const CLUSTER_RADIUS_DESKTOP_PX = 26;
+const CLUSTER_RADIUS_TOUCH_PX = 38;
+const CLUSTER_ICON_DESKTOP_PX = 28;
+const CLUSTER_ICON_TOUCH_PX = 36;
+const AREA_HIT_WEIGHT_PX = 22;
+const AREA_ONLY_DEFAULT_KM = 70;
+const TYPE_PRIORITY = ['missile', 'mig31k', 'kab', 'uav', 'fpv', 'uav_recon', 'unknown'];
 
-function pairFraction(i, j) {
-    const seed = Math.sin(i * 12.9898 + j * 78.233) * 43758.5453;
-    return seed - Math.floor(seed);
+function isTouchDevice() {
+    return window.matchMedia('(pointer: coarse)').matches;
 }
 
-function declutterPoints(points) {
-    const out = points.map((p) => ({ x: p.x, y: p.y }));
+function clusterRadiusPx(sizeMultiplier) {
+    return (isTouchDevice() ? CLUSTER_RADIUS_TOUCH_PX : CLUSTER_RADIUS_DESKTOP_PX) * sizeMultiplier;
+}
 
-    for (let iter = 0; iter < DECLUTTER_ITERATIONS; iter++) {
-        let moved = false;
+function clusterPoints(items, radiusPx) {
+    const sorted = [...items].sort((p, q) => (p.threat.id < q.threat.id ? -1 : 1));
+    const grid = new Map();
+    const cellOf = (value) => Math.floor(value / radiusPx);
+    sorted.forEach((item) => {
+        const key = cellOf(item.x) + ':' + cellOf(item.y);
+        if (!grid.has(key)) grid.set(key, []);
+        grid.get(key).push(item);
+    });
 
-        for (let i = 0; i < out.length; i++) {
-            for (let j = i + 1; j < out.length; j++) {
-                let dx = out[j].x - out[i].x;
-                let dy = out[j].y - out[i].y;
-                let dist = Math.hypot(dx, dy);
-
-                if (dist < 1e-6) {
-                    const angle = ((i * 47 + j * 91) % 360) * (Math.PI / 180);
-                    dx = Math.cos(angle);
-                    dy = Math.sin(angle);
-                    dist = 1;
-                }
-
-                const minGap = MARKER_MIN_GAP_BASE_PX + pairFraction(i, j) * MARKER_MIN_GAP_JITTER_PX;
-
-                if (dist < minGap) {
-                    const overlap = (minGap - dist) / 2;
-                    const ux = dx / dist;
-                    const uy = dy / dist;
-                    out[i].x -= ux * overlap;
-                    out[i].y -= uy * overlap;
-                    out[j].x += ux * overlap;
-                    out[j].y += uy * overlap;
-                    moved = true;
-                }
+    const taken = new Set();
+    const clusters = [];
+    sorted.forEach((seed) => {
+        if (taken.has(seed)) return;
+        taken.add(seed);
+        const members = [seed];
+        const cx = cellOf(seed.x);
+        const cy = cellOf(seed.y);
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                (grid.get(cx + dx + ':' + (cy + dy)) || []).forEach((other) => {
+                    if (taken.has(other)) return;
+                    if (Math.hypot(other.x - seed.x, other.y - seed.y) <= radiusPx) {
+                        taken.add(other);
+                        members.push(other);
+                    }
+                });
             }
         }
+        clusters.push(members);
+    });
+    return clusters;
+}
 
-        if (!moved) break;
-    }
-
-    return out;
+function dominantTypeKey(threats) {
+    const keys = threats.map((threat) => resolveTypeKey(threat));
+    return TYPE_PRIORITY.find((key) => keys.includes(key)) || 'unknown';
 }
 
 const TYPE_ICONS = {
     uav: {
         color: '#f5a623',
-        align: 'translate(12,12) scale(1.25) translate(-12,-9)',
+        align: 'translate(12,12) scale(1.04) translate(-12,-12)',
         svg:
-            '<polygon points="12,1 19,17 12,13.5 5,17" />' +
-            '<line x1="12" y1="2" x2="12" y2="13.5" stroke="#ffffff" stroke-width="0.8" opacity="0.6" />',
+            '<path d="M12 1 C12.9 1 13.2 2.2 13.1 4.5 V7.2 L20.5 18.8 C20.6 19 20.65 19.2 20.65 19.4 V23 H20.2 V22 H13.6 L13.4 21.7 H10.6 L10.4 22 H3.8 V23 H3.35 V19.4 C3.35 19.2 3.4 19 3.5 18.8 L10.9 7.2 V4.5 C10.8 2.2 11.1 1 12 1 Z" />' +
+            '<line x1="12" y1="2.6" x2="12" y2="21.4" stroke="#3a3d42" stroke-width="1" stroke-linecap="round" opacity="0.8" />',
     },
     uav_recon: {
         color: '#5b8fb0',
@@ -185,6 +191,39 @@ function threatIcon(threat, sizeMultiplier = 1) {
     });
 }
 
+function clusterIcon(count, typeKey, allUncertain, sizeMultiplier) {
+    const { color, svg, align } = TYPE_ICONS[typeKey];
+    const sizePx = Math.round((isTouchDevice() ? CLUSTER_ICON_TOUCH_PX : CLUSTER_ICON_DESKTOP_PX) * sizeMultiplier);
+    const fillColor = allUncertain ? UNCERTAIN_ICON_COLOR : color;
+    const label = count > 99 ? '99+' : String(count);
+    return L.divIcon({
+        className: 'threat-icon-wrapper threat-cluster',
+        html:
+            `<div class="threat-icon" style="color: ${fillColor};">` +
+            `<svg viewBox="0 0 24 24" width="${sizePx}" height="${sizePx}" fill="currentColor" stroke="#ffffff" stroke-width="1">` +
+            `<g transform="${align}">${svg}</g></svg>` +
+            `<span class="threat-cluster-badge${label.length > 2 ? ' threat-cluster-badge-wide' : ''}">${label}</span></div>`,
+        iconSize: [sizePx, sizePx],
+        iconAnchor: [sizePx / 2, sizePx / 2],
+    });
+}
+
+function clusterTooltipContent(threats, strings, canSplit) {
+    const counts = new Map();
+    threats.forEach((threat) => {
+        const key = resolveTypeKey(threat);
+        counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    const rows = TYPE_PRIORITY.filter((key) => counts.has(key)).map(
+        (key) => `${escapeHtml(strings[`liveMapType_${key}`])}: ${counts.get(key)}`
+    );
+    return [
+        `<strong>${escapeHtml(strings.liveMapClusterTitle.replace('{count}', threats.length))}</strong>`,
+        ...rows,
+        `<small>${escapeHtml(canSplit ? strings.liveMapClusterTap : strings.liveMapClusterExpand)}</small>`,
+    ].join('<br>');
+}
+
 function confidenceLabel(threat, strings) {
     const key = `liveMapConfidence${(threat.displayConfidence || threat.confidenceLevel || '').replace(/^(.)/, (m) => m.toUpperCase())}`;
     return strings[key] || threat.displayConfidence || threat.confidenceLevel || '';
@@ -214,6 +253,7 @@ function tooltipContent(threat, strings, isEnglish) {
 
     const lines = [
         `<strong>${escapeHtml(title)}</strong>`,
+        threat.areaOnly ? escapeHtml(strings.liveMapAreaOnlyNote) : '',
         escapeHtml(locationLine),
         escapeHtml(confirmationsLine),
         `<small>${strings.liveMapConfidenceLabel} ${escapeHtml(confidenceLabel(threat, strings))}${updatedTime ? ` · ${strings.liveMapUpdated}: ${updatedTime}` : ''}</small>`,
@@ -243,6 +283,10 @@ function measureTooltipWidth(el) {
 
 const ALL_TYPE_KEYS = ['uav', 'uav_recon', 'fpv', 'kab', 'missile', 'mig31k', 'unknown'];
 
+const AREA_SWATCH_HTML =
+    '<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="#6b7280" fill-opacity="0.18" stroke="#6b7280" ' +
+    'stroke-width="1.5" stroke-dasharray="3 2.5"><circle cx="12" cy="12" r="10"/></svg></span>';
+
 const APPROX_SWATCH_HTML =
     `<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${UNCERTAINTY_CIRCLE_COLOR}" ` +
     'stroke-width="1.5" stroke-opacity="0.9" stroke-dasharray="3 2.5"><circle cx="12" cy="12" r="10"/></svg></span>';
@@ -253,16 +297,16 @@ function buildLegend(strings) {
 
     legend.onAdd = () => {
         container = L.DomUtil.create('div', 'threat-legend');
-        legend.update({ confirmedTypeKeys: [], uncertainTypeKeys: [], hasApprox: false });
+        legend.update({ confirmedTypeKeys: [], uncertainTypeKeys: [], hasApprox: false, hasArea: false });
         return container;
     };
 
-    legend.update = ({ confirmedTypeKeys, uncertainTypeKeys, hasApprox }) => {
+    legend.update = ({ confirmedTypeKeys, uncertainTypeKeys, hasApprox, hasArea }) => {
         if (!container) return;
         const confirmedKeys = ALL_TYPE_KEYS.filter((key) => confirmedTypeKeys.includes(key));
         const uncertainKeys = ALL_TYPE_KEYS.filter((key) => uncertainTypeKeys.includes(key));
 
-        if (!confirmedKeys.length && !uncertainKeys.length && !hasApprox) {
+        if (!confirmedKeys.length && !uncertainKeys.length && !hasApprox && !hasArea) {
             container.style.display = 'none';
             return;
         }
@@ -280,7 +324,10 @@ function buildLegend(strings) {
         const approxRow = hasApprox
             ? `<div class="legend-row">${APPROX_SWATCH_HTML}<span>${escapeHtml(strings.liveMapLegendApprox)}</span></div>`
             : '';
-        container.innerHTML = `<div class="legend-title">${escapeHtml(strings.liveMapLegendTitle)}</div>${confirmedRows}${uncertainRows}${approxRow}`;
+        const areaRow = hasArea
+            ? `<div class="legend-row">${AREA_SWATCH_HTML}<span>${escapeHtml(strings.liveMapLegendArea)}</span></div>`
+            : '';
+        container.innerHTML = `<div class="legend-title">${escapeHtml(strings.liveMapLegendTitle)}</div>${confirmedRows}${uncertainRows}${approxRow}${areaRow}`;
     };
 
     return legend;
@@ -292,17 +339,24 @@ function buildHint(strings) {
 
     hint.onAdd = () => {
         container = L.DomUtil.create('div', 'threat-hint');
-        hint.update({ hasThreats: false });
+        hint.update({ hasThreats: false, hasClusters: false });
         return container;
     };
 
-    hint.update = ({ hasThreats }) => {
+    hint.update = ({ hasThreats, hasClusters }) => {
         if (!container) return;
-        const rows = [strings.liveMapHintRealtime, strings.liveMapHintClickMap, hasThreats ? strings.liveMapHintHoverThreat : null]
+        const rows = [
+            strings.liveMapHintRealtime,
+            strings.liveMapHintClickMap,
+            hasThreats ? strings.liveMapHintHoverThreat : null,
+            hasClusters ? strings.liveMapHintCluster : null,
+        ]
             .filter(Boolean)
             .map((text) => `<div class="hint-row">${escapeHtml(text)}</div>`)
             .join('');
-        container.innerHTML = `<div class="hint-title">${escapeHtml(strings.liveMapHintTitle)}</div>${rows}`;
+        container.innerHTML =
+            `<div class="hint-title">${escapeHtml(strings.liveMapHintTitle)}</div>${rows}` +
+            `<div class="hint-disclaimer">${escapeHtml(strings.liveMapHintDisclaimer)}</div>`;
     };
 
     return hint;
@@ -332,6 +386,9 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const circlesGroup = L.layerGroup().addTo(layer);
     const activeMarkers = new Map();
     const activeCircles = new Map();
+    const activeAreas = new Map();
+    const activeClusters = new Map();
+    let expanded = null;
     const driftById = new Map();
     const isEnglish = language === 'English';
     let lastThreats = [];
@@ -355,6 +412,17 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     }
 
     if (selectHandler) map.on('click', clearSelectedThreat);
+
+    function collapseExpanded() {
+        if (!expanded) return;
+        expanded = null;
+        renderThreats(lastThreats);
+    }
+
+    map.on('click', collapseExpanded);
+    map.on('zoomstart', () => {
+        expanded = null;
+    });
 
     map.on('tooltipopen', (e) => {
         const el = e.tooltip.getElement();
@@ -507,7 +575,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         return Math.max(flashDuration, longestDebrisMs);
     }
 
-    function fadeOutAndRemove(marker) {
+    function fadeOutAndRemove(marker, explode = true) {
         const el = marker.getElement();
         if (!el) {
             layer.removeLayer(marker);
@@ -520,7 +588,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             inner.style.opacity = '0';
             inner.style.transform = 'scale(0.6)';
         }
-        const explosionDuration = spawnExplosion(el);
+        const explosionDuration = explode ? spawnExplosion(el) : 0;
         setTimeout(() => layer.removeLayer(marker), Math.max(shrinkDuration, explosionDuration) + 50);
     }
 
@@ -586,14 +654,17 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         marker._headingDeg = unwrapped;
     }
 
-    function animateIconSwap(marker, threat, sizeMultiplier) {
+    function animateIconSwap(marker, makeIcon, afterSwap) {
         const el = marker.getElement();
         const inner = el ? el.querySelector('.threat-icon') : null;
         const duration = randomDuration(ICON_SWAP_DURATION_MS, ICON_SWAP_SPREAD_MS);
+        const apply = () => {
+            marker.setIcon(makeIcon());
+            if (afterSwap) afterSwap();
+        };
 
         if (!inner) {
-            marker.setIcon(threatIcon(threat, sizeMultiplier));
-            marker._headingDeg = typeof threat.heading === 'number' ? threat.heading : undefined;
+            apply();
             return;
         }
 
@@ -602,8 +673,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         inner.style.transform = 'scale(0.5)';
 
         setTimeout(() => {
-            marker.setIcon(threatIcon(threat, sizeMultiplier));
-            marker._headingDeg = typeof threat.heading === 'number' ? threat.heading : undefined;
+            apply();
             const newEl = marker.getElement();
             const newInner = newEl ? newEl.querySelector('.threat-icon') : null;
             if (!newInner) return;
@@ -621,6 +691,61 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                 });
             });
         }, duration);
+    }
+
+    let zoomHideToken = 0;
+
+    function hideDuringMove(targetLatLng, targetZoom) {
+        const zoomChanges = Math.abs(targetZoom - map.getZoom()) >= 0.01;
+        const moves = map.latLngToContainerPoint(targetLatLng).distanceTo(map.getSize().divideBy(2)) > 4;
+        if (!zoomChanges && !moves) return;
+        const container = map.getContainer();
+        const token = ++zoomHideToken;
+        container.classList.add('threats-zoom-hidden');
+        const reveal = () => {
+            if (token !== zoomHideToken) return;
+            map.off('moveend', reveal);
+            container.classList.remove('threats-zoom-hidden');
+        };
+        map.once('moveend', reveal);
+        setTimeout(reveal, 2200);
+    }
+
+    function splitZoom(members, sizeMultiplier) {
+        const radius = clusterRadiusPx(sizeMultiplier);
+        for (let zoom = Math.floor(map.getZoom()) + 1; zoom <= map.getMaxZoom(); zoom++) {
+            const projected = members.map((threat) => {
+                const point = map.project([threat.lat, threat.lon], zoom);
+                return { threat, x: point.x, y: point.y };
+            });
+            if (clusterPoints(projected, radius).length > 1) return zoom;
+        }
+        return null;
+    }
+
+    function zoomIntoCluster(marker) {
+        const members = marker._members;
+        const bounds = L.latLngBounds(members.map((threat) => [threat.lat, threat.lon]));
+        const center = bounds.getCenter();
+        const targetZoom = splitZoom(members, kyivMode ? KYIV_ICON_SCALE : 1);
+        marker.closeTooltip();
+        if (targetZoom !== null) {
+            hideDuringMove(center, targetZoom);
+            map.flyTo(center, targetZoom, { animate: true, duration: 0.6 });
+            return;
+        }
+        const maxZoom = map.getMaxZoom();
+        const expand = () => {
+            expanded = { seedId: marker._seedId };
+            renderThreats(lastThreats);
+        };
+        if (map.getZoom() < maxZoom - 0.01) {
+            hideDuringMove(center, maxZoom);
+            map.once('moveend', expand);
+            map.flyTo(center, maxZoom, { animate: true, duration: 0.6 });
+            return;
+        }
+        expand();
     }
 
     function fadeOutAndRemoveCircle(circle) {
@@ -646,15 +771,48 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             valid.forEach((threat) => updateVelocityEstimate(threat, now));
         }
 
+        const areaThreats = valid.filter((t) => t.areaOnly);
+        const pointThreats = valid.filter((t) => !t.areaOnly);
+        const sizeMultiplier = kyivMode ? KYIV_ICON_SCALE : 1;
+        const currentIdsAll = new Set(valid.map((t) => t.id));
+
+        const items = pointThreats.map((threat) => {
+            const point = map.latLngToContainerPoint([threat.lat, threat.lon]);
+            return { threat, x: point.x, y: point.y };
+        });
+        const groups = clusterPoints(items, clusterRadiusPx(sizeMultiplier));
+        const clusterGroups = groups.filter((members) => members.length > 1);
+        const singles = groups.filter((members) => members.length === 1).map((members) => members[0].threat);
+        const spreadPos = new Map();
+
+        if (expanded) {
+            const index = clusterGroups.findIndex((members) => members[0].threat.id === expanded.seedId);
+            if (index < 0) {
+                expanded = null;
+            } else {
+                const members = clusterGroups.splice(index, 1)[0];
+                const cx = members.reduce((sum, m) => sum + m.x, 0) / members.length;
+                const cy = members.reduce((sum, m) => sum + m.y, 0) / members.length;
+                const radius = Math.max(38, 14 + members.length * 8) * sizeMultiplier;
+                members.forEach((m, i) => {
+                    const angle = -Math.PI / 2 + (2 * Math.PI * i) / members.length;
+                    const point = map.containerPointToLatLng([cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius]);
+                    spreadPos.set(m.threat.id, [point.lat, point.lng]);
+                    singles.push(m.threat);
+                });
+            }
+        }
+
         legend.update({
-            confirmedTypeKeys: valid.filter((t) => t.lifecycle !== 'uncertain').map((t) => resolveTypeKey(t)),
-            uncertainTypeKeys: valid.filter((t) => t.lifecycle === 'uncertain').map((t) => resolveTypeKey(t)),
-            hasApprox: valid.some((t) => t.positionQuality === 'approx' && typeof t.uncertaintyKm === 'number'),
+            confirmedTypeKeys: pointThreats.filter((t) => t.lifecycle !== 'uncertain').map((t) => resolveTypeKey(t)),
+            uncertainTypeKeys: pointThreats.filter((t) => t.lifecycle === 'uncertain').map((t) => resolveTypeKey(t)),
+            hasApprox: pointThreats.some((t) => t.positionQuality === 'approx' && typeof t.uncertaintyKm === 'number'),
+            hasArea: areaThreats.length > 0,
         });
         if (typeof onCountChange === 'function') onCountChange(valid.length);
-        hint.update({ hasThreats: valid.length > 0 });
+        hint.update({ hasThreats: valid.length > 0, hasClusters: clusterGroups.length > 0 });
 
-        const approxThreats = valid.filter((t) => t.positionQuality === 'approx' && typeof t.uncertaintyKm === 'number');
+        const approxThreats = singles.filter((t) => t.positionQuality === 'approx' && typeof t.uncertaintyKm === 'number');
         const currentCircleIds = new Set(approxThreats.map((t) => t.id));
 
         activeCircles.forEach((circle, id) => {
@@ -696,23 +854,126 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             drawCircleStroke(circle, CIRCLE_DRAW_DELAY_MS);
         });
 
-        const currentIds = new Set(valid.map((t) => t.id));
-        activeMarkers.forEach((marker, id) => {
-            if (!currentIds.has(id)) {
-                fadeOutAndRemove(marker);
-                activeMarkers.delete(id);
+        const areaIds = new Set(areaThreats.map((t) => t.id));
+        activeAreas.forEach((entry, id) => {
+            if (!areaIds.has(id)) {
+                fadeOutAndRemoveCircle(entry.ring);
+                circlesGroup.removeLayer(entry.hit);
+                activeAreas.delete(id);
                 if (selectedThreatId === id) clearSelectedThreat();
-                if (!isExtrapolation) driftById.delete(id);
             }
         });
 
-        const points = valid.map((t) => map.latLngToContainerPoint([t.lat, t.lon]));
-        const spread = declutterPoints(points);
+        areaThreats.forEach((threat) => {
+            const radiusM = (typeof threat.uncertaintyKm === 'number' ? threat.uncertaintyKm : AREA_ONLY_DEFAULT_KM) * 1000;
+            const color = TYPE_ICONS[resolveTypeKey(threat)].color;
+            const info = tooltipContent(threat, strings, isEnglish);
+            const center = [threat.lat, threat.lon];
+            const existing = activeAreas.get(threat.id);
+            if (existing) {
+                existing.ring.setLatLng(center).setRadius(radiusM).setStyle({ color, fillColor: color });
+                existing.hit.setLatLng(center).setRadius(radiusM);
+                existing.info = info;
+                if (existing.hit.getTooltip()) existing.hit.setTooltipContent(info);
+                if (selectHandler && selectedThreatId === threat.id) selectHandler(info, center, true);
+                return;
+            }
 
-        const sizeMultiplier = kyivMode ? KYIV_ICON_SCALE : 1;
+            const ring = L.circle(center, {
+                pane: UNCERTAINTY_PANE,
+                radius: radiusM,
+                color,
+                weight: 1.6,
+                opacity: 0.9,
+                dashArray: '7 5',
+                fillColor: color,
+                fillOpacity: 0.1,
+                interactive: false,
+                className: 'threat-area-ring',
+            }).addTo(circlesGroup);
+            const hit = L.circle(center, {
+                pane: UNCERTAINTY_PANE,
+                radius: radiusM,
+                weight: AREA_HIT_WEIGHT_PX,
+                opacity: 0,
+                fill: false,
+                interactive: true,
+                bubblingMouseEvents: false,
+                className: 'threat-area-hit',
+            }).addTo(circlesGroup);
+            const entry = { ring, hit, info };
+            if (selectHandler) {
+                hit.on('click', () => {
+                    selectedThreatId = threat.id;
+                    selectHandler(entry.info, center);
+                });
+            } else {
+                hit.bindTooltip(info, { sticky: true });
+            }
+            activeAreas.set(threat.id, entry);
+            drawCircleStroke(ring, CIRCLE_DRAW_DELAY_MS);
+        });
 
-        valid.forEach((threat, i) => {
-            const displayLatLng = map.containerPointToLatLng([spread[i].x, spread[i].y]);
+        const singleIds = new Set(singles.map((t) => t.id));
+        activeMarkers.forEach((marker, id) => {
+            if (singleIds.has(id)) return;
+            activeMarkers.delete(id);
+            if (!currentIdsAll.has(id)) {
+                fadeOutAndRemove(marker);
+                if (selectedThreatId === id) clearSelectedThreat();
+                if (!isExtrapolation) driftById.delete(id);
+            } else {
+                fadeOutAndRemove(marker, false);
+            }
+        });
+
+        const clusterSeedIds = new Set(clusterGroups.map((members) => members[0].threat.id));
+        activeClusters.forEach((marker, id) => {
+            if (clusterSeedIds.has(id)) return;
+            activeClusters.delete(id);
+            fadeOutAndRemove(marker, false);
+        });
+
+        clusterGroups.forEach((members) => {
+            const threatsIn = members.map((m) => m.threat);
+            const seedId = threatsIn[0].id;
+            const lat = threatsIn.reduce((sum, t) => sum + t.lat, 0) / threatsIn.length;
+            const lon = threatsIn.reduce((sum, t) => sum + t.lon, 0) / threatsIn.length;
+            const typeKey = dominantTypeKey(threatsIn);
+            const allUncertain = threatsIn.every((t) => t.lifecycle === 'uncertain');
+            const sig = `${typeKey}|${allUncertain}|${threatsIn.length}|${sizeMultiplier}`;
+            const info = clusterTooltipContent(threatsIn, strings, splitZoom(threatsIn, sizeMultiplier) !== null);
+            let marker = activeClusters.get(seedId);
+
+            if (marker) {
+                const el = marker.getElement();
+                if (el) el.style.transition = `opacity ${MARKER_FADE_MS}ms ease, transform ${MOVE_DURATION_MS}ms ease`;
+                marker.setLatLng([lat, lon]);
+                if (marker._sig !== sig) {
+                    animateIconSwap(marker, () => clusterIcon(threatsIn.length, typeKey, allUncertain, sizeMultiplier));
+                    marker._sig = sig;
+                }
+                if (marker.getTooltip()) marker.setTooltipContent(info);
+            } else {
+                marker = L.marker([lat, lon], {
+                    icon: clusterIcon(threatsIn.length, typeKey, allUncertain, sizeMultiplier),
+                    pane: THREATS_PANE,
+                    zIndexOffset: 1000,
+                });
+                marker._sig = sig;
+                marker.on('click', () => zoomIntoCluster(marker));
+                if (!selectHandler) marker.bindTooltip(info);
+                marker.addTo(layer);
+                activeClusters.set(seedId, marker);
+                fadeInMarker(marker);
+            }
+            marker._members = threatsIn;
+            marker._info = info;
+            marker._seedId = seedId;
+        });
+
+        singles.forEach((threat) => {
+            const latlng = spreadPos.get(threat.id) || [threat.lat, threat.lon];
             const existing = activeMarkers.get(threat.id);
             const typeSig = `${resolveTypeKey(threat)}|${threat.lifecycle}|${sizeMultiplier}`;
 
@@ -722,10 +983,16 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                     const moveDuration = randomDuration(MOVE_DURATION_MS, MOVE_SPREAD_MS);
                     el.style.transition = `opacity ${randomDuration(MARKER_FADE_MS, MARKER_FADE_SPREAD_MS)}ms ease, transform ${moveDuration}ms ease`;
                 }
-                existing.setLatLng(displayLatLng);
+                existing.setLatLng(latlng);
                 existing._truePos = [threat.lat, threat.lon];
                 if (existing._typeSig !== typeSig) {
-                    animateIconSwap(existing, threat, sizeMultiplier);
+                    animateIconSwap(
+                        existing,
+                        () => threatIcon(threat, sizeMultiplier),
+                        () => {
+                            existing._headingDeg = typeof threat.heading === 'number' ? threat.heading : undefined;
+                        }
+                    );
                     existing._typeSig = typeSig;
                 } else {
                     applyIconRotation(existing, threat, true);
@@ -740,7 +1007,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             }
 
             const info = tooltipContent(threat, strings, isEnglish);
-            const marker = L.marker(displayLatLng, { icon: threatIcon(threat, sizeMultiplier), pane: THREATS_PANE });
+            const marker = L.marker(latlng, { icon: threatIcon(threat, sizeMultiplier), pane: THREATS_PANE });
             if (selectHandler) {
                 marker.on('click', () => {
                     selectedThreatId = threat.id;
@@ -758,6 +1025,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                     }
                     map.once('moveend', showCard);
                     setTimeout(showCard, 1200);
+                    hideDuringMove(marker._truePos, targetZoom);
                     map.flyTo(marker._truePos, targetZoom, { animate: true, duration: 0.8 });
                 });
             } else {
@@ -768,6 +1036,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                         if (kyivMode && !isInsideKyiv(marker._truePos)) return;
                         const cityZoom = kyivMode ? KYIV_THREAT_CLICK_ZOOM : RAION_MIN_ZOOM;
                         const targetZoom = Math.min(Math.max(map.getZoom(), cityZoom), map.getMaxZoom());
+                        marker.closeTooltip();
+                        hideDuringMove(marker._truePos, targetZoom);
                         map.flyTo(marker._truePos, targetZoom, { animate: true, duration: 0.8 });
                     });
             }

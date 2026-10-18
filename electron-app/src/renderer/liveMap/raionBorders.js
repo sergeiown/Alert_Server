@@ -3916,11 +3916,13 @@ function buildRaionBordersGroup() {
 
     Object.values(RAION_BORDERS).forEach((ring) => {
         L.polygon(ring, {
+            pane: 'raionBordersPane',
+            interactive: false,
             className: 'raion-border',
             color,
             fill: false,
             weight: 1,
-            opacity: isDark ? 0.4 : 0.6,
+            opacity: isDark ? 0.4 : 0.75,
         }).addTo(layer);
     });
 

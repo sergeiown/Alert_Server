@@ -11,8 +11,8 @@
 
   <style>
     path {
-      fill: #d4c9ae;
-      stroke: #7a6c4e;
+      fill: #d3ccbb;
+      stroke: #d3ccbb;
       stroke-width: 0.5;
     }
     @media (prefers-color-scheme: dark) {
