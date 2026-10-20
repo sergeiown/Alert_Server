@@ -147,7 +147,11 @@ a.web-chip {
 
 #webCredits a {
     color: inherit;
-    text-decoration: underline;
+    text-decoration: none;
+}
+
+#webCredits a:hover {
+    text-decoration: none;
 }
 
 #webNotice {

@@ -10,6 +10,7 @@ const { attachWebSockets } = require('./ws');
 const { startRecurringJob } = require('./job');
 const gateway = require('./gateway');
 const neptun = require('./neptun');
+const merge = require('./merge');
 const archive = require('./archive');
 const users = require('./users');
 const forecast = require('./forecast');
@@ -239,6 +240,11 @@ async function handleRequest(req, res) {
 
     if (url.pathname === '/map/occupied') {
         send(res, occupied.getResponse());
+        return;
+    }
+
+    if (url.pathname === '/alerts-merged') {
+        send(res, merge.getResponse());
         return;
     }
 

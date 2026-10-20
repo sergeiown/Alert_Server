@@ -26,6 +26,12 @@ function play(filePath) {
     });
 }
 
+function playShort(filePath) {
+    exec(`powershell -c (New-Object System.Media.SoundPlayer '${filePath}').PlaySync()`, (err) => {
+        if (err) logEvent(`Sound playback error: ${err.message}`, 'ERROR');
+    });
+}
+
 function playAlertSound(mode, language) {
     if (mode === 'none') return;
     play(mode === 'voice' ? voicePath(language, false) : sirenPath(false));
@@ -36,4 +42,14 @@ function playAlertCancellationSound(mode, language) {
     play(mode === 'voice' ? voicePath(language, true) : sirenPath(true));
 }
 
-module.exports = { playAlertSound, playAlertCancellationSound };
+function playLevelUpSound(mode) {
+    if (mode === 'none') return;
+    playShort(getResourcePath('audio', 'level_up.wav'));
+}
+
+function playLevelDownSound(mode) {
+    if (mode === 'none') return;
+    playShort(getResourcePath('audio', 'level_down.wav'));
+}
+
+module.exports = { playAlertSound, playAlertCancellationSound, playLevelUpSound, playLevelDownSound };

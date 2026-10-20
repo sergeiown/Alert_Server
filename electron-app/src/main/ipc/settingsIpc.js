@@ -14,12 +14,7 @@ function registerSettingsIpc() {
         settingsStore.updateSetting(key, value);
         logEvent(`Setting changed: ${key} = ${value}`, 'INFO');
 
-        if (key === 'alertSourceProvider') {
-
-            logEvent(`Alert data source switched to ${value} - relaunching to apply it`, 'INFO');
-        }
-
-        if (key === 'language' || key === 'alertSourceProvider') {
+        if (key === 'language') {
 
             setTimeout(() => {
                 app.relaunch();

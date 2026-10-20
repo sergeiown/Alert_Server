@@ -14,6 +14,7 @@ const trends = require('./trends');
 const occupied = require('./occupied');
 const lib = require('./lib');
 const logbook = require('./logbook');
+const merge = require('./merge');
 
 const TICK_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -27,13 +28,20 @@ async function tick() {
     } catch (err) {
         logError('oblast-refresh', err);
     }
+}
 
-    try {
-        await gateway.pollUkraineAlarmIfDue();
-    } catch (err) {
-        logError('ukrainealarm-poll', err);
+const UKRAINEALARM_SNAPSHOT_CHECK_MS = 15 * 1000;
+
+async function ukraineAlarmSnapshotLoop() {
+    for (;;) {
+        try {
+            await gateway.pollUkraineAlarmIfDue({ minGapMs: gateway.ukraineAlarmSnapshotGapMs() });
+        } catch (err) {
+            logError('ukrainealarm-poll', err);
+        } finally {
+            await new Promise((resolve) => setTimeout(resolve, UKRAINEALARM_SNAPSHOT_CHECK_MS));
+        }
     }
-
 }
 
 async function activeLoop() {
@@ -109,7 +117,9 @@ async function healthLoop() {
 function startRecurringJob() {
     loop();
     activeLoop();
+    ukraineAlarmSnapshotLoop();
     neptun.start();
+    merge.start();
     occupied.start();
     geoip.start();
     publicApi.start();

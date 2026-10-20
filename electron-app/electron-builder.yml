@@ -8,6 +8,9 @@ files:
 extraResources:
     - from: resources
       to: .
+      filter:
+          - '**/*'
+          - '!icons-src/**'
 win:
     target: nsis
     icon: resources/icons/app-icon-256.png

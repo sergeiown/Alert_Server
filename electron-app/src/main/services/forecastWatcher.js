@@ -42,7 +42,7 @@ function notifyApproaching(uid, alertType, etaMs, language) {
         uid,
         title,
         bodyLines: [`${t('location', language)}: ${name}`, `${t('forecastEtaLabel', language)} ${etaText}`],
-        iconName: null,
+        iconName: 'forecast.png',
         color: FORECAST_COLOR,
         onClick: () => openForecastWindow(),
     });

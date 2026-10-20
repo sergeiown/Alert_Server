@@ -16,10 +16,26 @@ function worstLevelAmong(alerts) {
     return null;
 }
 
+function levelRank(level) {
+    if (level === 'red') return 2;
+    if (level === 'yellow') return 1;
+    return 0;
+}
+
 function splitThreatMessage(message) {
     const match = message.match(/^(.*?\))\s*(.*)$/);
     if (!match) return { description: message, district: null };
     return { description: match[1], district: match[2] || null };
+}
+
+function threatKey(threat) {
+    if (!threat) return null;
+    if (threat.source_message) {
+        const { description, district } = splitThreatMessage(threat.source_message);
+        return `${threat.level || ''}|${description}|${district || ''}`;
+    }
+    if (threat.description) return `${threat.level || ''}|${threat.description}|`;
+    return null;
 }
 
 function stripDistrictSuffix(district) {
@@ -69,4 +85,4 @@ function describeThreats(threats, language) {
     return lines.length ? lines.map((line) => line.text).join('\n') : null;
 }
 
-module.exports = { levelColor, worstLevelAmong, describeThreats, getThreatLines };
+module.exports = { levelColor, levelRank, worstLevelAmong, describeThreats, getThreatLines, threatKey };

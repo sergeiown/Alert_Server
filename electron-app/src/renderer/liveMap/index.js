@@ -49,12 +49,6 @@ const MAP_MIN_ZOOM = window.alertServerLiveMap.minZoom || 5;
 const UKRAINE_MAX_ZOOM = 12;
 const KYIV_MAX_ZOOM = 14;
 
-const ALERT_SOURCE_DISPLAY = {
-    ukrainealarm: { name: 'UkraineAlarm', url: 'https://api.ukrainealarm.com' },
-    'alerts.in.ua': { name: 'alerts.in.ua', url: 'https://alerts.in.ua' },
-    neptun: { name: 'Neptun', url: 'https://neptun.in.ua' },
-};
-
 const CenterControl = L.Control.extend({
     options: { position: 'topleft' },
     onAdd: function (map) {
@@ -103,8 +97,6 @@ async function main() {
     const settings = await window.alertServerLiveMap.getSettings();
     const baseMapUrl = await window.alertServerLiveMap.getBaseMapUrl();
 
-    const activeAlertSourceKey = (await window.alertServerLiveMap.getActiveAlertSource()) || settings.alertSourceProvider;
-    const alertSourceDisplay = ALERT_SOURCE_DISPLAY[activeAlertSourceKey] || ALERT_SOURCE_DISPLAY['alerts.in.ua'];
     document.title = strings.appName;
 
     const map = L.map('map', {
@@ -471,7 +463,7 @@ async function main() {
 
     map.attributionControl.addAttribution(`<a href="#" id="appAttribution">${strings.appName}</a>`);
     map.attributionControl.addAttribution(
-        `<a href="#" id="alertsAttribution">${strings.liveMapAlertsAttributionPrefix} ${alertSourceDisplay.name}</a>`
+        `${strings.liveMapAlertsAttributionPrefix} <a href="#" id="alertsAttribution">alerts.in.ua</a>, <a href="#" id="ukraineAlarmAttribution">UkraineAlarm</a>`
     );
     map.attributionControl.addAttribution(`<a href="#" id="neptunAttribution">${strings.liveMapNeptunAttribution}</a>`);
 
@@ -480,7 +472,8 @@ async function main() {
 
     [
         ['appAttribution', 'https://github.com/sergeiown/Alert_Server'],
-        ['alertsAttribution', alertSourceDisplay.url],
+        ['alertsAttribution', 'https://alerts.in.ua'],
+        ['ukraineAlarmAttribution', 'https://www.ukrainealarm.com'],
         ['neptunAttribution', 'https://neptun.in.ua'],
         ['deepStateAttribution', 'https://deepstatemap.live/'],
     ].forEach(([id, url]) => bindAttributionLink(id, url));

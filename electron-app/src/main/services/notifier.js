@@ -7,12 +7,13 @@ const { getUserDataFile, getResourcePath } = require('./appPaths');
 const { logEvent } = require('./logger');
 const settingsStore = require('./settingsStore');
 const regionsStore = require('./regionsStore');
-const { playAlertSound, playAlertCancellationSound } = require('./audioPlayer');
+const { playAlertSound, playAlertCancellationSound, playLevelUpSound, playLevelDownSound } = require('./audioPlayer');
 const { alertTypeName } = require('./alertTypes');
 const { getHistoryFetchTarget } = require('./locationFilter');
 const { renderRegionMapImage } = require('./notificationMap');
 const { formatDuration } = require('./forecast');
-const { levelColor, worstLevelAmong, describeThreats } = require('./alertLevels');
+const { levelColor, levelRank, worstLevelAmong, describeThreats, threatKey } = require('./alertLevels');
+const { diffAlerts } = require('./alertDiff');
 const { KYIV_CITY_UID } = require('./regionAlertStatus');
 const { transliterate } = require('./transliterate');
 const { t } = require('../../i18n/i18n');
@@ -25,6 +26,8 @@ const MASS_ALERT_THRESHOLD = 2;
 const STALE_ON_FIRST_SIGHT_MS = 5 * 60 * 1000;
 
 let displayedAlerts = null;
+const displayedAlertsJson = { value: null };
+const displayedKyivDistrictsJson = { value: null };
 let isInitialSync = false;
 const activeNotifications = new Set();
 
@@ -51,11 +54,6 @@ function ensureDisplayedAlertsLoaded() {
     }
 }
 
-function saveDisplayedAlerts() {
-    const alertsArray = Array.from(displayedAlerts.entries()).map(([id, value]) => ({ id, ...value }));
-    fs.writeFileSync(getUserDataFile('alert_displayed.json'), JSON.stringify(alertsArray, null, 2), 'utf-8');
-}
-
 function ensureDisplayedKyivDistrictsLoaded() {
     if (displayedKyivDistricts) return;
 
@@ -66,11 +64,6 @@ function ensureDisplayedKyivDistrictsLoaded() {
         const saved = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
         saved.forEach((district) => displayedKyivDistricts.set(district.name, district));
     }
-}
-
-function saveDisplayedKyivDistricts() {
-    const districtsArray = Array.from(displayedKyivDistricts.entries()).map(([name, value]) => ({ name, ...value }));
-    fs.writeFileSync(getUserDataFile('kyiv_district_displayed.json'), JSON.stringify(districtsArray, null, 2), 'utf-8');
 }
 
 function formatStartedAt(startedAt, language) {
@@ -188,8 +181,162 @@ function showAlertDetails(title, language, locationName, typeName, startedAt) {
     });
 }
 
+function levelLabel(level, language) {
+    if (level === 'red') return t('alertLevelRed', language);
+    if (level === 'yellow') return t('alertLevelYellow', language);
+    return null;
+}
+
+function levelShort(level, language) {
+    if (level === 'red') return t('alertLevelShortRed', language);
+    if (level === 'yellow') return t('alertLevelShortYellow', language);
+    return '';
+}
+
+function iconForLevel(level) {
+    return level === 'yellow' ? 'alert_yellow.png' : 'alert.png';
+}
+
+function durationLine(startedAt, language) {
+    if (!startedAt) return null;
+    const ms = Date.now() - new Date(startedAt).getTime();
+    if (!Number.isFinite(ms) || ms < 0) return null;
+    return `${t('alertDuration', language)}: ${formatDuration(ms, language)}`;
+}
+
+function maxLevelLine(maxLevel, language) {
+    const label = levelLabel(maxLevel, language);
+    return label ? `${t('alertMaxLevel', language)}: ${label}` : null;
+}
+
+function levelChangeLine(from, to, language) {
+    return t('alertLevelChangeLine', language)
+        .replace('{from}', levelShort(from, language))
+        .replace('{to}', levelLabel(to, language) || '');
+}
+
+function worstLevelOfEvents(events) {
+    return events.reduce((worst, event) => (levelRank(event.to || event.entry.level) > levelRank(worst) ? event.to || event.entry.level : worst), null);
+}
+
+function persistSnapshot(entries, lastJsonRef, fileName, keyName) {
+    const array = Array.from(entries.entries()).map(([id, value]) => {
+        const { pending, ...rest } = value;
+        return { [keyName]: id, ...rest };
+    });
+    const json = JSON.stringify(array, null, 2);
+    if (json === lastJsonRef.value) return;
+    lastJsonRef.value = json;
+    fs.writeFileSync(getUserDataFile(fileName), json, 'utf-8');
+}
+
+function notifyLevelChanges(events, ctx) {
+    const { settings, language } = ctx;
+    if (!events.length || settings.alertLevelChangeNotifyEnabled === false) return;
+
+    const massChange = events.length > MASS_ALERT_THRESHOLD;
+
+    if (ctx.canNotify && massChange) {
+        const count = (type) => events.filter((event) => event.type === type).length;
+        const lines = [
+            count('escalate') ? t('massLevelEscalatedLine', language).replace('{count}', count('escalate')) : null,
+            count('deescalate') ? t('massLevelDeescalatedLine', language).replace('{count}', count('deescalate')) : null,
+            count('addThreat') ? t('massLevelThreatAddedLine', language).replace('{count}', count('addThreat')) : null,
+        ].filter(Boolean);
+        const worst = worstLevelOfEvents(events);
+        notifyWithMap({
+            uids: ctx.uidsOf(events),
+            title: t('massLevelChangeTitle', language).replace('{count}', events.length),
+            bodyLines: lines,
+            iconName: iconForLevel(worst),
+            color: levelColor(worst),
+        });
+    }
+
+    if (ctx.canNotify && !massChange) {
+        events.forEach((event) => {
+            const name = ctx.nameOf(event, language);
+            const level = event.type === 'addThreat' ? event.entry.level : event.to;
+            let title;
+            let bodyLines;
+
+            if (event.type === 'escalate') {
+                title = `${t('alertLevelEscalatedTitle', language)}: ${name}`;
+                bodyLines = [levelChangeLine(event.from, event.to, language), ...ctx.threatLines(event, false, language), durationLine(event.entry.startedAt, language)];
+            } else if (event.type === 'deescalate') {
+                title = `${t('alertLevelDeescalatedTitle', language)}: ${name}`;
+                const first = event.from === 'red' && event.to === 'yellow' ? t('alertRedLevelLifted', language) : levelChangeLine(event.from, event.to, language);
+                bodyLines = [first, ...ctx.threatLines(event, false, language), durationLine(event.entry.startedAt, language)];
+            } else {
+                title = `${t('alertThreatAddedTitle', language)}: ${name}`;
+                const label = levelLabel(level, language);
+                bodyLines = [
+                    ...ctx.threatLines(event, true, language),
+                    label ? `${t('alertCurrentLevel', language)}: ${label}` : null,
+                    durationLine(event.entry.startedAt, language),
+                ];
+            }
+
+            notifyWithMap({
+                uid: ctx.uidOf(event),
+                title,
+                bodyLines: bodyLines.filter(Boolean),
+                iconName: iconForLevel(level),
+                color: levelColor(level),
+                onClick: ctx.onClick ? () => ctx.onClick(event, title, language) : undefined,
+            });
+        });
+    }
+
+    if (settings.alertSoundMode !== 'none') {
+        if (events.some((event) => event.type === 'escalate')) playLevelUpSound(settings.alertSoundMode);
+        else if (events.some((event) => event.type === 'deescalate')) playLevelDownSound(settings.alertSoundMode);
+    }
+
+    events.forEach((event) => {
+        logEvent(`${ctx.logLabel} level change: ${event.type}${event.from ? ` ${event.from}` : ''}${event.to ? ` -> ${event.to}` : ''}: ${ctx.logName(event)}`, 'ALERT');
+    });
+}
+
+function alertKey(alert) {
+    return `${alert.location_uid}:${alert.alert_type}`;
+}
+
+function alertToItem(alert) {
+    return {
+        id: alertKey(alert),
+        level: alert.alert_level,
+        startedAt: alert.started_at,
+        sig: (alert.threats || []).map(threatKey),
+        meta: {
+            locationUid: alert.location_uid,
+            locationTitle: alert.location_title,
+            locationLat: alert.location_lat,
+            alertType: alert.alert_type,
+        },
+        raw: alert,
+    };
+}
+
+function scheduleRecheck(state, ms, run) {
+    if (state.timer) clearTimeout(state.timer);
+    state.timer = null;
+    if (ms === null || ms === undefined) return;
+    state.timer = setTimeout(run, ms + 250);
+    if (typeof state.timer.unref === 'function') state.timer.unref();
+}
+
+const alertsRecheck = { timer: null, args: null };
+
+function alertThreatLines(event, onlyAdded, language) {
+    const threats = (event.item.raw.threats || []).filter((threat) => !onlyAdded || event.added.includes(threatKey(threat)));
+    const text = describeThreats(threats, language);
+    return text ? text.split('\n') : [];
+}
+
 function processAlerts(matchedAlerts, allAlerts) {
     ensureDisplayedAlertsLoaded();
+    alertsRecheck.args = [matchedAlerts, allAlerts];
 
     const skipCancellationNotice = isInitialSync;
     isInitialSync = false;
@@ -199,27 +346,38 @@ function processAlerts(matchedAlerts, allAlerts) {
     const alertCount = matchedAlerts.length;
     const canNotify = settings.visualNotificationsEnabled && settings.activeAlertNotifyEnabled;
 
-    const newAlerts = matchedAlerts.filter((alert) => !displayedAlerts.has(alert.id));
-    const isStaleOnFirstSight = (alert) => Date.now() - new Date(alert.started_at).getTime() > STALE_ON_FIRST_SIGHT_MS;
-    const freshNewAlerts = newAlerts.filter((alert) => !isStaleOnFirstSight(alert));
-    const massStart = freshNewAlerts.length > MASS_ALERT_THRESHOLD;
+    const { events, nextSnapshot, nextCheckInMs } = diffAlerts(displayedAlerts, matchedAlerts.map(alertToItem), {
+        staleOnFirstSightMs: STALE_ON_FIRST_SIGHT_MS,
+    });
+    displayedAlerts = nextSnapshot;
+    persistSnapshot(displayedAlerts, displayedAlertsJson, 'alert_displayed.json', 'id');
+    scheduleRecheck(alertsRecheck, nextCheckInMs, () => processAlerts(...alertsRecheck.args));
 
-    if (freshNewAlerts.length && canNotify && settings.showLiveMapOnAlert) {
+    const startEvents = events.filter((event) => event.type === 'start');
+    const levelEvents = events.filter((event) => ['escalate', 'deescalate', 'addThreat'].includes(event.type));
+    const endEvents = events.filter((event) => event.type === 'end');
+
+    const freshStarts = startEvents.filter((event) => !event.stale);
+    const massStart = freshStarts.length > MASS_ALERT_THRESHOLD;
+
+    if (freshStarts.length && canNotify && settings.showLiveMapOnAlert) {
         openConfiguredLiveMap();
     }
 
     if (massStart && canNotify) {
+        const worst = worstLevelAmong(freshStarts.map((event) => event.item.raw));
         notifyWithMap({
-            uids: freshNewAlerts.map((alert) => alert.location_uid),
-            title: t('massAlertStartTitle', language).replace('{count}', freshNewAlerts.length),
+            uids: freshStarts.map((event) => event.item.raw.location_uid),
+            title: t('massAlertStartTitle', language).replace('{count}', freshStarts.length),
             bodyLines: [`${t('activeInMonitored', language)}: ${alertCount}`],
-            iconName: 'alert.png',
-            color: levelColor(worstLevelAmong(freshNewAlerts)),
+            iconName: iconForLevel(worst),
+            color: levelColor(worst),
         });
     }
 
-    newAlerts.forEach((alert) => {
-        const stale = isStaleOnFirstSight(alert);
+    startEvents.forEach((event) => {
+        const alert = event.item.raw;
+        const stale = event.stale;
         const typeName = alertTypeName(alert.alert_type, language);
         const locationName = language === 'English' ? alert.location_lat : alert.location_title;
         const title = `${t('alertStarted', language)}: ${typeName}`;
@@ -238,7 +396,7 @@ function processAlerts(matchedAlerts, allAlerts) {
                 ]
                     .filter(Boolean)
                     .flatMap((line) => line.split('\n')),
-                iconName: 'alert.png',
+                iconName: iconForLevel(alert.alert_level),
                 color: levelColor(alert.alert_level),
                 onClick: () => showAlertDetails(title, language, locationName, typeName, alert.started_at),
             });
@@ -250,29 +408,28 @@ function processAlerts(matchedAlerts, allAlerts) {
 
         const levelSuffix = alert.alert_level ? ` [${alert.alert_level}]` : '';
         logEvent(`Alert ${alert.alert_type}${levelSuffix}: ${alert.location_lat || alert.location_title}${stale ? ' (already active before this check)' : ''}`, 'ALERT');
-
-        displayedAlerts.set(alert.id, {
-            locationUid: alert.location_uid,
-            locationTitle: alert.location_title,
-            locationLat: alert.location_lat,
-            alertType: alert.alert_type,
-            startedAt: alert.started_at,
-        });
-        saveDisplayedAlerts();
     });
 
-    const newlyCancelled = [];
-    displayedAlerts.forEach((value, id) => {
-        if (matchedAlerts.some((alert) => alert.id === id)) return;
-
-        displayedAlerts.delete(id);
-        saveDisplayedAlerts();
-
-        const stillActiveElsewhere = allAlerts.some((alert) => alert.id === id);
-        if (skipCancellationNotice || stillActiveElsewhere) return;
-
-        newlyCancelled.push(value);
+    notifyLevelChanges(levelEvents, {
+        settings,
+        language,
+        canNotify,
+        logLabel: 'Alert',
+        uidOf: (event) => event.entry.locationUid,
+        uidsOf: (list) => list.map((event) => event.entry.locationUid),
+        nameOf: (event, lang) => (lang === 'English' ? event.entry.locationLat : event.entry.locationTitle),
+        logName: (event) => event.entry.locationLat || event.entry.locationTitle,
+        threatLines: alertThreatLines,
+        onClick: (event, title, lang) => {
+            const typeName = alertTypeName(event.entry.alertType, lang);
+            const locationName = lang === 'English' ? event.entry.locationLat : event.entry.locationTitle;
+            showAlertDetails(title, lang, locationName, typeName, event.entry.startedAt);
+        },
     });
+
+    const newlyCancelled = endEvents
+        .filter((event) => !skipCancellationNotice && !allAlerts.some((alert) => alertKey(alert) === event.id))
+        .map((event) => event.entry);
 
     const massCancel = newlyCancelled.length > MASS_ALERT_THRESHOLD;
 
@@ -301,6 +458,7 @@ function processAlerts(matchedAlerts, allAlerts) {
                 bodyLines: [
                     `${t('location', language)}: ${locationName}`,
                     durationText ? `${t('alertDuration', language)}: ${durationText}` : null,
+                    maxLevelLine(value.maxLevel, language),
                 ].filter(Boolean),
                 iconName: 'cancel.png',
                 color: CANCEL_COLOR,
@@ -322,13 +480,32 @@ function kyivDistrictDisplayName(name, language) {
 
 function kyivDistrictThreatLines(threats, language) {
     return (threats || []).map((threat) => {
-        const levelLabel = threat.level === 'red' ? t('alertLevelRed', language) : t('alertLevelYellow', language);
-        return `${threat.description} (${levelLabel})`;
+        const levelLabelText = threat.level === 'red' ? t('alertLevelRed', language) : t('alertLevelYellow', language);
+        return `${threat.description} (${levelLabelText})`;
     });
+}
+
+function kyivDistrictToItem(district) {
+    return {
+        id: district.name,
+        level: district.alertLevel,
+        startedAt: district.startedAt,
+        sig: (district.threats || []).map(threatKey),
+        meta: { name: district.name },
+        raw: district,
+    };
+}
+
+const kyivRecheck = { timer: null, args: null };
+
+function kyivThreatLines(event, onlyAdded, language) {
+    const threats = (event.item.raw.threats || []).filter((threat) => !onlyAdded || event.added.includes(threatKey(threat)));
+    return kyivDistrictThreatLines(threats, language);
 }
 
 function processKyivDistricts(kyivRaions) {
     ensureDisplayedKyivDistrictsLoaded();
+    kyivRecheck.args = [kyivRaions];
 
     const skipCancellationNotice = isKyivDistrictInitialSync;
     isKyivDistrictInitialSync = false;
@@ -340,32 +517,38 @@ function processKyivDistricts(kyivRaions) {
     const language = settings.language;
     const canNotify = settings.visualNotificationsEnabled && settings.activeAlertNotifyEnabled;
 
-    const current = new Map((kyivRaions || []).map((district) => [district.name, district]));
-    const isStaleOnFirstSight = (district) => Date.now() - new Date(district.startedAt).getTime() > STALE_ON_FIRST_SIGHT_MS;
-
-    const newDistricts = [];
-    current.forEach((district, name) => {
-        if (!displayedKyivDistricts.has(name)) newDistricts.push(district);
+    const { events, nextSnapshot, nextCheckInMs } = diffAlerts(displayedKyivDistricts, (kyivRaions || []).map(kyivDistrictToItem), {
+        staleOnFirstSightMs: STALE_ON_FIRST_SIGHT_MS,
     });
-    const freshNewDistricts = newDistricts.filter((district) => !isStaleOnFirstSight(district));
-    const massStart = freshNewDistricts.length > MASS_ALERT_THRESHOLD;
+    displayedKyivDistricts = nextSnapshot;
+    persistSnapshot(displayedKyivDistricts, displayedKyivDistrictsJson, 'kyiv_district_displayed.json', 'name');
+    scheduleRecheck(kyivRecheck, nextCheckInMs, () => processKyivDistricts(...kyivRecheck.args));
 
-    if (freshNewDistricts.length && canNotify && settings.showLiveMapOnAlert) {
+    const startEvents = events.filter((event) => event.type === 'start');
+    const levelEvents = events.filter((event) => ['escalate', 'deescalate', 'addThreat'].includes(event.type));
+    const endEvents = events.filter((event) => event.type === 'end');
+
+    const freshStarts = startEvents.filter((event) => !event.stale);
+    const massStart = freshStarts.length > MASS_ALERT_THRESHOLD;
+
+    if (freshStarts.length && canNotify && settings.showLiveMapOnAlert) {
         openConfiguredLiveMap();
     }
 
     if (massStart && canNotify) {
+        const worst = worstLevelAmong(freshStarts.map((event) => ({ alert_level: event.item.raw.alertLevel })));
         notifyWithMap({
             uid: KYIV_CITY_UID,
-            title: t('massKyivDistrictAlertStartTitle', language).replace('{count}', freshNewDistricts.length),
+            title: t('massKyivDistrictAlertStartTitle', language).replace('{count}', freshStarts.length),
             bodyLines: [],
-            iconName: 'alert.png',
-            color: levelColor(worstLevelAmong(freshNewDistricts.map((district) => ({ alert_level: district.alertLevel })))),
+            iconName: iconForLevel(worst),
+            color: levelColor(worst),
         });
     }
 
-    newDistricts.forEach((district) => {
-        const stale = isStaleOnFirstSight(district);
+    startEvents.forEach((event) => {
+        const district = event.item.raw;
+        const stale = event.stale;
         const displayName = kyivDistrictDisplayName(district.name, language);
         const startedAtText = formatStartedAt(district.startedAt, language);
 
@@ -377,7 +560,7 @@ function processKyivDistricts(kyivRaions) {
                     ...kyivDistrictThreatLines(district.threats, language),
                     startedAtText ? `${t('alertStartedAt', language)}: ${startedAtText}` : null,
                 ].filter(Boolean),
-                iconName: 'alert.png',
+                iconName: iconForLevel(district.alertLevel),
                 color: levelColor(district.alertLevel),
             });
         }
@@ -386,20 +569,21 @@ function processKyivDistricts(kyivRaions) {
             `Kyiv district alert: ${district.name}${district.alertLevel ? ` [${district.alertLevel}]` : ''}${stale ? ' (already active before this check)' : ''}`,
             'ALERT'
         );
-
-        displayedKyivDistricts.set(district.name, { startedAt: district.startedAt, alertLevel: district.alertLevel });
-        saveDisplayedKyivDistricts();
     });
 
-    const newlyEnded = [];
-    displayedKyivDistricts.forEach((value, name) => {
-        if (current.has(name)) return;
-
-        displayedKyivDistricts.delete(name);
-        saveDisplayedKyivDistricts();
-
-        if (!skipCancellationNotice) newlyEnded.push({ name, ...value });
+    notifyLevelChanges(levelEvents, {
+        settings,
+        language,
+        canNotify,
+        logLabel: 'Kyiv district',
+        uidOf: () => KYIV_CITY_UID,
+        uidsOf: () => [KYIV_CITY_UID],
+        nameOf: (event, lang) => kyivDistrictDisplayName(event.entry.name, lang),
+        logName: (event) => event.entry.name,
+        threatLines: kyivThreatLines,
     });
+
+    const newlyEnded = skipCancellationNotice ? [] : endEvents.map((event) => ({ ...event.entry, name: event.id }));
 
     const massCancel = newlyEnded.length > MASS_ALERT_THRESHOLD;
 
@@ -423,7 +607,10 @@ function processKyivDistricts(kyivRaions) {
             notifyWithMap({
                 uid: KYIV_CITY_UID,
                 title: `${t('alertCancelled', language)}: ${displayName}`,
-                bodyLines: [durationText ? `${t('alertDuration', language)}: ${durationText}` : null].filter(Boolean),
+                bodyLines: [
+                    durationText ? `${t('alertDuration', language)}: ${durationText}` : null,
+                    maxLevelLine(value.maxLevel, language),
+                ].filter(Boolean),
                 iconName: 'cancel.png',
                 color: CANCEL_COLOR,
             });

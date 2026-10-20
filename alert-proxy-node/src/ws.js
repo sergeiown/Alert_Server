@@ -4,6 +4,7 @@
 const { WebSocketServer } = require('ws');
 const gateway = require('./gateway');
 const neptun = require('./neptun');
+const merge = require('./merge');
 const users = require('./users');
 const ratelimit = require('./ratelimit');
 const publicApi = require('./publicApi');
@@ -15,6 +16,7 @@ function attachWebSockets(server) {
     const alertsWss = new WebSocketServer({ noServer: true });
     const activeWss = new WebSocketServer({ noServer: true });
     const neptunWss = new WebSocketServer({ noServer: true });
+    const mergedWss = new WebSocketServer({ noServer: true });
     const publicWss = new WebSocketServer({ noServer: true, maxPayload: 1024 });
 
     alertsWss.on('connection', (ws) => {
@@ -27,6 +29,13 @@ function attachWebSockets(server) {
     activeWss.on('connection', (ws) => {
         gateway.acceptActiveSocket(ws);
         ws.on('close', () => gateway.unregisterSocket('active', ws));
+        ws.on('error', () => {});
+        ws.on('message', () => {});
+    });
+
+    mergedWss.on('connection', (ws) => {
+        merge.acceptSocket(ws);
+        ws.on('close', () => gateway.unregisterSocket('merged', ws));
         ws.on('error', () => {});
         ws.on('message', () => {});
     });
@@ -100,6 +109,11 @@ function attachWebSockets(server) {
                 return;
             }
             alertsWss.handleUpgrade(request, socket, head, (ws) => alertsWss.emit('connection', ws, request));
+            return;
+        }
+
+        if (url.pathname === '/ws-merged') {
+            mergedWss.handleUpgrade(request, socket, head, (ws) => mergedWss.emit('connection', ws, request));
             return;
         }
 

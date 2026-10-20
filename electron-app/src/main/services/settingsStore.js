@@ -10,6 +10,7 @@ const defaultSettings = {
     visualNotificationsEnabled: true,
     activeAlertNotifyEnabled: true,
     showLiveMapOnAlert: false,
+    alertLevelChangeNotifyEnabled: true,
     alertSoundMode: 'siren',
     alertSoundCount: 1,
     forecastNotifyEnabled: true,
@@ -19,9 +20,6 @@ const defaultSettings = {
     updateIntervalMigrated: false,
     minimizeToTrayOnClose: true,
     showHubOnStartup: true,
-
-    alertSourceProvider: 'alerts.in.ua',
-    alertSourceMigratedToAlertsInUa: false,
 };
 
 let settings = null;
@@ -46,13 +44,11 @@ function load() {
         }
         delete settings.alertSound;
 
-        if (!parsed.alertSourceMigratedToAlertsInUa) {
-            settings.alertSourceProvider = 'alerts.in.ua';
-            settings.alertSourceMigratedToAlertsInUa = true;
+        if (parsed.hasOwnProperty('alertSourceProvider') || parsed.hasOwnProperty('alertSourceMigratedToAlertsInUa')) {
+            delete settings.alertSourceProvider;
+            delete settings.alertSourceMigratedToAlertsInUa;
             save();
         }
-
-        if (settings.alertSourceProvider === 'ukrainealarm') settings.alertSourceProvider = 'alerts.in.ua';
 
         if (!parsed.updateIntervalMigrated) {
             if (parsed.updateCheckIntervalHours === undefined || parsed.updateCheckIntervalHours === 24) settings.updateCheckIntervalHours = 1;

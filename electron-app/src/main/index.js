@@ -20,6 +20,7 @@ const { startAlertSourceManager } = require('./services/alertSourceManager');
 const { filterAlerts, discoverUnknownLocations } = require('./services/locationFilter');
 const { loadLocalConfig } = require('./services/localConfig');
 const { processAlerts, processKyivDistricts, getActiveCount } = require('./services/notifier');
+const { worstLevelAmong } = require('./services/alertLevels');
 const { setLatestMatchedAlerts, setLatestTotalAlertCount, setLatestAlertedRegions } = require('./services/alertState');
 const { removeLegacyLocalData } = require('./services/legacyDataCleanup');
 const { computeAlertedRegions, computeKyivRaionStatuses } = require('./services/regionAlertStatus');
@@ -87,7 +88,6 @@ app.whenReady().then(() => {
     removeLegacyLocalData();
     startNeptunThreatsTracking();
 
-    const { alertSourceProvider } = settingsStore.getSettings();
     let forecastWatcherStarted = false;
     const UNCHANGED_LOG_INTERVAL_MS = 10 * 60 * 1000;
     let lastAlertsLogLine = '';
@@ -106,12 +106,12 @@ app.whenReady().then(() => {
             }
         }
         setLatestMatchedAlerts(matched);
-        setLatestTotalAlertCount(alertData.alerts.length);
+        setLatestTotalAlertCount(Number.isFinite(alertData.officialCount) ? alertData.officialCount : alertData.alerts.length);
         const kyivRaions = computeKyivRaionStatuses(alertData.alerts);
         setLatestAlertedRegions({ ...computeAlertedRegions(alertData.alerts), kyivRaions });
         processAlerts(matched, alertData.alerts);
         processKyivDistricts(kyivRaions);
-        updateTrayState(getActiveCount(), alertData.alerts.length);
+        updateTrayState(getActiveCount(), alertData.alerts.length, worstLevelAmong(matched));
 
         if (!forecastWatcherStarted) {
             forecastWatcherStarted = true;
@@ -120,7 +120,7 @@ app.whenReady().then(() => {
     }
 
     const { alertProxyClientKey } = loadLocalConfig();
-    startAlertSourceManager(alertSourceProvider, alertProxyClientKey, onAlertsUpdated);
+    startAlertSourceManager(alertProxyClientKey, onAlertsUpdated);
 });
 
 app.on('window-all-closed', () => {});

@@ -4,7 +4,7 @@
 const { logEvent } = require('./logger');
 const { getLiveMapWindow } = require('../windows/liveMapWindow');
 const { loadLocalConfig } = require('./localConfig');
-const { PROXY_URL, PROXY_WS_URL, getClientVersion, proxyFetch, describeError } = require('./proxyConfig');
+const { PROXY_URL, PROXY_WS_URL, getClientVersion, proxyFetch, fetchWithTimeout, describeError } = require('./proxyConfig');
 
 const THREATS_URL = 'https://neptun.in.ua/api/v1/threats';
 const STREAM_URL = 'wss://neptun.in.ua/api/v1/stream';
@@ -113,7 +113,7 @@ async function fetchSnapshot() {
         const viaProxy = proxyEnabled();
         const response = viaProxy
             ? await proxyFetch(`${PROXY_URL}/neptun/threats`, { headers: { 'X-Client-Key': getClientKey(), 'X-Client-Version': getClientVersion() } })
-            : await fetch(THREATS_URL);
+            : await fetchWithTimeout(THREATS_URL);
         if (!response.ok) {
             logEvent(`Neptun threats fallback fetch failed: ${response.status}`, 'NETWORK');
             return;

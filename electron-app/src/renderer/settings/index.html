@@ -51,6 +51,7 @@
                 <label><input type="checkbox" id="visualNotificationsEnabled" /> <span id="visualNotificationsLabel"></span></label>
                 <label><input type="checkbox" id="activeAlertNotifyEnabled" /> <span id="activeAlertNotifyLabel"></span></label>
                 <label style="margin-left: 18px"><input type="checkbox" id="showLiveMapOnAlert" /> <span id="showLiveMapOnAlertLabel"></span></label>
+                <label style="margin-left: 18px"><input type="checkbox" id="alertLevelChangeNotifyEnabled" /> <span id="alertLevelChangeNotifyLabel"></span></label>
                 <label style="margin-left: 18px">
                     <span id="alertSoundLabel"></span>
                     <select id="alertSoundMode">
@@ -72,17 +73,6 @@
                     <span id="forecastNotifyLookaheadLabel"></span>
                     <input type="number" id="forecastNotifyLookaheadMinutes" min="1" max="600" style="width: 4em" />
                 </label>
-            </fieldset>
-            <fieldset class="settings-group">
-                <legend id="settingsGroupDataSource"></legend>
-                <label>
-                    <span id="alertSourceProviderLabel"></span>
-                    <select id="alertSourceProvider">
-                        <option value="alerts.in.ua" id="alertSourceProviderAlertsInUaOption"></option>
-                        <option value="neptun" id="alertSourceProviderNeptunOption"></option>
-                    </select>
-                </label>
-                <p id="alertSourceProviderNote" class="settings-note"></p>
             </fieldset>
         </section>
     </div>

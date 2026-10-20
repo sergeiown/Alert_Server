@@ -14,6 +14,7 @@ const settingsStore = require('./settingsStore');
 const { logEvent } = require('./logger');
 const { formatDuration } = require('./forecast');
 const { getUpcomingPredictions } = require('./forecastWatcher');
+const { getAlertSourcesStatus } = require('./alertState');
 const { t } = require('../../i18n/i18n');
 
 const ICON_SIZES = [16, 20, 24, 28, 32, 40, 48, 64];
@@ -28,6 +29,7 @@ let animationTimer = null;
 let alertLoopActive = false;
 let tooltipOverride = null;
 let massAttackActive = false;
+let alertLevelKey = null;
 const menuIcons = new Map();
 const iconCache = new Map();
 
@@ -63,20 +65,24 @@ function currentTheme() {
     return nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
 }
 
-function staticIconFile(activeCount, massAttack) {
-    const alertPart = activeCount > 0 ? '_alert' : '';
-    const massPart = massAttack ? '_mass' : '';
-    return `tray${alertPart}${massPart}_${currentTheme()}.png`;
+function levelKeyFor(activeCount, level) {
+    if (activeCount <= 0) return null;
+    return level === 'yellow' ? 'yellow' : 'red';
 }
 
-function pulseFrameFile(frameNumber, massAttack) {
-    const massPart = massAttack ? 'mass_' : '';
-    return `tray_${massPart}pulse_${frameNumber}_${currentTheme()}.png`;
+function staticIconFile(levelKey) {
+    if (!levelKey) return `tray_${currentTheme()}.png`;
+    const levelPart = levelKey === 'red' ? '_red' : '';
+    return `tray_alert${levelPart}_${currentTheme()}.png`;
 }
 
-function shakeFrameFile(frameNumber, massAttack) {
-    const massPart = massAttack ? 'mass_' : '';
-    return `tray_alert_${massPart}shake_${frameNumber}_${currentTheme()}.png`;
+function pulseFrameFile(frameNumber) {
+    return `tray_pulse_${frameNumber}_${currentTheme()}.png`;
+}
+
+function shakeFrameFile(frameNumber, levelKey) {
+    const levelPart = levelKey === 'red' ? 'red_' : '';
+    return `tray_alert_${levelPart}shake_${frameNumber}_${currentTheme()}.png`;
 }
 
 function stopAnimationTimer() {
@@ -105,16 +111,16 @@ function playFrames(fileNames, intervalMs, loop, onDone) {
     }, intervalMs);
 }
 
-function playIdlePulse(massAttack) {
-    const frames = Array.from({ length: PULSE_FRAME_COUNT }, (_, i) => pulseFrameFile(i + 1, massAttack));
+function playIdlePulse() {
+    const frames = Array.from({ length: PULSE_FRAME_COUNT }, (_, i) => pulseFrameFile(i + 1));
     playFrames(frames, PULSE_INTERVAL_MS, false, () => {
-        if (trayInstance) trayInstance.setImage(loadIcon(staticIconFile(0, massAttack)));
+        if (trayInstance) trayInstance.setImage(loadIcon(staticIconFile(null)));
     });
 }
 
-function startAlertLoop(massAttack) {
+function startAlertLoop(levelKey) {
     alertLoopActive = true;
-    const frames = Array.from({ length: SHAKE_FRAME_COUNT }, (_, i) => shakeFrameFile(i + 1, massAttack));
+    const frames = Array.from({ length: SHAKE_FRAME_COUNT }, (_, i) => shakeFrameFile(i + 1, levelKey));
     playFrames(frames, SHAKE_INTERVAL_MS, true);
 }
 
@@ -126,10 +132,10 @@ function stopAlertLoop() {
 function refreshIconForCurrentState() {
     if (!trayInstance) return;
     if (alertLoopActive) {
-        startAlertLoop(massAttackActive);
+        startAlertLoop(alertLevelKey || 'red');
     } else {
         stopAnimationTimer();
-        trayInstance.setImage(loadIcon(staticIconFile(lastActiveCount, massAttackActive)));
+        trayInstance.setImage(loadIcon(staticIconFile(alertLevelKey)));
     }
 }
 
@@ -159,7 +165,7 @@ function buildMenu(language) {
 function createTray() {
     const { language } = settingsStore.getSettings();
 
-    trayInstance = new Tray(loadIcon(staticIconFile(0, false)));
+    trayInstance = new Tray(loadIcon(staticIconFile(null)));
     trayInstance.setToolTip(t('trayDefaultTooltip', language));
     trayInstance.setContextMenu(buildMenu(language));
     trayInstance.on('click', () => toggleStatus());
@@ -184,27 +190,23 @@ function clearTemporaryTooltip() {
     tooltipOverride = null;
 }
 
-function updateTrayState(activeCount, totalCount) {
+function updateTrayState(activeCount, totalCount, level) {
     if (!trayInstance) return;
 
     const wasIdle = lastActiveCount === 0;
     lastActiveCount = activeCount;
     const { language, massAttackThreshold } = settingsStore.getSettings();
-    const wasMassAttackActive = massAttackActive;
     massAttackActive = totalCount >= massAttackThreshold;
-    const massAttackChanged = massAttackActive !== wasMassAttackActive;
+    const previousLevelKey = alertLevelKey;
+    alertLevelKey = levelKeyFor(activeCount, level);
 
     if (activeCount > 0) {
-
-        if (!alertLoopActive || massAttackChanged) startAlertLoop(massAttackActive);
+        if (!alertLoopActive || alertLevelKey !== previousLevelKey) startAlertLoop(alertLevelKey);
     } else if (alertLoopActive) {
         stopAlertLoop();
-        trayInstance.setImage(loadIcon(staticIconFile(0, massAttackActive)));
+        trayInstance.setImage(loadIcon(staticIconFile(null)));
     } else if (wasIdle && !animationTimer) {
-        playIdlePulse(massAttackActive);
-    } else if (massAttackChanged) {
-
-        trayInstance.setImage(loadIcon(staticIconFile(activeCount, massAttackActive)));
+        playIdlePulse();
     }
 
     if (tooltipOverride) return;
@@ -223,6 +225,9 @@ function updateTrayState(activeCount, totalCount) {
     }
     if (massAttackActive) {
         lines.push(`${t('trayMassAttackTooltip', language)}: ${totalCount}`);
+    }
+    if (getAlertSourcesStatus().degraded) {
+        lines.push(t('trayDegradedTooltip', language));
     }
     trayInstance.setToolTip(lines.join('\n'));
 }

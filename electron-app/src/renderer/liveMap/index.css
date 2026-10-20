@@ -37,16 +37,12 @@ body {
 .leaflet-control-attribution,
 .leaflet-control-attribution a {
     color: #565656;
+    font-size: 10px;
 }
 
 .leaflet-control-attribution {
 
     background: var(--map-chrome-bg) !important;
-}
-
-.kyiv-mode-active .leaflet-control-attribution,
-.kyiv-mode-active .leaflet-control-attribution a {
-    font-size: 10px;
 }
 
 .leaflet-popup-pane {

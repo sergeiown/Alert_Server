@@ -1,19 +1,24 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
+const fs = require('fs');
+const { getUserDataFile } = require('./appPaths');
 const { logEvent } = require('./logger');
 const { setLatestAlertData, getLatestAlertData } = require('./activeAlertData');
+const { PROXY_WS_URL, getClientVersion, proxyFetch, describeError } = require('./proxyConfig');
 
-const { PROXY_URL, PROXY_WS_URL, getClientVersion, proxyFetch, describeError } = require('./proxyConfig');
-
-const WS_URL = `${PROXY_WS_URL}/ws`;
-const FALLBACK_POLL_URL = `${PROXY_URL}/ukrainealarm-alerts`;
 const RECONNECT_DELAY_MS = 5000;
 const MAX_RECONNECT_DELAY_MS = 60000;
 const HEARTBEAT_TIMEOUT_MS = 8 * 60 * 1000;
 const FALLBACK_POLL_INTERVAL_MS = 60000;
 
-function startPolling(clientKey, onUpdate, onHealthChange) {
+function persistData(data) {
+    setLatestAlertData(data);
+    fs.writeFileSync(getUserDataFile('alert_received.json'), JSON.stringify(data, null, 2), 'utf-8');
+}
+
+function startProxyStream({ label, wsPath, pollUrl, clientKey, onUpdate, onHealthChange, hooks = {} }) {
+    const wsUrl = `${PROXY_WS_URL}${wsPath}`;
     let socket = null;
     let reconnectTimer = null;
     let heartbeatTimer = null;
@@ -25,26 +30,33 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
     function resetHeartbeatWatch() {
         if (heartbeatTimer) clearTimeout(heartbeatTimer);
         heartbeatTimer = setTimeout(() => {
-            logEvent('UkraineAlarm: no messages received - reconnecting', 'NETWORK');
+            logEvent(`${label}: no messages received - reconnecting`, 'NETWORK');
             connect();
         }, HEARTBEAT_TIMEOUT_MS);
     }
 
+    function deliver(data, meta) {
+        if (hooks.onData) hooks.onData(data);
+        if (hooks.accept && !hooks.accept(data)) return;
+        persistData(data);
+        onUpdate(data, meta);
+    }
+
     async function fallbackPollOnce() {
         try {
-            const response = await proxyFetch(FALLBACK_POLL_URL, { headers: { 'X-Client-Key': clientKey, 'X-Client-Version': getClientVersion() } });
+            const response = await proxyFetch(pollUrl, { headers: { 'X-Client-Key': clientKey, 'X-Client-Version': getClientVersion() } });
+
             if (!response.ok) {
-                logEvent(`UkraineAlarm fallback fetch failed: ${response.status}`, 'NETWORK');
+                if (hooks.onPollFailed) hooks.onPollFailed(response.status);
                 if (onHealthChange) onHealthChange(false);
                 return;
             }
 
-            const data = await response.json();
-            setLatestAlertData(data);
-            onUpdate(data);
+            deliver(await response.json());
+            if (hooks.onPollResponse) hooks.onPollResponse(response);
             if (onHealthChange) onHealthChange(true);
         } catch (err) {
-            logEvent(`UkraineAlarm fallback request error: ${describeError(err)}`, 'NETWORK');
+            logEvent(`${label} fallback request error: ${describeError(err)}`, 'NETWORK');
             if (onHealthChange) onHealthChange(false);
         }
     }
@@ -52,7 +64,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
     function startFallbackPolling() {
         if (usingFallback || stopped) return;
         usingFallback = true;
-        logEvent('UkraineAlarm: unavailable - falling back to polling', 'NETWORK');
+        logEvent(`${label}: unavailable - falling back to polling`, 'NETWORK');
         fallbackPollOnce();
         fallbackTimer = setInterval(fallbackPollOnce, FALLBACK_POLL_INTERVAL_MS);
     }
@@ -62,7 +74,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
         usingFallback = false;
         if (fallbackTimer) clearInterval(fallbackTimer);
         fallbackTimer = null;
-        logEvent('UkraineAlarm: recovered - stopping fallback polling', 'NETWORK');
+        logEvent(`${label}: recovered - stopping fallback polling`, 'NETWORK');
     }
 
     function scheduleReconnect() {
@@ -87,9 +99,9 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
 
         let ws;
         try {
-            ws = new WebSocket(`${WS_URL}?key=${encodeURIComponent(clientKey)}&v=${encodeURIComponent(getClientVersion())}`);
+            ws = new WebSocket(`${wsUrl}?key=${encodeURIComponent(clientKey)}&v=${encodeURIComponent(getClientVersion())}`);
         } catch (err) {
-            logEvent(`UkraineAlarm connection failed: ${describeError(err)}`, 'NETWORK');
+            logEvent(`${label} connection failed: ${describeError(err)}`, 'NETWORK');
             startFallbackPolling();
             scheduleReconnect();
             return;
@@ -97,7 +109,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
         socket = ws;
 
         ws.addEventListener('open', () => {
-            logEvent('UkraineAlarm connected', 'NETWORK');
+            logEvent(`${label} connected`, 'NETWORK');
             reconnectAttempts = 0;
             resetHeartbeatWatch();
         });
@@ -105,26 +117,27 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
         ws.addEventListener('message', (event) => {
             resetHeartbeatWatch();
             stopFallbackPolling();
+            if (hooks.onLinkHealthy) hooks.onLinkHealthy();
             if (onHealthChange) onHealthChange(true);
 
             try {
                 const data = JSON.parse(event.data);
                 if (data && data.type === 'heartbeat') {
+                    if (hooks.onHeartbeat) hooks.onHeartbeat(data);
                     const cached = getLatestAlertData();
                     if (cached) onUpdate(cached, { heartbeat: true });
                     return;
                 }
-                setLatestAlertData(data);
-                onUpdate(data);
+                deliver(data);
             } catch (err) {
-                logEvent(`UkraineAlarm message parse failed: ${err.message}`, 'NETWORK');
+                logEvent(`${label} message parse failed: ${err.message}`, 'NETWORK');
             }
         });
 
         ws.addEventListener('close', (event) => {
             if (heartbeatTimer) clearTimeout(heartbeatTimer);
             if (stopped || socket !== ws) return;
-            logEvent(`UkraineAlarm connection closed (code ${event.code}${event.reason ? `: ${event.reason}` : ''}) - reconnecting`, 'NETWORK');
+            logEvent(`${label} connection closed (code ${event.code}${event.reason ? `: ${event.reason}` : ''}) - reconnecting`, 'NETWORK');
             startFallbackPolling();
             scheduleReconnect();
         });
@@ -149,4 +162,4 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
     };
 }
 
-module.exports = { startPolling };
+module.exports = { startProxyStream };

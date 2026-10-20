@@ -283,6 +283,10 @@ function getAlertsResponse() {
     return { status: 200, headers: { 'Content-Type': 'application/json' }, body: state.alertsBody };
 }
 
+function getAlertsSnapshot() {
+    return { body: state.alertsBody, fetchedAt: state.alertsFetchedAt };
+}
+
 function getThreatsResponse() {
     return {
         status: 200,
@@ -316,6 +320,7 @@ module.exports = {
     unregisterSocket,
     socketCount: () => sockets.size,
     getAlertsResponse,
+    getAlertsSnapshot,
     getThreatsResponse,
     getStatusInfo,
 };

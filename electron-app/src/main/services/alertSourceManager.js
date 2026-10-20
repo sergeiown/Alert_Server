@@ -2,40 +2,37 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const { logEvent } = require('./logger');
-const { startPolling: startUkraineAlarmPolling } = require('./ukraineAlarmSource');
+const { startPolling: startMergedPolling } = require('./mergedAlertsSource');
 const { startPolling: startAlertsInUaPolling } = require('./alertPoller');
 const { startPolling: startNeptunPolling } = require('./neptunAlertsSource');
-const { setActiveAlertSource } = require('./alertState');
-
-const UKRAINEALARM_ENABLED = false;
+const { setActiveAlertSource, setAlertSourcesStatus } = require('./alertState');
 
 const FAILURE_THRESHOLD = 3;
 
 const RECOVERY_RETRY_MS = 5 * 60 * 1000;
 
-const SOURCES = {
-    'alerts.in.ua': {
+const CHAIN = [
+    {
+        key: 'merged',
+        label: 'Alert Server',
+        needsClientKey: true,
+        start: (clientKey, onUpdate, onHealthChange) => startMergedPolling(clientKey, onUpdate, onHealthChange),
+    },
+    {
+        key: 'alerts.in.ua',
         label: 'alerts.in.ua',
+        needsClientKey: true,
         start: (clientKey, onUpdate, onHealthChange) => startAlertsInUaPolling(clientKey, onUpdate, onHealthChange),
     },
-    ukrainealarm: {
-        label: 'UkraineAlarm',
-        start: (clientKey, onUpdate, onHealthChange) => startUkraineAlarmPolling(clientKey, onUpdate, onHealthChange),
-    },
-    neptun: {
+    {
+        key: 'neptun',
         label: 'Neptun',
+        needsClientKey: false,
         start: (clientKey, onUpdate, onHealthChange) => startNeptunPolling(clientKey, onUpdate, onHealthChange),
     },
-};
+];
 
-function buildChain(preferred) {
-    const available = Object.keys(SOURCES).filter((key) => UKRAINEALARM_ENABLED || key !== 'ukrainealarm');
-    const first = available.includes(preferred) ? preferred : 'alerts.in.ua';
-    return [first, ...available.filter((key) => key !== first)];
-}
-
-function startAlertSourceManager(preferredProvider, clientKey, onAlertsUpdated) {
-    const chain = buildChain(preferredProvider);
+function startAlertSourceManager(clientKey, onAlertsUpdated) {
     let activeIndex = 0;
     let consecutiveFailures = 0;
     let activeHandle = null;
@@ -52,17 +49,19 @@ function startAlertSourceManager(preferredProvider, clientKey, onAlertsUpdated) 
         stopActive();
         activeIndex = index;
         consecutiveFailures = 0;
-        const key = chain[index];
-        const source = SOURCES[key];
+        const source = CHAIN[index];
 
-        if ((key === 'ukrainealarm' || key === 'alerts.in.ua') && !clientKey) {
+        if (source.needsClientKey && !clientKey) {
             logEvent(`alertProxyClientKey missing from config.local.json - skipping ${source.label} in the failover chain`, 'WARNING');
-            if (index < chain.length - 1) activate(index + 1, `${source.label} unavailable (no client key)`);
+            if (index < CHAIN.length - 1) activate(index + 1, `${source.label} unavailable (no client key)`);
             return;
         }
 
         logEvent(`Alert source active: ${source.label}${reason ? ` (${reason})` : ''}`, 'NETWORK');
-        setActiveAlertSource(key);
+        setActiveAlertSource(source.key);
+        if (source.key !== 'merged') {
+            setAlertSourcesStatus({ sources: null, degraded: true });
+        }
         activeHandle = source.start(
             clientKey,
             (alertData, meta) => onAlertsUpdated(source.label, alertData, meta),
@@ -77,9 +76,9 @@ function startAlertSourceManager(preferredProvider, clientKey, onAlertsUpdated) 
         }
 
         consecutiveFailures++;
-        if (consecutiveFailures >= FAILURE_THRESHOLD && activeIndex < chain.length - 1) {
-            const from = SOURCES[chain[activeIndex]].label;
-            const to = SOURCES[chain[activeIndex + 1]].label;
+        if (consecutiveFailures >= FAILURE_THRESHOLD && activeIndex < CHAIN.length - 1) {
+            const from = CHAIN[activeIndex].label;
+            const to = CHAIN[activeIndex + 1].label;
             logEvent(`Alert source unavailable: ${from} - automatically switching to ${to}`, 'WARNING');
             activate(activeIndex + 1, `failover from ${from}`);
         }
@@ -89,8 +88,8 @@ function startAlertSourceManager(preferredProvider, clientKey, onAlertsUpdated) 
 
     setInterval(() => {
         if (activeIndex === 0) return;
-        logEvent(`Retrying preferred alert source: ${SOURCES[chain[0]].label}`, 'NETWORK');
-        activate(0, 'retrying preferred source');
+        logEvent(`Retrying primary alert source: ${CHAIN[0].label}`, 'NETWORK');
+        activate(0, 'retrying primary source');
     }, RECOVERY_RETRY_MS);
 }
 

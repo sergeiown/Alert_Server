@@ -3,7 +3,7 @@
 
 const { logEvent } = require('./logger');
 const { loadLocalConfig } = require('./localConfig');
-const { PROXY_URL, getClientVersion, proxyFetch, describeError } = require('./proxyConfig');
+const { PROXY_URL, getClientVersion, proxyFetch, fetchWithTimeout, describeError } = require('./proxyConfig');
 
 const DIRECT_URL = 'https://raw.githubusercontent.com/cyterat/deepstate-map-data/main/data/deepstatemap_data_';
 const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
@@ -36,7 +36,7 @@ async function fetchDirect() {
     const now = new Date();
     for (let daysBack = 0; daysBack < MAX_LOOKBACK_DAYS; daysBack++) {
         const dateStr = formatDate(new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000));
-        const response = await fetch(`${DIRECT_URL}${dateStr}.geojson`);
+        const response = await fetchWithTimeout(`${DIRECT_URL}${dateStr}.geojson`, undefined, 30000);
         if (response.ok) return { geojson: await response.json(), date: dateStr };
     }
     return null;

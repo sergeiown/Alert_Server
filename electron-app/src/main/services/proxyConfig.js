@@ -4,6 +4,9 @@
 const PROXY_URL = 'https://alert-proxy-ua.duckdns.org';
 const PROXY_WS_URL = PROXY_URL.replace(/^http/, 'ws');
 
+const REQUEST_TIMEOUT_MS = 10000;
+const RETRY_PAUSE_MS = 1500;
+
 function getClientVersion() {
     try {
         return require('electron').app.getVersion();
@@ -12,11 +15,26 @@ function getClientVersion() {
     }
 }
 
+function pause(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function withTimeout(options, timeoutMs) {
+    const timeout = AbortSignal.timeout(timeoutMs);
+    const signal = options && options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
+    return { ...options, signal };
+}
+
+function fetchWithTimeout(url, options, timeoutMs = REQUEST_TIMEOUT_MS) {
+    return fetch(url, withTimeout(options, timeoutMs));
+}
+
 async function proxyFetch(url, options) {
     try {
-        return await fetch(url, options);
+        return await fetchWithTimeout(url, options);
     } catch (err) {
-        return fetch(url, options);
+        await pause(RETRY_PAUSE_MS);
+        return fetchWithTimeout(url, options);
     }
 }
 
@@ -26,4 +44,4 @@ function describeError(err) {
     return detail ? `${err.message} (${detail})` : err.message;
 }
 
-module.exports = { PROXY_URL, PROXY_WS_URL, getClientVersion, proxyFetch, describeError };
+module.exports = { PROXY_URL, PROXY_WS_URL, getClientVersion, proxyFetch, fetchWithTimeout, describeError };

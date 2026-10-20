@@ -6,8 +6,8 @@ const RESOURCE_CRIT_PERCENT = 90;
 const HEAP_WARN_PERCENT = 60;
 const HEAP_CRIT_PERCENT = 85;
 const ACTIVE_STALE_MS = 90 * 1000;
-const UKRAINEALARM_SNAPSHOT_WARN_MS = 20 * 60 * 1000;
-const UKRAINEALARM_SNAPSHOT_CRIT_MS = 60 * 60 * 1000;
+const UKRAINEALARM_SNAPSHOT_WARN_MS = 6 * 60 * 1000;
+const UKRAINEALARM_SNAPSHOT_CRIT_MS = 20 * 60 * 1000;
 const NEPTUN_STREAM_DOWN_MS = 5 * 60 * 1000;
 const NEPTUN_ALERTS_STALE_MS = 5 * 60 * 1000;
 const BACKUP_STALE_MS = 36 * 60 * 60 * 1000;
@@ -36,8 +36,32 @@ function evaluate(status, flags) {
     if (!flags.ukraineAlarmConfigured) {
         add('info', 'ukrainealarm-no-token', 'UkraineAlarm token is not configured');
     } else if (status.ukraineAlarm.snapshotAgeMs !== null) {
-        if (status.ukraineAlarm.snapshotAgeMs > UKRAINEALARM_SNAPSHOT_CRIT_MS) add('crit', 'ukrainealarm-stale', 'UkraineAlarm snapshot has not refreshed for over an hour');
+        if (status.ukraineAlarm.snapshotAgeMs > UKRAINEALARM_SNAPSHOT_CRIT_MS) add('crit', 'ukrainealarm-stale', 'UkraineAlarm snapshot has not refreshed for over 20 minutes');
         else if (status.ukraineAlarm.snapshotAgeMs > UKRAINEALARM_SNAPSHOT_WARN_MS) add('warn', 'ukrainealarm-stale', 'UkraineAlarm snapshot is stale');
+    }
+
+    if (flags.ukraineAlarmConfigured && status.ukraineAlarm.webhook) {
+        const webhook = status.ukraineAlarm.webhook;
+        if (webhook.state === 'broken') {
+            add('crit', 'ukrainealarm-webhook', `UkraineAlarm webhook looks broken (${webhook.missesLast30Min} missed events in 30 min), relying on snapshots`);
+        } else if (webhook.state === 'suspect') {
+            add('warn', 'ukrainealarm-webhook', `UkraineAlarm webhook missed ${webhook.missesLast30Min} event(s) in 30 min`);
+        }
+    }
+
+    const merged = status.merged;
+    if (merged) {
+        if (!merged.ready) {
+            add('warn', 'merged-not-ready', 'merged alert stream has no official source data yet');
+        } else if (merged.sources) {
+            const notOk = Object.entries(merged.sources).filter(([, source]) => source.state !== 'ok');
+            const officialNotOk = ['ia', 'ua'].filter((key) => merged.sources[key].state !== 'ok');
+            if (officialNotOk.length === 2) {
+                add('crit', 'merged-official-down', 'both alerts.in.ua and UkraineAlarm are not fresh, merged stream is degraded');
+            } else if (notOk.length) {
+                add('warn', 'merged-degraded', `merged alert stream is degraded: ${notOk.map(([key, source]) => `${key} ${source.state}`).join(', ')}`);
+            }
+        }
     }
 
     const neptun = status.neptun;

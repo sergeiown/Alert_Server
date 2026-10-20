@@ -246,7 +246,7 @@
             });
         },
         getSettings () {
-            return Promise.resolve({ language, alertSourceProvider: 'alerts.in.ua', theme: 'system' });
+            return Promise.resolve({ language, theme: 'system' });
         },
         getBaseMapUrl () {
             return Promise.resolve(effectiveDark() ? 'basemap-dark.svg' : 'basemap-light.svg');
@@ -260,9 +260,6 @@
             return ready.then(() => {
                 return state ? state.peaks : { alertPeak: 0, threatPeak: 0 };
             });
-        },
-        getActiveAlertSource () {
-            return Promise.resolve('alerts.in.ua');
         },
         getAlertedRegions () {
             return ready.then(() => {

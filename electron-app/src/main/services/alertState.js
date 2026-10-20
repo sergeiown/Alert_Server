@@ -40,6 +40,16 @@ function getActiveAlertSource() {
     return activeAlertSource;
 }
 
+let alertSourcesStatus = { sources: null, degraded: false };
+
+function setAlertSourcesStatus(status) {
+    alertSourcesStatus = status;
+}
+
+function getAlertSourcesStatus() {
+    return alertSourcesStatus;
+}
+
 module.exports = {
     setLatestMatchedAlerts,
     getLatestMatchedAlerts,
@@ -49,4 +59,6 @@ module.exports = {
     getLatestAlertedRegions,
     setActiveAlertSource,
     getActiveAlertSource,
+    setAlertSourcesStatus,
+    getAlertSourcesStatus,
 };

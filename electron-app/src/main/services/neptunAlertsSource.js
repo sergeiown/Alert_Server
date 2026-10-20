@@ -5,7 +5,7 @@ const { getResourcePath } = require('./appPaths');
 const { logEvent } = require('./logger');
 const { setLatestAlertData, getLatestAlertData } = require('./activeAlertData');
 const regionsStore = require('./regionsStore');
-const { PROXY_URL, getClientVersion, proxyFetch, describeError } = require('./proxyConfig');
+const { PROXY_URL, getClientVersion, proxyFetch, fetchWithTimeout, describeError } = require('./proxyConfig');
 const { getLocationLookup } = require('./locationFilter');
 
 const ALERTS_URL = 'https://neptun.in.ua/api/v1/alerts';
@@ -153,7 +153,7 @@ async function fetchAlerts(clientKey) {
             if (viaProxy.ok) return viaProxy;
         } catch (err) {}
     }
-    return fetch(ALERTS_URL);
+    return fetchWithTimeout(ALERTS_URL);
 }
 
 async function pollOnce(clientKey, onHealthChange) {

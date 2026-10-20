@@ -18,13 +18,13 @@ const activeAlertNotifyEnabledInput = document.getElementById('activeAlertNotify
 const showLiveMapOnAlertInput = document.getElementById('showLiveMapOnAlert');
 const forecastNotifyEnabledInput = document.getElementById('forecastNotifyEnabled');
 const forecastNotifyLookaheadMinutesInput = document.getElementById('forecastNotifyLookaheadMinutes');
+const alertLevelChangeNotifyEnabledInput = document.getElementById('alertLevelChangeNotifyEnabled');
 const alertSoundModeInput = document.getElementById('alertSoundMode');
 const alertSoundCountInput = document.getElementById('alertSoundCount');
 const massAttackThresholdInput = document.getElementById('massAttackThreshold');
 const updateCheckIntervalHoursInput = document.getElementById('updateCheckIntervalHours');
 const languageInput = document.getElementById('language');
 const themeInput = document.getElementById('theme');
-const alertSourceProviderInput = document.getElementById('alertSourceProvider');
 
 function applyStrings(strings) {
     document.title = strings.windowTitle;
@@ -33,6 +33,7 @@ function applyStrings(strings) {
     document.getElementById('visualNotificationsLabel').textContent = strings.visualNotificationsLabel;
     document.getElementById('activeAlertNotifyLabel').textContent = strings.activeAlertNotifyLabel;
     document.getElementById('showLiveMapOnAlertLabel').textContent = strings.showLiveMapOnAlertLabel;
+    document.getElementById('alertLevelChangeNotifyLabel').textContent = strings.alertLevelChangeNotifyLabel;
     document.getElementById('settingsForecastNotifyLabel').textContent = strings.settingsForecastNotifyLabel;
     document.getElementById('forecastNotifyLookaheadLabel').textContent = strings.forecastNotifyLookaheadLabel;
     document.getElementById('alertSoundLabel').textContent = strings.alertSoundLabel;
@@ -49,11 +50,6 @@ function applyStrings(strings) {
     document.getElementById('themeSystemOption').textContent = strings.themeSystem;
     document.getElementById('settingsGroupGeneral').textContent = strings.settingsGroupGeneral;
     document.getElementById('settingsGroupNotifications').textContent = strings.settingsGroupNotifications;
-    document.getElementById('settingsGroupDataSource').textContent = strings.settingsGroupDataSource;
-    document.getElementById('alertSourceProviderLabel').textContent = strings.alertSourceProviderLabel;
-    document.getElementById('alertSourceProviderAlertsInUaOption').textContent = strings.alertSourceProviderAlertsInUa;
-    document.getElementById('alertSourceProviderNeptunOption').textContent = strings.alertSourceProviderNeptun;
-    document.getElementById('alertSourceProviderNote').textContent = strings.alertSourceProviderNote;
     document.getElementById('regionsHeader').textContent = strings.regionsHeader;
     searchInput.placeholder = strings.searchPlaceholder;
     clearRegionsButton.textContent = strings.clearRegionsButton;
@@ -68,6 +64,7 @@ function updateNotifyDisabledState() {
     const visualOn = visualNotificationsEnabledInput.checked;
     activeAlertNotifyEnabledInput.disabled = !visualOn;
     showLiveMapOnAlertInput.disabled = !visualOn || !activeAlertNotifyEnabledInput.checked;
+    alertLevelChangeNotifyEnabledInput.disabled = !visualOn || !activeAlertNotifyEnabledInput.checked;
     forecastNotifyEnabledInput.disabled = !visualOn;
     forecastNotifyLookaheadMinutesInput.disabled = !visualOn || !forecastNotifyEnabledInput.checked;
 }
@@ -81,6 +78,7 @@ async function initGeneralSettings(settings) {
     visualNotificationsEnabledInput.checked = settings.visualNotificationsEnabled;
     activeAlertNotifyEnabledInput.checked = settings.activeAlertNotifyEnabled;
     showLiveMapOnAlertInput.checked = settings.showLiveMapOnAlert;
+    alertLevelChangeNotifyEnabledInput.checked = settings.alertLevelChangeNotifyEnabled;
     forecastNotifyEnabledInput.checked = settings.forecastNotifyEnabled;
     forecastNotifyLookaheadMinutesInput.value = settings.forecastNotifyLookaheadMinutes;
     alertSoundModeInput.value = settings.alertSoundMode;
@@ -89,7 +87,6 @@ async function initGeneralSettings(settings) {
     updateCheckIntervalHoursInput.value = settings.updateCheckIntervalHours;
     languageInput.value = settings.language;
     themeInput.value = settings.theme;
-    alertSourceProviderInput.value = settings.alertSourceProvider;
     runAtStartupInput.checked = await window.alertServer.getLoginItem();
 
     updateNotifyDisabledState();
@@ -105,6 +102,9 @@ async function initGeneralSettings(settings) {
     });
     showLiveMapOnAlertInput.addEventListener('change', () => {
         window.alertServer.setSetting('showLiveMapOnAlert', showLiveMapOnAlertInput.checked);
+    });
+    alertLevelChangeNotifyEnabledInput.addEventListener('change', () => {
+        window.alertServer.setSetting('alertLevelChangeNotifyEnabled', alertLevelChangeNotifyEnabledInput.checked);
     });
     forecastNotifyEnabledInput.addEventListener('change', () => {
         window.alertServer.setSetting('forecastNotifyEnabled', forecastNotifyEnabledInput.checked);
@@ -140,9 +140,6 @@ async function initGeneralSettings(settings) {
     });
     themeInput.addEventListener('change', () => {
         window.alertServer.setSetting('theme', themeInput.value);
-    });
-    alertSourceProviderInput.addEventListener('change', () => {
-        window.alertServer.setSetting('alertSourceProvider', alertSourceProviderInput.value);
     });
     minimizeToTrayOnCloseInput.addEventListener('change', () => {
         window.alertServer.setSetting('minimizeToTrayOnClose', minimizeToTrayOnCloseInput.checked);

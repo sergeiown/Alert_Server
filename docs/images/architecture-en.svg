@@ -47,10 +47,12 @@
 </style>
 <rect class="band-ext" x="16" y="16" width="448" height="132" rx="12" stroke-width="1.5"/>
 <text class="title-ext" x="32" y="39" font-size="13" font-weight="700" letter-spacing="0.6">EXTERNAL SERVICES</text>
-<rect class="box-ext" x="32" y="50" width="208" height="38" rx="8" stroke-width="1.5"/>
-<text class="txt-ext" x="136" y="74" font-size="15" text-anchor="middle">alerts.in.ua</text>
-<rect class="box-ext" x="248" y="50" width="208" height="38" rx="8" stroke-width="1.5"/>
-<text class="txt-ext" x="352" y="74" font-size="15" text-anchor="middle">Neptun</text>
+<rect class="box-ext" x="32" y="50" width="133" height="38" rx="8" stroke-width="1.5"/>
+<text class="txt-ext" x="98.5" y="74" font-size="15" text-anchor="middle">alerts.in.ua</text>
+<rect class="box-ext" x="173.5" y="50" width="133" height="38" rx="8" stroke-width="1.5"/>
+<text class="txt-ext" x="240" y="74" font-size="15" text-anchor="middle">UkraineAlarm</text>
+<rect class="box-ext" x="315" y="50" width="133" height="38" rx="8" stroke-width="1.5"/>
+<text class="txt-ext" x="381.5" y="74" font-size="15" text-anchor="middle">Neptun</text>
 <rect class="box-ext" x="32" y="96" width="208" height="38" rx="8" stroke-width="1.5"/>
 <text class="txt-ext" x="136" y="120" font-size="15" text-anchor="middle">DeepState</text>
 <rect class="box-ext" x="248" y="96" width="208" height="38" rx="8" stroke-width="1.5"/>
@@ -61,7 +63,7 @@
 <rect class="band-srv" x="16" y="186" width="448" height="178" rx="12" stroke-width="1.5"/>
 <text class="title-srv" x="32" y="209" font-size="13" font-weight="700" letter-spacing="0.6">ALERT SERVER BACKEND</text>
 <rect class="box-srv" x="32" y="220" width="208" height="38" rx="8" stroke-width="1.5"/>
-<text class="txt-srv" x="136" y="244" font-size="15" text-anchor="middle">Source pollers and relays</text>
+<text class="txt-srv" x="136" y="244" font-size="15" text-anchor="middle">Source merge and relays</text>
 <rect class="box-srv" x="248" y="220" width="208" height="38" rx="8" stroke-width="1.5"/>
 <text class="txt-srv" x="352" y="244" font-size="15" text-anchor="middle">Alert and threat archive</text>
 <rect class="box-srv" x="32" y="266" width="208" height="38" rx="8" stroke-width="1.5"/>
@@ -77,7 +79,7 @@
 <rect class="band-app" x="16" y="402" width="448" height="178" rx="12" stroke-width="1.5"/>
 <text class="title-app" x="32" y="425" font-size="13" font-weight="700" letter-spacing="0.6">DESKTOP APP (ELECTRON)</text>
 <rect class="box-app" x="32" y="436" width="208" height="38" rx="8" stroke-width="1.5"/>
-<text class="txt-app" x="136" y="460" font-size="15" text-anchor="middle">Sources with failover</text>
+<text class="txt-app" x="136" y="460" font-size="15" text-anchor="middle">Merged stream with failover</text>
 <rect class="box-app" x="248" y="436" width="208" height="38" rx="8" stroke-width="1.5"/>
 <text class="txt-app" x="352" y="460" font-size="15" text-anchor="middle">Notifications and tray</text>
 <rect class="box-app" x="32" y="482" width="208" height="38" rx="8" stroke-width="1.5"/>
