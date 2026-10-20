@@ -21,7 +21,7 @@
                   'This is an unofficial, informational map. It is not an official alert system and must not be your only source or used for critical decisions. Updates can be delayed and data can contain errors. When the official siren sounds, go to a shelter.',
               dataTitle: 'Data',
               alertsLine: 'Alerts:',
-              alertsNote: 'polled from the public API and pushed to this page as soon as they change.',
+              alertsNote: 'merged on the server and pushed to this page as soon as they change.',
               neptunLine: 'Threat data:',
               neptunNote: 'Data: Air alert map',
               frontLine: 'Front line:',
@@ -50,7 +50,7 @@
                   'Це неофіційна інформаційна мапа. Вона не є офіційною системою оповіщення, не має бути вашим єдиним джерелом і не призначена для критичних рішень. Оновлення можуть запізнюватись, а дані містити помилки. Коли лунає офіційна сирена, прямуйте в укриття.',
               dataTitle: 'Дані',
               alertsLine: 'Тривоги:',
-              alertsNote: 'опитуються з публічного API і надсилаються на цю сторінку одразу, щойно змінюються.',
+              alertsNote: 'зводяться на сервері й надсилаються на цю сторінку одразу, щойно змінюються.',
               neptunLine: 'Дані про загрози:',
               neptunNote: 'Дані: Карта повітряних тривог',
               frontLine: 'Лінія фронту:',
@@ -248,7 +248,7 @@
     function buildAbout() {
         const features = web.getFeatures();
         const dataList = el('ul', {}, [
-            el('li', {}, [`${text.alertsLine} `, link('https://alerts.in.ua/', 'alerts.in.ua'), ` - ${text.alertsNote}`]),
+            el('li', {}, [`${text.alertsLine} `, link('https://alerts.in.ua/', 'alerts.in.ua'), ', ', link('https://www.ukrainealarm.com/', 'UkraineAlarm'), ` - ${text.alertsNote}`]),
         ]);
 
         if (features.threats) {
