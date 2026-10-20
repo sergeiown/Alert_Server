@@ -193,6 +193,22 @@ function levelShort(level, language) {
     return '';
 }
 
+function startBodyLines(alert, locationName, alertCount, startedAtText, language) {
+    const level = levelLabel(alert.alert_level, language);
+    const threatText = describeThreats(alert.threats, language);
+    const threatLines = threatText ? threatText.split('\n') : [];
+    const countLine = `${t('activeInMonitored', language)}: ${alertCount}`;
+
+    return [
+        `${t('location', language)}: ${locationName}${level ? ` (${level})` : ''}`,
+        threatLines[0] || countLine,
+        threatLines[0] ? countLine : null,
+        ...threatLines.slice(1),
+        startedAtText ? `${t('alertStartedAt', language)}: ${startedAtText}` : null,
+        alert.notes ? `${t('alertSource', language)}: ${alert.notes}` : null,
+    ].filter(Boolean);
+}
+
 function iconForLevel(level) {
     return level === 'yellow' ? 'alert_yellow.png' : 'alert.png';
 }
@@ -387,15 +403,7 @@ function processAlerts(matchedAlerts, allAlerts) {
             notifyWithMap({
                 uid: alert.location_uid,
                 title,
-                bodyLines: [
-                    `${t('location', language)}: ${locationName}`,
-                    `${t('activeInMonitored', language)}: ${alertCount}`,
-                    startedAtText ? `${t('alertStartedAt', language)}: ${startedAtText}` : null,
-                    describeThreats(alert.threats, language),
-                    alert.notes ? `${t('alertSource', language)}: ${alert.notes}` : null,
-                ]
-                    .filter(Boolean)
-                    .flatMap((line) => line.split('\n')),
+                bodyLines: startBodyLines(alert, locationName, alertCount, startedAtText, language),
                 iconName: iconForLevel(alert.alert_level),
                 color: levelColor(alert.alert_level),
                 onClick: () => showAlertDetails(title, language, locationName, typeName, alert.started_at),
