@@ -59,7 +59,7 @@ The app lives in the tray, with one big main window behind it. At launch that wi
   <img src="docs/images/main-window-en-light.png" alt="main window">
 </picture>
 
-The tray icon itself automatically matches the Windows light/dark taskbar theme and its actual size at the current display scaling. It sits calmly green while there is no alert and briefly pulses on every refresh; during an active alert it shows an exclamation mark and rocks side to side in the color of the alert's severity level (orange for the yellow level, red for the red one), and follows the level if it changes mid-alert. When the nationwide active-alert count crosses a threshold you set, the tooltip adds a mass-attack line with that count, independent of your own monitored regions. Left-clicking it opens the main window straight on Current status; right-clicking shows the same sections as a menu:
+The tray icon itself automatically matches the Windows light/dark taskbar theme and its actual size at the current display scaling. It sits calmly green while there is no alert and briefly pulses on every refresh; during an active alert it rocks side to side and pulses in the color of the alert's severity level (orange for the yellow level, red for the red one), and follows the level if it changes mid-alert. When the nationwide active-alert count crosses a threshold you set, the tooltip adds a mass-attack line with that count, independent of your own monitored regions. Left-clicking it opens the main window straight on Current status; right-clicking shows the same sections as a menu:
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/tray-menu-en-dark.png">
