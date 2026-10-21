@@ -7,6 +7,7 @@ const neptun = require('./neptun');
 const occupied = require('./occupied');
 const trends = require('./trends');
 const regions = require('./regions');
+const merge = require('./merge');
 const ratelimit = require('./ratelimit');
 const webstats = require('./webstats');
 
@@ -20,32 +21,50 @@ let lastStateKey = '';
 let lastThreatsBody = '';
 let lastHeartbeatAt = 0;
 
-function regionsFor(body) {
+function regionsFor(body, alertsOverride, totalOverride) {
     if (memo.body === body) return memo;
 
-    let alerts = [];
-    try {
-        alerts = JSON.parse(body).alerts || [];
-    } catch (err) {}
+    let alerts = alertsOverride || [];
+    if (!alertsOverride) {
+        try {
+            alerts = JSON.parse(body).alerts || [];
+        } catch (err) {}
+    }
 
     const aggregated = regions.computeAlertedRegions(alerts);
     memo = {
         body,
-        total: alerts.length,
+        total: Number.isFinite(totalOverride) ? totalOverride : alerts.length,
         regions: { ...aggregated, kyivRaions: regions.computeKyivRaionStatuses(alerts) },
     };
     return memo;
 }
 
+function freshestSourceAgeMs(sources) {
+    const ages = ['ia', 'ua']
+        .map((key) => sources && sources[key])
+        .filter((source) => source && source.state === 'ok' && Number.isFinite(source.ageMs))
+        .map((source) => source.ageMs);
+    return ages.length ? Math.min(...ages) : null;
+}
+
 function buildState() {
     const snapshot = gateway.getActiveBody();
     const now = Date.now();
-    const parsed = snapshot.body ? regionsFor(snapshot.body) : { total: 0, regions: { oblasts: [], raions: [], kyivRaions: [] } };
-    const dataAgeMs = snapshot.fetchedAt ? now - snapshot.fetchedAt : null;
+    const mergedNow = merge.getCurrentAlerts();
+    let parsed;
+    let dataAgeMs;
+    if (mergedNow) {
+        parsed = regionsFor(JSON.stringify(mergedNow.alerts), mergedNow.alerts, mergedNow.officialCount);
+        dataAgeMs = freshestSourceAgeMs(mergedNow.sources);
+    } else {
+        parsed = snapshot.body ? regionsFor(snapshot.body) : { total: 0, regions: { oblasts: [], raions: [], kyivRaions: [] } };
+        dataAgeMs = snapshot.fetchedAt ? now - snapshot.fetchedAt : null;
+    }
 
     return {
         generatedAt: new Date(now).toISOString(),
-        source: 'alerts.in.ua',
+        source: mergedNow ? 'merged' : 'alerts.in.ua',
         dataAgeMs,
         stale: dataAgeMs === null || dataAgeMs > STALE_AFTER_MS,
         total: parsed.total,

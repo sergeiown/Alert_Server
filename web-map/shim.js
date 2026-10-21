@@ -84,7 +84,7 @@
         return Object.assign({}, entry, {
             alertTypeName: entry.alertType ? typeName(entry.alertType) : null,
             threats: (entry.threats || []).map((threat) => {
-                return { level: threat.level, description: threat.alertType ? typeName(threat.alertType) : null };
+                return { level: threat.level, description: threat.description || (threat.alertType ? typeName(threat.alertType) : null) };
             }),
         });
     }

@@ -187,6 +187,12 @@ function getResponse() {
     };
 }
 
+function getCurrentAlerts() {
+    if (!everReady) return null;
+    const { result } = currentFresh();
+    return { alerts: result.alerts, officialCount: result.officialCount, sources: result.sources };
+}
+
 function getStatusInfo() {
     if (!current) return { ready: false, sources: null, degraded: null, alertCount: 0, officialCount: 0, neptunConfirmedCount: 0, neptunOnlyCount: 0, sockets: gateway.socketCount('merged') };
     const { result } = current;
@@ -203,4 +209,4 @@ function getStatusInfo() {
     };
 }
 
-module.exports = { start, acceptSocket, getResponse, getStatusInfo, socketCount: () => gateway.socketCount('merged') };
+module.exports = { start, acceptSocket, getResponse, getCurrentAlerts, getStatusInfo, socketCount: () => gateway.socketCount('merged') };

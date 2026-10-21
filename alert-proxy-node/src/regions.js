@@ -13,13 +13,36 @@ function levelRank(level) {
     return 0;
 }
 
+function threatDescription(message) {
+    const text = String(message || '');
+    const match = text.match(/^(.*?)\s*\(/u);
+    return (match ? match[1] : text).trim() || null;
+}
+
+function alertLevelEntries(alert) {
+    const entries = new Map();
+    (alert.threats || []).forEach((threat) => {
+        if (!threat || (threat.level !== 'red' && threat.level !== 'yellow') || entries.has(threat.level)) return;
+        entries.set(threat.level, threat.source_message ? threatDescription(threat.source_message) : null);
+    });
+    if (alert.alert_level && !entries.has(alert.alert_level)) entries.set(alert.alert_level, null);
+    return entries;
+}
+
+function worstLevelOf(entries) {
+    return entries.has('red') ? 'red' : entries.has('yellow') ? 'yellow' : null;
+}
+
 function upsertEarliest(map, info, alert, isDirect) {
     const existing = map.get(info.name);
-    const worstLevel =
-        existing && levelRank(existing.alertLevel) > levelRank(alert.alert_level) ? existing.alertLevel : alert.alert_level;
+    const levelEntries = alertLevelEntries(alert);
+    const alertWorst = alert.alert_level || worstLevelOf(levelEntries);
+    const worstLevel = existing && levelRank(existing.alertLevel) > levelRank(alertWorst) ? existing.alertLevel : alertWorst;
     const directByLevel = existing ? new Map(existing.directByLevel) : new Map();
-    if (isDirect && alert.alert_level && !directByLevel.has(alert.alert_level)) {
-        directByLevel.set(alert.alert_level, alert.alert_type);
+    if (isDirect) {
+        levelEntries.forEach((description, level) => {
+            if (!directByLevel.has(level)) directByLevel.set(level, { alertType: alert.alert_type, description });
+        });
     }
 
     if (!existing || new Date(alert.started_at) < new Date(existing.startedAt)) {
@@ -37,7 +60,7 @@ function upsertEarliest(map, info, alert, isDirect) {
 }
 
 function directThreats(directByLevel) {
-    return Array.from(directByLevel, ([level, alertType]) => ({ level, alertType })).sort(
+    return Array.from(directByLevel, ([level, entry]) => ({ level, alertType: entry.alertType, description: entry.description })).sort(
         (a, b) => levelRank(b.level) - levelRank(a.level)
     );
 }
