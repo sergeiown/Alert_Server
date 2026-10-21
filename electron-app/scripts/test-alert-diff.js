@@ -240,7 +240,7 @@ async function run() {
         assert.ok(xml.includes('alert.png') && !xml.includes('alert_yellow.png'));
         const text = toastText(0);
         assert.ok(text.includes('Рівень підвищено: Бахмутський район'), text);
-        assert.ok(text.includes('Жовтий -&gt; червоний рівень') || text.includes('Жовтий -> червоний рівень'), text);
+        assert.ok(text.includes('Було: жовтий, стало: червоний'), text);
         assert.ok(text.includes('Ракетна загроза'), text);
         assert.deepStrictEqual(captured.sounds, ['up']);
     });

@@ -227,8 +227,8 @@ function maxLevelLine(maxLevel, language) {
 
 function levelChangeLine(from, to, language) {
     return t('alertLevelChangeLine', language)
-        .replace('{from}', levelShort(from, language))
-        .replace('{to}', levelLabel(to, language) || '');
+        .replace('{from}', levelShort(from, language).toLowerCase())
+        .replace('{to}', levelShort(to, language).toLowerCase());
 }
 
 function worstLevelOfEvents(events) {
