@@ -71,6 +71,7 @@
     "liveMapLayerOccupiedTerritory": "Occupied territories",
     "liveMapNoActiveAlert": "No active alert",
     "liveMapAlertAcrossRegion": "Alert across the whole region: {name}",
+    "liveMapAlertAcrossCity": "Alert across the whole city: {name}",
     "liveMapLayerThreats": "Threat markers",
     "liveMapLayerRiver": "Dnipro river",
     "liveMapLayerLabels": "Map labels",

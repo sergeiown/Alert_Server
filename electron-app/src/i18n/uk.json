@@ -71,6 +71,7 @@
     "liveMapLayerOccupiedTerritory": "Окуповані території",
     "liveMapNoActiveAlert": "Немає активної тривоги",
     "liveMapAlertAcrossRegion": "Тривога по всій області: {name}",
+    "liveMapAlertAcrossCity": "Тривога по всьому місту: {name}",
     "liveMapLayerThreats": "Позначки загроз",
     "liveMapLayerRiver": "Річка Дніпро",
     "liveMapLayerLabels": "Назви на мапі",

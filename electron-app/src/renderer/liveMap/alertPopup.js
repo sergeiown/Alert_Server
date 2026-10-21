@@ -48,6 +48,8 @@ function translateDescription(description, isEnglish) {
     return isEnglish ? KNOWN_DESCRIPTION_EN[description] || description : description;
 }
 
+const CITY_SCOPE_NAMES = new Set(['м. Київ', 'Kyiv City']);
+
 function alertPopupHtml(displayName, startedAt, alertTypeName, strings, language, inheritedFromName, alertLevel, threatLines) {
     const locale = language === 'English' ? 'en-US' : 'uk-UA';
     const isEnglish = language === 'English';
@@ -66,9 +68,8 @@ function alertPopupHtml(displayName, startedAt, alertTypeName, strings, language
             : alertTypeName
               ? `${capitalize(alertTypeName)}${levelBadge(alertLevel, strings)}<br>`
               : '';
-    const note = inheritedFromName
-        ? `<br><small>${strings.liveMapAlertAcrossRegion.replace('{name}', inheritedFromName)}</small>`
-        : '';
+    const acrossText = CITY_SCOPE_NAMES.has(inheritedFromName) ? strings.liveMapAlertAcrossCity : strings.liveMapAlertAcrossRegion;
+    const note = inheritedFromName ? `<br><small>${acrossText.replace('{name}', inheritedFromName)}</small>` : '';
 
     return (
         `<strong>${displayName}</strong><br>` +
