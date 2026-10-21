@@ -45,6 +45,8 @@ const UKRAINEALARM_MISS_WINDOW_MS = 30 * 60 * 1000;
 const UKRAINEALARM_SUSPECT_MISSES = 1;
 const UKRAINEALARM_BROKEN_MISSES = 3;
 const UKRAINEALARM_BROKEN_PERSISTENT_SNAPSHOTS = 2;
+const UKRAINEALARM_MISS_CONFIRM_MS = Number(process.env.UKRAINEALARM_MISS_CONFIRM_MS) || 90 * 1000;
+const UKRAINEALARM_WEBHOOK_LAG_ALLOWANCE_MS = 15 * 1000;
 const UKRAINEALARM_ROUTE_MAX_WAIT_MS = 5 * 1000;
 const UKRAINEALARM_REQUEST_TIMEOUT_MS = 20 * 1000;
 const UKRAINEALARM_STALE_ALERT_THRESHOLD_MS = 24 * 60 * 60 * 1000;
@@ -95,7 +97,7 @@ const state = {
     ukraineAlarmWebhookStats: { startedAt: Date.now(), received: 0, rejected: 0, lagsMs: [] },
     ukraineAlarmKeyChangedAt: new Map(),
     ukraineAlarmMisses: [],
-    ukraineAlarmPendingMisses: new Map(),
+    ukraineAlarmUnconfirmed: new Map(),
     ukraineAlarmLastEventAt: 0,
     ukraineAlarmSnapshotInFlight: false,
     lastBroadcastAlertsBody: null,
@@ -494,6 +496,20 @@ function ukraineAlarmRegionAlertMap(regions) {
     return map;
 }
 
+function settleUkraineAlarmUnconfirmed(now) {
+    state.ukraineAlarmUnconfirmed.forEach((entry, key) => {
+        const deliveredAt = state.ukraineAlarmKeyChangedAt.get(key) || 0;
+        if (deliveredAt >= entry.at - UKRAINEALARM_WEBHOOK_LAG_ALLOWANCE_MS) {
+            state.ukraineAlarmUnconfirmed.delete(key);
+            return;
+        }
+        if (now - entry.at < UKRAINEALARM_MISS_CONFIRM_MS) return;
+        state.ukraineAlarmUnconfirmed.delete(key);
+        state.ukraineAlarmMisses.push({ key, at: entry.at, kind: entry.kind });
+        console.warn(`[ukrainealarm-reconcile] webhook event never arrived for ${key} (${entry.kind})`);
+    });
+}
+
 function pruneUkraineAlarmMisses(now) {
     const cutoff = now - UKRAINEALARM_MISS_WINDOW_MS;
     state.ukraineAlarmMisses = state.ukraineAlarmMisses.filter((miss) => miss.at >= cutoff);
@@ -505,20 +521,17 @@ function pruneUkraineAlarmMisses(now) {
 function reconcileUkraineAlarmSnapshot(previous, snapshot, now) {
     const before = ukraineAlarmRegionAlertMap(previous);
     const after = ukraineAlarmRegionAlertMap(snapshot);
-    const mismatched = new Set();
     const recentCutoff = now - UKRAINEALARM_RECONCILE_GRACE_MS;
 
     new Set([...before.keys(), ...after.keys()]).forEach((key) => {
         if (before.get(key) === after.get(key)) return;
         if ((state.ukraineAlarmKeyChangedAt.get(key) || 0) >= recentCutoff) return;
-        mismatched.add(key);
-        state.ukraineAlarmMisses.push({ key, at: now, kind: before.has(key) ? (after.has(key) ? 'level' : 'end') : 'start' });
-        console.warn(`[ukrainealarm-reconcile] webhook state differed from snapshot for ${key} (${before.has(key) ? (after.has(key) ? 'level' : 'end') : 'start'})`);
+        if (!state.ukraineAlarmUnconfirmed.has(key)) {
+            state.ukraineAlarmUnconfirmed.set(key, { at: now, kind: before.has(key) ? (after.has(key) ? 'level' : 'end') : 'start' });
+        }
     });
 
-    const pending = new Map();
-    mismatched.forEach((key) => pending.set(key, (state.ukraineAlarmPendingMisses.get(key) || 0) + 1));
-    state.ukraineAlarmPendingMisses = pending;
+    settleUkraineAlarmUnconfirmed(now);
     pruneUkraineAlarmMisses(now);
 }
 
@@ -563,9 +576,12 @@ function carryRecentWebhookChanges(previous, snapshot, sentAt) {
 }
 
 function classifyUkraineAlarmWebhook(now) {
+    settleUkraineAlarmUnconfirmed(now);
     pruneUkraineAlarmMisses(now);
     const misses = state.ukraineAlarmMisses.length;
-    const persistent = [...state.ukraineAlarmPendingMisses.values()].some((count) => count >= UKRAINEALARM_BROKEN_PERSISTENT_SNAPSHOTS);
+    const missesByKey = new Map();
+    state.ukraineAlarmMisses.forEach((miss) => missesByKey.set(miss.key, (missesByKey.get(miss.key) || 0) + 1));
+    const persistent = [...missesByKey.values()].some((count) => count >= UKRAINEALARM_BROKEN_PERSISTENT_SNAPSHOTS);
 
     let healthState = 'healthy';
     if (!config.UKRAINEALARM_WEBHOOK_PUBLIC_KEY) healthState = 'unconfigured';
