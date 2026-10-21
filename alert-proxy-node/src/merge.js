@@ -188,13 +188,14 @@ function getResponse() {
 }
 
 function getStatusInfo() {
-    if (!current) return { ready: false, sources: null, degraded: null, alertCount: 0, officialCount: 0, neptunOnlyCount: 0, sockets: gateway.socketCount('merged') };
+    if (!current) return { ready: false, sources: null, degraded: null, alertCount: 0, officialCount: 0, neptunConfirmedCount: 0, neptunOnlyCount: 0, sockets: gateway.socketCount('merged') };
     const { result } = current;
     return {
         ready: everReady,
         sources: result.sources,
         degraded: result.degraded,
         alertCount: result.alerts.length,
+        neptunConfirmedCount: result.alerts.filter((alert) => alert.sources.includes('np')).length,
         officialCount: result.officialCount,
         neptunOnlyCount: result.neptunOnly.length,
         lastBroadcastAgeMs: lastSentAt ? Date.now() - lastSentAt : null,
