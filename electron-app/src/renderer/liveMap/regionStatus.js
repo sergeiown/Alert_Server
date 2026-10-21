@@ -239,6 +239,8 @@ const RegionStatusLayer = L.LayerGroup.extend({
         const cityAlertTypeName = getOblastAlertTypeName('Київ');
         const cityAlertLevel = getOblastAlertLevel('Київ');
         const cityDisplayName = oblastDisplayName('Київ', isEnglish);
+        const cityHasBothLevels = getOblastHasBothLevels('Київ');
+        const cityThreats = cityHasBothLevels ? getOblastThreats('Київ') : null;
 
         Object.entries(KYIV_RAION_BORDERS).forEach(([name, ring]) => {
             const ownStartedAt = getKyivRaionStartedAt(name);
@@ -256,8 +258,9 @@ const RegionStatusLayer = L.LayerGroup.extend({
                     cityAlertTypeName,
                     cityStartedAt ? cityDisplayName : null,
                     cityAlertLevel,
-                    false,
-                    true
+                    cityHasBothLevels,
+                    true,
+                    cityThreats
                 );
                 return;
             }
