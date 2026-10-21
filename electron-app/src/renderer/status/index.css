@@ -1,4 +1,13 @@
 :root {
+    --card-bg: #f6f1e7;
+    --card-border: rgba(110, 86, 52, 0.22);
+    --card-hover-border: rgba(110, 86, 52, 0.42);
+    --card-text: #3b2f22;
+    --card-muted: #7a6a58;
+    --card-shadow: rgba(80, 60, 30, 0.22);
+    --stripe-calm: #5d9250;
+    --stripe-yellow: #d9962a;
+    --stripe-red: #b94a32;
     --bg-top: #eaf0f7;
     --bg-bottom: #d5e1ee;
     --text: #36516f;
@@ -33,6 +42,12 @@
 
 @media (prefers-color-scheme: dark) {
     :root {
+        --card-bg: #263243;
+        --card-border: rgba(150, 175, 205, 0.2);
+        --card-hover-border: rgba(150, 175, 205, 0.42);
+        --card-text: #e6edf6;
+        --card-muted: #a3b4c8;
+        --card-shadow: rgba(0, 0, 0, 0.55);
         --bg-top: #19222e;
         --bg-bottom: #101720;
         --text: #bdd2ea;
@@ -80,27 +95,46 @@ body {
 }
 
 #summary {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 28px;
     max-width: 1200px;
     margin: 0 auto 22px;
-    padding: 22px 36px;
+    padding: 22px 36px 22px 64px;
     border-radius: 24px;
-    color: #f4f9ff;
-    background: linear-gradient(155deg, var(--calm-from), var(--calm-to));
-    box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.4), inset 0 -12px 22px rgba(0, 0, 0, 0.18), 0 14px 24px -10px rgba(35, 70, 115, 0.5);
+    border: 1px solid var(--card-border);
+    color: var(--card-text);
+    background: var(--card-bg);
+    box-shadow:
+        0 10px 22px -12px var(--card-shadow),
+        0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
-#summary.alerting {
-    background: linear-gradient(155deg, var(--alert-from), var(--alert-to));
+#summary::before {
+    content: '';
+    position: absolute;
+    left: 22px;
+    top: 20px;
+    bottom: 20px;
+    width: 6px;
+    border-radius: 3px;
+    background: var(--stripe-calm);
+}
+
+#summary.alerting::before {
+    background: var(--stripe-red);
+}
+
+#summary.alerting.level-yellow::before {
+    background: var(--stripe-yellow);
 }
 
 #summaryIcon {
     flex: 0 0 auto;
     width: 84px;
     height: 84px;
-    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.25));
+    filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.22));
 }
 
 #summaryIcon svg {
@@ -115,12 +149,12 @@ body {
 #summaryTitle {
     margin: 0 0 4px;
     font-size: 30px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+    color: var(--card-text);
 }
 
 #summaryHint {
     margin: 0;
-    opacity: 0.88;
+    color: var(--card-muted);
 }
 
 #summaryActions button {
@@ -129,14 +163,14 @@ body {
     border-radius: 19px;
     border: 1px solid var(--button-border);
     background: var(--button-bg);
-    color: inherit;
+    color: var(--card-text);
     font: inherit;
     font-weight: 600;
     cursor: pointer;
 }
 
 #summaryActions button:hover {
-    background: rgba(255, 255, 255, 0.36);
+    background: var(--card-hover-border);
 }
 
 #toolbar {

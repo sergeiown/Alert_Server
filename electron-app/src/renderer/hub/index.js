@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
-import { TILES, tileSvg } from './tileIcons.js';
+import { tileSvg } from './tileIcons.js';
 
 const hub = window.alertServerHub;
 
@@ -34,9 +34,6 @@ const TILE_CAPTION_KEYS = {
 function renderTiles() {
     document.querySelectorAll('.tile').forEach((tile) => {
         const name = tile.dataset.view;
-        const palette = TILES[name];
-        tile.style.setProperty('--from', palette.from);
-        tile.style.setProperty('--to', palette.to);
         tile.querySelector('.tile-icon').innerHTML = tileSvg(name);
         tile.querySelector('.tile-caption').textContent = strings[TILE_CAPTION_KEYS[name]];
         tile.addEventListener('click', () => hub.navigate(name));
@@ -64,7 +61,10 @@ function applyState(state) {
 async function refreshSummary() {
     const summary = await hub.getSummary();
     const alerting = summary.activeCount > 0;
+    const yellowOnly = alerting && summary.level === 'yellow';
     statusTile.classList.toggle('alerting', alerting);
+    statusTile.classList.toggle('level-yellow', yellowOnly);
+    document.getElementById('statusIcon').innerHTML = tileSvg(!alerting ? 'status' : yellowOnly ? 'statusYellow' : 'statusAlert');
     document.getElementById('statusLine').textContent = alerting
         ? strings.hubStatusActive.replace('{count}', summary.activeCount)
         : strings.hubStatusCalm;

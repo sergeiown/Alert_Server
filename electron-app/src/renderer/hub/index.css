@@ -11,10 +11,15 @@
     --button-hover: rgba(255, 255, 255, 0.95);
     --close-hover: #f0d4d8;
     --close-text: #8b3f4a;
-    --tile-text: #f4f9ff;
-    --tile-shadow: rgba(35, 70, 115, 0.5);
-    --alert-from: #cf6b6b;
-    --alert-to: #93383f;
+    --card-bg: #f6f1e7;
+    --card-border: rgba(110, 86, 52, 0.22);
+    --card-hover-border: rgba(110, 86, 52, 0.42);
+    --card-text: #3b2f22;
+    --card-muted: #7a6a58;
+    --card-shadow: rgba(80, 60, 30, 0.22);
+    --stripe-calm: #5d9250;
+    --stripe-yellow: #d9962a;
+    --stripe-red: #b94a32;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -31,9 +36,12 @@
         --button-hover: rgba(86, 116, 150, 0.7);
         --close-hover: #6c3940;
         --close-text: #f0b6bd;
-        --tile-shadow: rgba(0, 0, 0, 0.6);
-        --alert-from: #b95b5e;
-        --alert-to: #7b2f36;
+        --card-bg: #263243;
+        --card-border: rgba(150, 175, 205, 0.2);
+        --card-hover-border: rgba(150, 175, 205, 0.42);
+        --card-text: #e6edf6;
+        --card-muted: #a3b4c8;
+        --card-shadow: rgba(0, 0, 0, 0.55);
     }
 }
 
@@ -226,43 +234,30 @@ body {
     justify-content: center;
     gap: 6px;
     min-height: 0;
-    border: 0;
+    border: 1px solid var(--card-border);
     border-radius: 26px;
     padding: 10px;
-    color: var(--tile-text);
+    color: var(--card-text);
     font: inherit;
     cursor: pointer;
-    background: linear-gradient(155deg, var(--from), var(--to));
+    background: var(--card-bg);
     box-shadow:
-        inset 0 1.500px 0 rgba(255, 255, 255, 0.45),
-        inset 0 -14px 24px rgba(0, 0, 0, 0.2),
-        0 16px 26px -10px var(--tile-shadow),
-        0 5px 10px rgba(30, 55, 90, 0.25);
-    transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+        0 10px 22px -12px var(--card-shadow),
+        0 2px 6px rgba(0, 0, 0, 0.08);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
     overflow: hidden;
 }
 
-.tile::before {
-    content: '';
-    position: absolute;
-    inset: 0 0 50% 0;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0));
-    pointer-events: none;
-}
-
 .tile:hover {
-    transform: translateY(-5px) scale(1.015);
-    filter: brightness(1.07);
+    transform: translateY(-4px);
+    border-color: var(--card-hover-border);
     box-shadow:
-        inset 0 1.500px 0 rgba(255, 255, 255, 0.5),
-        inset 0 -14px 24px rgba(0, 0, 0, 0.2),
-        0 24px 32px -12px var(--tile-shadow),
-        0 8px 14px rgba(30, 55, 90, 0.3);
+        0 18px 28px -12px var(--card-shadow),
+        0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .tile:active {
     transform: translateY(1px) scale(0.99);
-    filter: brightness(0.96);
 }
 
 .tile:focus-visible {
@@ -277,7 +272,7 @@ body {
     height: min(96px, 100%);
     flex: 0 1 96px;
     min-height: 0;
-    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.25));
+    filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.22));
 }
 
 .tile-icon svg {
@@ -289,7 +284,7 @@ body {
     font-size: 19px;
     font-weight: 700;
     letter-spacing: 0.2px;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+    color: var(--card-text);
 }
 
 .status-tile {
@@ -297,7 +292,26 @@ body {
     flex-direction: row;
     justify-content: flex-start;
     gap: 34px;
-    padding: 10px 56px;
+    padding: 10px 56px 10px 64px;
+}
+
+.status-tile::before {
+    content: '';
+    position: absolute;
+    left: 22px;
+    top: 20px;
+    bottom: 20px;
+    width: 6px;
+    border-radius: 3px;
+    background: var(--stripe-calm);
+}
+
+.status-tile.alerting::before {
+    background: var(--stripe-red);
+}
+
+.status-tile.alerting.level-yellow::before {
+    background: var(--stripe-yellow);
 }
 
 .status-tile .tile-icon {
@@ -317,7 +331,7 @@ body {
 .status-tile .tile-caption {
     font-size: 15px;
     font-weight: 600;
-    opacity: 0.85;
+    color: var(--card-muted);
     text-transform: uppercase;
     letter-spacing: 1.200px;
 }
@@ -325,17 +339,12 @@ body {
 .status-line {
     font-size: 34px;
     font-weight: 700;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.28);
+    color: var(--card-text);
 }
 
 .status-hint {
     font-size: 15px;
-    opacity: 0.85;
-}
-
-.status-tile.alerting {
-    --from: var(--alert-from);
-    --to: var(--alert-to);
+    color: var(--card-muted);
 }
 
 #startupOption {

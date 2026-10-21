@@ -4,7 +4,8 @@
 const { ipcMain } = require('electron');
 const { navigate, goBack, requestClose, currentState, minimizeHub, toggleMaximizeHub } = require('../windows/hubWindow');
 const { getActiveCount } = require('../services/notifier');
-const { getLatestTotalAlertCount } = require('../services/alertState');
+const { getLatestTotalAlertCount, getLatestMatchedAlerts } = require('../services/alertState');
+const { worstLevelAmong } = require('../services/alertLevels');
 
 function registerHubIpc() {
     ipcMain.handle('hub:getState', () => currentState());
@@ -16,6 +17,7 @@ function registerHubIpc() {
     ipcMain.handle('hub:getSummary', () => ({
         activeCount: getActiveCount(),
         totalCount: getLatestTotalAlertCount(),
+        level: worstLevelAmong(getLatestMatchedAlerts()),
     }));
 }
 

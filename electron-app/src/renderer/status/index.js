@@ -105,8 +105,10 @@ function syncToggle() {
 function render() {
     const alerting = overview.filter((region) => region.state === 'alert');
 
+    const yellowOnly = alerting.length > 0 && alerting.every((region) => region.alertLevel === 'yellow');
     summary.classList.toggle('alerting', alerting.length > 0);
-    document.getElementById('summaryIcon').innerHTML = tileSvg('status');
+    summary.classList.toggle('level-yellow', yellowOnly);
+    document.getElementById('summaryIcon').innerHTML = tileSvg(alerting.length === 0 ? 'status' : yellowOnly ? 'statusYellow' : 'statusAlert');
     summaryTitle.textContent = alerting.length ? strings.hubStatusActive.replace('{count}', alerting.length) : strings.hubStatusCalm;
     summaryHint.textContent = !overview.length
         ? strings.statusNoRegions
