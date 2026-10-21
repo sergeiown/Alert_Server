@@ -45,6 +45,7 @@ const UKRAINEALARM_MISS_WINDOW_MS = 30 * 60 * 1000;
 const UKRAINEALARM_SUSPECT_MISSES = 1;
 const UKRAINEALARM_BROKEN_MISSES = 3;
 const UKRAINEALARM_BROKEN_PERSISTENT_SNAPSHOTS = 2;
+const uaWebhookHealth = require('./uaWebhookHealth');
 const UKRAINEALARM_MISS_CONFIRM_MS = Number(process.env.UKRAINEALARM_MISS_CONFIRM_MS) || 90 * 1000;
 const UKRAINEALARM_WEBHOOK_LAG_ALLOWANCE_MS = 15 * 1000;
 const UKRAINEALARM_ROUTE_MAX_WAIT_MS = 5 * 1000;
@@ -98,6 +99,8 @@ const state = {
     ukraineAlarmKeyChangedAt: new Map(),
     ukraineAlarmMisses: [],
     ukraineAlarmUnconfirmed: new Map(),
+    ukraineAlarmEventTimes: [],
+    ukraineAlarmMissHistory: new Map(),
     ukraineAlarmLastEventAt: 0,
     ukraineAlarmSnapshotInFlight: false,
     lastBroadcastAlertsBody: null,
@@ -463,6 +466,7 @@ async function applyUkraineAlarmEvent(event) {
     const regionId = String(event.regionId);
     const levels = event.activeAlertLevels;
     state.ukraineAlarmLastEventAt = Date.now();
+    state.ukraineAlarmEventTimes.push(state.ukraineAlarmLastEventAt);
     state.ukraineAlarmKeyChangedAt.set(`${regionId}:${event.alarmType}`, Date.now());
     let region = saved.latestAlerts.find((r) => String(r.regionId) === regionId);
 
@@ -506,6 +510,7 @@ function settleUkraineAlarmUnconfirmed(now) {
         if (now - entry.at < UKRAINEALARM_MISS_CONFIRM_MS) return;
         state.ukraineAlarmUnconfirmed.delete(key);
         state.ukraineAlarmMisses.push({ key, at: entry.at, kind: entry.kind });
+        uaWebhookHealth.recordMiss(state.ukraineAlarmMissHistory, key, entry.at);
         console.warn(`[ukrainealarm-reconcile] webhook event never arrived for ${key} (${entry.kind})`);
     });
 }
@@ -513,6 +518,8 @@ function settleUkraineAlarmUnconfirmed(now) {
 function pruneUkraineAlarmMisses(now) {
     const cutoff = now - UKRAINEALARM_MISS_WINDOW_MS;
     state.ukraineAlarmMisses = state.ukraineAlarmMisses.filter((miss) => miss.at >= cutoff);
+    state.ukraineAlarmEventTimes = state.ukraineAlarmEventTimes.filter((at) => at >= cutoff);
+    uaWebhookHealth.pruneHistory(state.ukraineAlarmMissHistory, now);
     state.ukraineAlarmKeyChangedAt.forEach((changedAt, key) => {
         if (changedAt < cutoff) state.ukraineAlarmKeyChangedAt.delete(key);
     });
@@ -578,16 +585,13 @@ function carryRecentWebhookChanges(previous, snapshot, sentAt) {
 function classifyUkraineAlarmWebhook(now) {
     settleUkraineAlarmUnconfirmed(now);
     pruneUkraineAlarmMisses(now);
-    const misses = state.ukraineAlarmMisses.length;
-    const missesByKey = new Map();
-    state.ukraineAlarmMisses.forEach((miss) => missesByKey.set(miss.key, (missesByKey.get(miss.key) || 0) + 1));
-    const persistent = [...missesByKey.values()].some((count) => count >= UKRAINEALARM_BROKEN_PERSISTENT_SNAPSHOTS);
-
-    let healthState = 'healthy';
-    if (!config.UKRAINEALARM_WEBHOOK_PUBLIC_KEY) healthState = 'unconfigured';
-    else if (misses >= UKRAINEALARM_BROKEN_MISSES || persistent) healthState = 'broken';
-    else if (misses >= UKRAINEALARM_SUSPECT_MISSES) healthState = 'suspect';
-    return { state: healthState, misses };
+    return uaWebhookHealth.classifyWebhook({
+        configured: Boolean(config.UKRAINEALARM_WEBHOOK_PUBLIC_KEY),
+        misses: state.ukraineAlarmMisses,
+        events: state.ukraineAlarmEventTimes.length,
+        history: state.ukraineAlarmMissHistory,
+        now,
+    });
 }
 
 function ukraineAlarmSnapshotGapMs() {
@@ -596,10 +600,13 @@ function ukraineAlarmSnapshotGapMs() {
 
 function getUkraineAlarmWebhookHealth() {
     const now = Date.now();
-    const { state: healthState, misses } = classifyUkraineAlarmWebhook(now);
+    const { state: healthState, misses, distinctKeys, events, silentKeys } = classifyUkraineAlarmWebhook(now);
     return {
         state: healthState,
         missesLast30Min: misses,
+        distinctKeys,
+        eventsLast30Min: events,
+        silentKeys,
         recentMisses: state.ukraineAlarmMisses.slice(-10),
         lastEventAgeMs: state.ukraineAlarmLastEventAt ? now - state.ukraineAlarmLastEventAt : null,
         snapshotGapMs: ukraineAlarmSnapshotGapMs(),

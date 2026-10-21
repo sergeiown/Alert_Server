@@ -5,7 +5,7 @@ const lib = require('./lib');
 
 const DEFAULTS = {
     iaFreshMs: 90 * 1000,
-    uaFreshMs: 150 * 1000,
+    uaFreshMs: 240 * 1000,
     npFreshMs: 120 * 1000,
     freezeMaxMs: 30 * 60 * 1000,
     clearConfirmMs: 15 * 1000,

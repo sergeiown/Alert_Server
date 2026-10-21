@@ -27,7 +27,8 @@ let lastHeartbeatAt = 0;
 let started = false;
 
 const iaOnlySince = new Map();
-const snapshotTriggered = new Set();
+const lastTriggerAt = new Map();
+const TRIGGER_COOLDOWN_MS = 10 * 60 * 1000;
 
 function readIa() {
     const { body, fetchedAt } = gateway.getActiveBody();
@@ -94,18 +95,19 @@ function sendToAll(message) {
 function triggerSnapshots(now, result) {
     const keys = new Set(result.iaOnlyKeys);
     [...iaOnlySince.keys()].forEach((key) => {
-        if (keys.has(key)) return;
-        iaOnlySince.delete(key);
-        snapshotTriggered.delete(key);
+        if (!keys.has(key)) iaOnlySince.delete(key);
+    });
+    lastTriggerAt.forEach((at, key) => {
+        if (now - at > TRIGGER_COOLDOWN_MS) lastTriggerAt.delete(key);
     });
     keys.forEach((key) => {
         if (!iaOnlySince.has(key)) iaOnlySince.set(key, now);
     });
 
     for (const [key, since] of iaOnlySince) {
-        if (snapshotTriggered.has(key) || now - since < IA_ONLY_TRIGGER_MS) continue;
+        if (lastTriggerAt.has(key) || now - since < IA_ONLY_TRIGGER_MS) continue;
         if (!gateway.requestUkraineAlarmSnapshot()) break;
-        snapshotTriggered.add(key);
+        lastTriggerAt.set(key, now);
         console.log(`[merge] alert ${key} seen by alerts.in.ua but not by UkraineAlarm for over a minute, snapshot requested`);
     }
 }

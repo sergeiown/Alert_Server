@@ -165,7 +165,7 @@ run('stale UA freezes its set, UA alert stays visible', () => {
     const regions = [uaRegion(VINNYTSIA_DISTRICT, [{ alertLevel: 'red', reason: 'r', createdAt: iso(T0 - 1000) }])];
     const base = (now, age) => sources({ now, ia: { alerts: [iaAlert(VINNYTSIA_COMMUNITY)] }, ua: { regions, age }, np: { payload: { raions: [], oblasts: [] } } });
     assert.strictEqual(merger.update(T0, base(T0, 1000)).alerts.length, 2);
-    const later = merger.update(T0 + 200000, base(T0 + 200000, 200000));
+    const later = merger.update(T0 + 300000, base(T0 + 300000, 300000));
     assert.strictEqual(later.sources.ua.state, 'stale');
     assert.strictEqual(later.alerts.length, 2);
     assert.strictEqual(later.degraded, true);
