@@ -200,7 +200,7 @@ function startBodyLines(alert, locationName, alertCount, startedAtText, language
     const countLine = `${t('activeInMonitored', language)}: ${alertCount}`;
 
     return [
-        `${t('location', language)}: ${locationName}${level ? ` (${level})` : ''}`,
+        `${t('location', language)}: ${locationName}${level && !threatLines[0] ? ` (${level})` : ''}`,
         threatLines[0] || countLine,
         threatLines[0] ? countLine : null,
         ...threatLines.slice(1),
@@ -633,4 +633,21 @@ function getActiveCount() {
     return displayedAlerts.size;
 }
 
-module.exports = { processAlerts, processKyivDistricts, getActiveCount, createNotification, notifyWithMap };
+function existingIcon(fileName, fallbackName) {
+    if (fs.existsSync(getResourcePath('icons', fileName))) return fileName;
+    return fallbackName;
+}
+
+function notifyDataAvailability(state) {
+    const settings = settingsStore.getSettings();
+    if (!settings.visualNotificationsEnabled) return;
+    const language = settings.language;
+
+    if (state === 'nodata') {
+        createNotification(t('noDataTitle', language), t('noDataBody', language), existingIcon('nodata.png', null));
+        return;
+    }
+    createNotification(t('dataRestoredTitle', language), t('dataRestoredBody', language), 'cancel.png');
+}
+
+module.exports = { processAlerts, processKyivDistricts, getActiveCount, createNotification, notifyWithMap, notifyDataAvailability };

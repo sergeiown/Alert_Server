@@ -73,7 +73,7 @@ function getThreatLines(threats, language) {
     return [...districtsByDescription.entries()].map(([description, districts]) => {
         const level = levelByDescription.get(description);
         const displayDescription = isEnglish ? translateDescription(description, level) : description;
-        if (!districts.size) return { level, text: `${displayDescription}:` };
+        if (!districts.size) return { level, text: displayDescription };
         const names = [...districts].map(stripDistrictSuffix).map((name) => (isEnglish ? transliterate(name) : name));
         const word = isEnglish ? (names.length === 1 ? 'district' : 'districts') : names.length === 1 ? 'район' : 'райони';
         return { level, text: `${displayDescription}: ${names.join(', ')} ${word}` };
