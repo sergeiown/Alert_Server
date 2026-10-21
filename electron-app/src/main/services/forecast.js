@@ -338,5 +338,6 @@ module.exports = {
     buildActiveDurationLines,
     prefetchForecast,
     prefetchForecasts,
+    emptyDurationEntry,
     formatDuration,
 };

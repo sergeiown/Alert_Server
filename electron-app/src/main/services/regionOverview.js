@@ -8,12 +8,20 @@ const {
     getRegionDurationStats,
     buildActiveDurationLines,
     prefetchForecast,
+    emptyDurationEntry,
     getRegionSoonestEtaMs,
     formatDuration,
 } = require('./forecast');
 const { alertTypeName } = require('./alertTypes');
 const { worstLevelAmong, getThreatLines } = require('./alertLevels');
 const { t } = require('../../i18n/i18n');
+
+const FORECAST_WAIT_MS = 1500;
+
+function withinMs(promise, ms) {
+    const safe = Promise.resolve(promise).catch(() => null);
+    return Promise.race([safe, new Promise((resolve) => setTimeout(() => resolve(null), ms))]);
+}
 
 function getMonitoredRegions(language) {
     const lookup = getLocationLookup();
@@ -39,7 +47,8 @@ async function getActiveRegionDetail(uid, language) {
     if (!activeAlertsHere.length) return null;
 
     const activeTypes = [...new Set(activeAlertsHere.map((alert) => alert.alert_type))];
-    const durationStats = await getRegionDurationStats(uid, activeTypes);
+    const durationStats =
+        (await withinMs(getRegionDurationStats(uid, activeTypes), FORECAST_WAIT_MS)) || activeTypes.map((type) => emptyDurationEntry(type));
 
     const earliestStartedAtByType = new Map();
     const alertsByType = new Map();
@@ -73,7 +82,7 @@ async function getCalmRegionDetail(uid, language) {
     let nextEtaText = null;
 
     try {
-        const data = await prefetchForecast(uid);
+        const data = await withinMs(prefetchForecast(uid), FORECAST_WAIT_MS);
         const stats = data && data.stats;
         if (stats && stats.sinceLastMs !== null && stats.sinceLastMs !== undefined) {
             sinceLastText = formatDuration(stats.sinceLastMs, language);
