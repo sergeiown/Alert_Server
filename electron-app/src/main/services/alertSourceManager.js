@@ -7,10 +7,23 @@ const { startPolling: startAlertsInUaPolling } = require('./alertPoller');
 const { startPolling: startNeptunPolling } = require('./neptunAlertsSource');
 const { setActiveAlertSource, setAlertSourcesStatus } = require('./alertState');
 const connectionState = require('./connectionState');
+const { createOutageLog } = require('./outageLog');
+const { fetchWithTimeout } = require('./proxyConfig');
 
 const FAILURE_THRESHOLD = 3;
 
 const RECOVERY_RETRY_MS = 5 * 60 * 1000;
+const PROBE_URL = 'https://neptun.in.ua/api/v1/alerts';
+const PROBE_TIMEOUT_MS = 5000;
+
+async function alternativeReachable() {
+    try {
+        await fetchWithTimeout(PROBE_URL, { method: 'HEAD' }, PROBE_TIMEOUT_MS);
+        return true;
+    } catch (err) {
+        return false;
+    }
+}
 
 const CHAIN = [
     {
@@ -38,6 +51,9 @@ function startAlertSourceManager(clientKey, onAlertsUpdated) {
     let consecutiveFailures = 0;
     let activeHandle = null;
     let linkDownSince = null;
+    let probing = false;
+    const retryLog = createOutageLog({ label: 'Primary alert source', log: (message) => logEvent(message, 'NETWORK') });
+    const stayLog = createOutageLog({ label: 'Alert source switching', log: (message) => logEvent(message, 'WARNING') });
 
     function stopActive() {
         if (activeHandle) {
@@ -59,7 +75,7 @@ function startAlertSourceManager(clientKey, onAlertsUpdated) {
             return;
         }
 
-        logEvent(`Alert source active: ${source.label}${reason ? ` (${reason})` : ''}`, 'NETWORK');
+        if (reason !== 'retrying primary source') logEvent(`Alert source active: ${source.label}${reason ? ` (${reason})` : ''}`, 'NETWORK');
         setActiveAlertSource(source.key);
         if (source.key !== 'merged') {
             setAlertSourcesStatus({ sources: null, degraded: true });
@@ -83,15 +99,28 @@ function startAlertSourceManager(clientKey, onAlertsUpdated) {
         }
         if (healthy) {
             consecutiveFailures = 0;
+            if (activeIndex === 0 && retryLog.isActive()) retryLog.recover(`Primary alert source restored: ${CHAIN[0].label}`);
+            if (stayLog.isActive()) stayLog.recover('Alert sources reachable again');
             return;
         }
 
         consecutiveFailures++;
-        if (consecutiveFailures >= FAILURE_THRESHOLD && activeIndex < CHAIN.length - 1) {
-            const from = CHAIN[activeIndex].label;
-            const to = CHAIN[activeIndex + 1].label;
-            logEvent(`Alert source unavailable: ${from} - automatically switching to ${to}`, 'WARNING');
-            activate(activeIndex + 1, `failover from ${from}`);
+        if (consecutiveFailures >= FAILURE_THRESHOLD && activeIndex < CHAIN.length - 1 && !probing) {
+            probing = true;
+            const index = activeIndex;
+            alternativeReachable().then((reachable) => {
+                probing = false;
+                if (index !== activeIndex) return;
+                if (!reachable) {
+                    consecutiveFailures = 0;
+                    stayLog.fail(`No alternative source is reachable: staying on ${CHAIN[activeIndex].label}`);
+                    return;
+                }
+                const from = CHAIN[activeIndex].label;
+                const to = CHAIN[activeIndex + 1].label;
+                logEvent(`Alert source unavailable: ${from} - automatically switching to ${to}`, 'WARNING');
+                activate(activeIndex + 1, `failover from ${from}`);
+            });
         }
     }
 
@@ -99,7 +128,7 @@ function startAlertSourceManager(clientKey, onAlertsUpdated) {
 
     setInterval(() => {
         if (activeIndex === 0) return;
-        logEvent(`Retrying primary alert source: ${CHAIN[0].label}`, 'NETWORK');
+        retryLog.fail(`Retrying primary alert source: ${CHAIN[0].label}`);
         activate(0, 'retrying primary source');
     }, RECOVERY_RETRY_MS);
 }
