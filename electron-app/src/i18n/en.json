@@ -137,6 +137,7 @@
     "trayMassAttackTooltip": "Mass attack, active alerts nationwide",
     "trayDegradedTooltip": "Partial data: some sources are unavailable",
     "connectionOfflineBanner": "No internet connection. Showing the last known data.",
+    "connectionLinkBanner": "No connection to the data server. Showing the last known data.",
     "connectionNoDataBanner": "No alert data: all sources are unavailable. Showing the last known data.",
     "trayNoDataTooltip": "No alert data",
     "noDataTitle": "No alert data",

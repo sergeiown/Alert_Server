@@ -13,7 +13,9 @@ function ensureStyles() {
 }
 
 function bannerText(state, strings) {
-    return state.reason === 'offline' ? strings.connectionOfflineBanner : strings.connectionNoDataBanner;
+    if (state.reason === 'offline') return strings.connectionOfflineBanner;
+    if (state.reason === 'link') return strings.connectionLinkBanner;
+    return strings.connectionNoDataBanner;
 }
 
 export function initConnectionBanner({ api, strings, mode = 'fixed', mount = null }) {

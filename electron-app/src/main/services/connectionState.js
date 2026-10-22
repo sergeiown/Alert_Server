@@ -28,5 +28,6 @@ function start() {
 module.exports = {
     start,
     setNoData: shared.setNoData,
+    setLinkDown: shared.setLinkDown,
     getConnectionState: shared.get,
 };

@@ -6,6 +6,7 @@ const { startPolling: startMergedPolling } = require('./mergedAlertsSource');
 const { startPolling: startAlertsInUaPolling } = require('./alertPoller');
 const { startPolling: startNeptunPolling } = require('./neptunAlertsSource');
 const { setActiveAlertSource, setAlertSourcesStatus } = require('./alertState');
+const connectionState = require('./connectionState');
 
 const FAILURE_THRESHOLD = 3;
 
@@ -36,6 +37,7 @@ function startAlertSourceManager(clientKey, onAlertsUpdated) {
     let activeIndex = 0;
     let consecutiveFailures = 0;
     let activeHandle = null;
+    let linkDownSince = null;
 
     function stopActive() {
         if (activeHandle) {
@@ -70,6 +72,15 @@ function startAlertSourceManager(clientKey, onAlertsUpdated) {
     }
 
     function onHealthChange(healthy) {
+        connectionState.setLinkDown(!healthy);
+        if (!healthy && linkDownSince === null) {
+            linkDownSince = Date.now();
+            logEvent(`Data link lost: ${CHAIN[activeIndex].label} is unreachable`, 'WARNING');
+        } else if (healthy && linkDownSince !== null) {
+            const seconds = Math.round((Date.now() - linkDownSince) / 1000);
+            linkDownSince = null;
+            logEvent(`Data link restored after ${seconds} s: ${CHAIN[activeIndex].label}`, 'NETWORK');
+        }
         if (healthy) {
             consecutiveFailures = 0;
             return;

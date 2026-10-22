@@ -4,10 +4,11 @@
 function createConnectionState({ now = Date.now, onChange = () => {} } = {}) {
     let online = true;
     let noData = false;
+    let linkDown = false;
     let current = { offline: false, reason: null, since: null };
 
     function recompute() {
-        const reason = !online ? 'offline' : noData ? 'nodata' : null;
+        const reason = !online ? 'offline' : linkDown ? 'link' : noData ? 'nodata' : null;
         if (reason === current.reason) return;
         current = reason ? { offline: true, reason, since: now() } : { offline: false, reason: null, since: null };
         onChange(current);
@@ -16,6 +17,10 @@ function createConnectionState({ now = Date.now, onChange = () => {} } = {}) {
     return {
         setOnline(value) {
             online = Boolean(value);
+            recompute();
+        },
+        setLinkDown(value) {
+            linkDown = Boolean(value);
             recompute();
         },
         setNoData(value) {

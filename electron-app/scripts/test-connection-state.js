@@ -85,3 +85,17 @@ check('ninety seconds without data drive nodata through the availability service
     availability.noteGoodUpdate();
     assert.strictEqual(state.get().offline, false);
 });
+
+check('a lost data link shows the banner at once and offline outranks it', () => {
+    const events = [];
+    const state = createConnectionState({ onChange: (value) => events.push(value.reason) });
+    state.setLinkDown(true);
+    assert.strictEqual(state.get().reason, 'link');
+    state.setOnline(false);
+    assert.strictEqual(state.get().reason, 'offline');
+    state.setOnline(true);
+    assert.strictEqual(state.get().reason, 'link');
+    state.setLinkDown(false);
+    assert.strictEqual(state.get().offline, false);
+    assert.deepStrictEqual(events, ['link', 'offline', 'link', null]);
+});
