@@ -156,6 +156,8 @@ async function fetchAlerts(clientKey) {
     return fetchWithTimeout(ALERTS_URL);
 }
 
+let lastPollSucceeded = true;
+
 async function pollOnce(clientKey, onHealthChange) {
     if (!stateByName) buildLookups();
 
@@ -163,6 +165,7 @@ async function pollOnce(clientKey, onHealthChange) {
         const response = await fetchAlerts(clientKey);
         if (!response.ok) {
             logEvent(`Neptun alerts fetch failed: ${response.status}`, 'NETWORK');
+            lastPollSucceeded = false;
             if (onHealthChange) onHealthChange(false);
             return getLatestAlertData();
         }
@@ -171,10 +174,12 @@ async function pollOnce(clientKey, onHealthChange) {
         const alerts = [...transformOblasts(raw.oblasts), ...transformRaions(raw.raions)];
         const data = { alerts };
         setLatestAlertData(data);
+        lastPollSucceeded = true;
         if (onHealthChange) onHealthChange(true);
         return data;
     } catch (err) {
         logEvent(`Neptun alerts request error: ${describeError(err)}`, 'NETWORK');
+        lastPollSucceeded = false;
         if (onHealthChange) onHealthChange(false);
         return getLatestAlertData();
     }
@@ -185,7 +190,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
 
     const tick = async () => {
         const data = await pollOnce(clientKey, onHealthChange);
-        if (data) onUpdate(data);
+        if (data) onUpdate(data, { stale: !lastPollSucceeded });
     };
 
     tick();

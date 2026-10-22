@@ -124,6 +124,7 @@ function startProxyStream({ label, wsPath, pollUrl, clientKey, onUpdate, onHealt
                 const data = JSON.parse(event.data);
                 if (data && data.type === 'heartbeat') {
                     if (hooks.onHeartbeat) hooks.onHeartbeat(data);
+                    if (hooks.acceptHeartbeat && !hooks.acceptHeartbeat(data)) return;
                     const cached = getLatestAlertData();
                     if (cached) onUpdate(cached, { heartbeat: true });
                     return;

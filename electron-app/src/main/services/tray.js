@@ -1,6 +1,7 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
+const fs = require('fs');
 const { Tray, Menu, app, Notification, nativeImage, nativeTheme, screen } = require('electron');
 const { getResourcePath } = require('./appPaths');
 const { openSettingsWindow } = require('../windows/settingsWindow');
@@ -30,6 +31,7 @@ let alertLoopActive = false;
 let tooltipOverride = null;
 let massAttackActive = false;
 let alertLevelKey = null;
+let noDataActive = false;
 const menuIcons = new Map();
 const iconCache = new Map();
 
@@ -129,8 +131,31 @@ function stopAlertLoop() {
     stopAnimationTimer();
 }
 
+function noDataIconFile() {
+    const fileName = `tray_nodata_${currentTheme()}.png`;
+    return fs.existsSync(getResourcePath('icons', fileName)) ? fileName : staticIconFile(null);
+}
+
+function setNoDataState(active) {
+    noDataActive = active;
+    if (!trayInstance) return;
+    stopAlertLoop();
+    if (active) {
+        trayInstance.setImage(loadIcon(noDataIconFile()));
+        const { language } = settingsStore.getSettings();
+        const text = t('trayNoDataTooltip', language);
+        trayInstance.setToolTip(text);
+        return;
+    }
+    trayInstance.setImage(loadIcon(staticIconFile(null)));
+}
+
 function refreshIconForCurrentState() {
     if (!trayInstance) return;
+    if (noDataActive) {
+        trayInstance.setImage(loadIcon(noDataIconFile()));
+        return;
+    }
     if (alertLoopActive) {
         startAlertLoop(alertLevelKey || 'red');
     } else {
@@ -192,6 +217,7 @@ function clearTemporaryTooltip() {
 
 function updateTrayState(activeCount, totalCount, level) {
     if (!trayInstance) return;
+    if (noDataActive) return;
 
     const wasIdle = lastActiveCount === 0;
     lastActiveCount = activeCount;
@@ -232,4 +258,4 @@ function updateTrayState(activeCount, totalCount, level) {
     trayInstance.setToolTip(lines.join('\n'));
 }
 
-module.exports = { createTray, updateTrayState, setTemporaryTooltip, clearTemporaryTooltip, buildMenu };
+module.exports = { createTray, updateTrayState, setNoDataState, setTemporaryTooltip, clearTemporaryTooltip, buildMenu };

@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
-const { app, nativeTheme, Notification } = require('electron');
+const { app, nativeTheme, Notification, powerMonitor } = require('electron');
 const { registerSettingsIpc } = require('./ipc/settingsIpc');
 const { registerRegionsIpc } = require('./ipc/regionsIpc');
 const { registerSystemIpc } = require('./ipc/systemIpc');
@@ -24,7 +24,9 @@ const { worstLevelAmong } = require('./services/alertLevels');
 const { setLatestMatchedAlerts, setLatestTotalAlertCount, setLatestAlertedRegions } = require('./services/alertState');
 const { removeLegacyLocalData } = require('./services/legacyDataCleanup');
 const { computeAlertedRegions, computeKyivRaionStatuses } = require('./services/regionAlertStatus');
-const { createTray, updateTrayState } = require('./services/tray');
+const { createTray, updateTrayState, setNoDataState } = require('./services/tray');
+const availability = require('./services/dataAvailability');
+const { notifyDataAvailability } = require('./services/notifier');
 const { startForecastWatcher } = require('./services/forecastWatcher');
 const { startOccupiedTerritoryRefresh } = require('./services/occupiedTerritoryStore');
 const { startWeaponStatsRefresh } = require('./services/weaponStatsStore');
@@ -93,7 +95,17 @@ app.whenReady().then(() => {
     let lastAlertsLogLine = '';
     let lastAlertsLogAt = 0;
 
+    availability.onChange((state) => {
+        const lost = state === 'nodata';
+        logEvent(lost ? 'No alert data for 3 minutes: all sources unavailable' : 'Alert data restored', lost ? 'WARNING' : 'NETWORK');
+        setNoDataState(lost);
+        notifyDataAvailability(state);
+    });
+    availability.start();
+    powerMonitor.on('resume', () => availability.rearm());
+
     function onAlertsUpdated(sourceLabel, alertData, meta = {}) {
+        if (!meta.stale) availability.noteGoodUpdate();
         const matched = filterAlerts(alertData);
         discoverUnknownLocations(alertData.alerts);
         if (!meta.heartbeat) {

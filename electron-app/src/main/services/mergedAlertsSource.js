@@ -55,6 +55,7 @@ function startPolling(clientKey, onUpdate, onHealthChange) {
         hooks: {
             onData: noteStatus,
             accept: hasUsableData,
+            acceptHeartbeat: hasUsableData,
             onHeartbeat: noteStatus,
         },
     });
