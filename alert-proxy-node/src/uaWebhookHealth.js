@@ -19,7 +19,7 @@ function chronicKeys(history, now) {
 
 function classifyWebhook({ configured, misses, events, history, now }) {
     const silent = chronicKeys(history, now);
-    const counted = misses.filter((miss) => !silent.has(miss.key));
+    const counted = misses.filter((miss) => miss.kind !== 'level' && !silent.has(miss.key));
     const distinct = new Set(counted.map((miss) => miss.key)).size;
     const total = events + distinct;
     const ratio = total ? distinct / total : 0;

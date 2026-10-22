@@ -67,6 +67,12 @@ check('old misses leave the chronic history', () => {
     assert.strictEqual(history.size, 0);
 });
 
+check('level changes the webhook never reports do not degrade the state', () => {
+    const misses = ['1:AIR', '2:AIR', '3:AIR', '4:AIR'].map((key) => ({ key, at: NOW - 60_000, kind: 'level' }));
+    const result = classifyWebhook({ configured: true, misses, events: 5, history: new Map(), now: NOW });
+    assert.strictEqual(result.state, 'healthy');
+});
+
 check('an unconfigured webhook reports unconfigured', () => {
     const result = classifyWebhook({ configured: false, misses: [], events: 0, history: new Map(), now: NOW });
     assert.strictEqual(result.state, 'unconfigured');
