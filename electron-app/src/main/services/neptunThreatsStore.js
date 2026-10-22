@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const { logEvent } = require('./logger');
+const { createOutageLog } = require('./outageLog');
 const { getLiveMapWindow } = require('../windows/liveMapWindow');
 const { loadLocalConfig } = require('./localConfig');
 const { PROXY_URL, PROXY_WS_URL, getClientVersion, proxyFetch, fetchWithTimeout, describeError } = require('./proxyConfig');
@@ -19,6 +20,7 @@ const LOG_UNCHANGED_INTERVAL_MS = 10 * 60 * 1000;
 
 let latestThreats = [];
 let threatsById = new Map();
+const outage = createOutageLog({ label: 'Neptun threats', log: (message) => logEvent(message, 'NETWORK') });
 let socket = null;
 let reconnectTimer = null;
 let heartbeatTimer = null;
@@ -115,7 +117,7 @@ async function fetchSnapshot() {
             ? await proxyFetch(`${PROXY_URL}/neptun/threats`, { headers: { 'X-Client-Key': getClientKey(), 'X-Client-Version': getClientVersion() } })
             : await fetchWithTimeout(THREATS_URL);
         if (!response.ok) {
-            logEvent(`Neptun threats fallback fetch failed: ${response.status}`, 'NETWORK');
+            outage.fail(`Neptun threats fallback fetch failed: ${response.status}`);
             return;
         }
         const data = await response.json();
@@ -123,14 +125,14 @@ async function fetchSnapshot() {
         maybeLogUpdate();
         publishThreats(Array.from(threatsById.values()));
     } catch (err) {
-        logEvent(`Neptun threats fallback request error: ${describeError(err)}`, 'NETWORK');
+        outage.fail(`Neptun threats fallback request error: ${describeError(err)}`);
     }
 }
 
 function startFallbackPolling() {
     if (usingFallback) return;
     usingFallback = true;
-    logEvent('Neptun threats: unavailable - falling back to polling', 'NETWORK');
+    outage.fail('Neptun threats: unavailable - falling back to polling');
     fetchSnapshot();
     fallbackTimer = setInterval(fetchSnapshot, SNAPSHOT_REFRESH_MS);
 }
@@ -146,7 +148,7 @@ function stopFallbackPolling() {
 function resetHeartbeatWatch() {
     if (heartbeatTimer) clearTimeout(heartbeatTimer);
     heartbeatTimer = setTimeout(() => {
-        logEvent('Neptun threats: no messages received - reconnecting', 'NETWORK');
+        outage.fail('Neptun threats: no messages received - reconnecting');
         connect();
     }, HEARTBEAT_TIMEOUT_MS);
 }
@@ -172,7 +174,7 @@ function connect() {
                 : STREAM_URL
         );
     } catch (err) {
-        logEvent(`Neptun threats connection failed: ${describeError(err)}`, 'NETWORK');
+        outage.fail(`Neptun threats connection failed: ${describeError(err)}`);
         if (viaProxy) {
             useProxy = false;
             directSince = Date.now();
@@ -183,7 +185,7 @@ function connect() {
     socket = ws;
 
     ws.addEventListener('open', () => {
-        logEvent('Neptun threats connected', 'NETWORK');
+        outage.recover('Neptun threats connected');
         resetHeartbeatWatch();
     });
 
@@ -221,11 +223,11 @@ function connect() {
     ws.addEventListener('close', (event) => {
         if (heartbeatTimer) clearTimeout(heartbeatTimer);
         if (socket !== ws) return;
-        logEvent(`Neptun threats connection closed (code ${event.code}${event.reason ? `: ${event.reason}` : ''}) - reconnecting`, 'NETWORK');
+        outage.fail(`Neptun threats connection closed (code ${event.code}${event.reason ? `: ${event.reason}` : ''}) - reconnecting`);
         if (viaProxy && !gotMessage) {
             useProxy = false;
             directSince = Date.now();
-            logEvent('Neptun threats: stream unavailable - switching connection', 'NETWORK');
+            outage.fail('Neptun threats: stream unavailable - switching connection');
         }
         startFallbackPolling();
         scheduleReconnect();

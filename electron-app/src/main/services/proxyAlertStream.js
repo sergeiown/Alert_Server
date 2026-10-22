@@ -4,6 +4,7 @@
 const fs = require('fs');
 const { getUserDataFile } = require('./appPaths');
 const { logEvent } = require('./logger');
+const { createOutageLog } = require('./outageLog');
 const { setLatestAlertData, getLatestAlertData } = require('./activeAlertData');
 const { PROXY_WS_URL, getClientVersion, proxyFetch, describeError } = require('./proxyConfig');
 
@@ -19,6 +20,7 @@ function persistData(data) {
 
 function startProxyStream({ label, wsPath, pollUrl, clientKey, onUpdate, onHealthChange, hooks = {} }) {
     const wsUrl = `${PROXY_WS_URL}${wsPath}`;
+    const outage = createOutageLog({ label, log: (message) => logEvent(message, 'NETWORK') });
     let socket = null;
     let reconnectTimer = null;
     let heartbeatTimer = null;
@@ -30,7 +32,7 @@ function startProxyStream({ label, wsPath, pollUrl, clientKey, onUpdate, onHealt
     function resetHeartbeatWatch() {
         if (heartbeatTimer) clearTimeout(heartbeatTimer);
         heartbeatTimer = setTimeout(() => {
-            logEvent(`${label}: no messages received - reconnecting`, 'NETWORK');
+            outage.fail(`${label}: no messages received - reconnecting`);
             connect();
         }, HEARTBEAT_TIMEOUT_MS);
     }
@@ -56,7 +58,7 @@ function startProxyStream({ label, wsPath, pollUrl, clientKey, onUpdate, onHealt
             if (hooks.onPollResponse) hooks.onPollResponse(response);
             if (onHealthChange) onHealthChange(true);
         } catch (err) {
-            logEvent(`${label} fallback request error: ${describeError(err)}`, 'NETWORK');
+            outage.fail(`${label} fallback request error: ${describeError(err)}`);
             if (onHealthChange) onHealthChange(false);
         }
     }
@@ -64,7 +66,7 @@ function startProxyStream({ label, wsPath, pollUrl, clientKey, onUpdate, onHealt
     function startFallbackPolling() {
         if (usingFallback || stopped) return;
         usingFallback = true;
-        logEvent(`${label}: unavailable - falling back to polling`, 'NETWORK');
+        outage.fail(`${label}: unavailable - falling back to polling`);
         fallbackPollOnce();
         fallbackTimer = setInterval(fallbackPollOnce, FALLBACK_POLL_INTERVAL_MS);
     }
@@ -101,7 +103,7 @@ function startProxyStream({ label, wsPath, pollUrl, clientKey, onUpdate, onHealt
         try {
             ws = new WebSocket(`${wsUrl}?key=${encodeURIComponent(clientKey)}&v=${encodeURIComponent(getClientVersion())}`);
         } catch (err) {
-            logEvent(`${label} connection failed: ${describeError(err)}`, 'NETWORK');
+            outage.fail(`${label} connection failed: ${describeError(err)}`);
             startFallbackPolling();
             scheduleReconnect();
             return;
@@ -109,7 +111,7 @@ function startProxyStream({ label, wsPath, pollUrl, clientKey, onUpdate, onHealt
         socket = ws;
 
         ws.addEventListener('open', () => {
-            logEvent(`${label} connected`, 'NETWORK');
+            outage.recover(`${label} connected`);
             reconnectAttempts = 0;
             resetHeartbeatWatch();
         });
@@ -138,7 +140,7 @@ function startProxyStream({ label, wsPath, pollUrl, clientKey, onUpdate, onHealt
         ws.addEventListener('close', (event) => {
             if (heartbeatTimer) clearTimeout(heartbeatTimer);
             if (stopped || socket !== ws) return;
-            logEvent(`${label} connection closed (code ${event.code}${event.reason ? `: ${event.reason}` : ''}) - reconnecting`, 'NETWORK');
+            outage.fail(`${label} connection closed (code ${event.code}${event.reason ? `: ${event.reason}` : ''}) - reconnecting`);
             startFallbackPolling();
             scheduleReconnect();
         });
