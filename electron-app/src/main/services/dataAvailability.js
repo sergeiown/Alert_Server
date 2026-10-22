@@ -62,6 +62,7 @@ const shared = createAvailability();
 
 module.exports = {
     createAvailability,
+    NO_DATA_AFTER_MS,
     noteGoodUpdate: shared.noteGoodUpdate,
     rearm: shared.rearm,
     start: shared.start,

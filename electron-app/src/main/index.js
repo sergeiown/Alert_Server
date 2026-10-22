@@ -98,7 +98,7 @@ app.whenReady().then(() => {
 
     availability.onChange((state) => {
         const lost = state === 'nodata';
-        logEvent(lost ? 'No alert data for 3 minutes: all sources unavailable' : 'Alert data restored', lost ? 'WARNING' : 'NETWORK');
+        logEvent(lost ? `No alert data for ${Math.round(availability.NO_DATA_AFTER_MS / 1000)} seconds: all sources unavailable` : 'Alert data restored', lost ? 'WARNING' : 'NETWORK');
         setNoDataState(lost);
         connectionState.setNoData(lost);
         notifyDataAvailability(state);

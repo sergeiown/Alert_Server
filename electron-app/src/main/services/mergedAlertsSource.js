@@ -21,7 +21,7 @@ function describeStatus(status) {
         const source = status.sources && status.sources[key];
         return `${label} ${source ? source.state : 'unknown'}`;
     });
-    return parts.join(', ');
+    return parts.join('; ');
 }
 
 function noteStatus(message) {
