@@ -5,6 +5,9 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('alertServerHub', {
     getStrings: () => ipcRenderer.invoke('i18n:getStrings'),
+    getConnectionState: () => ipcRenderer.invoke('connection:get'),
+    onConnectionChange: (callback) => ipcRenderer.on('connection:changed', (event, state) => callback(state)),
+    reportOnline: (online) => ipcRenderer.send('connection:report', online),
     getSettings: () => ipcRenderer.invoke('settings:get'),
     setSetting: (key, value) => ipcRenderer.invoke('settings:set', key, value),
     getIcon: () => ipcRenderer.invoke('app:getIcon'),

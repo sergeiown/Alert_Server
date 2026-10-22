@@ -1,8 +1,8 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
-const NO_DATA_AFTER_MS = 3 * 60 * 1000;
-const CHECK_INTERVAL_MS = 30 * 1000;
+const NO_DATA_AFTER_MS = 90 * 1000;
+const CHECK_INTERVAL_MS = 10 * 1000;
 
 function createAvailability({ now = Date.now, thresholdMs = NO_DATA_AFTER_MS, checkMs = CHECK_INTERVAL_MS, timers = { setInterval, clearInterval } } = {}) {
     let lastGoodAt = now();

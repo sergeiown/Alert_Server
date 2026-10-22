@@ -5,6 +5,9 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('alertServerTrends', {
     getStrings: () => ipcRenderer.invoke('i18n:getStrings'),
+    getConnectionState: () => ipcRenderer.invoke('connection:get'),
+    onConnectionChange: (callback) => ipcRenderer.on('connection:changed', (event, state) => callback(state)),
+    reportOnline: (online) => ipcRenderer.send('connection:report', online),
     getSettings: () => ipcRenderer.invoke('settings:get'),
     getWeaponStats: () => ipcRenderer.invoke('trends:getWeaponStats'),
     getThreatTrends: (days) => ipcRenderer.invoke('trends:getThreatTrends', days),

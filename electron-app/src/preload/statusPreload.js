@@ -7,5 +7,8 @@ contextBridge.exposeInMainWorld('alertServerStatus', {
     getOverview: () => ipcRenderer.invoke('status:getOverview'),
     openLiveMap: () => ipcRenderer.invoke('hub:navigate', 'liveMap'),
     getStrings: () => ipcRenderer.invoke('i18n:getStrings'),
+    getConnectionState: () => ipcRenderer.invoke('connection:get'),
+    onConnectionChange: (callback) => ipcRenderer.on('connection:changed', (event, state) => callback(state)),
+    reportOnline: (online) => ipcRenderer.send('connection:report', online),
     onRefresh: (callback) => ipcRenderer.on('refresh', callback),
 });

@@ -136,6 +136,8 @@
     "updateSilentReady": "Update {version} has been downloaded. It will be installed the next time the app restarts.",
     "trayMassAttackTooltip": "Mass attack, active alerts nationwide",
     "trayDegradedTooltip": "Partial data: some sources are unavailable",
+    "connectionOfflineBanner": "No internet connection. Showing the last known data.",
+    "connectionNoDataBanner": "No alert data: all sources are unavailable. Showing the last known data.",
     "trayNoDataTooltip": "No alert data",
     "noDataTitle": "No alert data",
     "noDataBody": "All sources are unavailable. Check your internet connection. There will be no all-clear notices until data returns.",

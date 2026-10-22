@@ -14,4 +14,7 @@ contextBridge.exposeInMainWorld('alertServer', {
     getLoginItem: () => ipcRenderer.invoke('system:getLoginItem'),
     setLoginItem: (openAtLogin) => ipcRenderer.invoke('system:setLoginItem', openAtLogin),
     getStrings: () => ipcRenderer.invoke('i18n:getStrings'),
+    getConnectionState: () => ipcRenderer.invoke('connection:get'),
+    onConnectionChange: (callback) => ipcRenderer.on('connection:changed', (event, state) => callback(state)),
+    reportOnline: (online) => ipcRenderer.send('connection:report', online),
 });

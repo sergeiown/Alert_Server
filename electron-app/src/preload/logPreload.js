@@ -10,4 +10,7 @@ contextBridge.exposeInMainWorld('alertServerLog', {
     isExcelAvailable: () => ipcRenderer.invoke('log:isExcelAvailable'),
     openInExcel: () => ipcRenderer.invoke('log:openInExcel'),
     getStrings: () => ipcRenderer.invoke('i18n:getStrings'),
+    getConnectionState: () => ipcRenderer.invoke('connection:get'),
+    onConnectionChange: (callback) => ipcRenderer.on('connection:changed', (event, state) => callback(state)),
+    reportOnline: (online) => ipcRenderer.send('connection:report', online),
 });

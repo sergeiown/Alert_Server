@@ -26,6 +26,7 @@ const { removeLegacyLocalData } = require('./services/legacyDataCleanup');
 const { computeAlertedRegions, computeKyivRaionStatuses } = require('./services/regionAlertStatus');
 const { createTray, updateTrayState, setNoDataState } = require('./services/tray');
 const availability = require('./services/dataAvailability');
+const connectionState = require('./services/connectionState');
 const { notifyDataAvailability } = require('./services/notifier');
 const { startForecastWatcher } = require('./services/forecastWatcher');
 const { startOccupiedTerritoryRefresh } = require('./services/occupiedTerritoryStore');
@@ -99,9 +100,11 @@ app.whenReady().then(() => {
         const lost = state === 'nodata';
         logEvent(lost ? 'No alert data for 3 minutes: all sources unavailable' : 'Alert data restored', lost ? 'WARNING' : 'NETWORK');
         setNoDataState(lost);
+        connectionState.setNoData(lost);
         notifyDataAvailability(state);
     });
     availability.start();
+    connectionState.start();
     powerMonitor.on('resume', () => availability.rearm());
 
     function onAlertsUpdated(sourceLabel, alertData, meta = {}) {

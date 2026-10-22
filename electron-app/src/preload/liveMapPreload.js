@@ -5,6 +5,9 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('alertServerLiveMap', {
     getStrings: () => ipcRenderer.invoke('i18n:getStrings'),
+    getConnectionState: () => ipcRenderer.invoke('connection:get'),
+    onConnectionChange: (callback) => ipcRenderer.on('connection:changed', (event, state) => callback(state)),
+    reportOnline: (online) => ipcRenderer.send('connection:report', online),
     getSettings: () => ipcRenderer.invoke('settings:get'),
     getBaseMapUrl: () => ipcRenderer.invoke('liveMap:getBaseMapUrl'),
     getActiveAlertCount: () => ipcRenderer.invoke('liveMap:getActiveAlertCount'),

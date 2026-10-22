@@ -1,0 +1,58 @@
+.connection-banner {
+    --connection-banner-bg: #fff1d6;
+    --connection-banner-fg: #6b4a00;
+    --connection-banner-border: #e0b445;
+    box-sizing: border-box;
+    padding: 7px 16px;
+    font: 13px/1.35 'IBM Plex Sans', 'Segoe UI', Tahoma, sans-serif;
+    text-align: center;
+    color: var(--connection-banner-fg);
+    background: var(--connection-banner-bg);
+    border-bottom: 1px solid var(--connection-banner-border);
+    user-select: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    .connection-banner {
+        --connection-banner-bg: #3d3520;
+        --connection-banner-fg: #f0d78a;
+        --connection-banner-border: #8c7430;
+    }
+}
+
+.connection-banner[hidden] {
+    display: none;
+}
+
+.connection-banner--fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2147483000;
+}
+
+.connection-banner--flow {
+    margin: 0 0 14px;
+    border: 1px solid var(--connection-banner-border);
+    border-radius: 10px;
+}
+
+.connection-banner--overlay {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: min(620px, calc(100vw - 620px));
+    border: 1px solid var(--connection-banner-border);
+    border-radius: 10px;
+    z-index: 2147483000;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+html.connection-offline body {
+    margin-top: var(--connection-banner-height, 0px) !important;
+    height: calc(100vh - var(--connection-banner-height, 0px)) !important;
+    min-height: 0 !important;
+}

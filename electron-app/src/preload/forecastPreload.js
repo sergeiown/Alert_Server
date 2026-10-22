@@ -7,6 +7,9 @@ contextBridge.exposeInMainWorld('alertServerForecast', {
     getRegions: () => ipcRenderer.invoke('forecast:getRegions'),
     getRegionForecast: (uid) => ipcRenderer.invoke('forecast:getRegionForecast', uid),
     getStrings: () => ipcRenderer.invoke('i18n:getStrings'),
+    getConnectionState: () => ipcRenderer.invoke('connection:get'),
+    onConnectionChange: (callback) => ipcRenderer.on('connection:changed', (event, state) => callback(state)),
+    reportOnline: (online) => ipcRenderer.send('connection:report', online),
     copyToClipboard: (text) => ipcRenderer.invoke('system:copyToClipboard', text),
     onRegionsChanged: (callback) => ipcRenderer.on('regions:changed', callback),
 });
