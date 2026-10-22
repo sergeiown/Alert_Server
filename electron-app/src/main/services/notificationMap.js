@@ -37,9 +37,10 @@ const REGION_TO_ISO = {
 };
 
 const OUTPUT_WIDTH = 480;
-const MAP_HEIGHT = 238;
-const TOP_PAD = 24;
-const OUTPUT_HEIGHT = MAP_HEIGHT + TOP_PAD;
+const OUTPUT_HEIGHT = 238;
+const TOP_PAD = 20;
+const BOTTOM_PAD = 4;
+const MAP_HEIGHT = OUTPUT_HEIGHT - TOP_PAD - BOTTOM_PAD;
 const FILE_PREFIX = 'notification-map-';
 const MAX_FILE_AGE_MS = 30 * 60 * 1000;
 const MAX_ATTEMPTS = 3;
@@ -203,7 +204,7 @@ function buildHtml(stateIsoCodes, color) {
     return `<!doctype html><html><head><style>
         html,body{margin:0;padding:0;width:${OUTPUT_WIDTH}px;height:${OUTPUT_HEIGHT}px;background:#000;
             display:flex;align-items:center;justify-content:center;overflow:hidden;}
-        body{padding-top:${TOP_PAD}px;box-sizing:border-box;}
+        body{padding-top:${TOP_PAD}px;padding-bottom:${BOTTOM_PAD}px;box-sizing:border-box;}
         svg{width:${renderedWidth}px;height:${renderedHeight}px;display:block;}
         path{fill:${regionFill};stroke:${regionStroke};stroke-width:0.5;transition:none;}
         ${highlightCss}
