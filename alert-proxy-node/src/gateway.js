@@ -46,6 +46,7 @@ const UKRAINEALARM_SUSPECT_MISSES = 1;
 const UKRAINEALARM_BROKEN_MISSES = 3;
 const UKRAINEALARM_BROKEN_PERSISTENT_SNAPSHOTS = 2;
 const uaWebhookHealth = require('./uaWebhookHealth');
+const uaWebhookReregister = require('./uaWebhookReregister');
 const UKRAINEALARM_MISS_CONFIRM_MS = Number(process.env.UKRAINEALARM_MISS_CONFIRM_MS) || 90 * 1000;
 const UKRAINEALARM_WEBHOOK_LAG_ALLOWANCE_MS = 15 * 1000;
 const UKRAINEALARM_ROUTE_MAX_WAIT_MS = 5 * 1000;
@@ -99,6 +100,8 @@ const state = {
     ukraineAlarmKeyChangedAt: new Map(),
     ukraineAlarmMisses: [],
     ukraineAlarmUnconfirmed: new Map(),
+    ukraineAlarmBrokenSince: null,
+    ukraineAlarmReregistering: false,
     ukraineAlarmEventTimes: [],
     ukraineAlarmMissHistory: new Map(),
     ukraineAlarmLastEventAt: 0,
@@ -320,15 +323,20 @@ function ukraineAlarmProjectedWaitMs() {
     return Math.max(0, ukraineAlarmNextSlotAt - Date.now()) + ukraineAlarmWaiters.length * UKRAINEALARM_REQUEST_GAP_MS;
 }
 
-async function ukraineAlarmExecute(path) {
+async function ukraineAlarmExecute(path, method, body) {
     const startedAt = Date.now();
     ukraineAlarmNextSlotAt = startedAt + UKRAINEALARM_REQUEST_GAP_MS;
     state.ukraineAlarmFetchTimestamps.push(startedAt);
 
+    const headers = { Authorization: config.UKRAINEALARM_TOKEN };
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
+
     let response;
     try {
         response = await fetch(`${UKRAINEALARM_BASE_URL}${path}`, {
-            headers: { Authorization: config.UKRAINEALARM_TOKEN },
+            method: method || 'GET',
+            headers,
+            body,
             signal: AbortSignal.timeout(UKRAINEALARM_REQUEST_TIMEOUT_MS),
         });
     } catch (err) {
@@ -352,7 +360,7 @@ async function ukraineAlarmPump() {
             if (waitMs > 0) await lib.delay(waitMs);
             const waiter = ukraineAlarmWaiters.shift();
             try {
-                waiter.resolve(await ukraineAlarmExecute(waiter.path));
+                waiter.resolve(await ukraineAlarmExecute(waiter.path, waiter.method, waiter.body));
             } catch (err) {
                 waiter.resolve(new Response(err && err.message ? err.message : 'UkraineAlarm request failed', { status: 502 }));
             }
@@ -362,14 +370,14 @@ async function ukraineAlarmPump() {
     }
 }
 
-function ukraineAlarmFetch(path, { maxWaitMs = Infinity, priority = false } = {}) {
+function ukraineAlarmFetch(path, { maxWaitMs = Infinity, priority = false, method, body } = {}) {
     const projectedWaitMs = ukraineAlarmProjectedWaitMs();
     if (projectedWaitMs > maxWaitMs) {
         return Promise.resolve(new Response('Rate limited locally', { status: 429, headers: { 'Retry-After': String(Math.ceil(projectedWaitMs / 1000)) } }));
     }
 
     return new Promise((resolve) => {
-        const waiter = { path, resolve, priority };
+        const waiter = { path, resolve, priority, method, body };
         if (priority) {
             const firstPlain = ukraineAlarmWaiters.findIndex((entry) => !entry.priority);
             if (firstPlain === -1) ukraineAlarmWaiters.push(waiter);
@@ -608,9 +616,50 @@ function getUkraineAlarmWebhookHealth() {
         eventsLast30Min: events,
         silentKeys,
         recentMisses: state.ukraineAlarmMisses.slice(-10),
+        reRegister: store.get(UKRAINEALARM_REREGISTER_KEY) || null,
         lastEventAgeMs: state.ukraineAlarmLastEventAt ? now - state.ukraineAlarmLastEventAt : null,
         snapshotGapMs: ukraineAlarmSnapshotGapMs(),
     };
+}
+
+const UKRAINEALARM_REREGISTER_KEY = 'ukraineAlarmWebhookReRegister';
+
+async function sendUkraineAlarmWebhookRequest(method, url) {
+    const response = await ukraineAlarmFetch('/webhook', { method, body: JSON.stringify({ webHookUrl: url }), priority: true });
+    return { ok: response.ok, status: response.status };
+}
+
+async function maybeReregisterUkraineAlarmWebhook() {
+    if (!config.UKRAINEALARM_TOKEN || !config.UKRAINEALARM_WEBHOOK_PATH || !config.UKRAINEALARM_WEBHOOK_PUBLIC_KEY) return;
+
+    const now = Date.now();
+    const healthState = classifyUkraineAlarmWebhook(now).state;
+    state.ukraineAlarmBrokenSince = uaWebhookReregister.trackBroken(state.ukraineAlarmBrokenSince, healthState, now);
+
+    if (state.ukraineAlarmReregistering) return;
+    const saved = store.get(UKRAINEALARM_REREGISTER_KEY) || null;
+    const due = uaWebhookReregister.shouldReregister({
+        state: healthState,
+        brokenSince: state.ukraineAlarmBrokenSince,
+        now,
+        lastAttemptAt: saved ? saved.lastAt : null,
+        lastOk: saved ? saved.lastOk : false,
+    });
+    if (!due) return;
+
+    const url = uaWebhookReregister.buildWebhookUrl(config.PUBLIC_ORIGIN, config.UKRAINEALARM_WEBHOOK_PATH);
+    state.ukraineAlarmReregistering = true;
+    store.put(UKRAINEALARM_REREGISTER_KEY, { lastAt: now, lastStatus: null, lastOk: false, method: null });
+    try {
+        const result = await uaWebhookReregister.run({ send: sendUkraineAlarmWebhookRequest, url });
+        store.put(UKRAINEALARM_REREGISTER_KEY, { lastAt: now, lastStatus: result.status, lastOk: result.ok, method: result.method });
+        console.warn(`[ukrainealarm-webhook] re-registration via ${result.method || 'none'} finished with status ${result.status}, ok=${result.ok}`);
+    } catch (err) {
+        store.put(UKRAINEALARM_REREGISTER_KEY, { lastAt: now, lastStatus: 0, lastOk: false, method: null });
+        console.error('[ukrainealarm-webhook] re-registration failed', err && err.message ? err.message : err);
+    } finally {
+        state.ukraineAlarmReregistering = false;
+    }
 }
 
 let ukraineAlarmSnapshotsSinceStart = 0;
@@ -1218,6 +1267,7 @@ module.exports = {
     pollUkraineAlarmIfDue,
     requestUkraineAlarmSnapshot,
     ukraineAlarmSnapshotGapMs,
+    maybeReregisterUkraineAlarmWebhook,
     getUkraineAlarmWebhookHealth,
     ensureActiveCacheFresh,
     getUkraineAlarmAlerts,

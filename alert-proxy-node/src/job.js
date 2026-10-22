@@ -36,6 +36,7 @@ async function ukraineAlarmSnapshotLoop() {
     for (;;) {
         try {
             await gateway.pollUkraineAlarmIfDue({ minGapMs: gateway.ukraineAlarmSnapshotGapMs() });
+            await gateway.maybeReregisterUkraineAlarmWebhook();
         } catch (err) {
             logError('ukrainealarm-poll', err);
         } finally {

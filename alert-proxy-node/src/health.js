@@ -6,6 +6,7 @@ const RESOURCE_CRIT_PERCENT = 90;
 const HEAP_WARN_PERCENT = 60;
 const HEAP_CRIT_PERCENT = 85;
 const ACTIVE_STALE_MS = 90 * 1000;
+const REREGISTER_REPORT_MS = 6 * 60 * 60 * 1000;
 const UKRAINEALARM_SNAPSHOT_WARN_MS = 6 * 60 * 1000;
 const UKRAINEALARM_SNAPSHOT_CRIT_MS = 20 * 60 * 1000;
 const NEPTUN_STREAM_DOWN_MS = 5 * 60 * 1000;
@@ -46,6 +47,15 @@ function evaluate(status, flags) {
             add('crit', 'ukrainealarm-webhook', `UkraineAlarm webhook looks broken (${webhook.missesLast30Min} missed events in 30 min), relying on snapshots`);
         } else if (webhook.state === 'suspect') {
             add('warn', 'ukrainealarm-webhook', `UkraineAlarm webhook missed ${webhook.missesLast30Min} event(s) in 30 min`);
+        }
+
+        const reRegister = webhook.reRegister;
+        if (reRegister && reRegister.lastAt && Date.now() - reRegister.lastAt < REREGISTER_REPORT_MS) {
+            if (reRegister.lastOk) {
+                add('info', 'ukrainealarm-webhook-reregistered', `UkraineAlarm webhook was re-registered automatically (${reRegister.method}, status ${reRegister.lastStatus})`);
+            } else if (reRegister.lastStatus !== null) {
+                add('warn', 'ukrainealarm-webhook-reregister-failed', `UkraineAlarm webhook re-registration failed (status ${reRegister.lastStatus})`);
+            }
         }
     }
 
