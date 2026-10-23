@@ -508,6 +508,15 @@ function ukraineAlarmRegionAlertMap(regions) {
     return map;
 }
 
+const MISS_KIND_TEXT = { start: 'the start of an alert', end: 'the end of an alert' };
+
+function ukraineAlarmRegionTitle(key) {
+    const separator = key.indexOf(':');
+    const regionId = key.slice(0, separator);
+    const info = require('./locations').getLocationLookup().get(String(lib.ukraineAlarmUid(regionId)));
+    return info ? `${info.name} (region ${regionId})` : `region ${regionId}`;
+}
+
 function settleUkraineAlarmUnconfirmed(now) {
     state.ukraineAlarmUnconfirmed.forEach((entry, key) => {
         const deliveredAt = state.ukraineAlarmKeyChangedAt.get(key) || 0;
@@ -519,7 +528,8 @@ function settleUkraineAlarmUnconfirmed(now) {
         state.ukraineAlarmUnconfirmed.delete(key);
         state.ukraineAlarmMisses.push({ key, at: entry.at, kind: entry.kind });
         uaWebhookHealth.recordMiss(state.ukraineAlarmMissHistory, key, entry.at);
-        console.warn(`[ukrainealarm-reconcile] webhook event never arrived for ${key} (${entry.kind})`);
+        if (entry.kind === 'level') return;
+        console.warn(`[ukrainealarm-reconcile] UkraineAlarm webhook did not report ${MISS_KIND_TEXT[entry.kind] || entry.kind} in ${ukraineAlarmRegionTitle(key)}; the snapshot caught it`);
     });
 }
 
