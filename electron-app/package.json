@@ -1,6 +1,6 @@
 {
   "name": "alert-server",
-  "version": "5.9.0",
+  "version": "5.9.1",
   "private": true,
   "description": "Air-raid alerts for Ukraine: three merged sources, notifications, live threat map, forecast and trends",
   "author": "Serhii I. Myshko",
