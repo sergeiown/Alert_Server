@@ -4,7 +4,9 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const BORDERS_FILE = path.join(__dirname, '..', 'electron-app', 'src', 'renderer', 'liveMap', 'oblastBorders.js');
+const LIVE_MAP_DIR = path.join(__dirname, '..', 'electron-app', 'src', 'renderer', 'liveMap');
+const BORDERS_FILE = path.join(LIVE_MAP_DIR, 'oblastBorders.js');
+const CITY_BORDERS_FILE = path.join(LIVE_MAP_DIR, 'cityBorders.js');
 
 const BOUNDS = { north: 52.380834, south: 44.387017, west: 22.138577, east: 40.220623 };
 const WIDTH = 1224;
@@ -31,7 +33,15 @@ function ringToPath(ring) {
     return `M${ring.map(project).join('L')}Z`;
 }
 
-const borders = loadBorders();
+function loadCityBorders() {
+    const source = fs.readFileSync(CITY_BORDERS_FILE, 'utf-8').replace('export { CITY_BORDERS };', 'module.exports = { CITY_BORDERS };');
+    const module_ = { exports: {} };
+    new Function('module', source)(module_);
+    return module_.exports.CITY_BORDERS;
+}
+
+const cityBorders = loadCityBorders();
+const borders = { ...loadBorders(), 'Київ': [cityBorders['Київ']] };
 const paths = Object.entries(borders)
     .map(([name, rings]) => `<path fill-rule="evenodd" d="${rings.map(ringToPath).join('')}"><title>${name}</title></path>`)
     .join('\n');
