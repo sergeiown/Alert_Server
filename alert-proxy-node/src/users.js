@@ -127,8 +127,8 @@ function record(hashedId, route, version, country) {
     countHit(day, kyivHourNow(now), route);
 }
 
-async function recordRequest(ip, route, version) {
-    record(await lib.hashIp(ip), route, version, geoip.lookup(ip));
+async function recordRequest(ip, route, version, clientId) {
+    record(await lib.hashClientIdentity(ip, clientId), route, version, geoip.lookup(ip));
 }
 
 function countHit(day, hour, route) {

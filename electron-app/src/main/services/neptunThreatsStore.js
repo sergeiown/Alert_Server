@@ -6,6 +6,7 @@ const { createOutageLog } = require('./outageLog');
 const { getLiveMapWindow } = require('../windows/liveMapWindow');
 const { loadLocalConfig } = require('./localConfig');
 const { PROXY_URL, PROXY_WS_URL, getClientVersion, proxyFetch, fetchWithTimeout, describeError } = require('./proxyConfig');
+const { getInstallId } = require('./installId');
 
 const THREATS_URL = 'https://neptun.in.ua/api/v1/threats';
 const STREAM_URL = 'wss://neptun.in.ua/api/v1/stream';
@@ -170,7 +171,7 @@ function connect() {
     try {
         ws = new WebSocket(
             viaProxy
-                ? `${PROXY_WS_URL}/ws-neptun?key=${encodeURIComponent(getClientKey())}&v=${encodeURIComponent(getClientVersion())}`
+                ? `${PROXY_WS_URL}/ws-neptun?key=${encodeURIComponent(getClientKey())}&v=${encodeURIComponent(getClientVersion())}&id=${encodeURIComponent(getInstallId())}`
                 : STREAM_URL
         );
     } catch (err) {

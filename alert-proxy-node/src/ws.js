@@ -93,7 +93,7 @@ function attachWebSockets(server) {
         }
         socket.once('close', () => ratelimit.closeSocket(ip));
         users
-            .recordRequest(ip, `ws:${url.pathname}`, url.searchParams.get('v'))
+            .recordRequest(ip, `ws:${url.pathname}`, url.searchParams.get('v'), request.headers['x-client-id'] || url.searchParams.get('id'))
             .then(() => users.notePeak(gateway.totalConnections() + 1))
             .catch(() => {});
 

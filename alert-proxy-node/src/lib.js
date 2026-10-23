@@ -48,6 +48,20 @@ async function hashIp(ip) {
     return (await sha256Hex(ip)).slice(0, 16);
 }
 
+const CLIENT_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+function normalizeClientId(value) {
+    if (typeof value !== 'string') return null;
+    const candidate = value.trim().toLowerCase();
+    return CLIENT_ID_PATTERN.test(candidate) ? candidate : null;
+}
+
+async function hashClientIdentity(ip, clientId) {
+    const id = normalizeClientId(clientId);
+    if (id) return (await sha256Hex(`id:${id}`)).slice(0, 16);
+    return hashIp(ip);
+}
+
 async function importUkraineAlarmWebhookPublicKey(pem) {
     const base64 = pem.replace(/-----BEGIN PUBLIC KEY-----/, '').replace(/-----END PUBLIC KEY-----/, '').replace(/\s+/g, '');
     const der = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
@@ -223,6 +237,8 @@ module.exports = {
     kyivHour,
     sha256Hex,
     hashIp,
+    normalizeClientId,
+    hashClientIdentity,
     verifyUkraineAlarmWebhookSignature,
     pruneAndCount,
     parseDotNetDurationMs,

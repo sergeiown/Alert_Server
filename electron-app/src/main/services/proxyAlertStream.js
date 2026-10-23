@@ -7,6 +7,7 @@ const { logEvent } = require('./logger');
 const { createOutageLog } = require('./outageLog');
 const { setLatestAlertData, getLatestAlertData } = require('./activeAlertData');
 const { PROXY_WS_URL, getClientVersion, proxyFetch, describeError } = require('./proxyConfig');
+const { getInstallId } = require('./installId');
 
 const RECONNECT_DELAY_MS = 5000;
 const MAX_RECONNECT_DELAY_MS = 60000;
@@ -101,7 +102,7 @@ function startProxyStream({ label, wsPath, pollUrl, clientKey, onUpdate, onHealt
 
         let ws;
         try {
-            ws = new WebSocket(`${wsUrl}?key=${encodeURIComponent(clientKey)}&v=${encodeURIComponent(getClientVersion())}`);
+            ws = new WebSocket(`${wsUrl}?key=${encodeURIComponent(clientKey)}&v=${encodeURIComponent(getClientVersion())}&id=${encodeURIComponent(getInstallId())}`);
         } catch (err) {
             outage.fail(`${label} connection failed: ${describeError(err)}`);
             startFallbackPolling();

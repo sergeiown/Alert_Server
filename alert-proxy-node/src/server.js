@@ -141,8 +141,9 @@ async function handleRequest(req, res) {
     }
 
     if (!isAdminRoute) {
-        await gateway.recordUniqueUser(requesterIp);
-        await users.recordRequest(requesterIp, normalizeRoute(url.pathname), req.headers['x-client-version'] || url.searchParams.get('v'));
+        const clientId = req.headers['x-client-id'] || url.searchParams.get('id');
+        await gateway.recordUniqueUser(requesterIp, clientId);
+        await users.recordRequest(requesterIp, normalizeRoute(url.pathname), req.headers['x-client-version'] || url.searchParams.get('v'), clientId);
     }
 
     if (privateExtension && privateExtension.routes.includes(url.pathname)) {

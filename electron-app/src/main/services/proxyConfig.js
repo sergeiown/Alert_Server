@@ -1,6 +1,8 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
+const { getInstallId } = require('./installId');
+
 const PROXY_URL = 'https://alert-proxy-ua.duckdns.org';
 const PROXY_WS_URL = PROXY_URL.replace(/^http/, 'ws');
 
@@ -25,8 +27,19 @@ function withTimeout(options, timeoutMs) {
     return { ...options, signal };
 }
 
+function withInstallId(url, options) {
+    if (typeof url !== 'string' || !url.startsWith(PROXY_URL)) return options;
+    const current = options && options.headers;
+    if (current && typeof current.set === 'function') {
+        const headers = new Headers(current);
+        headers.set('X-Client-Id', getInstallId());
+        return { ...options, headers };
+    }
+    return { ...options, headers: { ...current, 'X-Client-Id': getInstallId() } };
+}
+
 function fetchWithTimeout(url, options, timeoutMs = REQUEST_TIMEOUT_MS) {
-    return fetch(url, withTimeout(options, timeoutMs));
+    return fetch(url, withTimeout(withInstallId(url, options), timeoutMs));
 }
 
 async function proxyFetch(url, options) {

@@ -310,9 +310,9 @@ function archiveUniqueUsersDay(finishedDay) {
 
 uniqueUsers.onDayFinished(archiveUniqueUsersDay);
 
-function recordUniqueUser(ip) {
+function recordUniqueUser(ip, clientId) {
     if (!ip) return;
-    return lib.hashIp(ip).then((hashed) => uniqueUsers.record(hashed));
+    return lib.hashClientIdentity(ip, clientId).then((hashed) => uniqueUsers.record(hashed));
 }
 
 const ukraineAlarmWaiters = [];
