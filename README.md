@@ -10,120 +10,83 @@
 
 > **Disclaimer. The aggressor state's full-scale war against Ukraine has been ongoing since February 2014 and escalated into a full invasion on February 24, 2022. The entire territory of Ukraine remains a zone of active hostilities and potential missile threat. Stay vigilant, never ignore air raid alerts, and follow safety guidelines.**
 
-A Windows desktop app built with Electron that keeps watch on air-raid alerts across Ukraine so you don't have to: one main window with tiles for status, map, forecast, trends, settings and log, plus a tray icon that is always at hand. It cross-checks three feeds - [alerts.in.ua](https://alerts.in.ua/), [UkraineAlarm](https://www.ukrainealarm.com/) and [Neptun](https://neptun.in.ua) - so one of them having a bad day doesn't leave you in the dark, delivers the result straight to the Windows Notification Center for the regions you choose to monitor, and brings a live threat map (also available [in the browser](https://alert-proxy-ua.duckdns.org/live/)) a statistics-based forecast, and nationwide weapon-usage trends together in one place.
-
-## Architecture
-
-<p align="center"><img src="docs/images/architecture-en.svg" width="480" alt="Alert Server architecture"></p>
-
-## How it works
-
-The app doesn't talk to the alert APIs itself. It talks to a small self-hosted backend (Node.js on a free cloud VM) that does the heavy lifting once for everyone:
-
-- **One watcher instead of three per user.** The backend follows alerts.in.ua, UkraineAlarm and Neptun on everyone's behalf, merges them into a single picture and pushes every change to all connected apps over a WebSocket, so an alert reaches you the moment the server sees it, and the upstream APIs never notice how many people use the app. An alert starts when alerts.in.ua or UkraineAlarm reports it and ends once neither does; Neptun adds the severity level and the threat description, and steps in as a stand-in only if both of the others go quiet. A feed that stops answering is frozen rather than read as an all-clear, so an upstream hiccup never turns into a false "alert cancelled". Neptun's live threat stream is relayed the same way, and if the backend itself is ever unreachable the app talks to Neptun directly.
-- **A shared archive.** Every alert and threat the backend sees is kept in its own database (with daily backups), so history no longer lives on each computer.
-- **Forecast and statistics on the server.** The forecast, today's statistics, the daily peaks, the occupied-territory layer and the weapon-usage dataset are computed or cached there; the app only asks for the finished numbers. That is why a fresh install has a full history and a forecast from the first minute, and why there is nothing to accumulate or clear locally.
-- **Privacy.** Unique clients are counted by a random installation ID that is not tied to a person or a device; the server stores only a hash of that ID with the app version and the country code. IP addresses are not stored: they are held briefly in memory only to limit request rates. Older versions that do not send an ID are counted by a hash of the IP address.
-
-## Web map
-
-No Windows machine at hand? The same live map runs in any browser, on a phone too: **[alert-proxy-ua.duckdns.org/live](https://alert-proxy-ua.duckdns.org/live/)**. It is the app's Live map, served straight from the project's own server, with nothing to install and no account to make.
-
-- Alerts by region and district, plus the ten districts of Kyiv, updated in real time, plus daily peaks and the Kyiv close-up view.
-- Works great as an installed app on iOS, iPadOS and Android: open it in the browser and add it to the Home Screen ("Share" > "Add to Home Screen" in Safari, "Install app" in Chrome). It then launches full screen with its own icon, like any other app, and needs nothing from an app store.
-- Ukrainian and English interface, and a light/dark/auto theme. Your choices are remembered in your own browser only.
-- No cookies, no trackers. The server keeps anonymous daily counters (visitors, country, language), never IP addresses.
-- It is an unofficial source and can lag behind or be incomplete, so always follow the official alert signals.
-
-Its source lives in [web-map/](web-map/) and reuses the desktop app's map code.
-
-## Installation
-
-Download the latest installer (`Alert Server Setup x.x.x.exe`) from [Releases](https://github.com/sergeiown/Alert_Server/releases) and run it. It's a standard NSIS installer: no administrator rights required, per-user install, with a Start Menu shortcut and uninstaller created automatically.
-
-Future updates are detected through GitHub Releases, and you only need to run the installer by hand once. The app checks shortly after every launch and then every hour for as long as it keeps running (the interval is configurable in Settings, from 1 to 24 hours), so a tray app left open for weeks still hears about new versions. When one appears, a window with the app icon pops up on top of everything else, lists the key changes in that release and asks whether to update now or later. It waits while an alert is active in one of your regions. In rare cases, for example a change the server depends on, an update is marked as mandatory: after a grace period the window loses its Later button, and if it is still ignored the update downloads quietly and installs on the next restart. Air-raid alerts keep working the whole time. A small window shows download progress, and once downloaded the app restarts itself to finish installing - no reboot needed.
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/update-prompt-en-dark.png">
-  <img src="docs/images/update-prompt-en-light.png" width="520" alt="update window">
-</picture>
-
-## Usage
-
-The app lives in the tray, with one big main window behind it. At launch that window opens on a menu of tiles - Current status, Live map, Forecast, Trends, Settings, Event log and About - with a checkbox to always show it at startup. Every section opens inside the same window, and a bar at the top is always there: Main menu, Back (it returns to whatever was open before the current screen) and Check for updates. Minimize works as usual, while the familiar close cross sends the window to the tray, and a checkbox in Settings, on by default, decides whether closing it minimizes to the tray or quits the app.
+A Windows app that keeps an eye on air-raid alerts across Ukraine so you don't have to. It cross-checks three sources - [alerts.in.ua](https://alerts.in.ua/), [UkraineAlarm](https://www.ukrainealarm.com/) and [Neptun](https://neptun.in.ua) - so one of them having a bad day doesn't leave you in the dark, and it tells you what matters for the regions you pick: a notification, a live threat map, a forecast and a bit of statistics. It lives in the tray, stays out of your way and speaks up when it should.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/main-window-en-dark.png">
   <img src="docs/images/main-window-en-light.png" alt="main window">
 </picture>
 
-The tray icon itself automatically matches the Windows light/dark taskbar theme and its actual size at the current display scaling. It sits calmly green while there is no alert and briefly pulses on every refresh; during an active alert it rocks side to side and pulses in the color of the alert's severity level (orange for the yellow level, red for the red one), and follows the level if it changes mid-alert. When the nationwide active-alert count crosses a threshold you set, the tooltip adds a mass-attack line with that count, independent of your own monitored regions. If every alert source stays silent for a minute and a half, the icon turns grey, one notification says so (and another one when the data is back), and every window shows a thin banner that the last known data is on screen; the same banner appears at once when the computer loses its network or the app loses its link to the server. Left-clicking it opens the main window straight on Current status; right-clicking shows the same sections as a menu:
+## What it does
+
+- **Notifications.** An alert starts or ends in your regions, its level changes, or the forecast says one is near: you get a Windows notification with a small map, an optional siren or voice, and the details one click away. Many alerts at once arrive as a single summary instead of a flood. Emergency-style notifications can even break through Do Not Disturb (Windows asks you to allow that once).
+- **Live map.** Alerts by region and district, drones and missiles from Neptun, the front line, and a close-up of Kyiv's ten districts. It also runs in any browser, on a phone too.
+- **Forecast.** For each of your regions: how long the current alert has lasted, how long such alerts usually last, and the odds of the next one in the coming hours. Statistics, not a crystal ball - see the [methodology](docs/forecast-methodology-en.md).
+- **Trends.** Nationwide weapon-usage numbers, today's alerts by hour of the day, and what threats showed up where.
+- **Tray icon.** Green when it is calm, takes the color of the alert's level when it is not, and turns grey if data stops arriving, so a silent app never looks like a calm one.
+
+## Using it
+
+Left-click the tray icon to open **Current status**: a tile for every region you monitor, calm ones included. The main window behind it is a menu of tiles - status, live map, forecast, trends, settings, event log and about - and the usual close cross sends it to the tray (a setting decides whether it quits instead).
+
+The **Live map** shows everything at once; the **Kyiv** button switches it to a street-level view of the capital with each district shaded by its own alert level.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/tray-menu-en-dark.png">
-  <img src="docs/images/tray-menu-en-light.png" alt="tray menu">
-</picture>
-
-- **Live map** opens the app's own map window: real-time threats from [Neptun](https://neptun.in.ua) (drones, missiles, guided bombs, missile-carrier aircraft - each with its own icon, shadow, and, where known, a direction of travel, automatically nudged apart when several land close together so none of them hide behind another; anything Neptun itself hasn't confirmed yet shows greyed out, with a faint circle marking how uncertain its position still is, both explained in an adaptive legend that only lists what's actually on screen), the front line from [DeepState](https://deepstatemap.live), occupied territories (hatched), and every region/district/city currently under alert shaded red or yellow (matching the official severity level all three live sources now report - red typically a missile threat, yellow typically drones) in a tone that deepens the longer the alert has been running, pulsing through a couple of beats whenever a region's status actually changes so a new or cleared alert is hard to miss; a region's popup names the specific threat when known. The Neptun feed itself is tracked continuously in the background for as long as the app is running, not just while this window happens to be open, so threat icons update live the moment the map is opened rather than waiting on a fresh connection. A new threat drops into place from above and settles to size, a cleared one goes out in a small burst of debris, and an existing one glides smoothly to its updated position instead of jumping there - each with its own slightly randomized timing so a cluster of icons never seems to move in lockstep. Layers toggle independently, the view is fullscreen-capable, a screenshot button copies the whole map to the clipboard, and a status bar shows the current date/time and the nationwide active-alert and on-map-threat counts.
-
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/live-map-en-dark.png">
-    <img src="docs/images/live-map-en-light.png" alt="live map">
-  </picture>
-
-  Clicking **Kyiv** switches the same window to a dedicated close-up of the capital: a detailed street map with the district names on top, instead of the nationwide map's flat abstract outline, with each of Kyiv's ten districts shaded by its own alert level - a diagonal red/yellow hatch when a district genuinely has both active at once, which is how Kyiv's own alerts are actually reported (uniquely among tracked cities, a district-by-district breakdown, not just one status for the whole city), each with a popup naming the specific threat. Threat icons render a bit larger here than on the nationwide map, since they sit over a detailed street map instead of a flat outline (the legend stays the same size in both views). The button becomes **Ukraine** while active; the Center button and every resize/fullscreen toggle keep re-fitting to Kyiv specifically, and the view can only zoom in from that fit, never out past it.
-
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/live-map-kyiv-en-dark.png">
-    <img src="docs/images/live-map-kyiv-en-light.png" alt="live map, Kyiv districts">
-  </picture>
-
-  When Kyiv itself is one of your monitored regions, its districts get the same alert notifications as any other tracked region - one per newly affected district, or a single consolidated notification if three or more start or clear together - and, if the live map is set to open on alert, it opens straight into this Kyiv view instead of the nationwide one.
-
-- **Forecast** opens a window showing, for each monitored region, either how long an alert currently active there has already been running plus that alert type's average duration (over the last 24 hours and over the whole observed history) - with the regular forecast shown right below it, prefaced by a note that an alert is active right now and that the next one is counted from the moment this one ends - or, when nothing is active, historical statistics (alert count, average interval, most common time and day of week, time since the last alert ended) plus, for each alert type, a probability (within the next couple of hours, deliberately not "today" - a full day saturates to a meaningless "approximately 100%" for any region much above a handful of alerts a day, which the current pace of the war makes common), the number of alerts expected for the day, and an ETA - the top line names the data source. See [forecast methodology](docs/forecast-methodology-en.md) for how this is calculated, what the numbers mean, and known limitations of the approach - still clearly labeled as statistics, not a guaranteed prediction. Cards are sorted by how soon an alert is expected, with active regions first; if a whole region and one of its districts are both tracked, only the region's (already-aggregated) card is shown. Each region's summary can be copied to the clipboard. With more than one monitored region the cards are folded and open one at a time. The forecast is computed on the project's server from its alert archive (its whole history, back to February 2022), so a fresh install gets the same forecast as one that has been running for months. Below the list, a note describes the historical dataset used to calibrate the model's long-horizon baseline.
-- **Trends** opens a window with three tabs. **Weapon usage** compiles nationwide weapon-usage statistics from a public dataset (see [Data sources & credits](#data-sources--credits)): totals and interception rate, a monthly chart broken down by weapon category (it opens on the most recent months, scroll left for older ones), and tables by category and by specific model. **Alerts today** shows the nationwide alert total since midnight, a chart by hour of day, and breakdowns by region and by your own monitored regions specifically - computed on the project's server from its alert archive, so it's accurate even right after opening the app for the first time that day (with a small note if the server is still filling in history after a restart). **Threats** is built from the project server's own archive of what [Neptun](https://neptun.in.ua) tracked, kept for 90 days: how many drones, missiles and guided bombs there were each day and in which hours of the day (Kyiv time) they show up most, where in the country threats are first spotted and from which direction, the typical routes between regions with the usual flight time, and how often a threat in a region shows up shortly before an alert there starts and how many minutes ahead. The places of first sighting and the routes only start accumulating from the moment the server began recording them, so those two sections fill up over the first days.
-
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/trends-en-dark.png">
-    <img src="docs/images/trends-en-light.png" alt="trends">
-  </picture>
-
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/trends-threats-en-dark.png">
-    <img src="docs/images/trends-threats-en-light.png" alt="trends, threats tab">
-  </picture>
-
-- **Settings** opens a two-column settings window: regions to monitor on the left (a clickable map of Ukraine's regions above a searchable tree going down to individual community - selecting a region on either one selects it on the other; checking a higher-level region covers everything nested inside it, which then shows as checked and locked, so one tick is enough for a whole region; a button clears the whole selection at once), and everything else on the right, grouped into two sections - **General** (interface language, light/dark/auto theme, launching at Windows startup, how often the app checks for a new version), **Notifications** (separate toggles for active-alert notifications and forecast-approach notifications with how many minutes ahead to warn, a switch for alert-level-change notifications, the nationwide alert-count threshold for the mass-attack line in the tray tooltip, sound notification mode - none, siren, or voice - and its repeat count). Dependent options grey out automatically (e.g. the sound repeat count when sound is off).
-
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/settings-window-en-dark.png">
-    <img src="docs/images/settings-window-en-light.png" alt="settings window">
-  </picture>
-
-- **Event log** opens an in-app, terminal-styled log viewer with buttons to clear it or open the underlying file directly in Notepad. It also notes when the computer goes to sleep or wakes up and when the internet connection drops or comes back, so a gap in the data or a reconnect is never a mystery.
-
-The **About** tile shows the current version, license, and two buttons: one to the project's GitHub page and one to the web map. The check for updates lives in the top bar of the main window, available from every screen.
-
-Notifications for an alert starting or ending appear through the Windows Notification Center with a small map showing the affected region (colored by the alert's own red/yellow severity level for a new alert, green for a cancellation, naming the specific threat - missile, drone - when known); clicking one shows the alert's location and start time. A cancellation notice tells you how long the alert lasted (for a batch, the range from the shortest to the longest) instead of how many are still active. If 3 or more alerts start or clear at once, you get a single notification with the total count and all affected regions highlighted instead of a flood of individual ones. An alert that turns out to have already been active for a while when the app (re)connects - after the computer was off or asleep, say - is added to your list quietly, without a "just started" notification for something that didn't just start. When the severity level of a running alert changes (yellow turns red, red eases to yellow, or a new threat joins an existing alert), a separate notification says so, each direction with its own short sound, and the cancellation notice mentions the highest level the alert reached; the level notifications have their own switch in Settings.
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/alert-en-dark.png">
-  <img src="docs/images/alert-en-light.png" alt="alert notification">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/live-map-en-dark.png">
+  <img src="docs/images/live-map-en-light.png" alt="live map">
 </picture>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/cancel-en-dark.png">
-  <img src="docs/images/cancel-en-light.png" alt="alert cancelled notification">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/live-map-kyiv-en-dark.png">
+  <img src="docs/images/live-map-kyiv-en-light.png" alt="live map, Kyiv districts">
 </picture>
 
-Left-clicking the tray icon opens the main window straight on **Current status**: a tile for every monitored location, calm ones included, tinted by its state; an active alert shows its threat, how long it has been running and how long alerts of that type usually last, a calm one shows when the last alert ended and when the forecast expects the next. A switch in the corner turns the tiles into a compact list - handy for a quick glance. Hovering the tray icon shows the nearest upcoming forecast as a tooltip when there's no active alert. If enabled in Settings (on by default), the app also sends a notification - with a blue region map, no alert sound - when a forecasted alert time is approaching, separate from the alert/cancellation notifications above; at most 3 fire per check, soonest first, to avoid a flood if many regions qualify at once.
+**Settings** is a carousel of four tiles: the regions to monitor (pick them on the map or in a searchable tree - one tick on a region covers everything inside it), general options, sound (siren or voice, how many repeats, volume, quieting other apps while it plays, and a test button) and notifications, including how long each kind stays on screen and whether it is an emergency one.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/forecast-notify-en-dark.png">
-  <img src="docs/images/forecast-notify-en-light.png" alt="forecast approaching notification">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/settings-carousel-en-dark.png">
+  <img src="docs/images/settings-carousel-en-light.png" alt="settings, tile carousel">
 </picture>
 
-The event log records app activity (start/exit, settings and region changes, alerts, update checks) as CSV, each line tagged with a level (info, warning, error, network, or an actual alert starting/ending) so a quick scan shows what mattered without reading every line. It always writes in English regardless of the interface language. Capped at 1 MB, automatically trimmed once it grows past that.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/settings-window-en-dark.png">
+  <img src="docs/images/settings-window-en-light.png" alt="settings window">
+</picture>
+
+**Trends** has three tabs: weapon usage (from a public dataset, see [Data sources & credits](#data-sources--credits)), alerts today with a 24-hour dial, and threats seen by Neptun over the last 90 days.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/trends-en-dark.png">
+  <img src="docs/images/trends-en-light.png" alt="trends">
+</picture>
+
+The **Forecast** window, the **Event log** (every start, exit, alert, sleep and reconnect, always written in English) and **About** (with a feedback form, in case something bothers you) complete the set.
+
+## How it works
+
+The app doesn't talk to the alert services itself. It talks to a small self-hosted server that does the heavy lifting once for everyone:
+
+- **One watcher instead of three per user.** The server follows all three sources, merges them into a single picture and pushes every change to the apps over a WebSocket. A source that goes quiet is frozen rather than read as an all-clear, so an upstream hiccup never turns into a false "alert cancelled". If the server itself is unreachable, the app switches to Neptun directly and comes back as soon as the server answers.
+- **A shared archive.** Every alert and threat the server sees is stored (with daily backups), and the forecast, the statistics and the occupied-territory layer are computed there. That is why a fresh install has a full history and a forecast from the first minute.
+- **Privacy.** Users are counted by a random installation ID that is tied to neither a person nor a device, and only its hash is stored, with the app version and the country. IP addresses are not stored; they live briefly in memory to limit request rates.
+
+<p align="center"><img src="docs/images/architecture-en.svg" width="480" alt="Alert Server architecture"></p>
+
+## Web map
+
+No Windows machine at hand? The same live map runs in any browser, on a phone too: **[alert-proxy-ua.duckdns.org/live](https://alert-proxy-ua.duckdns.org/live/)**. Nothing to install, no account, no cookies, no trackers.
+
+- On iOS, iPadOS and Android you can add it to the Home Screen and it launches full screen like an app.
+- Ukrainian and English, light, dark or automatic theme, remembered in your own browser only.
+- It is an unofficial source and can lag behind or be incomplete, so always follow the official alert signals.
+
+Its source lives in [web-map/](web-map/) and reuses the desktop app's map code.
+
+## Installation
+
+Download the latest `Alert Server Setup x.x.x.exe` from [Releases](https://github.com/sergeiown/Alert_Server/releases) and run it. It is a standard per-user installer: no administrator rights, a Start Menu shortcut and an uninstaller included.
+
+After that, updates take care of themselves. The app checks for a new version after launch and then every hour (adjustable in Settings), shows what changed and asks whether to update now or later, and never interrupts you while an alert is active in one of your regions. Now and then an update is marked as mandatory, for example when the server depends on it. Alerts keep working throughout.
 
 ## Data sources & credits
 
