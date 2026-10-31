@@ -60,6 +60,18 @@
   <img src="docs/images/trends-uk-light.png" alt="тенденції">
 </picture>
 
+Сповіщення виглядає так: уражений регіон на маленькій мапі, зафарбований за рівнем тривоги, з назвою загрози, коли вона відома, і зелене, коли тривога минула, з тривалістю. Клацніть по ньому, щоб побачити місце, рівень, час початку і кнопку відкриття мапи.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/alert-uk-dark.png">
+  <img src="docs/images/alert-uk-light.png" alt="сповіщення про тривогу">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/cancel-uk-dark.png">
+  <img src="docs/images/cancel-uk-light.png" alt="сповіщення про відбій">
+</picture>
+
 Вікно **Прогнозу**, **Журнал подій** (кожен запуск, вихід, тривога, сон і перепідключення, завжди англійською) та **Про застосунок** (з формою відгуку, якщо щось не влаштовує) доповнюють набір.
 
 ## Як це працює

@@ -60,6 +60,18 @@ The **Live map** shows everything at once; the **Kyiv** button switches it to a 
   <img src="docs/images/trends-en-light.png" alt="trends">
 </picture>
 
+A notification looks like this: the affected region on a small map, colored by the alert's level, with the threat named when it is known, and a green one when the alert is over, with how long it lasted. Click it for the location, level, start time and a button to open the map.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/alert-en-dark.png">
+  <img src="docs/images/alert-en-light.png" alt="alert notification">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/cancel-en-dark.png">
+  <img src="docs/images/cancel-en-light.png" alt="alert over notification">
+</picture>
+
 The **Forecast** window, the **Event log** (every start, exit, alert, sleep and reconnect, always written in English) and **About** (with a feedback form, in case something bothers you) complete the set.
 
 ## How it works
