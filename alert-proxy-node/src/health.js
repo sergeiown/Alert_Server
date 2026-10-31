@@ -54,15 +54,11 @@ function evaluate(status, flags) {
         const webhook = status.ukraineAlarm.webhook;
         if (webhook.state === 'broken') {
             add('crit', 'ukrainealarm-webhook', `UkraineAlarm webhook looks broken (${webhook.missesLast30Min} missed events in 30 min), relying on snapshots`);
-        } else if (webhook.state === 'suspect') {
-            add('warn', 'ukrainealarm-webhook', `UkraineAlarm webhook missed ${webhook.missesLast30Min} event(s) in 30 min`);
         }
 
         const reRegister = webhook.reRegister;
         if (reRegister && reRegister.lastAt && Date.now() - reRegister.lastAt < REREGISTER_REPORT_MS) {
-            if (reRegister.lastOk) {
-                add('info', 'ukrainealarm-webhook-reregistered', `UkraineAlarm webhook was re-registered automatically (${reRegister.method}, status ${reRegister.lastStatus})`);
-            } else if (reRegister.lastStatus !== null) {
+            if (!reRegister.lastOk && reRegister.lastStatus !== null) {
                 add('warn', 'ukrainealarm-webhook-reregister-failed', `UkraineAlarm webhook re-registration failed (status ${reRegister.lastStatus})`);
             }
         }
