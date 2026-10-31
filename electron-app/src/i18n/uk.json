@@ -155,6 +155,7 @@
     "alertSoundModeVoice": "Голос",
     "alertSoundVolumeLabel": "Гучність сигналу",
     "alertSoundTest": "Перевірити звук",
+    "duckOtherSoundsLabel": "Приглушувати інші звуки на час сигналу",
     "alertSoundCountLabel": "Повторів звуку, поки сповіщення на екрані",
     "updateCheckIntervalLabel": "Періодичність перевірки оновлень застосунку (годин, від 1 до 24):",
     "updatePromptHeading": "Доступне оновлення",

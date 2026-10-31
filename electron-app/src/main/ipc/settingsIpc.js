@@ -35,7 +35,7 @@ function registerSettingsIpc() {
     ipcMain.handle('sound:test', () => {
         const settings = settingsStore.getSettings();
         const mode = settings.alertSoundMode === 'none' ? 'siren' : settings.alertSoundMode;
-        const spec = soundFor('start', mode, settings.language, 1, settings.alertSoundVolume);
+        const spec = soundFor('start', mode, settings.language, 1, settings.alertSoundVolume, settings.duckOtherSounds);
         if (spec) playFor('settings-test', spec);
     });
 }

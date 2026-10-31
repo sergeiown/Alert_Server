@@ -155,6 +155,7 @@
     "alertSoundModeVoice": "Voice",
     "alertSoundVolumeLabel": "Alert volume",
     "alertSoundTest": "Test sound",
+    "duckOtherSoundsLabel": "Lower other sounds while the alert plays",
     "alertSoundCountLabel": "Sound repeats while the notification is shown",
     "updateCheckIntervalLabel": "Application update check interval (hours, 1 to 24):",
     "updatePromptHeading": "Update available",

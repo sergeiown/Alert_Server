@@ -79,6 +79,7 @@ app.whenReady().then(() => {
 
     registerSettingsIpc();
     require('./services/soundEngine').warmUp();
+    if (settingsStore.getSettings().duckOtherSounds) require('./services/audioDucking').warmUp();
     registerRegionsIpc();
     registerSystemIpc();
     registerForecastIpc();

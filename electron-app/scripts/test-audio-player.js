@@ -7,6 +7,7 @@ const path = require('path');
 
 const root = path.join(__dirname, '..');
 const children = [];
+const duckCalls = { begin: 0, end: 0 };
 
 class FakeChild {
     constructor(file, volume, done) {
@@ -29,6 +30,7 @@ const mocks = {
     './soundEngine': { play: (file, volume, done) => new FakeChild(file, volume, done) },
     './appPaths': { getResourcePath: (...parts) => path.join(root, 'resources', ...parts) },
     './logger': { logEvent() {} },
+    './audioDucking': { begin: () => (duckCalls.begin += 1), end: () => (duckCalls.end += 1) },
 };
 const originalLoad = Module._load;
 Module._load = function patched(request, parent, isMain) {
@@ -70,6 +72,28 @@ const check = async (name, fn) => {
         playFor('toast-v', { kind: 'start', file: 'v.wav', count: 1, gapMs: 0, volume: 0.4 });
         assert.strictEqual(children[0].volume, 0.4);
         stopFor('toast-v');
+        await wait(10);
+    });
+
+    await check('other sounds are lowered while a sound plays and released when it stops or finishes', async () => {
+        duckCalls.begin = 0;
+        duckCalls.end = 0;
+        assert.strictEqual(soundFor('start', 'siren', 'English', 1, 100).duck, true);
+        assert.strictEqual(soundFor('start', 'siren', 'English', 1, 100, false).duck, false);
+        playFor('toast-duck', { kind: 'start', file: 'd.wav', count: 1, gapMs: 0, volume: 1, duck: true });
+        assert.strictEqual(duckCalls.begin, 1);
+        stopFor('toast-duck');
+        assert.strictEqual(duckCalls.end, 1);
+        await wait(10);
+        playFor('toast-duck2', { kind: 'start', file: 'd2.wav', count: 1, gapMs: 0, volume: 1, duck: true });
+        children[children.length - 1].finish();
+        await wait(10);
+        assert.strictEqual(duckCalls.begin, 2);
+        assert.strictEqual(duckCalls.end, 2);
+        playFor('toast-nod', { kind: 'start', file: 'n.wav', count: 1, gapMs: 0, volume: 1, duck: false });
+        assert.strictEqual(duckCalls.begin, 2);
+        stopFor('toast-nod');
+        assert.strictEqual(duckCalls.end, 2);
         await wait(10);
     });
 

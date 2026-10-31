@@ -27,6 +27,7 @@ const alertSoundCountInput = document.getElementById('alertSoundCount');
 const alertSoundVolumeInput = document.getElementById('alertSoundVolume');
 const alertSoundVolumeValue = document.getElementById('alertSoundVolumeValue');
 const alertSoundTestButton = document.getElementById('alertSoundTest');
+const duckOtherSoundsInput = document.getElementById('duckOtherSounds');
 const updateCheckIntervalHoursInput = document.getElementById('updateCheckIntervalHours');
 const languageInput = document.getElementById('language');
 const themeInput = document.getElementById('theme');
@@ -47,6 +48,7 @@ function applyStrings(strings) {
     document.getElementById('alertSoundCountLabel').textContent = strings.alertSoundCountLabel;
     document.getElementById('alertSoundVolumeLabel').textContent = strings.alertSoundVolumeLabel;
     alertSoundTestButton.textContent = strings.alertSoundTest;
+    document.getElementById('duckOtherSoundsLabel').textContent = strings.duckOtherSoundsLabel;
     document.getElementById('updateCheckIntervalLabel').textContent = strings.updateCheckIntervalLabel;
     document.getElementById('languageLabel').textContent = strings.languageLabel;
     document.getElementById('themeLabel').textContent = strings.themeLabel;
@@ -92,6 +94,7 @@ function updateNotifyDisabledState() {
 function updateSoundCountDisabledState() {
     alertSoundCountInput.disabled = alertSoundModeInput.value === 'none';
     alertSoundVolumeInput.disabled = alertSoundModeInput.value === 'none';
+    duckOtherSoundsInput.disabled = alertSoundModeInput.value === 'none';
 }
 
 async function initGeneralSettings(settings, strings) {
@@ -105,6 +108,7 @@ async function initGeneralSettings(settings, strings) {
     alertSoundModeInput.value = settings.alertSoundMode;
     alertSoundCountInput.value = settings.alertSoundCount;
     alertSoundVolumeInput.value = settings.alertSoundVolume;
+    duckOtherSoundsInput.checked = settings.duckOtherSounds;
     alertSoundVolumeValue.textContent = `${settings.alertSoundVolume}%`;
     updateCheckIntervalHoursInput.value = settings.updateCheckIntervalHours;
     languageInput.value = settings.language;
@@ -151,6 +155,9 @@ async function initGeneralSettings(settings, strings) {
         window.alertServer.setSetting('alertSoundVolume', Number(alertSoundVolumeInput.value));
     });
     alertSoundTestButton.addEventListener('click', () => window.alertServer.testSound());
+    duckOtherSoundsInput.addEventListener('change', () => {
+        window.alertServer.setSetting('duckOtherSounds', duckOtherSoundsInput.checked);
+    });
     updateCheckIntervalHoursInput.addEventListener('change', () => {
         const hours = Math.max(1, Math.min(24, Number(updateCheckIntervalHoursInput.value) || 1));
         updateCheckIntervalHoursInput.value = hours;

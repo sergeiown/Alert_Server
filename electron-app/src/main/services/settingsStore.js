@@ -15,6 +15,7 @@ const defaultSettings = {
     alertSoundMode: 'siren',
     alertSoundCount: 1,
     alertSoundVolume: 100,
+    duckOtherSounds: true,
     forecastNotifyEnabled: true,
     forecastNotifyLookaheadMinutes: 120,
     updateCheckIntervalHours: 1,

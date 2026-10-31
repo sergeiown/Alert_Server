@@ -4,6 +4,7 @@
 const { getResourcePath } = require('./appPaths');
 const { logEvent } = require('./logger');
 const { play } = require('./soundEngine');
+const ducking = require('./audioDucking');
 
 const START_GAP_MS = 8000;
 const END_GAP_MS = 6000;
@@ -27,15 +28,22 @@ function normalizeVolume(volume) {
     return Math.max(0.1, Math.min(1, percent / 100));
 }
 
-function soundFor(kind, mode, language, count, volume) {
+function soundFor(kind, mode, language, count, volume, duck) {
     if (!mode || mode === 'none') return null;
     const repeats = Math.max(1, Math.min(MAX_REPEATS, Number(count) || 1));
     const level = normalizeVolume(volume);
-    if (kind === 'start') return { kind, file: mode === 'voice' ? voicePath(language, false) : sirenPath(false), count: repeats, gapMs: START_GAP_MS, volume: level };
-    if (kind === 'end') return { kind, file: mode === 'voice' ? voicePath(language, true) : sirenPath(true), count: repeats, gapMs: END_GAP_MS, volume: level };
-    if (kind === 'up') return { kind, file: getResourcePath('audio', 'level_up.wav'), count: 1, gapMs: 0, volume: level };
-    if (kind === 'down') return { kind, file: getResourcePath('audio', 'level_down.wav'), count: 1, gapMs: 0, volume: level };
+    const lowerOthers = duck !== false;
+    if (kind === 'start') return { kind, file: mode === 'voice' ? voicePath(language, false) : sirenPath(false), count: repeats, gapMs: START_GAP_MS, volume: level, duck: lowerOthers };
+    if (kind === 'end') return { kind, file: mode === 'voice' ? voicePath(language, true) : sirenPath(true), count: repeats, gapMs: END_GAP_MS, volume: level, duck: lowerOthers };
+    if (kind === 'up') return { kind, file: getResourcePath('audio', 'level_up.wav'), count: 1, gapMs: 0, volume: level, duck: lowerOthers };
+    if (kind === 'down') return { kind, file: getResourcePath('audio', 'level_down.wav'), count: 1, gapMs: 0, volume: level, duck: lowerOthers };
     return null;
+}
+
+function releaseDucking(run) {
+    if (!run.ducking) return;
+    run.ducking = false;
+    ducking.end();
 }
 
 function stopCurrent() {
@@ -43,6 +51,7 @@ function stopCurrent() {
     const run = current;
     current = null;
     run.stopped = true;
+    releaseDucking(run);
     clearTimeout(run.timer);
     if (run.child) {
         try {
@@ -57,12 +66,17 @@ function playFor(owner, spec) {
     stopCurrent();
     if (!spec) return;
 
-    const run = { owner, stopped: false, child: null, timer: null, left: spec.count };
+    const run = { owner, stopped: false, child: null, timer: null, left: spec.count, ducking: false };
     current = run;
+    if (spec.duck) {
+        run.ducking = true;
+        ducking.begin();
+    }
 
     const next = () => {
         if (run.stopped || run.left <= 0) {
             if (current === run) current = null;
+            releaseDucking(run);
             return;
         }
         run.left -= 1;
@@ -72,6 +86,7 @@ function playFor(owner, spec) {
             if (err) logEvent(`Sound playback error: ${err.message}`, 'ERROR');
             if (run.left <= 0) {
                 if (current === run) current = null;
+                releaseDucking(run);
                 return;
             }
             run.timer = setTimeout(next, Math.max(0, spec.gapMs - (Date.now() - startedAt)));
