@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 812" role="img" aria-label="Alert Server architecture: external services feed the backend, which pushes to the desktop app and its main window" font-family="'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 916" role="img" aria-label="Alert Server architecture: external services feed the backend, which pushes to the desktop app with its main window and also serves the web map" font-family="'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif">
 <style>
     .band-ext { fill: #eff6ff; stroke: #93c5fd; }
     .band-srv { fill: #fff7ed; stroke: #fdba74; }
@@ -21,6 +21,10 @@
     .head { fill: #64748b; }
     .head-dash { fill: #2563eb; }
     .note { fill: #475569; }
+    .band-web { fill: #ecfeff; stroke: #67e8f9; }
+    .box-web { fill: #cffafe; stroke: #0891b2; }
+    .txt-web { fill: #164e63; }
+    .title-web { fill: #0e7490; }
     @media (prefers-color-scheme: dark) {
         .band-ext { fill: #172554; stroke: #3b82f6; }
         .band-srv { fill: #431407; stroke: #ea580c; }
@@ -43,6 +47,10 @@
         .head { fill: #94a3b8; }
         .head-dash { fill: #60a5fa; }
         .note { fill: #cbd5e1; }
+        .band-web { fill: #083344; stroke: #06b6d4; }
+        .box-web { fill: #164e63; stroke: #22d3ee; }
+        .txt-web { fill: #cffafe; }
+        .title-web { fill: #67e8f9; }
     }
 </style>
 <rect class="band-ext" x="16" y="16" width="448" height="132" rx="12" stroke-width="1.5"/>
@@ -111,4 +119,12 @@
 <text class="txt-win" x="381.5" y="722" font-size="15" text-anchor="middle">Event log</text>
 <rect class="box-win" x="32" y="744" width="133" height="38" rx="8" stroke-width="1.5"/>
 <text class="txt-win" x="98.5" y="768" font-size="15" text-anchor="middle">About</text>
+<path class="arrow" d="M464 338 H484 V866 H474" stroke-width="2" fill="none"/>
+<path class="head" d="M474 860 L466 866 L474 872 Z"/>
+<rect class="band-web" x="16" y="812" width="448" height="88" rx="12" stroke-width="1.5"/>
+<text class="title-web" x="32" y="835" font-size="13" font-weight="700" letter-spacing="0.6">WEB MAP (BROWSER)</text>
+<rect class="box-web" x="32" y="846" width="208" height="38" rx="8" stroke-width="1.5"/>
+<text class="txt-web" x="136" y="870" font-size="15" text-anchor="middle">Live map in any browser</text>
+<rect class="box-web" x="248" y="846" width="208" height="38" rx="8" stroke-width="1.5"/>
+<text class="txt-web" x="352" y="870" font-size="15" text-anchor="middle">Home Screen app on phones</text>
 </svg>
