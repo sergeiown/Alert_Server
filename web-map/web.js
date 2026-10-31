@@ -24,7 +24,8 @@
               alertsNote: 'merged on the server and pushed to this page as soon as they change.',
               neptunLine: 'Threat data:',
               neptunNote: 'Data: Air alert map',
-              frontLine: 'Front line:',
+              frontLine: 'Front line: open data from',
+              frontNote: 'read from a public GitHub mirror of the DeepStateMap.live data, updated daily.',
               mapTitle: 'Map',
               mapText:
                   'Region and district boundaries come from slawomirmatuszak/ukrainian_geodata (CC BY 4.0), the river outline from Natural Earth (public domain), the map engine is Leaflet (BSD-2-Clause).',
@@ -53,7 +54,8 @@
               alertsNote: 'зводяться на сервері й надсилаються на цю сторінку одразу, щойно змінюються.',
               neptunLine: 'Дані про загрози:',
               neptunNote: 'Дані: Карта повітряних тривог',
-              frontLine: 'Лінія фронту:',
+              frontLine: 'Лінія фронту: відкриті дані',
+              frontNote: 'береться з публічного дзеркала даних DeepStateMap.live на GitHub, оновлюється щодня.',
               mapTitle: 'Мапа',
               mapText:
                   'Кордони областей і районів - з slawomirmatuszak/ukrainian_geodata (CC BY 4.0), контур річки - з Natural Earth (суспільне надбання), рушій мапи - Leaflet (BSD-2-Clause).',
@@ -255,7 +257,7 @@
             dataList.appendChild(el('li', {}, [`${text.neptunLine} `, link('https://neptun.in.ua/', 'NEPTUN'), ` (${text.neptunNote} - NEPTUN)`]));
         }
         if (features.occupied) {
-            dataList.appendChild(el('li', {}, [`${text.frontLine} `, link('https://deepstatemap.live/', 'DeepStateMap.live')]));
+            dataList.appendChild(el('li', {}, [`${text.frontLine} `, link('https://deepstatemap.live/', 'DeepStateMap.live'), ` - ${text.frontNote}`]));
         }
 
         const body = document.getElementById('aboutBody');

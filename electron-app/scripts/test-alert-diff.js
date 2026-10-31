@@ -135,12 +135,12 @@ check('end event when item disappears', () => {
 });
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'alert-diff-'));
-const captured = { notifications: [], sounds: [], logs: [] };
+const captured = { notifications: [], sounds: [], stops: [], shown: [], messages: [], maps: [], nextChoice: null, logs: [] };
+const SOUND_NAME = { start: 'alert', end: 'cancel', up: 'up', down: 'down' };
 const settings = {
     language: 'Ukrainian',
     visualNotificationsEnabled: true,
     activeAlertNotifyEnabled: true,
-    showLiveMapOnAlert: false,
     alertSoundMode: 'siren',
     alertSoundCount: 1,
     alertLevelChangeNotifyEnabled: true,
@@ -148,10 +148,23 @@ const settings = {
 
 class FakeNotification {
     constructor(options) {
+        this.options = options;
+        this.handlers = {};
         captured.notifications.push(options);
     }
-    on() {}
-    show() {}
+    close() {
+        this.closed = true;
+    }
+    on(event, handler) {
+        (this.handlers[event] = this.handlers[event] || []).push(handler);
+    }
+    emit(event) {
+        (this.handlers[event] || []).forEach((handler) => handler());
+    }
+    show() {
+        captured.shown.push(this);
+        this.emit('show');
+    }
 }
 
 const mocks = {
@@ -164,15 +177,29 @@ const mocks = {
     './settingsStore': { getSettings: () => settings },
     './regionsStore': { getSelectedUids: () => [31] },
     './audioPlayer': {
-        playAlertSound: () => captured.sounds.push('alert'),
-        playAlertCancellationSound: () => captured.sounds.push('cancel'),
-        playLevelUpSound: () => captured.sounds.push('up'),
-        playLevelDownSound: () => captured.sounds.push('down'),
+        soundFor: (kind, mode) => (mode === 'none' ? null : { kind }),
+        playFor: (owner, spec) => captured.sounds.push(SOUND_NAME[spec.kind]),
+        stopFor: (owner) => captured.stops.push(owner),
     },
-    './locationFilter': { getHistoryFetchTarget: () => ({ stateUid: 1 }) },
+    './locationFilter': { getMapRegion: () => ({ stateUid: 1 }) },
     './notificationMap': { renderRegionMapImage: async () => null },
     './forecast': { formatDuration: (ms) => `${Math.round(ms / 60000)} хв` },
-    '../windows/liveMapWindow': { openLiveMapWindow() {}, openLiveMapWindowInKyivMode() {} },
+    '../windows/messageWindow': {
+        showMessage: (options) => {
+            captured.messages.push(options);
+            const choice = captured.nextChoice || 'close';
+            captured.nextChoice = null;
+            return Promise.resolve(choice);
+        },
+    },
+    '../windows/liveMapWindow': {
+        openLiveMapWindow() {
+            captured.maps.push('ukraine');
+        },
+        openLiveMapWindowInKyivMode() {
+            captured.maps.push('kyiv');
+        },
+    },
 };
 
 const originalLoad = Module._load;
@@ -182,6 +209,9 @@ Module._load = function patched(request, parent, isMain) {
 };
 
 const notifier = require(path.join(root, 'src/main/services/notifier.js'));
+
+notifier.configureThrottle({ perWindow: 1000, criticalPerWindow: 1000 });
+notifier.configureSound({ afterShowMs: 0 });
 
 const realNow = Date.now.bind(Date);
 let offset = 0;
@@ -195,6 +225,11 @@ const flush = async () => {
 const reset = () => {
     captured.notifications.length = 0;
     captured.sounds.length = 0;
+    captured.stops.length = 0;
+    captured.shown.length = 0;
+    captured.messages.length = 0;
+    captured.maps.length = 0;
+    captured.nextChoice = null;
 };
 const toastText = (index) => captured.notifications[index].toastXml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
@@ -220,6 +255,11 @@ async function run() {
         assert.strictEqual(captured.notifications.length, 1);
         assert.ok(captured.notifications[0].toastXml.includes('alert_yellow.png'));
         assert.deepStrictEqual(captured.sounds, ['alert']);
+    });
+    check('notifier: start title names the alert type without repeating the word alert', () => {
+        const text = toastText(0);
+        assert.ok(text.startsWith('Увага: повітряна тривога'), text);
+        assert.ok(!text.includes('Тривога: повітряна тривога'), text);
     });
     reset();
 
@@ -283,8 +323,10 @@ async function run() {
         assert.strictEqual(captured.notifications.length, 1);
         const text = toastText(0);
         assert.ok(captured.notifications[0].toastXml.includes('cancel.png'));
-        assert.ok(text.includes('Відбій тривоги: Повітряна тривога') || text.includes('Відбій тривоги'), text);
-        assert.ok(text.includes('Найвищий рівень: червоний рівень'), text);
+        assert.ok(text.includes('Відбій: повітряна тривога'), text);
+        assert.ok(!text.includes('Відбій тривоги: повітряна тривога'), text);
+        assert.ok(text.includes('Найвищий рівень: червоний'), text);
+        assert.ok(!text.includes('червоний рівень'), text);
         assert.deepStrictEqual(captured.sounds, ['cancel']);
     });
     reset();
@@ -327,7 +369,7 @@ async function run() {
     await flush();
     check('kyiv: all-clear mentions highest level', () => {
         assert.strictEqual(captured.notifications.length, 1);
-        assert.ok(toastText(0).includes('Найвищий рівень: червоний рівень'), toastText(0));
+        assert.ok(toastText(0).includes('Найвищий рівень: червоний'), toastText(0));
     });
     reset();
 
@@ -348,6 +390,312 @@ async function run() {
         assert.ok(text.includes('Підвищено: 3'), text);
         assert.deepStrictEqual(captured.sounds, ['up']);
     });
+
+    notifier.processAlerts([], []);
+    await flush();
+    reset();
+    const bareAlert = (uid) => ({ ...alertAt(null, []), id: `m-${uid}-air_raid`, location_uid: uid, location_title: 'Вишгородський район', location_lat: 'Vyshhorodskyi District' });
+    const waitPoll = () => new Promise((resolve) => setTimeout(resolve, 450));
+
+    const early = bareAlert(200);
+    notifier.processAlerts([early], [early]);
+    await flush();
+    check('level grace: a start without a level waits for the level and its sound waits with the toast', () => {
+        assert.strictEqual(captured.notifications.length, 0, captured.notifications.map((n) => n.toastXml).join(' | '));
+        assert.deepStrictEqual(captured.sounds, []);
+    });
+    const leveled = { ...early, alert_level: 'yellow', threats: [YELLOW] };
+    notifier.processAlerts([leveled], [leveled]);
+    await waitPoll();
+    check('level grace: the toast carries the level that arrived during the wait', () => {
+        assert.strictEqual(captured.notifications.length, 1);
+        const text = toastText(0);
+        assert.ok(captured.notifications[0].toastXml.includes('alert_yellow.png'), text);
+        assert.ok(text.includes('Дронова загроза (жовтий рівень)'), text);
+        assert.deepStrictEqual(captured.sounds, ['alert']);
+    });
+    check('sound sync: closing the toast stops exactly its own sound', () => {
+        assert.strictEqual(captured.shown.length, 1);
+        captured.shown[0].emit('close');
+        assert.deepStrictEqual(captured.stops, [captured.shown[0]]);
+    });
+    reset();
+
+    const late = bareAlert(201);
+    notifier.processAlerts([late], [late]);
+    await flush();
+    offset += 21000;
+    await waitPoll();
+    check('level grace: without a level the toast still comes after the grace period', () => {
+        const starts = captured.notifications.filter((entry) => /Увага/.test(entry.toastXml));
+        assert.strictEqual(starts.length, 1);
+        assert.ok(!starts[0].toastXml.includes('alert_yellow.png'));
+    });
+    reset();
+
+    const gone = bareAlert(202);
+    notifier.processAlerts([gone], [gone]);
+    await flush();
+    notifier.processAlerts([], []);
+    await waitPoll();
+    check('level grace: no start toast for an alert that ended during the wait', () => {
+        assert.ok(!captured.notifications.some((entry) => /Увага/.test(entry.toastXml)));
+    });
+
+    notifier.processAlerts([], []);
+    await flush();
+    reset();
+    notifier.configureThrottle({ perWindow: 3, criticalPerWindow: 2, digestDelayMs: 120, digestCooldownMs: 120 });
+    offset += 20000;
+    const wave = [];
+    const addToWave = (uid, level) => {
+        const alert = { ...alertAt(level, level ? [YELLOW] : []), id: `m-${uid}-air_raid`, location_uid: uid, location_title: `Область ${uid}`, location_lat: `Region ${uid}` };
+        wave.push(alert);
+        notifier.processAlerts([...wave], [...wave]);
+    };
+    for (let uid = 301; uid <= 308; uid++) {
+        addToWave(uid, 'yellow');
+        await flush();
+    }
+    check('throttle: only three individual start toasts at once, the rest wait for one digest', () => {
+        const starts = captured.notifications.filter((entry) => /Увага/.test(entry.toastXml));
+        assert.strictEqual(starts.length, 3);
+        assert.ok(captured.sounds.length >= 3 && captured.sounds.every((name) => name === 'alert'));
+    });
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    check('throttle: the overflow arrives as one digest with locations and the highest level', () => {
+        const digests = captured.notifications.filter((entry) => /Ще тривог: 5/.test(entry.toastXml));
+        assert.strictEqual(digests.length, 1);
+        const text = digests[0].toastXml.replace(/<[^>]+>/g, ' ').replace(/s+/g, ' ');
+        assert.ok(text.includes('Локації: Область 304, Область 305, Область 306 та ще 2'), text);
+        assert.ok(text.includes('Найвищий рівень: жовтий'), text);
+        assert.strictEqual(captured.sounds.length, 4);
+    });
+    reset();
+
+    offset += 70000;
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    for (let uid = 311; uid <= 316; uid++) {
+        addToWave(uid, 'yellow');
+        await flush();
+    }
+    addToWave(321, 'red');
+    addToWave(322, 'red');
+    addToWave(323, 'red');
+    await flush();
+    check('throttle: a new red alert still gets its own toast beyond the limit, up to the critical allowance', () => {
+        const texts = captured.notifications.map((entry) => entry.toastXml);
+        assert.ok(texts.some((text) => /Область 321/.test(text)));
+        assert.ok(texts.some((text) => /Область 322/.test(text)));
+        assert.ok(!texts.some((text) => /Область 323/.test(text) && /Увага/.test(text)));
+    });
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    reset();
+
+    notifier.configureThrottle({ perWindow: 1, criticalPerWindow: 1, digestDelayMs: 100, digestCooldownMs: 100 });
+    offset += 70000;
+    const solo = [];
+    const addSolo = (uid) => {
+        const alert = { ...alertAt('yellow', [YELLOW]), id: `m-${uid}-air_raid`, location_uid: uid, location_title: `Район ${uid}`, location_lat: `District ${uid}` };
+        solo.push(alert);
+        notifier.processAlerts([...solo], [...solo]);
+    };
+    addSolo(401);
+    await flush();
+    addSolo(402);
+    await flush();
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    check('throttle: a single queued event is delivered as an ordinary toast, not as a digest of one', () => {
+        const texts = captured.notifications.map((entry) => entry.toastXml);
+        assert.strictEqual(texts.filter((text) => /Увага/.test(text)).length, 2);
+        assert.ok(!texts.some((text) => /Ще тривог/.test(text)));
+    });
+    notifier.configureThrottle({ perWindow: 1000, criticalPerWindow: 1000 });
+
+    notifier.processAlerts([], []);
+    await flush();
+    reset();
+    const delays = [];
+    const realSetTimeout = global.setTimeout;
+    global.setTimeout = (fn, ms, ...rest) => {
+        delays.push(ms);
+        return realSetTimeout(fn, ms, ...rest);
+    };
+    const mk = (uid, level) => ({
+        ...alertAt(level, [level === 'red' ? RED : YELLOW]),
+        id: `m-${uid}-air_raid`,
+        location_uid: uid,
+        location_title: `Область ${uid}`,
+        location_lat: `Region ${uid}`,
+    });
+    const hasAlarm = (index) => captured.notifications[index].toastXml.includes('scenario="urgent"');
+    const clearAll = async () => {
+        notifier.processAlerts([], []);
+        offset += 20000;
+        notifier.processAlerts([], []);
+        await flush();
+        offset += 70000;
+    };
+
+    offset += 70000;
+    notifier.processAlerts([mk(910, 'red')], [mk(910, 'red')]);
+    await flush();
+    check('emergency: a red start is an alarm toast that lives 25 seconds', () => {
+        assert.strictEqual(captured.notifications.length, 1);
+        assert.ok(hasAlarm(0));
+        assert.ok(delays.includes(25000), String(delays));
+    });
+    notifier.processAlerts([], []);
+    offset += 20000;
+    notifier.processAlerts([], []);
+    await flush();
+    check('emergency: the start toast is taken down when the alert ends, the all-clear lives 15 seconds', () => {
+        assert.strictEqual(captured.shown[0].closed, true);
+        assert.ok(delays.includes(15000), String(delays));
+    });
+    reset();
+    offset += 70000;
+
+    notifier.processAlerts([mk(911, 'yellow')], [mk(911, 'yellow')]);
+    await flush();
+    check('emergency: a yellow start is an ordinary toast that lives 20 seconds in the red-only mode', () => {
+        assert.ok(!hasAlarm(0));
+        assert.ok(delays.includes(20000), String(delays));
+    });
+    await clearAll();
+    reset();
+
+    settings.notifyProfile = { startYellow: { emergency: true, seconds: 20 } };
+    notifier.processAlerts([mk(912, 'yellow')], [mk(912, 'yellow')]);
+    await flush();
+    check('emergency: a yellow start set to emergency in the settings is an alarm too', () => assert.ok(hasAlarm(0)));
+    await clearAll();
+    reset();
+
+    settings.notifyProfile = { startRed: { emergency: false, seconds: 30 } };
+    notifier.processAlerts([mk(913, 'red')], [mk(913, 'red')]);
+    await flush();
+    check('emergency: a red start set to standard is an ordinary toast and keeps the chosen time', () => {
+        assert.ok(!hasAlarm(0));
+        assert.ok(delays.includes(30000), String(delays));
+    });
+    await clearAll();
+    reset();
+    delete settings.notifyProfile;
+
+    const wave2 = [];
+    for (let uid = 920; uid < 924; uid++) {
+        wave2.push(mk(uid, 'red'));
+        notifier.processAlerts([...wave2], [...wave2]);
+        await flush();
+    }
+    check('emergency: at most three alarm toasts are open at once', () => {
+        const starts = captured.notifications.filter((entry) => /Увага/.test(entry.toastXml));
+        assert.strictEqual(starts.length, 4);
+        const alarms = starts.map((entry) => entry.toastXml.includes('scenario="urgent"'));
+        assert.ok(alarms[0]);
+        assert.ok(!alarms[3]);
+        assert.ok(alarms.filter(Boolean).length <= 3);
+    });
+    await clearAll();
+    reset();
+    notifier.processAlerts([mk(950, 'red')], [mk(950, 'red')]);
+    await flush();
+    check('details window: a single alert shows location, start and the notification time with a date', () => {
+        assert.strictEqual(captured.shown.length, 1);
+        captured.shown[0].emit('click');
+        assert.strictEqual(captured.messages.length, 1);
+        const detail = captured.messages[0].detail;
+        assert.ok(detail.includes('Область 950'), detail);
+        assert.ok(/Розпочалась: .*\d{2}\.\d{2}\.\d{4}/.test(detail), detail);
+        assert.ok(/Час сповіщення: .*\d{2}\.\d{2}\.\d{4}.*\d{2}:\d{2}/.test(detail), detail);
+        assert.ok(/Поточний рівень: червоний/.test(detail), detail);
+        assert.ok(/Тривалість: /.test(detail), detail);
+        assert.deepStrictEqual(captured.messages[0].buttons.map((button) => button.id), ['map', 'status', 'close']);
+    });
+    await flush();
+    check('details window: the open map button opens the live map of Ukraine', () => {
+        captured.nextChoice = 'map';
+        captured.shown[0].emit('click');
+        return flush().then(() => assert.deepStrictEqual(captured.maps, ['ukraine']));
+    });
+    await clearAll();
+    reset();
+    reset();
+    notifier.processKyivDistricts([{ name: 'Шевченківський', startedAt: new Date(realNow() + offset - 120000).toISOString(), alertLevel: 'red', threats: [{ level: 'red', description: 'Ракетна загроза' }] }]);
+    await flush();
+    check('kyiv district: clicking a single district toast opens the details window with the level, threat and times', () => {
+        assert.strictEqual(captured.shown.length, 1);
+        captured.nextChoice = 'map';
+        captured.shown[0].emit('click');
+        assert.strictEqual(captured.messages.length, 1);
+        const detail = captured.messages[0].detail;
+        assert.ok(detail.includes('Шевченківський район'), detail);
+        assert.ok(/Поточний рівень: червоний/.test(detail), detail);
+        assert.ok(detail.includes('Ракетна загроза'), detail);
+        assert.ok(/Розпочалась: /.test(detail) && /Час сповіщення: /.test(detail), detail);
+    });
+    await flush();
+    check('kyiv district: the open map button opens the map in the Kyiv mode', () => assert.deepStrictEqual(captured.maps, ['kyiv']));
+    notifier.processKyivDistricts([]);
+    offset += 20000;
+    notifier.processKyivDistricts([]);
+    await flush();
+    check('kyiv district: the all-clear toast opens details with the highest level and the whole duration', () => {
+        const clear = captured.shown[captured.shown.length - 1];
+        captured.messages.length = 0;
+        clear.emit('click');
+        assert.strictEqual(captured.messages.length, 1);
+        const detail = captured.messages[0].detail;
+        assert.ok(detail.includes('Шевченківський район'), detail);
+        assert.ok(/Найвищий рівень: червоний/.test(detail), detail);
+        assert.ok(/Тривалість: /.test(detail), detail);
+    });
+    reset();
+    await clearAll();
+    notifier.configureToasts({ urgentSupported: false });
+    notifier.processAlerts([mk(960, 'red')], [mk(960, 'red')]);
+    await flush();
+    check('emergency: where urgent toasts are unsupported the emergency falls back to an alarm toast', () => {
+        assert.strictEqual(captured.shown.length, 1);
+        assert.ok(captured.notifications[0].toastXml.includes('scenario="alarm"'), captured.notifications[0].toastXml);
+    });
+    notifier.configureToasts({ urgentSupported: true });
+    await clearAll();
+    reset();
+    const trio = [mk(940, 'yellow'), mk(941, 'red'), mk(942, 'yellow')];
+    notifier.processAlerts(trio, trio);
+    await flush();
+    check('summary details: clicking a mass start toast lists every region, the red ones first', () => {
+        assert.strictEqual(captured.shown.length, 1);
+        captured.shown[0].emit('click');
+        assert.strictEqual(captured.messages.length, 1);
+        const lines = captured.messages[0].detail.split('\n');
+        assert.ok(lines[0].startsWith('Час сповіщення: '), lines[0]);
+        assert.ok(/\d{2}\.\d{2}\.\d{4}/.test(lines[0]) && /\d{2}:\d{2}/.test(lines[0]), lines[0]);
+        assert.strictEqual(lines[1], '');
+        const rows = lines.slice(2);
+        assert.strictEqual(rows.length, 3);
+        assert.ok(rows[0].startsWith('Область 941'), rows[0]);
+        assert.ok(rows.some((row) => row.startsWith('Область 940')));
+        assert.ok(rows.some((row) => row.startsWith('Область 942')));
+        assert.ok(captured.messages[0].buttons.some((button) => button.id === 'status'));
+    });
+    await clearAll();
+    global.setTimeout = realSetTimeout;
+    reset();
+    notifier.configureThrottle({ perWindow: 1000, criticalPerWindow: 1000 });
+    settings.visualNotificationsEnabled = false;
+    const silentOne = { ...alertAt('red', [YELLOW]), id: 'm-900-air_raid', location_uid: 900, location_title: 'Область 900', location_lat: 'Region 900' };
+    notifier.processAlerts([silentOne], [silentOne]);
+    await flush();
+    check('sound sync: with visual notifications off the sound plays once on its own', () => {
+        assert.strictEqual(captured.notifications.length, 0);
+        assert.deepStrictEqual(captured.sounds, ['alert']);
+    });
+    settings.visualNotificationsEnabled = true;
+    notifier.processAlerts([], []);
+    await flush();
 
     Date.now = realNow;
     Module._load = originalLoad;

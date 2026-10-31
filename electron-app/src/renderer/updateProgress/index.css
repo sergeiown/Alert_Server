@@ -1,42 +1,22 @@
-:root {
-    --bg: #ffffff;
-    --fg: #1f1f1f;
-    --muted: #666666;
-    --track: #e6e6e6;
-    --fill: #2563eb;
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --bg: #1e1e1e;
-        --fg: #e6e6e6;
-        --muted: #aaaaaa;
-        --track: #3a3a3a;
-        --fill: #6ea8fe;
-    }
-}
-
-* {
-    box-sizing: border-box;
-}
-
 html,
 body {
     overflow: hidden;
 }
 
 body {
-    margin: 0;
-    padding: 24px 20px;
+    padding: 14px;
+    user-select: none;
+}
+
+#card {
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     text-align: center;
     gap: 10px;
-    background: var(--bg);
-    color: var(--fg);
-    font-family: 'IBM Plex Sans', 'Segoe UI', Tahoma, sans-serif;
-    font-size: 13px;
+    padding: 16px 22px;
 }
 
 #icon {
@@ -45,29 +25,34 @@ body {
 }
 
 #statusText {
-    font-size: 14px;
     margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.3;
 }
 
 #progressBar {
     width: 100%;
     height: 10px;
-    border-radius: 6px;
+    border-radius: var(--radius-pill);
     overflow: hidden;
     appearance: none;
+    border: 0;
 }
 
 #progressBar::-webkit-progress-bar {
-    background: var(--track);
-    border-radius: 6px;
+    background: var(--card-divider);
+    border-radius: var(--radius-pill);
 }
 
 #progressBar::-webkit-progress-value {
-    background: var(--fill);
-    border-radius: 6px;
+    background: var(--accent);
+    border-radius: var(--radius-pill);
 }
 
 #percentText {
-    color: var(--muted);
     margin: 0;
+    color: var(--card-muted);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
 }

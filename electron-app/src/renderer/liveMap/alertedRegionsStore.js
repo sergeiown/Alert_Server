@@ -97,6 +97,7 @@ const ready = refresh();
 setInterval(refresh, REFRESH_MS);
 
 export {
+    refresh,
     subscribe,
     getLatest,
     getOblastStartedAt,

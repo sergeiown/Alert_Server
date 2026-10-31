@@ -8,11 +8,11 @@ const { startPolling: startNeptunPolling } = require('./neptunAlertsSource');
 const { setActiveAlertSource, setAlertSourcesStatus } = require('./alertState');
 const connectionState = require('./connectionState');
 const { createOutageLog } = require('./outageLog');
-const { fetchWithTimeout } = require('./proxyConfig');
+const { PROXY_URL, fetchWithTimeout } = require('./proxyConfig');
 
 const FAILURE_THRESHOLD = 3;
 
-const RECOVERY_RETRY_MS = 5 * 60 * 1000;
+const PRIMARY_PROBE_MS = 30 * 1000;
 const PROBE_URL = 'https://neptun.in.ua/api/v1/alerts';
 const PROBE_TIMEOUT_MS = 5000;
 
@@ -25,17 +25,28 @@ async function alternativeReachable() {
     }
 }
 
+async function proxyReachable(clientKey) {
+    try {
+        const response = await fetchWithTimeout(`${PROXY_URL}/client-policy`, { headers: { 'X-Client-Key': clientKey || '' } }, PROBE_TIMEOUT_MS);
+        return response.status < 500;
+    } catch (err) {
+        return false;
+    }
+}
+
 const CHAIN = [
     {
         key: 'merged',
         label: 'Alert Server',
         needsClientKey: true,
+        viaProxy: true,
         start: (clientKey, onUpdate, onHealthChange) => startMergedPolling(clientKey, onUpdate, onHealthChange),
     },
     {
         key: 'alerts.in.ua',
         label: 'alerts.in.ua',
         needsClientKey: true,
+        viaProxy: true,
         start: (clientKey, onUpdate, onHealthChange) => startAlertsInUaPolling(clientKey, onUpdate, onHealthChange),
     },
     {
@@ -108,7 +119,7 @@ function startAlertSourceManager(clientKey, onAlertsUpdated) {
         if (consecutiveFailures >= FAILURE_THRESHOLD && activeIndex < CHAIN.length - 1 && !probing) {
             probing = true;
             const index = activeIndex;
-            alternativeReachable().then((reachable) => {
+            Promise.all([alternativeReachable(), proxyReachable(clientKey)]).then(([reachable, proxyUp]) => {
                 probing = false;
                 if (index !== activeIndex) return;
                 if (!reachable) {
@@ -116,21 +127,40 @@ function startAlertSourceManager(clientKey, onAlertsUpdated) {
                     stayLog.fail(`No alternative source is reachable: staying on ${CHAIN[activeIndex].label}`);
                     return;
                 }
+                const nextIndex = CHAIN.findIndex((source, position) => position > activeIndex && (proxyUp || !source.viaProxy));
+                if (nextIndex === -1) {
+                    consecutiveFailures = 0;
+                    return;
+                }
                 const from = CHAIN[activeIndex].label;
-                const to = CHAIN[activeIndex + 1].label;
+                const to = CHAIN[nextIndex].label;
                 logEvent(`Alert source unavailable: ${from} - automatically switching to ${to}`, 'WARNING');
-                activate(activeIndex + 1, `failover from ${from}`);
+                activate(nextIndex, `failover from ${from}`);
             });
         }
     }
 
     activate(0);
 
-    setInterval(() => {
+    const reconnect = () => {
+        if (activeHandle && typeof activeHandle.reconnect === 'function') activeHandle.reconnect();
+    };
+
+    let probingPrimary = false;
+    setInterval(async () => {
+        if (activeIndex === 0 || probingPrimary) return;
+        probingPrimary = true;
+        const up = await proxyReachable(clientKey);
+        probingPrimary = false;
         if (activeIndex === 0) return;
-        retryLog.fail(`Retrying primary alert source: ${CHAIN[0].label}`);
-        activate(0, 'retrying primary source');
-    }, RECOVERY_RETRY_MS);
+        if (!up) {
+            retryLog.fail(`Primary alert source is still unreachable: ${CHAIN[0].label}`);
+            return;
+        }
+        activate(0, 'primary source reachable again');
+    }, PRIMARY_PROBE_MS);
+
+    return { reconnect };
 }
 
 module.exports = { startAlertSourceManager };

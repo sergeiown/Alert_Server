@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const gateway = require('./gateway');
+const lib = require('./lib');
 const neptun = require('./neptun');
 const store = require('./store');
 const { loadConfig, buildDirectory, createMerger, signatureOf } = require('./mergeCore');
@@ -35,11 +36,7 @@ function readIa() {
     if (!body) return { alerts: [], fetchedAt: null };
     if (body !== cache.iaBody) {
         cache.iaBody = body;
-        try {
-            cache.iaAlerts = JSON.parse(body).alerts || [];
-        } catch (err) {
-            cache.iaAlerts = [];
-        }
+        cache.iaAlerts = lib.parseActiveAlerts(body) || [];
     }
     return { alerts: cache.iaAlerts, fetchedAt };
 }

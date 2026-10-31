@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const REFRESH_MS = 6 * 60 * 60 * 1000;
+const RETRY_MS = 3000;
 const PATTERN_ID = 'occupied-territory-hatch';
 
 function ensureHatchPattern(map, color) {
@@ -39,7 +40,7 @@ function addOccupiedTerritoryLayer(map) {
 
     async function refresh() {
         const { geojson } = await window.alertServerLiveMap.getOccupiedTerritory();
-        if (!geojson) return;
+        if (!geojson) return false;
 
         if (currentGeoJsonLayer) layer.removeLayer(currentGeoJsonLayer);
         currentGeoJsonLayer = L.geoJSON(geojson, {
@@ -54,10 +55,18 @@ function addOccupiedTerritoryLayer(map) {
             },
             interactive: false,
         }).addTo(layer);
+        return true;
     }
 
-    layer.ready = refresh();
-    setInterval(refresh, REFRESH_MS);
+    layer.ready = new Promise((resolve) => {
+        async function attempt() {
+            const loaded = await refresh().catch(() => false);
+            if (loaded) resolve();
+            else setTimeout(attempt, RETRY_MS);
+        }
+        attempt();
+    });
+    setInterval(() => refresh().catch(() => {}), REFRESH_MS);
 
     return layer.addTo(map);
 }

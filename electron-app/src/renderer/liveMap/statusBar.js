@@ -66,7 +66,7 @@ function startStatusBar(strings, language) {
     refreshAlertCount();
     setInterval(refreshAlertCount, ALERT_COUNT_REFRESH_MS);
 
-    return { setThreatCount };
+    return { setThreatCount, refreshAlertCount };
 }
 
 export { startStatusBar };

@@ -9,6 +9,7 @@ function createAvailability({ now = Date.now, thresholdMs = NO_DATA_AFTER_MS, ch
     let state = 'ok';
     let handler = null;
     let timer = null;
+    let lastTickAt = now();
 
     function emit() {
         if (handler) handler(state);
@@ -19,6 +20,17 @@ function createAvailability({ now = Date.now, thresholdMs = NO_DATA_AFTER_MS, ch
             state = 'nodata';
             emit();
         }
+    }
+
+    function tick() {
+        const current = now();
+        const slept = current - lastTickAt > checkMs * 3;
+        lastTickAt = current;
+        if (slept) {
+            if (state === 'ok') lastGoodAt = current;
+            return;
+        }
+        check();
     }
 
     function noteGoodUpdate() {
@@ -35,7 +47,7 @@ function createAvailability({ now = Date.now, thresholdMs = NO_DATA_AFTER_MS, ch
 
     function start() {
         if (timer) return;
-        timer = timers.setInterval(check, checkMs);
+        timer = timers.setInterval(tick, checkMs);
         if (timer && typeof timer.unref === 'function') timer.unref();
     }
 
@@ -47,6 +59,7 @@ function createAvailability({ now = Date.now, thresholdMs = NO_DATA_AFTER_MS, ch
 
     return {
         check,
+        tick,
         noteGoodUpdate,
         rearm,
         start,

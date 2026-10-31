@@ -136,9 +136,10 @@ a.web-chip {
 #webCredits .leaflet-control-attribution {
     float: none;
     clear: none;
-    margin: 0;
+    margin: 0 !important;
     padding: 0;
-    background: none;
+    background: none !important;
+    border-radius: 0;
     box-shadow: none;
     color: inherit;
     font-size: inherit;
@@ -146,7 +147,8 @@ a.web-chip {
 }
 
 #webCredits a {
-    color: inherit;
+    color: inherit !important;
+    font-size: inherit;
     text-decoration: none;
 }
 

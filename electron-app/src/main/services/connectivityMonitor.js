@@ -17,7 +17,7 @@ function describeSpan(ms) {
     return `${seconds}s`;
 }
 
-function startConnectivityMonitor() {
+function startConnectivityMonitor({ onRestored } = {}) {
     let suspendedAt = null;
     let offlineSince = null;
     let lastTick = Date.now();
@@ -53,6 +53,7 @@ function startConnectivityMonitor() {
         } else if (online && offlineSince !== null) {
             logEvent(`Internet connection restored after ${describeSpan(now - offlineSince)} offline`, 'NETWORK');
             offlineSince = null;
+            if (onRestored) onRestored();
         }
     }, CHECK_INTERVAL_MS);
 }

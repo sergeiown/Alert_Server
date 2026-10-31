@@ -43,6 +43,11 @@ function countTotal(node, type) {
     return count;
 }
 
+export function countSelectedRegions(tree, selectedUids) {
+    const selectedSet = new Set(Array.from(selectedUids, Number));
+    return tree.states.reduce((sum, state) => sum + countSelected(state, 'state', selectedSet), 0);
+}
+
 export function createRegionTree(container, tree, initialSelectedUids, language, onToggle) {
     const selectedSet = new Set(initialSelectedUids);
     const wrapperByUid = new Map();

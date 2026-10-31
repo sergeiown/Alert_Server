@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const { getUserDataFile } = require('./appPaths');
+const { normalizeSelection } = require('./selectionNormalizer');
 
 const DEBOUNCE_MS = 400;
 
@@ -19,7 +20,7 @@ function load() {
 
     try {
         const parsed = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-        selectedUids = new Set(Array.isArray(parsed.selectedUids) ? parsed.selectedUids : []);
+        selectedUids = new Set(normalizeSelection(Array.isArray(parsed.selectedUids) ? parsed.selectedUids : []));
     } catch (err) {
         selectedUids = new Set();
     }
@@ -55,7 +56,7 @@ function getSelectedUids() {
 
 function setSelectedUids(uids) {
     ensureLoaded();
-    selectedUids = new Set(uids);
+    selectedUids = new Set(normalizeSelection(uids));
     scheduleWrite();
 }
 
@@ -66,8 +67,10 @@ function toggleUid(uid) {
     } else {
         selectedUids.add(uid);
     }
+    const isSelected = selectedUids.has(uid);
+    selectedUids = new Set(normalizeSelection(Array.from(selectedUids)));
     scheduleWrite();
-    return selectedUids.has(uid);
+    return isSelected;
 }
 
 function seedFromLegacy(uids) {

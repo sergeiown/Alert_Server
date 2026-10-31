@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8" />
+    <meta
+        http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:;"
+    />
+    <title>Alert Server</title>
+    <link rel="stylesheet" href="../shared/fonts/fonts.css" />
+    <link rel="stylesheet" href="../shared/ui.css" />
+    <link rel="stylesheet" href="index.css" />
+</head>
+<body>
+    <main id="card" class="ui-card">
+        <h1 id="message"></h1>
+        <p id="detail" class="ui-scroll" hidden></p>
+        <div id="buttons"></div>
+    </main>
+    <script type="module" src="index.js"></script>
+</body>
+</html>

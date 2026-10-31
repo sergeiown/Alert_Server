@@ -1,71 +1,94 @@
-:root {
-    --bg: #030b06;
-    --fg: #4cff7d;
-    --dim: #1f9c47;
-    --muted: #1f9c47;
-    --border: #1c7a3a;
-    --warn: #ffb52e;
-    --error: #ff6159;
-    --net: #5fe6d0;
-    --alert: #ffe45c;
-    --btn-bg: transparent;
-    --btn-border: #2ad463;
-    --btn-hover: #4cff7d;
-    --glow: 0 0 6px rgba(76, 255, 125, 0.55);
-}
-
-* {
-    box-sizing: border-box;
-}
-
 body {
-    margin: 0;
     display: flex;
     flex-direction: column;
     height: 100vh;
-    background: radial-gradient(ellipse at center, #06170c 0%, var(--bg) 75%);
-    color: var(--fg);
-    font-family: 'IBM Plex Mono', Consolas, 'Courier New', monospace;
-    font-size: 13px;
-    letter-spacing: 0.3px;
-    text-shadow: var(--glow);
+    padding: 16px 20px 20px;
+    overflow: hidden;
 }
 
-body::after {
+[hidden] {
+    display: none !important;
+}
+
+#monitor {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    padding: 14px;
+}
+
+#screen {
+    --t-bg: #030b06;
+    --t-fg: #4cff7d;
+    --t-dim: #1f9c47;
+    --t-border: #1c7a3a;
+    --t-warn: #ffb52e;
+    --t-error: #ff6159;
+    --t-net: #5fe6d0;
+    --t-alert: #ffe45c;
+    --t-glow: 0 0 6px rgba(76, 255, 125, 0.55);
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 14px;
+    background: radial-gradient(ellipse at center, #06170c 0%, var(--t-bg) 75%);
+    color: var(--t-fg);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 0.3px;
+    text-shadow: var(--t-glow);
+    box-shadow:
+        inset 0 0 0 1px rgba(76, 255, 125, 0.18),
+        inset 0 0 46px rgba(0, 0, 0, 0.7),
+        0 0 0 3px rgba(0, 0, 0, 0.38);
+}
+
+#screen::after {
     content: '';
-    position: fixed;
+    position: absolute;
     inset: 0;
+    z-index: 2;
     pointer-events: none;
+    border-radius: inherit;
     background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0, rgba(0, 0, 0, 0.22) 1px, transparent 1px, transparent 3px);
-    box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.7);
+    box-shadow: inset 0 0 110px rgba(0, 0, 0, 0.65);
 }
 
 header {
+    position: relative;
+    z-index: 1;
     flex: 0 0 auto;
     padding: 10px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px dashed var(--border);
+    flex-wrap: wrap;
+    gap: 10px;
+    border-bottom: 1px dashed var(--t-border);
 }
 
 #sizeLabel {
-    color: var(--dim);
+    color: var(--t-dim);
 }
 
-#sizeLabel::before {
+#sizeLabel:not(:empty)::before {
     content: '> ';
 }
 
 #buttonGroup {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
 }
 
-button {
-    background: var(--btn-bg);
-    color: var(--fg);
-    border: 1px solid var(--btn-border);
+#buttonGroup button {
+    background: transparent;
+    color: var(--t-fg);
+    border: 1px solid #2ad463;
     border-radius: 0;
     padding: 4px 12px;
     cursor: pointer;
@@ -76,29 +99,32 @@ button {
     text-shadow: inherit;
 }
 
-button::before {
+#buttonGroup button::before {
     content: '[ ';
 }
 
-button::after {
+#buttonGroup button::after {
     content: ' ]';
 }
 
-button:hover {
-    background: var(--btn-hover);
-    color: var(--bg);
+#buttonGroup button:hover {
+    background: var(--t-fg);
+    color: var(--t-bg);
     text-shadow: none;
 }
 
 #content {
+    position: relative;
+    z-index: 1;
     flex: 1 1 auto;
+    min-height: 0;
     margin: 0;
     padding: 12px 16px;
     overflow: auto;
     white-space: pre-wrap;
     word-break: break-all;
     line-height: 1.45;
-    scrollbar-color: var(--border) transparent;
+    scrollbar-color: var(--t-border) transparent;
 }
 
 #content::after {
@@ -119,30 +145,30 @@ button:hover {
 }
 
 .line.level-WARNING {
-    color: var(--warn);
+    color: var(--t-warn);
     text-shadow: 0 0 6px rgba(255, 181, 46, 0.5);
 }
 
 .line.level-ERROR {
-    color: var(--error);
+    color: var(--t-error);
     text-shadow: 0 0 6px rgba(255, 97, 89, 0.55);
 }
 
 .line.level-NETWORK {
-    color: var(--net);
+    color: var(--t-net);
     text-shadow: 0 0 6px rgba(95, 230, 208, 0.45);
 }
 
 .line.level-ALERT {
-    color: var(--alert);
+    color: var(--t-alert);
     font-weight: 700;
     text-shadow: 0 0 8px rgba(255, 228, 92, 0.6);
 }
 
 .line.level-INFO {
-    color: var(--fg);
+    color: var(--t-fg);
 }
 
 .line.meta {
-    color: var(--dim);
+    color: var(--t-dim);
 }

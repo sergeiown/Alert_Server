@@ -6,13 +6,14 @@ const { getUserDataFile } = require('./appPaths');
 const { logEvent } = require('./logger');
 const { createOutageLog } = require('./outageLog');
 const { setLatestAlertData, getLatestAlertData } = require('./activeAlertData');
-const { PROXY_WS_URL, getClientVersion, proxyFetch, describeError } = require('./proxyConfig');
+const { PROXY_WS_URL, getClientVersion, fetchWithTimeout, describeError } = require('./proxyConfig');
 const { getInstallId } = require('./installId');
 
 const RECONNECT_DELAY_MS = 5000;
 const MAX_RECONNECT_DELAY_MS = 60000;
-const HEARTBEAT_TIMEOUT_MS = 8 * 60 * 1000;
-const FALLBACK_POLL_INTERVAL_MS = 60000;
+const HEARTBEAT_TIMEOUT_MS = 2 * 60 * 1000;
+const FALLBACK_POLL_INTERVAL_MS = 15000;
+const FALLBACK_POLL_TIMEOUT_MS = 6000;
 
 function persistData(data) {
     setLatestAlertData(data);
@@ -47,7 +48,7 @@ function startProxyStream({ label, wsPath, pollUrl, clientKey, onUpdate, onHealt
 
     async function fallbackPollOnce() {
         try {
-            const response = await proxyFetch(pollUrl, { headers: { 'X-Client-Key': clientKey, 'X-Client-Version': getClientVersion() } });
+            const response = await fetchWithTimeout(pollUrl, { headers: { 'X-Client-Key': clientKey, 'X-Client-Version': getClientVersion() } }, FALLBACK_POLL_TIMEOUT_MS);
 
             if (!response.ok) {
                 if (hooks.onPollFailed) hooks.onPollFailed(response.status);
@@ -152,6 +153,12 @@ function startProxyStream({ label, wsPath, pollUrl, clientKey, onUpdate, onHealt
     connect();
 
     return {
+        reconnect: () => {
+            if (stopped) return;
+            reconnectAttempts = 0;
+            logEvent(`${label}: re-establishing the connection`, 'NETWORK');
+            connect();
+        },
         stop: () => {
             stopped = true;
             if (reconnectTimer) clearTimeout(reconnectTimer);

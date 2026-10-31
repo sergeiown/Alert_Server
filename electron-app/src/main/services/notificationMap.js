@@ -50,6 +50,7 @@ const MIN_HIGHLIGHT_PIXELS = 6;
 const COLOR_TOLERANCE = 40;
 
 let svgTemplate = null;
+let geometry = null;
 let renderCounter = 0;
 let queue = Promise.resolve();
 
@@ -114,6 +115,40 @@ function loadSvgTemplate() {
             : stripped.replace('<svg', `<svg viewBox="0 0 ${width} ${height}"`);
     }
     return svgTemplate;
+}
+
+function loadRendererModule(fileName, exportNames) {
+    const filePath = path.join(__dirname, '..', '..', 'renderer', 'liveMap', fileName);
+    const source = fs.readFileSync(filePath, 'utf-8').replace(/^\s*export\s*\{[^}]*\};?\s*$/gm, '');
+    const holder = { exports: {} };
+    new Function('module', `${source};module.exports = { ${exportNames.join(', ')} };`)(holder);
+    return holder.exports;
+}
+
+function getGeometry() {
+    if (geometry === null) {
+        geometry = {
+            ...loadRendererModule('raionBorders.js', ['RAION_BORDERS']),
+            ...loadRendererModule('ukraineProjection.js', ['ringToSvgPath']),
+            ...loadRendererModule('raionNames.js', ['normalizeRaionName']),
+        };
+    }
+    return geometry;
+}
+
+function resolveSelection(regions) {
+    const { RAION_BORDERS, ringToSvgPath, normalizeRaionName } = getGeometry();
+    const isoCodes = new Set();
+    const raionPaths = new Set();
+
+    regions.forEach((region) => {
+        const entry = typeof region === 'object' ? region : { stateUid: region };
+        const ring = entry.districtName ? RAION_BORDERS[normalizeRaionName(entry.districtName)] : null;
+        if (ring) raionPaths.add(ringToSvgPath(ring));
+        else (REGION_TO_ISO[entry.stateUid] || []).forEach((iso) => isoCodes.add(iso));
+    });
+
+    return { isoCodes: [...isoCodes], raionPaths: [...raionPaths] };
 }
 
 function hexToRgb(color) {
@@ -190,28 +225,33 @@ function matte(white, black, size, highlight) {
     return { rgba: out, transparentShare: transparent / count, highlightPixels };
 }
 
-function buildHtml(stateIsoCodes, color) {
+function buildHtml(selection, color) {
     const svgText = loadSvgTemplate();
     const { width: svgWidth, height: svgHeight } = parseSize(svgText);
     const scale = Math.min(OUTPUT_WIDTH / svgWidth, MAP_HEIGHT / svgHeight);
     const renderedWidth = Math.round(svgWidth * scale);
     const renderedHeight = Math.round(svgHeight * scale);
-    const highlightCss = stateIsoCodes.map((iso) => `#${iso}{fill:${color};}`).join('');
+    const highlightCss = [
+        ...selection.isoCodes.map((iso) => `#${iso}{fill:${color};}`),
+        ...selection.raionPaths.map((_, index) => `#selected-raion-${index}{fill:${color};}`),
+    ].join('');
+    const raionMarkup = selection.raionPaths.map((d, index) => `<path id="selected-raion-${index}" d="${d}"/>`).join('');
+    const markup = raionMarkup ? svgText.replace(/<\/svg>\s*$/, `${raionMarkup}</svg>`) : svgText;
     const isDark = nativeTheme.shouldUseDarkColors;
     const regionFill = isDark ? 'rgba(255,255,255,0.17)' : 'rgba(0,0,0,0.13)';
-    const regionStroke = isDark ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.8)';
+    const regionStroke = isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)';
 
     return `<!doctype html><html><head><style>
         html,body{margin:0;padding:0;width:${OUTPUT_WIDTH}px;height:${OUTPUT_HEIGHT}px;background:#000;
             display:flex;align-items:center;justify-content:center;overflow:hidden;}
         body{padding-top:${TOP_PAD}px;padding-bottom:${BOTTOM_PAD}px;box-sizing:border-box;}
         svg{width:${renderedWidth}px;height:${renderedHeight}px;display:block;}
-        path{fill:${regionFill};stroke:${regionStroke};stroke-width:0.5;transition:none;}
+        path{fill:${regionFill};stroke:${regionStroke};stroke-width:0.3;transition:none;}
         ${highlightCss}
-    </style></head><body>${svgText}</body></html>`;
+    </style></head><body>${markup}</body></html>`;
 }
 
-async function renderOnce(isoCodes, color, outputPath, htmlPath) {
+async function renderOnce(selection, color, outputPath, htmlPath) {
     const win = new BrowserWindow({
         width: OUTPUT_WIDTH,
         height: OUTPUT_HEIGHT,
@@ -221,7 +261,7 @@ async function renderOnce(isoCodes, color, outputPath, htmlPath) {
     });
 
     try {
-        fs.writeFileSync(htmlPath, buildHtml(isoCodes, color), 'utf-8');
+        fs.writeFileSync(htmlPath, buildHtml(selection, color), 'utf-8');
         await win.loadFile(htmlPath);
         const black = await captureOn(win, '#000');
         const white = await captureOn(win, '#fff');
@@ -240,9 +280,9 @@ async function renderOnce(isoCodes, color, outputPath, htmlPath) {
     }
 }
 
-async function renderNow(stateUids, color) {
-    const isoCodes = stateUids.flatMap((uid) => REGION_TO_ISO[uid] || []);
-    if (!isoCodes.length) return null;
+async function renderNow(regions, color) {
+    const selection = resolveSelection(regions);
+    if (!selection.isoCodes.length && !selection.raionPaths.length) return null;
 
     cleanupOldFiles();
     renderCounter += 1;
@@ -253,7 +293,7 @@ async function renderNow(stateUids, color) {
     let lastError = null;
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
         try {
-            return await renderOnce(isoCodes, color, outputPath, htmlPath);
+            return await renderOnce(selection, color, outputPath, htmlPath);
         } catch (err) {
             lastError = err;
             await sleep(RETRY_PAUSE_MS * (attempt + 1));
@@ -262,11 +302,11 @@ async function renderNow(stateUids, color) {
     throw lastError;
 }
 
-function renderRegionMapImage(stateUidOrUids, color) {
-    const stateUids = Array.isArray(stateUidOrUids) ? stateUidOrUids : [stateUidOrUids];
+function renderRegionMapImage(regionOrRegions, color) {
+    const regions = Array.isArray(regionOrRegions) ? regionOrRegions : [regionOrRegions];
     const result = queue.then(
-        () => renderNow(stateUids, color),
-        () => renderNow(stateUids, color)
+        () => renderNow(regions, color),
+        () => renderNow(regions, color)
     );
     queue = result.catch(() => {});
     return result;
@@ -274,4 +314,4 @@ function renderRegionMapImage(stateUidOrUids, color) {
 
 cleanupOldFiles();
 
-module.exports = { renderRegionMapImage };
+module.exports = { renderRegionMapImage, resolveSelection };

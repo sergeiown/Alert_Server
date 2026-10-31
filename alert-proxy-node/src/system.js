@@ -4,6 +4,8 @@
 const os = require('node:os');
 const fs = require('node:fs');
 const { DATA_DIR } = require('./config');
+const { db } = require('./store');
+const { createResourceHistory, parseNetDev, SAMPLE_INTERVAL_MS } = require('./resourceHistory');
 
 function cpuUsagePercentSample() {
     const cpus = os.cpus();
@@ -75,6 +77,30 @@ function processMemory() {
     };
 }
 
+function readNetwork() {
+    if (os.platform() !== 'linux') return null;
+    try {
+        return parseNetDev(fs.readFileSync('/proc/net/dev', 'utf8'));
+    } catch (err) {
+        return null;
+    }
+}
+
+const resourceHistory = createResourceHistory({
+    db,
+    readCpu: cpuUsagePercentSample,
+    readMemoryPercent: () => ((os.totalmem() - os.freemem()) / os.totalmem()) * 100,
+    readNetwork,
+    bandwidthMbps: Number(process.env.NETWORK_BANDWIDTH_MBPS) || undefined,
+});
+setInterval(() => {
+    try {
+        resourceHistory.sample();
+    } catch (err) {
+        console.warn('[resource-history] sample failed:', err.message);
+    }
+}, SAMPLE_INTERVAL_MS).unref();
+
 function getSystemMetrics() {
     const totalMem = os.totalmem();
     const freeMem = os.freemem();
@@ -96,6 +122,7 @@ function getSystemMetrics() {
         uptimeSec: Math.round(process.uptime()),
         nodeVersion: process.version,
         platform: `${os.platform()}/${os.arch()}`,
+        idleRisk: resourceHistory.getIdleRisk(),
     };
 }
 

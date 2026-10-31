@@ -62,6 +62,24 @@ const TILES = {
         <rect x="44" y="42" width="12" height="31" rx="5" fill="#fff"/>`,
 };
 
+TILES.regions = `
+        <circle cx="50" cy="50" r="48" fill="#2f6b6b"/>
+        <circle cx="50" cy="50" r="42" fill="#4f9a9a"/>
+        <path d="M50 75 C40 63 34 55 34 46 A16 16 0 0 1 66 46 C66 55 60 63 50 75 Z" ${WHITE} stroke-width="5"/>
+        <circle cx="50" cy="46" r="5" fill="#fff"/>`;
+
+TILES.sound = `
+        <circle cx="50" cy="50" r="48" fill="#6b4f8f"/>
+        <circle cx="50" cy="50" r="42" fill="#8d6bb5"/>
+        <path d="M32 44 H41 L53 34 V66 L41 56 H32 Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M61 41 A12 12 0 0 1 61 59 M66 34 A21 21 0 0 1 66 66" ${WHITE} stroke-width="4"/>`;
+
+TILES.notifications = `
+        <circle cx="50" cy="50" r="48" fill="#a8680d"/>
+        <circle cx="50" cy="50" r="42" fill="#d9962a"/>
+        <path d="M50 27 C40 27 34 35 34 45 V56 L29 64 H71 L66 56 V45 C66 35 60 27 50 27 Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M44 70 A6 6 0 0 0 56 70" ${WHITE} stroke-width="4"/>`;
+
 function tileSvg(name, { size = 96 } = {}) {
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 100 100">${TILES[name]}</svg>`;
 }

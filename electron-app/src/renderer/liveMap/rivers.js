@@ -156,6 +156,7 @@ function addRiversLayer(map) {
 
     L.polyline(DNIPRO_COURSE, {
         className: 'river-line',
+        interactive: false,
         color,
         weight: 3,
         opacity: 0.85,
@@ -166,6 +167,7 @@ function addRiversLayer(map) {
     RESERVOIRS.forEach((ring) => {
         L.polygon(ring, {
             className: 'river-area',
+            interactive: false,
             color,
             weight: 1,
             opacity: 0.85,

@@ -4,76 +4,146 @@
     <meta charset="UTF-8" />
     <title>Alert Server - Налаштування</title>
     <link rel="stylesheet" href="../shared/fonts/fonts.css" />
+    <link rel="stylesheet" href="../shared/ui.css" />
     <link rel="stylesheet" href="index.css" />
-    <link rel="stylesheet" href="../shared/theme.css" />
 </head>
 <body>
     <div id="layout">
-        <section id="regions-column">
-            <div id="map-container"></div>
-            <header>
-                <h1 id="regionsHeader"></h1>
-                <input id="search" type="text" autocomplete="off" />
-            </header>
-            <main id="tree"></main>
-            <footer>
-                <span id="summary"></span>
-                <button id="clearRegionsButton" class="clear-button"></button>
-            </footer>
+        <section id="settings-home">
+            <div id="settingsTiles">
+                <button class="settings-tile" data-section="regions" data-icon="regions" type="button">
+                    <span class="tile-icon"></span>
+                    <span class="tile-caption"></span>
+                    <span class="tile-hint" id="regionsTileHint"></span>
+                </button>
+                <button class="settings-tile" data-section="general" data-icon="settings" type="button">
+                    <span class="tile-icon"></span>
+                    <span class="tile-caption"></span>
+                </button>
+                <button class="settings-tile" data-section="sound" data-icon="sound" type="button">
+                    <span class="tile-icon"></span>
+                    <span class="tile-caption"></span>
+                </button>
+                <button class="settings-tile" data-section="notifications" data-icon="notifications" type="button">
+                    <span class="tile-icon"></span>
+                    <span class="tile-caption"></span>
+                </button>
+            </div>
+            <p id="carouselHint" class="settings-note"></p>
         </section>
-        <section id="general-settings">
-            <fieldset class="settings-group">
-                <legend id="settingsGroupGeneral"></legend>
-                <label><input type="checkbox" id="runAtStartup" /> <span id="runAtStartupLabel"></span></label>
-                <label><input type="checkbox" id="minimizeToTrayOnClose" /> <span id="minimizeToTrayOnCloseLabel"></span></label>
-                <label>
-                    <span id="languageLabel"></span>
-                    <select id="language">
-                        <option value="Ukrainian">Українська</option>
-                        <option value="English">English</option>
-                    </select>
-                </label>
-                <label>
-                    <span id="themeLabel"></span>
-                    <select id="theme">
-                        <option value="light" id="themeLightOption"></option>
-                        <option value="dark" id="themeDarkOption"></option>
-                        <option value="system" id="themeSystemOption"></option>
-                    </select>
-                </label>
-                <label>
-                    <span id="updateCheckIntervalLabel"></span>
-                    <input type="number" id="updateCheckIntervalHours" min="1" max="24" style="width: 3em" />
-                </label>
-            </fieldset>
-            <fieldset class="settings-group">
-                <legend id="settingsGroupNotifications"></legend>
-                <label><input type="checkbox" id="visualNotificationsEnabled" /> <span id="visualNotificationsLabel"></span></label>
-                <label><input type="checkbox" id="activeAlertNotifyEnabled" /> <span id="activeAlertNotifyLabel"></span></label>
-                <label style="margin-left: 18px"><input type="checkbox" id="showLiveMapOnAlert" /> <span id="showLiveMapOnAlertLabel"></span></label>
-                <label style="margin-left: 18px"><input type="checkbox" id="alertLevelChangeNotifyEnabled" /> <span id="alertLevelChangeNotifyLabel"></span></label>
-                <label style="margin-left: 18px">
-                    <span id="alertSoundLabel"></span>
-                    <select id="alertSoundMode">
-                        <option value="none" id="alertSoundModeNoneOption"></option>
-                        <option value="siren" id="alertSoundModeSirenOption"></option>
-                        <option value="voice" id="alertSoundModeVoiceOption"></option>
-                    </select>
-                </label>
-                <label style="margin-left: 18px">
-                    <span id="alertSoundCountLabel"></span>
-                    <input type="number" id="alertSoundCount" min="1" max="10" style="width: 3em" />
-                </label>
-                <label>
-                    <span id="massAttackThresholdLabel"></span>
-                    <input type="number" id="massAttackThreshold" min="50" max="100" style="width: 3em" />
-                </label>
-                <label><input type="checkbox" id="forecastNotifyEnabled" /> <span id="settingsForecastNotifyLabel"></span></label>
-                <label style="margin-left: 18px">
-                    <span id="forecastNotifyLookaheadLabel"></span>
-                    <input type="number" id="forecastNotifyLookaheadMinutes" min="1" max="600" style="width: 4em" />
-                </label>
-            </fieldset>
+        <section id="settings-section" hidden>
+            <div id="sectionBar">
+                <button id="sectionBack" class="ui-button" type="button">
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M14.500 5 L7.500 12 L14.500 19 M8 12 H20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                    <span id="sectionBackLabel"></span>
+                </button>
+                <h2 id="sectionTitle"></h2>
+            </div>
+            <div id="sectionBody">
+                <section id="regions-column" class="settings-pane ui-card" data-section="regions" hidden>
+                    <div id="map-container"></div>
+                    <header>
+                        <h1 id="regionsHeader"></h1>
+                        <div id="searchField">
+                            <input id="search" class="ui-input" type="text" autocomplete="off" />
+                            <button id="searchClear" type="button" hidden>
+                                <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 2.5L9.5 9.5M9.5 2.5L2.5 9.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                            </button>
+                        </div>
+                    </header>
+                    <main id="tree"></main>
+                    <footer>
+                        <span id="summary"></span>
+                        <button id="clearRegionsButton" class="clear-button ui-button"></button>
+                    </footer>
+                </section>
+                <section id="general-settings" class="settings-pane" data-section="general" hidden>
+                    <fieldset class="settings-group ui-card no-legend">
+                        <legend id="settingsGroupGeneral"></legend>
+                        <label class="check"><input type="checkbox" id="runAtStartup" /> <span id="runAtStartupLabel"></span></label>
+                        <label class="check"><input type="checkbox" id="minimizeToTrayOnClose" /> <span id="minimizeToTrayOnCloseLabel"></span></label>
+                        <label>
+                            <span id="languageLabel"></span>
+                            <select class="ui-select" id="language">
+                                <option value="Ukrainian">Українська</option>
+                                <option value="English">English</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span id="themeLabel"></span>
+                            <select class="ui-select" id="theme">
+                                <option value="light" id="themeLightOption"></option>
+                                <option value="dark" id="themeDarkOption"></option>
+                                <option value="system" id="themeSystemOption"></option>
+                            </select>
+                        </label>
+                        <label>
+                            <span id="updateCheckIntervalLabel"></span>
+                            <input type="number" class="ui-input num" id="updateCheckIntervalHours" min="1" max="24" />
+                        </label>
+                    </fieldset>
+                </section>
+                <section id="sound-settings" class="settings-pane" data-section="sound" hidden>
+                    <fieldset class="settings-group ui-card no-legend">
+                        <legend id="settingsGroupSound"></legend>
+                        <label>
+                            <span id="alertSoundLabel"></span>
+                            <select class="ui-select" id="alertSoundMode">
+                                <option value="none" id="alertSoundModeNoneOption"></option>
+                                <option value="siren" id="alertSoundModeSirenOption"></option>
+                                <option value="voice" id="alertSoundModeVoiceOption"></option>
+                            </select>
+                        </label>
+                        <label>
+                            <span id="alertSoundCountLabel"></span>
+                            <select class="ui-select" id="alertSoundCount">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                            </select>
+                        </label>
+                    </fieldset>
+                </section>
+                <section id="notifications-settings" class="settings-pane" data-section="notifications" hidden>
+                    <fieldset class="settings-group ui-card no-legend">
+                        <legend id="settingsGroupNotifications"></legend>
+                        <label class="check"><input type="checkbox" id="visualNotificationsEnabled" /> <span id="visualNotificationsLabel"></span></label>
+                        <label class="check"><input type="checkbox" id="activeAlertNotifyEnabled" /> <span id="activeAlertNotifyLabel"></span></label>
+                        <label class="sub check"><input type="checkbox" id="alertLevelChangeNotifyEnabled" /> <span id="alertLevelChangeNotifyLabel"></span></label>
+                        <label class="check"><input type="checkbox" id="forecastNotifyEnabled" /> <span id="settingsForecastNotifyLabel"></span></label>
+                        <label class="sub">
+                            <span id="forecastNotifyLookaheadLabel"></span>
+                            <input type="number" class="ui-input num" id="forecastNotifyLookaheadMinutes" min="1" max="600" />
+                        </label>
+                    </fieldset>
+                    <fieldset class="settings-group ui-card no-legend collapsible" id="notifyProfileGroup">
+                        <legend id="notifyProfileTitle"></legend>
+                        <button type="button" id="notifyProfileToggle" class="collapse-header" aria-haspopup="dialog" aria-expanded="false">
+                            <span class="collapse-text">
+                                <span class="collapse-title" id="notifyProfileHeading"></span>
+                                <span class="collapse-hint" id="notifyProfileHint"></span>
+                            </span>
+                            <svg class="collapse-chevron" viewBox="0 0 12 12" aria-hidden="true"><path d="M4.500 2.500 L8 6 L4.500 9.500" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                        </button>
+                    </fieldset>
+                </section>
+            </div>
+        </section>
+    </div>
+    <div id="notifyProfileOverlay" class="ui-overlay" hidden>
+        <section id="notifyProfileModal" class="ui-card" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+            <h2 id="sheetTitle" class="ui-card-title"></h2>
+            <p id="sheetSubtitle" class="ui-card-muted"></p>
+            <div id="notifyProfileBody" class="ui-scroll">
+                <div id="notifyProfileTable"></div>
+            </div>
+            <ul id="notifyProfileNote" class="notify-note"></ul>
+            <div id="urgentStatus">
+                <span id="urgentStatusText"><span id="urgentStatusLabel"></span> <span id="urgentStatusPill" class="ui-badge"></span></span>
+                <button id="openWindowsNotifications" class="ui-button" type="button"></button>
+            </div>
+            <div class="actions">
+                <button type="button" id="sheetClose" class="ui-button"></button>
+            </div>
         </section>
     </div>
     <script type="module" src="index.js"></script>

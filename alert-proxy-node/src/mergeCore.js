@@ -24,6 +24,7 @@ const ENV_NAMES = {
 };
 
 const DISTRICT_ALIASES = { 'Дніпропетровська область|Самарівський район': '43' };
+const NEPTUN_OBLAST_NAME_ALIASES = { Севастополь: 'м. Севастополь' };
 
 const LOCATION_TYPE_NAMES = { state: 'oblast', district: 'raion', community: 'hromada' };
 
@@ -44,6 +45,7 @@ function buildDirectory(tree) {
     const stateByName = new Map();
     const districtByKey = new Map();
     const descendants = new Map();
+    const nameAliases = new Map();
 
     tree.states.forEach((state) => {
         const stateUid = String(state.uid);
@@ -61,6 +63,7 @@ function buildDirectory(tree) {
                 parents: [stateUid],
             });
             districtByKey.set(`${state.stateName}|${district.districtName}`, districtUid);
+            (district.previousNames || []).forEach((previous) => districtByKey.set(`${state.stateName}|${previous}`, districtUid));
             stateDescendants.push(districtUid);
             const districtDescendants = [];
 
@@ -87,7 +90,12 @@ function buildDirectory(tree) {
         if (byUid.has(uid) && !districtByKey.has(key)) districtByKey.set(key, uid);
     });
 
-    return { byUid, stateByName, districtByKey, descendants };
+    Object.entries(NEPTUN_OBLAST_NAME_ALIASES).forEach(([alias, target]) => {
+        const match = [...byUid.values()].find((info) => info.type === 'district' && info.name === target);
+        if (match) nameAliases.set(alias, match.uid);
+    });
+
+    return { byUid, stateByName, districtByKey, descendants, nameAliases };
 }
 
 function worseLevel(current, candidate) {
@@ -136,8 +144,11 @@ function createMerger({ cfg = loadConfig(), directory, log = () => {} }) {
         const map = new Map();
         if (!payload) return map;
         (payload.oblasts || []).forEach((item) => {
-            const uid = directory.stateByName.get(item.name);
-            if (uid) map.set(uid, { uid, name: item.name, level: item.level || null, since: item.since, reasons: item.reasons || [], scope: 'state' });
+            const uid = directory.stateByName.get(item.name) || directory.nameAliases.get(item.name);
+            if (uid) {
+                const scope = directory.byUid.get(uid).type === 'state' ? 'state' : 'district';
+                map.set(uid, { uid, name: item.name, level: item.level || null, since: item.since, reasons: item.reasons || [], scope });
+            }
         });
         (payload.raions || []).forEach((item) => {
             const uid = directory.districtByKey.get(`${item.oblast}|${item.name}`);

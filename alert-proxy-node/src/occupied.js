@@ -7,6 +7,20 @@ const MAX_LOOKBACK_DAYS = 5;
 
 let cached = { body: null, date: null, fetchedAt: 0, error: null };
 
+function dataAgeDays(dateStr, now = Date.now()) {
+    const match = /^(\d{4})(\d{2})(\d{2})$/.exec(dateStr || '');
+    if (!match) return null;
+    const fileDay = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    return Math.max(0, Math.floor((now - fileDay) / (24 * 60 * 60 * 1000)));
+}
+
+function isMapGeojson(parsed) {
+    if (!parsed || typeof parsed !== 'object') return false;
+    const features = parsed.type === 'FeatureCollection' ? parsed.features : parsed.type === 'Feature' ? [parsed] : null;
+    if (!Array.isArray(features) || !features.length) return false;
+    return features.every((feature) => feature && feature.geometry && /^(Multi)?Polygon$/.test(feature.geometry.type) && Array.isArray(feature.geometry.coordinates));
+}
+
 function formatDate(date) {
     const year = date.getUTCFullYear();
     const month = String(date.getUTCMonth() + 1).padStart(2, '0');
@@ -27,7 +41,10 @@ async function refresh() {
             const response = await fetch(`${BASE_URL}${dateStr}.geojson`);
             if (!response.ok) continue;
             const body = await response.text();
-            JSON.parse(body);
+            if (!isMapGeojson(JSON.parse(body))) {
+                cached.error = `${dateStr}: unexpected GeoJSON shape`;
+                continue;
+            }
             cached = { body, date: dateStr, fetchedAt: Date.now(), error: null };
             console.log(`[occupied] updated ${dateStr} (${body.length} bytes)`);
             return;
@@ -62,10 +79,11 @@ function getResponse() {
 function getStatusInfo() {
     return {
         date: cached.date,
+        dataAgeDays: dataAgeDays(cached.date),
         cacheAgeMs: cached.fetchedAt ? Date.now() - cached.fetchedAt : null,
         sizeBytes: cached.body ? cached.body.length : null,
         error: cached.error,
     };
 }
 
-module.exports = { start, getResponse, getStatusInfo };
+module.exports = { start, getResponse, getStatusInfo, dataAgeDays, isMapGeojson };

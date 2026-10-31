@@ -25,6 +25,7 @@ import {
 import { alertPopupHtml } from './alertPopup.js';
 import { RAION_OBLAST } from './raionOblastMap.js';
 import { RAION_MIN_ZOOM } from './zoomTiers.js';
+import { RAION_EN_BY_UK } from './raionLabels.js';
 import { oblastDisplayName, raionDisplayName } from './regionNameUtils.js';
 import { pulseLayerStyle, PULSE_TOTAL_MS } from './alertFillPulse.js';
 
@@ -42,6 +43,21 @@ const YELLOW_SHADES = isDark ? YELLOW_DARK_SHADES : YELLOW_LIGHT_SHADES;
 const ALERTED_FILL_OPACITY = isDark ? 0.5 : 0.42;
 const NEUTRAL_COLOR = isDark ? '#3a4650' : '#6b6350';
 const NEUTRAL_FILL_OPACITY = isDark ? 0.06 : 0.05;
+
+const ALERTED_BORDER_OPACITY = isDark ? 0.5 : 0.75;
+const LIGHT_BORDER_DARKEN = 0.6;
+
+function borderColorFor(shade) {
+    if (isDark) return shade;
+    const channels = [1, 3, 5].map((index) => Math.round(parseInt(shade.slice(index, index + 2), 16) * LIGHT_BORDER_DARKEN));
+    return `#${channels.map((value) => value.toString(16).padStart(2, '0')).join('')}`;
+}
+
+function alertedDistrictNames(oblastName, isEnglish) {
+    return Object.keys(RAION_BORDERS)
+        .filter((name) => RAION_OBLAST[name] === oblastName && getRaionStartedAt(name))
+        .map((name) => (isEnglish ? RAION_EN_BY_UK.get(name) || name : name));
+}
 
 function shadeFor(startedAt, now, alertLevel) {
     const shades = alertLevel === 'yellow' ? YELLOW_SHADES : RED_SHADES;
@@ -171,7 +187,8 @@ const RegionStatusLayer = L.LayerGroup.extend({
                 this._language,
                 args.inheritedFromName,
                 args.alertLevel,
-                args.threatLines
+                args.threatLines,
+                args.districtNames
             );
         });
         newShape.layer = layer;
@@ -207,9 +224,11 @@ const RegionStatusLayer = L.LayerGroup.extend({
         alertLevel,
         hasBothLevels,
         forceBorder,
-        popupThreatLines
+        popupThreatLines,
+        districtNames
     ) {
         const alerted = Boolean(ownStartedAt);
+        const baseMapBorder = !key.startsWith('kyivRaion:') && this._map.getZoom() < RAION_MIN_ZOOM;
         const color = alerted ? shadeFor(ownStartedAt, now, alertLevel) : NEUTRAL_COLOR;
         const fillColor = alerted && hasBothLevels ? `url(#${DUAL_LEVEL_PATTERN_ID})` : color;
 
@@ -217,9 +236,9 @@ const RegionStatusLayer = L.LayerGroup.extend({
             key,
             rings,
             {
-                color,
-                weight: alerted || forceBorder ? 1 : 0,
-                opacity: alerted ? 0.5 : forceBorder ? 0.35 : 0,
+                color: alerted ? borderColorFor(color) : color,
+                weight: (alerted || forceBorder) && !baseMapBorder ? 1 : 0,
+                opacity: alerted ? ALERTED_BORDER_OPACITY : forceBorder ? 0.35 : 0,
                 fillColor,
                 fillOpacity: alerted ? ALERTED_FILL_OPACITY : NEUTRAL_FILL_OPACITY,
             },
@@ -230,6 +249,7 @@ const RegionStatusLayer = L.LayerGroup.extend({
                 inheritedFromName,
                 alertLevel,
                 threatLines: popupThreatLines,
+                districtNames,
             }
         );
     },
@@ -306,6 +326,7 @@ const RegionStatusLayer = L.LayerGroup.extend({
             const alertLevel = getOblastAlertLevel(name);
             const hasBothLevels = getOblastHasBothLevels(name);
             const threats = hasBothLevels ? getOblastThreats(name) : null;
+            const districtNames = startedAt ? null : alertedDistrictNames(name, isEnglish);
             this._renderShape(
                 `oblast:${name}`,
                 rings,
@@ -318,7 +339,8 @@ const RegionStatusLayer = L.LayerGroup.extend({
                 alertLevel,
                 hasBothLevels,
                 false,
-                threats
+                threats,
+                districtNames
             );
         });
 

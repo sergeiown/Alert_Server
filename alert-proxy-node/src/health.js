@@ -13,6 +13,8 @@ const NEPTUN_STREAM_DOWN_MS = 5 * 60 * 1000;
 const NEPTUN_ALERTS_STALE_MS = 5 * 60 * 1000;
 const BACKUP_STALE_MS = 36 * 60 * 60 * 1000;
 const OCCUPIED_STALE_MS = 14 * 60 * 60 * 1000;
+const OCCUPIED_DATA_WARN_DAYS = 3;
+const OCCUPIED_DATA_CRIT_DAYS = 7;
 
 let previousLevels = new Map();
 const SEVERITY = { info: 0, warn: 1, crit: 2 };
@@ -84,6 +86,9 @@ function evaluate(status, flags) {
 
     if (status.occupied.cacheAgeMs === null || status.occupied.cacheAgeMs > OCCUPIED_STALE_MS) {
         add('warn', 'occupied-stale', 'Occupied territory data (DeepState) is stale');
+    } else if (status.occupied.dataAgeDays !== null && status.occupied.dataAgeDays >= OCCUPIED_DATA_WARN_DAYS) {
+        const level = status.occupied.dataAgeDays >= OCCUPIED_DATA_CRIT_DAYS ? 'crit' : 'warn';
+        add(level, 'occupied-data-old', `DeepState mirror has not published a new file for ${status.occupied.dataAgeDays} days (latest ${status.occupied.date})`);
     }
 
     const sys = status.system;
@@ -94,6 +99,17 @@ function evaluate(status, flags) {
     checkResource('cpu', 'CPU', sys.cpuAveragePercent, RESOURCE_WARN_PERCENT, RESOURCE_CRIT_PERCENT);
     checkResource('memory', 'memory', sys.memory.usedPercent, RESOURCE_WARN_PERCENT, RESOURCE_CRIT_PERCENT);
     checkResource('disk', 'disk', sys.disk.usedPercent, RESOURCE_WARN_PERCENT, RESOURCE_CRIT_PERCENT);
+    const risk = sys.idleRisk;
+    if (risk && risk.state === 'at-risk') {
+        add(
+            'warn',
+            'idle-risk',
+            `Oracle may reclaim this server as idle: CPU p95 ${risk.cpuP95}%, memory ${risk.memoryMean}%, network ${risk.networkMean === null ? 'n/a' : risk.networkMean + '%'} (all below ${risk.threshold}% over ${risk.windowDays} days)`
+        );
+    } else if (risk && risk.state === 'safe' && risk.thin) {
+        add('info', 'idle-margin', `The Oracle idle check passes only through ${risk.saving.join(', ')} and the margin above ${risk.threshold}% is thin`);
+    }
+
     if (sys.process && sys.process.heapLimitBytes) {
         const heapPercent = Math.round((sys.process.heapUsedBytes / sys.process.heapLimitBytes) * 1000) / 10;
         checkResource('heap', 'server process heap', heapPercent, HEAP_WARN_PERCENT, HEAP_CRIT_PERCENT);

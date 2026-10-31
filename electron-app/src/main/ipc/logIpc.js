@@ -11,7 +11,7 @@ const EXCEL_APP_PATHS_KEY = 'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\
 
 function getExcelPath() {
     try {
-        const output = execFileSync('reg', ['query', EXCEL_APP_PATHS_KEY, '/ve'], { encoding: 'utf-8' });
+        const output = execFileSync('reg', ['query', EXCEL_APP_PATHS_KEY, '/ve'], { encoding: 'utf-8', windowsHide: true });
         const match = output.match(/REG_SZ\s+(.+)/);
         return match ? match[1].trim() : null;
     } catch (err) {

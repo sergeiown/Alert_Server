@@ -1,4 +1,8 @@
 :root {
+    color-scheme: light dark;
+}
+
+:root {
     --bg-top: #eaf0f7;
     --bg-bottom: #d5e1ee;
     --bar-bg: rgba(255, 255, 255, 0.62);

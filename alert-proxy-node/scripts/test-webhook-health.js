@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const assert = require('node:assert');
-const { classifyWebhook, recordMiss, pruneHistory, CHRONIC_WINDOW_MS } = require('../src/uaWebhookHealth');
+const { classifyWebhook, recordMiss, missLogDecision, pruneHistory, CHRONIC_WINDOW_MS } = require('../src/uaWebhookHealth');
 
 const NOW = 1_800_000_000_000;
 const miss = (key) => ({ key, at: NOW - 60_000, kind: 'start' });
@@ -76,4 +76,16 @@ check('level changes the webhook never reports do not degrade the state', () => 
 check('an unconfigured webhook reports unconfigured', () => {
     const result = classifyWebhook({ configured: false, misses: [], events: 0, history: new Map(), now: NOW });
     assert.strictEqual(result.state, 'unconfigured');
+});
+
+check('repeated misses of one key are logged twice, announced once as chronic, then stay silent', () => {
+    const history = new Map();
+    const decisions = [];
+    for (let i = 0; i < 6; i++) {
+        recordMiss(history, '1313:AIR', NOW - (6 - i) * 60_000);
+        decisions.push(missLogDecision(history, '1313:AIR'));
+    }
+    assert.deepStrictEqual(decisions, ['log', 'log', 'chronic', 'silent', 'silent', 'silent']);
+    recordMiss(history, '2:AIR', NOW);
+    assert.strictEqual(missLogDecision(history, '2:AIR'), 'log');
 });

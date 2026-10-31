@@ -4,18 +4,23 @@
     <meta charset="UTF-8" />
     <title>Alert Server - Event log</title>
     <link rel="stylesheet" href="../shared/fonts/fonts.css" />
+    <link rel="stylesheet" href="../shared/ui.css" />
     <link rel="stylesheet" href="index.css" />
 </head>
 <body>
-    <header>
-        <span id="sizeLabel"></span>
-        <div id="buttonGroup">
-            <button id="openExcelButton" hidden></button>
-            <button id="openNotepadButton"></button>
-            <button id="clearButton"></button>
+    <main id="monitor" class="ui-card">
+        <div id="screen">
+            <header>
+                <span id="sizeLabel"></span>
+                <div id="buttonGroup">
+                    <button id="openExcelButton" hidden></button>
+                    <button id="openNotepadButton"></button>
+                    <button id="clearButton"></button>
+                </div>
+            </header>
+            <pre id="content"></pre>
         </div>
-    </header>
-    <pre id="content"></pre>
+    </main>
     <script type="module" src="index.js"></script>
     <script type="module" src="../shared/connectionBannerInit.js"></script>
 </body>

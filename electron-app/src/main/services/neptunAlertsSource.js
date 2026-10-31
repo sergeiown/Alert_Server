@@ -12,10 +12,7 @@ const ALERTS_URL = 'https://neptun.in.ua/api/v1/alerts';
 const POLL_INTERVAL_MS = 30000;
 const UNMATCHED_LOG_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
-const CRIMEA_RAW_NAME = 'Aвmoнoмнa Pecпублiкa Kpuм';
-const CRIMEA_NEPTUN_NAME = 'Автономна Республіка Крим';
-
-const SEVASTOPOL_RAW_NAME = 'м. Ceвacmoпoль';
+const SEVASTOPOL_DISTRICT_NAME = 'м. Севастополь';
 const SEVASTOPOL_NEPTUN_NAME = 'Севастополь';
 
 let stateByName = null;
@@ -29,17 +26,16 @@ function buildLookups() {
 
     tree.states.forEach((state) => {
         stateByName.set(state.stateName, { uid: state.uid, stateName: state.stateName });
-        if (state.stateName === CRIMEA_RAW_NAME) {
-            stateByName.set(CRIMEA_NEPTUN_NAME, { uid: state.uid, stateName: state.stateName });
-        }
 
         state.districts.forEach((district) => {
-            districtByName.set(district.districtName, {
-                uid: district.uid,
-                stateUid: state.uid,
-                stateName: state.stateName,
+            [district.districtName, ...(district.previousNames || [])].forEach((name) => {
+                districtByName.set(name, {
+                    uid: district.uid,
+                    stateUid: state.uid,
+                    stateName: state.stateName,
+                });
             });
-            if (district.districtName === SEVASTOPOL_RAW_NAME) {
+            if (district.districtName === SEVASTOPOL_DISTRICT_NAME) {
                 districtByName.set(SEVASTOPOL_NEPTUN_NAME, {
                     uid: district.uid,
                     stateUid: state.uid,

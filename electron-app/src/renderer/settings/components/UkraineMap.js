@@ -1,6 +1,10 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
+import { RAION_BORDERS } from '../../liveMap/raionBorders.js';
+import { ringToSvgPath } from '../../liveMap/ukraineProjection.js';
+import { normalizeRaionName } from '../../liveMap/raionNames.js';
+
 const REGION_TO_ISO = {
     4: ['UA-05'],
     8: ['UA-07'],
@@ -60,6 +64,42 @@ export function createUkraineMap(container, svgText, tree, initialSelectedUids, 
     container.innerHTML = prepareSvgMarkup(svgText);
     const svg = container.querySelector('svg');
 
+    const raionShapes = new Map();
+    const childrenByDistrict = new Map();
+    const districtByChild = new Map();
+
+    function buildRaionOverlay() {
+        if (!svg) return;
+        const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        group.setAttribute('class', 'raion-overlay');
+        tree.states.forEach((state) => {
+            state.districts.forEach((district) => {
+                childrenByDistrict.set(district.uid, district.communities.map((community) => community.uid));
+                district.communities.forEach((community) => districtByChild.set(community.uid, district.uid));
+                const ring = RAION_BORDERS[normalizeRaionName(district.districtName)];
+                if (!ring) return;
+                const shape = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                shape.setAttribute('d', ringToSvgPath(ring));
+                shape.setAttribute('class', 'raion-shape');
+                group.appendChild(shape);
+                raionShapes.set(district.uid, shape);
+            });
+        });
+        svg.appendChild(group);
+    }
+
+    function refreshRaion(districtUid) {
+        const shape = raionShapes.get(districtUid);
+        if (!shape) return;
+        const full = selectedSet.has(districtUid);
+        const partial = !full && (childrenByDistrict.get(districtUid) || []).some((childUid) => selectedSet.has(childUid));
+        shape.classList.toggle('selected', full);
+        shape.classList.toggle('partial', partial);
+    }
+
+    buildRaionOverlay();
+    raionShapes.forEach((shape, districtUid) => refreshRaion(districtUid));
+
     function regionName(uid) {
         const info = nameByUid.get(uid);
         if (!info) return String(uid);
@@ -81,6 +121,9 @@ export function createUkraineMap(container, svgText, tree, initialSelectedUids, 
 
         const paths = pathsByUid.get(uid) || [];
         paths.forEach((path) => applySelectedClass(path, checked));
+
+        const districtUid = raionShapes.has(uid) ? uid : districtByChild.get(uid);
+        if (districtUid !== undefined) refreshRaion(districtUid);
     }
 
     function setHovered(uid, isHovered) {

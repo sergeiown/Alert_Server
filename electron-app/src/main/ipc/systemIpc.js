@@ -5,6 +5,7 @@ const { ipcMain, app, clipboard, shell, nativeImage } = require('electron');
 const { logEvent } = require('../services/logger');
 const { getResourcePath } = require('../services/appPaths');
 const { checkForUpdatesNow } = require('../services/updater');
+const { readUrgentPermission } = require('../services/windowsToastPolicy');
 
 function registerSystemIpc() {
     ipcMain.handle('system:getLoginItem', () => app.getLoginItemSettings().openAtLogin);
@@ -19,6 +20,8 @@ function registerSystemIpc() {
     ipcMain.handle('system:checkForUpdates', () => checkForUpdatesNow());
     ipcMain.handle('system:getVersion', () => app.getVersion());
     ipcMain.handle('system:openExternal', (event, url) => shell.openExternal(url));
+    ipcMain.handle('system:getUrgentStatus', () => readUrgentPermission());
+    ipcMain.handle('system:openNotificationSettings', () => shell.openExternal('ms-settings:notifications'));
     ipcMain.handle('system:getAboutIcon', () =>
         nativeImage.createFromPath(getResourcePath('icons', 'app-icon-256.png')).resize({ width: 96, height: 96 }).toDataURL()
     );

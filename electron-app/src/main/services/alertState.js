@@ -20,6 +20,16 @@ function getLatestTotalAlertCount() {
     return latestTotalAlertCount;
 }
 
+let dataLoaded = false;
+
+function markDataLoaded() {
+    dataLoaded = true;
+}
+
+function isDataLoaded() {
+    return dataLoaded;
+}
+
 let latestAlertedRegions = { oblasts: [], raions: [], kyivRaions: [] };
 
 function setLatestAlertedRegions(regions) {
@@ -57,6 +67,8 @@ module.exports = {
     getLatestTotalAlertCount,
     setLatestAlertedRegions,
     getLatestAlertedRegions,
+    markDataLoaded,
+    isDataLoaded,
     setActiveAlertSource,
     getActiveAlertSource,
     setAlertSourcesStatus,

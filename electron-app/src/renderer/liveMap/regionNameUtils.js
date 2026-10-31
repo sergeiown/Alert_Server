@@ -3,21 +3,15 @@
 
 import { OBLAST_EN_BY_UK } from './regionLabels.js';
 import { RAION_EN_BY_UK } from './raionLabels.js';
+import { normalizeRaionName } from './raionNames.js';
 
-const CRIMEA_RAW_NAME = 'Aвmoнoмнa Pecпублiкa Kpuм';
+const CRIMEA_RAW_NAME = 'Автономна Республіка Крим';
 
 function normalizeOblastName(name) {
     if (name === CRIMEA_RAW_NAME) return 'Крим';
 
     if (name === 'м. Київ') return 'Київ';
     return name.replace(/\s*область\s*$/u, '').trim();
-}
-
-function normalizeRaionName(name) {
-    return name
-        .replace(/\s*район\s*$/u, '')
-        .replace(/[’ʼ]/g, "'")
-        .trim();
 }
 
 function oblastDisplayName(name, isEnglish) {

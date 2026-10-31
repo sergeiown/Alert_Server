@@ -1,6 +1,8 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
+import { setupFeedback } from './feedbackForm.js';
+
 const appTitle = document.getElementById('appTitle');
 const body = document.getElementById('body');
 const license = document.getElementById('license');
@@ -23,6 +25,8 @@ async function main() {
     document.getElementById('githubHint').textContent = strings.aboutGithubHint;
     document.getElementById('webMapTitle').textContent = strings.aboutWebMapTitle;
     document.getElementById('webMapHint').textContent = strings.aboutWebMapHint;
+
+    setupFeedback(strings);
 
     [['githubLink', GITHUB_URL], ['webMapLink', WEB_MAP_URL]].forEach(([id, url]) => {
         document.getElementById(id).addEventListener('click', () => window.alertServerAbout.openExternal(url));

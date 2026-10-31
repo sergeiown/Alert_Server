@@ -4,31 +4,70 @@
     <meta charset="UTF-8" />
     <title>Alert Server</title>
     <link rel="stylesheet" href="../shared/fonts/fonts.css" />
+    <link rel="stylesheet" href="../shared/ui.css" />
     <link rel="stylesheet" href="index.css" />
-    <link rel="stylesheet" href="../shared/theme.css" />
 </head>
 <body>
     <img id="archer" src="archer.svg" alt="" />
     <img id="flag" src="flag.svg" alt="" />
-    <h1 id="appTitle"></h1>
-    <p id="body"></p>
-    <p id="license"></p>
-    <p id="copyright"></p>
-    <div id="links">
-        <button id="githubLink" class="link-button" type="button">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.500 7 L3.500 12 L8.500 17 M15.500 7 L20.500 12 L15.500 17 M13.500 5 L10.500 19" /></svg>
-            <span class="link-text">
-                <span class="link-title" id="githubTitle"></span>
-                <span class="link-hint" id="githubHint"></span>
-            </span>
-        </button>
-        <button id="webMapLink" class="link-button" type="button">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.500" /><path d="M3.500 12 H20.500 M12 3.500 C15 7 15 17 12 20.500 C9 17 9 7 12 3.500" /></svg>
-            <span class="link-text">
-                <span class="link-title" id="webMapTitle"></span>
-                <span class="link-hint" id="webMapHint"></span>
-            </span>
-        </button>
+    <main id="content">
+        <section id="about" class="ui-card">
+            <h1 id="appTitle"></h1>
+            <p id="body"></p>
+            <hr class="ui-divider" />
+            <p id="license"></p>
+            <p id="copyright"></p>
+        </section>
+        <div id="links">
+            <button id="githubLink" class="link-button ui-card" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.500 7 L3.500 12 L8.500 17 M15.500 7 L20.500 12 L15.500 17 M13.500 5 L10.500 19" /></svg>
+                <span class="link-text">
+                    <span class="link-title" id="githubTitle"></span>
+                    <span class="link-hint" id="githubHint"></span>
+                </span>
+            </button>
+            <button id="webMapLink" class="link-button ui-card" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.500" /><path d="M3.500 12 H20.500 M12 3.500 C15 7 15 17 12 20.500 C9 17 9 7 12 3.500" /></svg>
+                <span class="link-text">
+                    <span class="link-title" id="webMapTitle"></span>
+                    <span class="link-hint" id="webMapHint"></span>
+                </span>
+            </button>
+            <button id="feedbackLink" class="link-button ui-card" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.500 5.500 H19.500 V15.500 H11 L7 19.500 V15.500 H4.500 Z M8.500 9.500 H15.500 M8.500 12.500 H13" /></svg>
+                <span class="link-text">
+                    <span class="link-title" id="feedbackLinkTitle"></span>
+                    <span class="link-hint" id="feedbackLinkHint"></span>
+                </span>
+            </button>
+        </div>
+    </main>
+    <div id="feedbackOverlay" class="ui-overlay" hidden>
+        <form id="feedbackForm" class="ui-card" novalidate>
+            <h2 id="feedbackTitle" class="ui-card-title"></h2>
+            <div id="feedbackKinds" class="ui-tabs" role="radiogroup">
+                <button type="button" class="ui-tab active" data-kind="idea" id="kindIdea"></button>
+                <button type="button" class="ui-tab" data-kind="problem" id="kindProblem"></button>
+                <button type="button" class="ui-tab" data-kind="other" id="kindOther"></button>
+            </div>
+            <div class="field-row">
+                <label class="field"><span id="nameLabel"></span><input id="feedbackName" class="ui-input" type="text" maxlength="50" autocomplete="off" /></label>
+                <label class="field"><span id="contactLabel"></span><input id="feedbackContact" class="ui-input" type="text" maxlength="100" autocomplete="off" /></label>
+            </div>
+            <label class="field"><span id="textLabel"></span><textarea id="feedbackText" class="ui-input ui-scroll" maxlength="2000" rows="6"></textarea></label>
+            <div id="feedbackCounter" class="counter"></div>
+            <div id="feedbackStatus" class="status" role="alert" hidden></div>
+            <div class="actions">
+                <button type="button" id="feedbackClear" class="ui-button"></button>
+                <button type="button" id="feedbackCancel" class="ui-button"></button>
+                <button type="submit" id="feedbackSend" class="ui-button primary"></button>
+            </div>
+        </form>
+        <section id="feedbackThanks" class="ui-card" hidden>
+            <h2 id="thanksTitle" class="ui-card-title"></h2>
+            <p id="thanksBody"></p>
+            <div class="actions"><button type="button" id="thanksClose" class="ui-button primary"></button></div>
+        </section>
     </div>
     <script type="module" src="index.js"></script>
     <script type="module" src="../shared/connectionBannerInit.js"></script>

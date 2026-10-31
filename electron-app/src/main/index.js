@@ -11,6 +11,8 @@ const { registerHubIpc } = require('./ipc/hubIpc');
 const { registerLogIpc } = require('./ipc/logIpc');
 const { registerLiveMapIpc } = require('./ipc/liveMapIpc');
 const { registerTrendsIpc } = require('./ipc/trendsIpc');
+const { registerFeedbackIpc } = require('./ipc/feedbackIpc');
+const { registerDialogIpc } = require('./ipc/dialogIpc');
 const { importLegacyConfig } = require('./migration/importLegacyConfig');
 const settingsStore = require('./services/settingsStore');
 const regionsStore = require('./services/regionsStore');
@@ -21,7 +23,7 @@ const { filterAlerts, discoverUnknownLocations } = require('./services/locationF
 const { loadLocalConfig } = require('./services/localConfig');
 const { processAlerts, processKyivDistricts, getActiveCount } = require('./services/notifier');
 const { worstLevelAmong } = require('./services/alertLevels');
-const { setLatestMatchedAlerts, setLatestTotalAlertCount, setLatestAlertedRegions } = require('./services/alertState');
+const { setLatestMatchedAlerts, setLatestTotalAlertCount, setLatestAlertedRegions, markDataLoaded } = require('./services/alertState');
 const { removeLegacyLocalData } = require('./services/legacyDataCleanup');
 const { computeAlertedRegions, computeKyivRaionStatuses } = require('./services/regionAlertStatus');
 const { createTray, updateTrayState, setNoDataState } = require('./services/tray');
@@ -55,9 +57,11 @@ app.on('second-instance', () => {
 
 app.setAppUserModelId('com.sergeiown.alertserver');
 
+let onNetworkRestored = () => {};
+
 app.whenReady().then(() => {
     installHandlers();
-    startConnectivityMonitor();
+    startConnectivityMonitor({ onRestored: () => onNetworkRestored() });
     logEvent(`Application started (v${app.getVersion()})`, 'INFO');
 
     const result = importLegacyConfig(LEGACY_APP_DIR, { settingsStore, regionsStore });
@@ -82,6 +86,8 @@ app.whenReady().then(() => {
     registerLogIpc();
     registerLiveMapIpc();
     registerTrendsIpc();
+    registerFeedbackIpc();
+    registerDialogIpc();
 
     createTray();
     if (settingsStore.getSettings().showHubOnStartup) showHub('home');
@@ -124,6 +130,7 @@ app.whenReady().then(() => {
         setLatestTotalAlertCount(Number.isFinite(alertData.officialCount) ? alertData.officialCount : alertData.alerts.length);
         const kyivRaions = computeKyivRaionStatuses(alertData.alerts);
         setLatestAlertedRegions({ ...computeAlertedRegions(alertData.alerts), kyivRaions });
+        markDataLoaded();
         processAlerts(matched, alertData.alerts);
         processKyivDistricts(kyivRaions);
         updateTrayState(getActiveCount(), alertData.alerts.length, worstLevelAmong(matched));
@@ -135,7 +142,9 @@ app.whenReady().then(() => {
     }
 
     const { alertProxyClientKey } = loadLocalConfig();
-    startAlertSourceManager(alertProxyClientKey, onAlertsUpdated);
+    const alertSources = startAlertSourceManager(alertProxyClientKey, onAlertsUpdated);
+    powerMonitor.on('resume', () => alertSources.reconnect());
+    onNetworkRestored = () => alertSources.reconnect();
 });
 
 app.on('window-all-closed', () => {});

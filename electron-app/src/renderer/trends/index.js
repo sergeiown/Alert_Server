@@ -23,15 +23,31 @@ const CATEGORY_UK = {
 };
 
 const CATEGORY_COLOR = {
-    UAV: '#f5a623',
-    'cruise missile': '#991b1b',
-    'ballistic missile': '#7c3aed',
-    'surface-to-air missile': '#0d9488',
-    'surface-to-air and ballistic': '#5b8fb0',
-    'guided bomb': '#dc2626',
-    unknown: '#6b7280',
+    light: {
+        UAV: '#e09112',
+        'cruise missile': '#991b1b',
+        'ballistic missile': '#7c3aed',
+        'surface-to-air missile': '#0d9488',
+        'surface-to-air and ballistic': '#5b8fb0',
+        'guided bomb': '#dc2626',
+        unknown: '#6b7280',
+    },
+    dark: {
+        UAV: '#f5b13d',
+        'cruise missile': '#e0605a',
+        'ballistic missile': '#a78bfa',
+        'surface-to-air missile': '#2dd4bf',
+        'surface-to-air and ballistic': '#7fb2d6',
+        'guided bomb': '#ff7a9a',
+        unknown: '#9aa4b2',
+    },
 };
 const FALLBACK_COLOR = '#94a3b8';
+const HOURLY_COLOR = { light: '#4a7db8', dark: '#6f9fd6' };
+
+function themeKey() {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
 
 function categoryName(category, isEnglish) {
     if (isEnglish) return category;
@@ -39,7 +55,7 @@ function categoryName(category, isEnglish) {
 }
 
 function categoryColor(category) {
-    return CATEGORY_COLOR[category] || FALLBACK_COLOR;
+    return CATEGORY_COLOR[themeKey()][category] || FALLBACK_COLOR;
 }
 
 function formatNumber(n) {
@@ -74,7 +90,7 @@ function monthLabel(month, isEnglish) {
 
 function buildSummaryCard(stats, strings) {
     const card = document.createElement('section');
-    card.className = 'card';
+    card.className = 'card ui-card';
     const h2 = document.createElement('h2');
     h2.textContent = strings.trendsSummaryTitle;
     card.appendChild(h2);
@@ -100,7 +116,7 @@ function buildSummaryCard(stats, strings) {
 
 function buildCategoryCard(stats, strings, isEnglish) {
     const card = document.createElement('section');
-    card.className = 'card';
+    card.className = 'card ui-card';
     const h2 = document.createElement('h2');
     h2.textContent = strings.trendsByCategoryTitle;
     card.appendChild(h2);
@@ -176,7 +192,7 @@ function buildChartFrame({ scale, plotHeight, plotWidth, isEnglish, scrollToEnd,
 
 function buildMonthlyChart(stats, strings, isEnglish) {
     const card = document.createElement('section');
-    card.className = 'card';
+    card.className = 'card ui-card';
     const h2 = document.createElement('h2');
     h2.textContent = strings.trendsMonthlyTitle;
     card.appendChild(h2);
@@ -243,7 +259,7 @@ function buildMonthlyChart(stats, strings, isEnglish) {
 
 function buildModelsCard(stats, strings, isEnglish) {
     const card = document.createElement('section');
-    card.className = 'card';
+    card.className = 'card ui-card';
     const h2 = document.createElement('h2');
     h2.textContent = strings.trendsTopModelsTitle;
     card.appendChild(h2);
@@ -275,7 +291,7 @@ function buildModelsCard(stats, strings, isEnglish) {
 
 function buildTodayAlertsCard(total, strings) {
     const card = document.createElement('section');
-    card.className = 'card';
+    card.className = 'card ui-card';
     const h2 = document.createElement('h2');
     h2.textContent = strings.trendsTodayAlertsTitle;
     card.appendChild(h2);
@@ -290,9 +306,102 @@ function buildTodayAlertsCard(total, strings) {
     return card;
 }
 
+const CLOCK = { size: 280, center: 140, inner: 54, outer: 104, tickOuter: 113, labelRadius: 125 };
+let clockTimer = null;
+
+function clockPoint(angle, radius) {
+    const radians = (angle * Math.PI) / 180;
+    return [CLOCK.center + radius * Math.sin(radians), CLOCK.center - radius * Math.cos(radians)];
+}
+
+function clockSector(startAngle, endAngle, innerRadius, outerRadius) {
+    const [x1, y1] = clockPoint(startAngle, innerRadius);
+    const [x2, y2] = clockPoint(startAngle, outerRadius);
+    const [x3, y3] = clockPoint(endAngle, outerRadius);
+    const [x4, y4] = clockPoint(endAngle, innerRadius);
+    return `M${x1.toFixed(2)} ${y1.toFixed(2)} L${x2.toFixed(2)} ${y2.toFixed(2)} A${outerRadius} ${outerRadius} 0 0 1 ${x3.toFixed(2)} ${y3.toFixed(2)} L${x4.toFixed(2)} ${y4.toFixed(2)} A${innerRadius} ${innerRadius} 0 0 0 ${x1.toFixed(2)} ${y1.toFixed(2)} Z`;
+}
+
+function kyivClock() {
+    const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Kyiv', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
+    const value = (type) => Number(parts.find((part) => part.type === type).value);
+    return { hour: value('hour'), minute: value('minute'), second: value('second') };
+}
+
+function buildDayClock(byHour, scaleMax, strings) {
+    const wrap = document.createElement('div');
+    wrap.className = 'day-clock';
+    const color = HOURLY_COLOR[themeKey()];
+    const { center } = CLOCK;
+    const now = kyivClock();
+    const sectors = [];
+
+    byHour.forEach((count, hour) => {
+        const start = hour * 15 + 0.8;
+        const end = (hour + 1) * 15 - 0.8;
+        const label = String(hour).padStart(2, '0');
+        sectors.push(`<path class="clock-track" d="${clockSector(start, end, CLOCK.inner, CLOCK.outer)}"/>`);
+        if (count) {
+            const length = CLOCK.inner + (CLOCK.outer - CLOCK.inner) * Math.min(1, count / scaleMax);
+            sectors.push(`<path class="clock-bar" d="${clockSector(start, end, CLOCK.inner, length)}" fill="${color}"/>`);
+        }
+        sectors.push(`<path class="clock-hit" d="${clockSector(start, end, CLOCK.inner, CLOCK.outer)}"><title>${label}:00 - ${formatNumber(count)}</title></path>`);
+    });
+
+    const ticks = [];
+    for (let hour = 0; hour < 24; hour++) {
+        const major = hour % 3 === 0;
+        const [x1, y1] = clockPoint(hour * 15, CLOCK.outer + 3);
+        const [x2, y2] = clockPoint(hour * 15, CLOCK.tickOuter + (major ? 3 : 0));
+        ticks.push(`<line class="clock-tick${major ? ' major' : ''}" x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}"/>`);
+        if (major) {
+            const [lx, ly] = clockPoint(hour * 15, CLOCK.labelRadius);
+            ticks.push(`<text class="chart-label clock-label" x="${lx.toFixed(2)}" y="${ly.toFixed(2)}" text-anchor="middle" dominant-baseline="central">${hour === 0 ? '00' : String(hour).padStart(2, '0')}</text>`);
+        }
+    }
+
+    wrap.innerHTML = `<svg class="clock-svg" width="${CLOCK.size}" height="${CLOCK.size}" viewBox="0 0 ${CLOCK.size} ${CLOCK.size}" role="img" aria-label="${escapeHtml(strings.trendsClockTitle)}">
+        <circle class="clock-ring" cx="${center}" cy="${center}" r="${CLOCK.outer + 3}"/>
+        <circle class="clock-ring" cx="${center}" cy="${center}" r="${CLOCK.inner - 3}"/>
+        ${sectors.join('')}
+        <path class="clock-now" d="${clockSector(now.hour * 15 + 0.8, (now.hour + 1) * 15 - 0.8, CLOCK.inner, CLOCK.outer)}"/>
+        ${ticks.join('')}
+        <line class="clock-hand-minute" x1="${center}" y1="${center + 10}" x2="${center}" y2="${center - 84}"/>
+        <line class="clock-hand-hour" x1="${center}" y1="${center + 8}" x2="${center}" y2="${center - 46}"/>
+        <circle class="clock-pin" cx="${center}" cy="${center}" r="4.5"/>
+    </svg>
+    <div class="clock-time"></div>`;
+
+    const hourHand = wrap.querySelector('.clock-hand-hour');
+    const minuteHand = wrap.querySelector('.clock-hand-minute');
+    const timeLabel = wrap.querySelector('.clock-time');
+
+    const update = () => {
+        const time = kyivClock();
+        const hourAngle = ((time.hour + time.minute / 60) / 24) * 360;
+        const minuteAngle = ((time.minute + time.second / 60) / 60) * 360;
+        hourHand.setAttribute('transform', `rotate(${hourAngle.toFixed(2)} ${center} ${center})`);
+        minuteHand.setAttribute('transform', `rotate(${minuteAngle.toFixed(2)} ${center} ${center})`);
+        timeLabel.textContent = `${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`;
+    };
+    update();
+
+    if (clockTimer) clearInterval(clockTimer);
+    clockTimer = setInterval(() => {
+        if (!wrap.isConnected) {
+            clearInterval(clockTimer);
+            clockTimer = null;
+            return;
+        }
+        update();
+    }, 15000);
+
+    return wrap;
+}
+
 function buildHourlyChart(byHour, strings, isEnglish) {
     const card = document.createElement('section');
-    card.className = 'card';
+    card.className = 'card ui-card';
     const h2 = document.createElement('h2');
     h2.textContent = strings.trendsTodayByHourTitle;
     card.appendChild(h2);
@@ -304,7 +413,9 @@ function buildHourlyChart(byHour, strings, isEnglish) {
     const plotWidth = CHART.pad * 2 + 24 * step - gap;
     const plotHeight = 130;
 
-    card.appendChild(
+    const layout = document.createElement('div');
+    layout.className = 'hourly-layout';
+    layout.appendChild(
         buildChartFrame({
             scale,
             plotHeight,
@@ -319,7 +430,7 @@ function buildHourlyChart(byHour, strings, isEnglish) {
                     if (count) {
                         const top = y(count);
                         parts.push(
-                            `<rect class="chart-seg" x="${x}" y="${top.toFixed(1)}" width="${barWidth}" height="${(y(0) - top).toFixed(1)}" fill="#2563eb"/>`
+                            `<rect class="chart-seg" x="${x}" y="${top.toFixed(1)}" width="${barWidth}" height="${(y(0) - top).toFixed(1)}" fill="${HOURLY_COLOR[themeKey()]}"/>`
                         );
                     }
                     parts.push(
@@ -335,12 +446,14 @@ function buildHourlyChart(byHour, strings, isEnglish) {
             },
         })
     );
+    layout.appendChild(buildDayClock(byHour, scale.max, strings));
+    card.appendChild(layout);
     return card;
 }
 
 function buildCountTable(entries, titleKey, columnKey, strings, emptyKey) {
     const card = document.createElement('section');
-    card.className = 'card';
+    card.className = 'card ui-card';
     const h2 = document.createElement('h2');
     h2.textContent = strings[titleKey];
     card.appendChild(h2);
@@ -425,6 +538,9 @@ async function main() {
 
         if (stats) {
             rangeText = strings.trendsRangeLabel.replace('{from}', stats.dateRange.from).replace('{to}', stats.dateRange.to);
+            if (stats.unpublished && stats.unpublished.rows > 0) {
+                rangeText += ` ${strings.trendsUnpublishedNote.replace('{count}', stats.unpublished.rows)}`;
+            }
             rangeElement.textContent = rangeText;
         }
         if (!stats) {

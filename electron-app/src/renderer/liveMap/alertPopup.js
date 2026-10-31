@@ -50,11 +50,20 @@ function translateDescription(description, isEnglish) {
 
 const CITY_SCOPE_NAMES = new Set(['м. Київ', 'Kyiv City']);
 
-function alertPopupHtml(displayName, startedAt, alertTypeName, strings, language, inheritedFromName, alertLevel, threatLines) {
+const DISTRICT_LIST_LIMIT = 6;
+
+function districtsLine(districtNames, strings) {
+    const shown = districtNames.slice(0, DISTRICT_LIST_LIMIT).join(', ');
+    const rest = districtNames.length - DISTRICT_LIST_LIMIT;
+    return strings.liveMapAlertInDistricts.replace('{names}', rest > 0 ? `${shown} ${strings.liveMapAndMore.replace('{count}', rest)}` : shown);
+}
+
+function alertPopupHtml(displayName, startedAt, alertTypeName, strings, language, inheritedFromName, alertLevel, threatLines, districtNames) {
     const locale = language === 'English' ? 'en-US' : 'uk-UA';
     const isEnglish = language === 'English';
 
     if (!startedAt) {
+        if (districtNames && districtNames.length) return `<strong>${displayName}</strong><br>${districtsLine(districtNames, strings)}`;
         return `<strong>${displayName}</strong><br>${strings.liveMapNoActiveAlert}`;
     }
 

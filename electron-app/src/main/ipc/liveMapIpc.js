@@ -3,7 +3,7 @@
 
 const { ipcMain, clipboard } = require('electron');
 const { getResourcePath } = require('../services/appPaths');
-const { getLatestTotalAlertCount, getLatestAlertedRegions } = require('../services/alertState');
+const { getLatestTotalAlertCount, getLatestAlertedRegions, isDataLoaded } = require('../services/alertState');
 const { getLatestOccupiedTerritory } = require('../services/occupiedTerritoryStore');
 const { getLatestThreats } = require('../services/neptunThreatsStore');
 const { getDailyPeaks } = require('../services/dailyPeakStore');
@@ -23,11 +23,15 @@ function withAlertTypeName(entries, language) {
     }));
 }
 
+const SCREENSHOT_THUMBNAIL_WIDTH = 240;
+
 function registerLiveMapIpc() {
     ipcMain.handle('liveMap:getBaseMapUrl', () => {
         const filePath = getResourcePath('icons', 'ukraine_live_map.svg').replace(/\\/g, '/');
         return `file://${filePath}`;
     });
+
+    ipcMain.handle('liveMap:isDataLoaded', () => isDataLoaded());
 
     ipcMain.handle('liveMap:getActiveAlertCount', () => getLatestTotalAlertCount());
 
@@ -54,7 +58,9 @@ function registerLiveMapIpc() {
         try {
             const image = await event.sender.capturePage();
             clipboard.writeImage(image);
-            return true;
+            const { width } = image.getSize();
+            const thumbnail = image.resize({ width: Math.min(SCREENSHOT_THUMBNAIL_WIDTH, width) }).toDataURL();
+            return { ok: true, thumbnail };
         } catch (err) {
             logEvent(`Live map screenshot failed: ${err.message}`, 'ERROR');
             return false;

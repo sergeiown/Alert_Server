@@ -60,7 +60,7 @@ const CITIES = [
     { lat: 46.8489, lng: 35.3675, uk: 'Мелітополь', en: 'Melitopol', oblast: 'Запорізька', raion: 'Мелітопольський' },
     { lat: 48.7389, lng: 37.5848, uk: 'Краматорськ', en: 'Kramatorsk', oblast: 'Донецька', raion: 'Краматорський' },
     { lat: 49.8092, lng: 30.1121, uk: 'Біла Церква', en: 'Bila Tserkva', oblast: 'Київська', raion: 'Білоцерківський' },
-    { lat: 48.9482, lng: 38.4936, uk: 'Сєвєродонецьк', en: 'Sievierodonetsk', oblast: 'Луганська', raion: 'Сєвєродонецький' },
+    { lat: 48.9482, lng: 38.4936, uk: 'Сіверськодонецьк', en: 'Siverskodonetsk', oblast: 'Луганська', raion: 'Сіверськодонецький' },
     { lat: 48.5111, lng: 34.6023, uk: "Кам'янське", en: 'Kamianske', oblast: 'Дніпропетровська', raion: "Кам'янський" },
 ];
 

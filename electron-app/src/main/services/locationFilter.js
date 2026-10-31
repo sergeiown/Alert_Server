@@ -48,12 +48,16 @@ function buildStaticLookup() {
     return lookup;
 }
 
+let mergedLookup = null;
+let mergedDiscoveredCount = -1;
+
 function getLocationLookup() {
     if (!staticLookup) staticLookup = buildStaticLookup();
 
     const discovered = discoveredLocationsStore.getAll();
     const discoveredUids = Object.keys(discovered);
     if (!discoveredUids.length) return staticLookup;
+    if (mergedLookup && mergedDiscoveredCount === discoveredUids.length) return mergedLookup;
 
     const merged = new Map(staticLookup);
     discoveredUids.forEach((uid) => {
@@ -67,6 +71,8 @@ function getLocationLookup() {
         });
     });
 
+    mergedLookup = merged;
+    mergedDiscoveredCount = discoveredUids.length;
     return merged;
 }
 
@@ -75,6 +81,16 @@ function getHistoryFetchTarget(uid) {
     if (!info || !info.stateUid) return null;
 
     return { stateUid: info.stateUid, matchUid: info.type === 'state' ? null : uid };
+}
+
+function getMapRegion(uid) {
+    const lookup = getLocationLookup();
+    const info = lookup.get(String(uid));
+    if (!info || !info.stateUid) return null;
+    if (info.type === 'state') return { stateUid: info.stateUid };
+
+    const district = info.type === 'district' ? info : lookup.get(String(info.districtUid));
+    return { stateUid: info.stateUid, districtName: district ? district.name : null };
 }
 
 function getAncestorUids(uid) {
@@ -137,6 +153,7 @@ module.exports = {
     getLocationLookup,
     discoverUnknownLocations,
     getHistoryFetchTarget,
+    getMapRegion,
     getAlertCoverageUids,
     getAncestorUids,
 };

@@ -1,3 +1,7 @@
+:root {
+    color-scheme: light dark;
+}
+
 html,
 body,
 .leaflet-container {
@@ -36,13 +40,17 @@ body {
 
 .leaflet-control-attribution,
 .leaflet-control-attribution a {
-    color: #565656;
-    font-size: 10px;
+    color: var(--map-chrome-text);
+    font-size: 9px;
 }
 
 .leaflet-control-attribution {
-
     background: var(--map-chrome-bg) !important;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    padding: 1px 7px;
+    line-height: 1.5;
+    margin: 0 5px 5px 0 !important;
 }
 
 .leaflet-popup-pane {
@@ -236,13 +244,13 @@ body {
 .leaflet-control-fullscreen,
 .leaflet-control-layers-toggle {
     box-sizing: border-box !important;
-    width: 34px !important;
-    height: 34px !important;
+    width: 36px !important;
+    height: 36px !important;
     line-height: 34px !important;
     background-color: var(--map-chrome-bg) !important;
     color: var(--map-chrome-text);
     border: 1px solid var(--map-chrome-border) !important;
-    border-radius: 4px !important;
+    border-radius: 10px !important;
 
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4) !important;
 }
@@ -278,6 +286,10 @@ body {
     font-size: 20px !important;
 }
 
+.leaflet-control-zoom a + a {
+    margin-top: 10px;
+}
+
 .leaflet-bar a.leaflet-control-center,
 .leaflet-bar a.leaflet-control-screenshot {
     display: flex;
@@ -286,15 +298,17 @@ body {
 }
 
 .leaflet-bar a.leaflet-control-kyiv-toggle {
-    width: auto !important;
-    padding: 0 10px;
-    font-size: 13px;
-    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
 }
 
-.leaflet-bar a.leaflet-control-kyiv-toggle.active {
-    background-color: #2563eb !important;
-    color: #ffffff;
+.kyiv-toggle-text {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    line-height: 1;
 }
 
 .screenshot-hide-controls .leaflet-control-zoom,
@@ -312,19 +326,43 @@ body {
     left: 50%;
     bottom: 24px;
     transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: min(420px, calc(100% - 32px));
     background: var(--map-chrome-bg);
-    color: #e6e6e6;
-    padding: 8px 16px;
-    border-radius: 6px;
+    color: var(--map-chrome-text);
+    border: 1px solid var(--map-chrome-border);
+    padding: 8px 16px 8px 8px;
+    border-radius: 12px;
     font-size: 13px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    font-weight: 600;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
     z-index: 1000;
     pointer-events: none;
     transition: opacity 0.2s ease;
 }
 
 #screenshotToast.screenshot-toast-error {
+    padding-left: 16px;
     background: #7a2e2e;
+    border-color: #a14a4a;
+    color: #ffffff;
+}
+
+.screenshot-toast-thumb {
+    display: block;
+    width: 112px;
+    height: auto;
+    max-height: 72px;
+    object-fit: cover;
+    border-radius: 7px;
+    border: 1px solid var(--map-chrome-border);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.screenshot-toast-text {
+    line-height: 1.3;
 }
 
 #screenshotToast.hidden {
@@ -652,9 +690,8 @@ body {
         border-top-color: var(--map-chrome-bg) !important;
     }
 
-    .leaflet-control-attribution,
-    .leaflet-control-attribution a {
-        color: #a8a8a8 !important;
+    .leaflet-control-attribution {
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
     }
 
     .threat-legend,
@@ -727,4 +764,126 @@ body {
 .detail-map-on .city-label,
 .detail-map-on .city-dot {
     display: none;
+}
+
+#map.awaiting-data {
+    background: var(--map-chrome-bg);
+}
+
+#map.awaiting-data #statusBar,
+#map.awaiting-data .leaflet-control-container {
+    visibility: hidden;
+}
+
+.data-gate {
+    position: absolute;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
+.data-gate-text {
+    max-width: 420px;
+    padding: 16px 22px;
+    box-sizing: border-box;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--map-chrome-text);
+    background: var(--map-chrome-bg);
+    border: 1px solid var(--map-chrome-border);
+    border-radius: 12px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22);
+}
+
+.awaiting-outline {
+    filter: blur(7px);
+    opacity: 0.8;
+}
+
+.leaflet-bottom.leaflet-right .threat-hint {
+    width: 290px;
+    max-width: none;
+    box-sizing: border-box;
+}
+
+.leaflet-bottom.leaflet-right .threat-hint:has(+ .leaflet-control-attribution) {
+    margin-bottom: 0 !important;
+    padding-bottom: 4px;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.threat-hint + .leaflet-control-attribution {
+    position: relative;
+    width: 290px;
+    box-sizing: border-box;
+    margin: -1px 10px 10px 0 !important;
+    padding: 4px 12px 8px;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    clip-path: inset(0 -8px -8px -8px);
+    font-size: 11px;
+    line-height: 1.3;
+}
+
+.threat-hint + .leaflet-control-attribution {
+    font-size: 0;
+}
+
+.threat-hint + .leaflet-control-attribution,
+.threat-hint + .leaflet-control-attribution a {
+    color: color-mix(in srgb, var(--map-chrome-text) 75%, transparent);
+}
+
+.threat-hint + .leaflet-control-attribution .attr-item,
+.threat-hint + .leaflet-control-attribution .attr-item a {
+    font-size: 11px;
+    line-height: 1.3;
+}
+
+.threat-hint + .leaflet-control-attribution .attr-item {
+    display: block;
+}
+
+.threat-hint + .leaflet-control-attribution::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 12px;
+    right: 12px;
+    height: 1px;
+    background: rgba(128, 128, 128, 0.35);
+}
+
+.screenshot-hide-controls .threat-hint {
+    display: none;
+}
+
+.screenshot-hide-controls .threat-hint + .leaflet-control-attribution {
+    width: auto;
+    margin: 0 5px 5px 0 !important;
+    padding: 1px 7px;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    clip-path: none;
+    font-size: 9px;
+    line-height: 1.5;
+}
+
+.screenshot-hide-controls .threat-hint + .leaflet-control-attribution::before {
+    display: none;
+}
+
+.screenshot-hide-controls .threat-hint + .leaflet-control-attribution .attr-item,
+.screenshot-hide-controls .threat-hint + .leaflet-control-attribution .attr-item a {
+    display: inline;
+    font-size: 9px;
+    line-height: 1.5;
 }

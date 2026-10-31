@@ -38,6 +38,18 @@ function installHandlers() {
         app.exit();
     });
 
+    process.on('unhandledRejection', (reason) => {
+        logEvent(`Unhandled rejection: ${reason && reason.stack ? reason.stack : reason}`, 'ERROR');
+    });
+
+    app.on('render-process-gone', (event, webContents, details) => {
+        logEvent(`Renderer process gone: ${details.reason} (exit code ${details.exitCode})`, 'ERROR');
+    });
+
+    app.on('child-process-gone', (event, details) => {
+        logEvent(`Child process gone: ${details.type} ${details.reason} (exit code ${details.exitCode})`, 'ERROR');
+    });
+
     process.on('SIGINT', () => app.exit(0));
     process.on('SIGHUP', () => app.exit(1));
     process.on('SIGBREAK', () => app.exit(2));

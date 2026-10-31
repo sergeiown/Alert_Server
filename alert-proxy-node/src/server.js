@@ -21,6 +21,13 @@ const publicApi = require('./publicApi');
 const webstats = require('./webstats');
 const config = require('./config');
 const logbook = require('./logbook');
+const lib = require('./lib');
+const geoip = require('./geoip');
+const { db } = require('./store');
+const { createFeedbackStore } = require('./feedback');
+
+const feedbackStore = createFeedbackStore(db);
+const FEEDBACK_BODY_LIMIT = 16 * 1024;
 
 function getClientIp(req) {
     const forwarded = req.headers['x-forwarded-for'];
@@ -31,6 +38,68 @@ function getClientIp(req) {
 function normalizeRoute(pathname) {
     if (pathname === '/') return '/';
     return pathname.replace(/\/\d{8}$/, '/:date').replace(/\/\d+$/, '/:uid');
+}
+
+function readLimitedBody(req, limit) {
+    return new Promise((resolve) => {
+        const chunks = [];
+        let size = 0;
+        let rejected = false;
+        req.on('data', (chunk) => {
+            size += chunk.length;
+            if (size > limit) {
+                rejected = true;
+                req.destroy();
+                resolve(null);
+                return;
+            }
+            chunks.push(chunk);
+        });
+        req.on('end', () => {
+            if (!rejected) resolve(Buffer.concat(chunks).toString('utf-8'));
+        });
+        req.on('error', () => resolve(null));
+    });
+}
+
+function jsonResult(status, payload, headers = {}) {
+    return { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...headers }, body: JSON.stringify(payload) };
+}
+
+async function handleFeedbackPost(req, url, requesterIp) {
+    const isAdmin = url.pathname === '/feedback-update';
+    if (isAdmin && ratelimit.isAdminBlocked(requesterIp)) return jsonResult(429, { error: 'blocked' }, { 'Retry-After': '600' });
+    const authorized = isAdmin ? checkAdminKey(url, req.headers) : checkClientKey(url, req.headers);
+    if (!authorized) {
+        if (isAdmin) ratelimit.noteAdminFailure(requesterIp);
+        return jsonResult(401, { error: 'unauthorized' });
+    }
+
+    const raw = await readLimitedBody(req, FEEDBACK_BODY_LIMIT);
+    if (raw === null) return jsonResult(413, { error: 'too-large' });
+    let payload;
+    try {
+        payload = JSON.parse(raw);
+    } catch (err) {
+        return jsonResult(400, { error: 'invalid' });
+    }
+
+    if (isAdmin) {
+        return feedbackStore.update(payload || {}) ? jsonResult(200, { ok: true }) : jsonResult(400, { error: 'invalid' });
+    }
+
+    const clientId = lib.normalizeClientId(req.headers['x-client-id']);
+    if (!clientId) return jsonResult(400, { error: 'client-id' });
+    const result = feedbackStore.submit({
+        clientId,
+        ipHash: await lib.hashIp(requesterIp),
+        country: geoip.lookup(requesterIp),
+        version: req.headers['x-client-version'],
+        language: payload && payload.language,
+        payload,
+    });
+    const headers = result.retryAfterSec ? { 'Retry-After': String(result.retryAfterSec) } : {};
+    return jsonResult(result.status, result.ok ? { ok: true } : { error: result.error }, headers);
 }
 
 function readBody(req) {
@@ -120,6 +189,11 @@ async function handleRequest(req, res) {
         return;
     }
 
+    if (req.method === 'POST' && (url.pathname === '/feedback' || url.pathname === '/feedback-update')) {
+        send(res, await handleFeedbackPost(req, url, requesterIp));
+        return;
+    }
+
     if (req.method !== 'GET') {
         send(res, { status: 405, headers: {}, body: 'Method not allowed' });
         return;
@@ -127,7 +201,7 @@ async function handleRequest(req, res) {
 
     const isAdminRoute =
         (privateExtension && privateExtension.routes.includes(url.pathname)) ||
-        url.pathname === '/status' || url.pathname === '/ukrainealarm-status' || url.pathname === '/users-stats' || url.pathname === '/users-list' || url.pathname === '/web-stats' || url.pathname === '/log-events';
+        url.pathname === '/status' || url.pathname === '/ukrainealarm-status' || url.pathname === '/users-stats' || url.pathname === '/users-list' || url.pathname === '/web-stats' || url.pathname === '/log-events' || url.pathname === '/feedback-list';
     if (isAdminRoute && ratelimit.isAdminBlocked(requesterIp)) {
         send(res, { status: 429, headers: { 'Retry-After': '600' }, body: 'Too many failed attempts' });
         return;
@@ -194,6 +268,11 @@ async function handleRequest(req, res) {
     if (url.pathname === '/log-events') {
         const events = logbook.getEvents({ level: url.searchParams.get('level'), limit: url.searchParams.get('limit') });
         send(res, { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ events, counts: logbook.getCounts() }) });
+        return;
+    }
+
+    if (url.pathname === '/feedback-list') {
+        send(res, jsonResult(200, feedbackStore.list(url.searchParams.get('limit'))));
         return;
     }
 

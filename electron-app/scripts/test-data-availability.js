@@ -139,4 +139,23 @@ run('start and stop schedule one timer', () => {
     assert.deepStrictEqual(calls, { set: 1, clear: 1 });
 });
 
+run('a timer tick right after the system slept does not report no data', () => {
+    const { clock, events, availability } = setup(90 * 1000);
+    availability.tick();
+    clock.t += 10 * 1000;
+    availability.tick();
+    clock.t += 7 * MINUTE;
+    availability.tick();
+    assert.deepStrictEqual(events, []);
+    assert.strictEqual(availability.getState(), 'ok');
+    for (let i = 0; i < 8; i++) {
+        clock.t += 10 * 1000;
+        availability.tick();
+    }
+    assert.deepStrictEqual(events, []);
+    clock.t += 10 * 1000;
+    availability.tick();
+    assert.deepStrictEqual(events, ['nodata']);
+});
+
 console.log(`\n${passed} checks passed`);

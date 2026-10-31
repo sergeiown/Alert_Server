@@ -47,9 +47,9 @@ function buildCard(region, result, collapsible) {
     card.dataset.uid = String(region.uid);
 
     const levelClass = result.alertLevel === 'red' ? ' level-red' : result.alertLevel === 'yellow' ? ' level-yellow' : '';
-    if (result.status === 'active') card.className = `region-card active${levelClass}`;
-    else if (result.status === 'ok') card.className = 'region-card';
-    else card.className = 'region-card empty';
+    if (result.status === 'active') card.className = `region-card ui-card active${levelClass}`;
+    else if (result.status === 'ok') card.className = 'region-card ui-card';
+    else card.className = 'region-card ui-card empty';
     if (collapsible) card.classList.add('collapsible');
     else card.classList.add('expanded');
 

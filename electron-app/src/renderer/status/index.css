@@ -1,122 +1,42 @@
 :root {
-    --card-bg: #f6f1e7;
-    --card-border: rgba(110, 86, 52, 0.22);
-    --card-hover-border: rgba(110, 86, 52, 0.42);
-    --card-text: #3b2f22;
-    --card-muted: #7a6a58;
-    --card-shadow: rgba(80, 60, 30, 0.22);
-    --stripe-calm: #5d9250;
-    --stripe-yellow: #d9962a;
-    --stripe-red: #b94a32;
-    --bg-top: #eaf0f7;
-    --bg-bottom: #d5e1ee;
-    --text: #36516f;
-    --text-strong: #27415e;
-    --muted: #6a809a;
-    --calm-from: #4e8bc2;
-    --calm-to: #2f5f98;
-    --alert-from: #cf6b6b;
-    --alert-to: #93383f;
-    --button-bg: rgba(255, 255, 255, 0.22);
-    --button-border: rgba(255, 255, 255, 0.5);
-    --toggle-bg: rgba(255, 255, 255, 0.7);
-    --toggle-border: rgba(70, 105, 150, 0.28);
-    --toggle-active: #4a7db8;
-
-    --tile-calm-bg: #e3edf8;
-    --tile-calm-border: #a9c2de;
-    --tile-calm-head: #3a5f95;
-    --tile-yellow-bg: #fff3cf;
-    --tile-yellow-border: #e0b445;
-    --tile-yellow-head: #9a6a12;
-    --tile-red-bg: #fbe5e6;
-    --tile-red-border: #cf6b6b;
-    --tile-red-head: #a53a42;
     --tile-active-bg: #eceff6;
     --tile-active-border: #98a6bd;
-    --tile-active-head: #4a587a;
-
     --level-yellow: #a8741a;
     --level-red: #a53a42;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --card-bg: #263243;
-        --card-border: rgba(150, 175, 205, 0.2);
-        --card-hover-border: rgba(150, 175, 205, 0.42);
-        --card-text: #e6edf6;
-        --card-muted: #a3b4c8;
-        --card-shadow: rgba(0, 0, 0, 0.55);
-        --bg-top: #19222e;
-        --bg-bottom: #101720;
-        --text: #bdd2ea;
-        --text-strong: #dbe9f8;
-        --muted: #8aa2bd;
-        --calm-from: #3f6f9f;
-        --calm-to: #284a73;
-        --alert-from: #b95b5e;
-        --alert-to: #7b2f36;
-        --toggle-bg: rgba(60, 82, 108, 0.55);
-        --toggle-border: rgba(130, 170, 215, 0.28);
-        --toggle-active: #5a8fd0;
-
-        --tile-calm-bg: #1f2b3b;
-        --tile-calm-border: #34506f;
-        --tile-calm-head: #9cc0e8;
-        --tile-yellow-bg: #3d3520;
-        --tile-yellow-border: #8c7430;
-        --tile-yellow-head: #e8c97a;
-        --tile-red-bg: #40262b;
-        --tile-red-border: #8f4a52;
-        --tile-red-head: #f0a4aa;
         --tile-active-bg: #2a2f3d;
         --tile-active-border: #55607c;
-        --tile-active-head: #b8c2dc;
-
         --level-yellow: #e2c070;
         --level-red: #f0a4aa;
     }
 }
 
-* {
-    box-sizing: border-box;
-}
-
 body {
-    margin: 0;
-    height: 100vh;
     overflow-y: auto;
-    padding: 26px 40px 30px;
-    font-family: 'IBM Plex Sans', 'Segoe UI', Tahoma, sans-serif;
-    font-size: 15px;
-    color: var(--text);
-    background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+    padding: 20px 24px 26px;
+    font-size: 14px;
 }
 
 #summary {
     position: relative;
     display: flex;
     align-items: center;
-    gap: 28px;
+    gap: 24px;
     max-width: 1200px;
-    margin: 0 auto 22px;
-    padding: 22px 36px 22px 64px;
-    border-radius: 24px;
-    border: 1px solid var(--card-border);
-    color: var(--card-text);
-    background: var(--card-bg);
-    box-shadow:
-        0 10px 22px -12px var(--card-shadow),
-        0 2px 6px rgba(0, 0, 0, 0.08);
+    margin: 0 auto 18px;
+    padding: 18px 28px 18px 56px;
+    border-radius: 22px;
 }
 
 #summary::before {
     content: '';
     position: absolute;
-    left: 22px;
-    top: 20px;
-    bottom: 20px;
+    left: 20px;
+    top: 18px;
+    bottom: 18px;
     width: 6px;
     border-radius: 3px;
     background: var(--stripe-calm);
@@ -132,8 +52,8 @@ body {
 
 #summaryIcon {
     flex: 0 0 auto;
-    width: 84px;
-    height: 84px;
+    width: 76px;
+    height: 76px;
     filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.22));
 }
 
@@ -144,11 +64,12 @@ body {
 
 #summaryText {
     flex: 1;
+    min-width: 0;
 }
 
 #summaryTitle {
     margin: 0 0 4px;
-    font-size: 30px;
+    font-size: 28px;
     color: var(--card-text);
 }
 
@@ -157,26 +78,15 @@ body {
     color: var(--card-muted);
 }
 
-#summaryActions button {
-    height: 38px;
-    padding: 0 18px;
-    border-radius: 19px;
-    border: 1px solid var(--button-border);
-    background: var(--button-bg);
-    color: var(--card-text);
-    font: inherit;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-#summaryActions button:hover {
-    background: var(--card-hover-border);
+#summaryActions {
+    flex: 0 0 auto;
 }
 
 #toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
     max-width: 1200px;
     margin: 0 auto 14px;
 }
@@ -188,27 +98,7 @@ body {
 }
 
 #viewToggle {
-    display: inline-flex;
-    border: 1px solid var(--toggle-border);
-    border-radius: 18px;
-    overflow: hidden;
-    background: var(--toggle-bg);
-}
-
-#viewToggle button {
-    height: 34px;
-    padding: 0 18px;
-    border: 0;
-    background: transparent;
-    color: var(--text-strong);
-    font: inherit;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-#viewToggle button.active {
-    background: var(--toggle-active);
-    color: #ffffff;
+    flex-wrap: nowrap;
 }
 
 #list {
@@ -218,8 +108,8 @@ body {
 
 #list.tiles {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+    gap: 16px;
 }
 
 #list.rows {
@@ -232,33 +122,42 @@ body {
     color: var(--muted);
 }
 
-.tile {
-    --tile-bg: var(--tile-calm-bg);
-    --tile-border: var(--tile-calm-border);
-    --tile-head: var(--tile-calm-head);
-    padding: 16px 20px 18px;
-    border-radius: 18px;
+.tile,
+.row {
+    --tile-bg: var(--card-bg);
+    --tile-border: var(--card-border);
+    --tile-head: var(--accent-strong);
     background: var(--tile-bg);
     border: 1px solid var(--tile-border);
-    box-shadow: 0 8px 16px -8px rgba(35, 70, 115, 0.35);
+    color: var(--card-text);
 }
 
-.tile.tone-yellow {
-    --tile-bg: var(--tile-yellow-bg);
-    --tile-border: var(--tile-yellow-border);
-    --tile-head: var(--tile-yellow-head);
+.tone-calm {
+    --tile-head: var(--tint-green-text);
 }
 
-.tile.tone-red {
-    --tile-bg: var(--tile-red-bg);
-    --tile-border: var(--tile-red-border);
-    --tile-head: var(--tile-red-head);
+.tone-yellow {
+    --tile-bg: var(--tint-yellow-bg);
+    --tile-border: var(--tint-yellow-border);
+    --tile-head: var(--tint-yellow-text);
 }
 
-.tile.tone-active {
+.tone-red {
+    --tile-bg: var(--tint-red-bg);
+    --tile-border: var(--tint-red-border);
+    --tile-head: var(--tint-red-text);
+}
+
+.tone-active {
     --tile-bg: var(--tile-active-bg);
     --tile-border: var(--tile-active-border);
-    --tile-head: var(--tile-active-head);
+    --tile-head: var(--text-strong);
+}
+
+.tile {
+    padding: 14px 18px 16px;
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
 }
 
 .tile-head {
@@ -270,22 +169,24 @@ body {
 }
 
 .tile-name {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 700;
     color: var(--tile-head);
+    min-width: 0;
 }
 
 .tile-chip {
     flex: 0 0 auto;
     padding: 2px 12px;
-    border-radius: 12px;
-    font-size: 12px;
+    border-radius: var(--radius-pill);
+    font-size: 11px;
     font-weight: 700;
     color: var(--tile-head);
     border: 1px solid var(--tile-border);
 }
 
 .tile-body {
+    text-wrap: pretty;
     white-space: pre-wrap;
     line-height: 1.5;
 }
@@ -304,7 +205,7 @@ body {
 
 .tile-body .lead {
     font-weight: 600;
-    color: var(--text-strong);
+    color: var(--card-text);
 }
 
 .row {
@@ -313,38 +214,19 @@ body {
     align-items: center;
     gap: 16px;
     padding: 10px 16px 10px 0;
-    border-radius: 12px;
-    background: var(--tile-bg, var(--tile-calm-bg));
-    border: 1px solid var(--tile-border, var(--tile-calm-border));
+    border-radius: var(--radius-control);
+    box-shadow: var(--shadow-control);
     overflow: hidden;
-}
-
-.row.tone-yellow {
-    --tile-bg: var(--tile-yellow-bg);
-    --tile-border: var(--tile-yellow-border);
-    --tile-head: var(--tile-yellow-head);
-}
-
-.row.tone-red {
-    --tile-bg: var(--tile-red-bg);
-    --tile-border: var(--tile-red-border);
-    --tile-head: var(--tile-red-head);
-}
-
-.row.tone-active {
-    --tile-bg: var(--tile-active-bg);
-    --tile-border: var(--tile-active-border);
-    --tile-head: var(--tile-active-head);
 }
 
 .row-bar {
     align-self: stretch;
-    background: var(--tile-head, var(--tile-calm-head));
+    background: var(--tile-head);
 }
 
 .row-name {
     font-weight: 700;
-    color: var(--tile-head, var(--tile-calm-head));
+    color: var(--tile-head);
 }
 
 .row-state {
@@ -352,5 +234,5 @@ body {
 }
 
 .row-detail {
-    color: var(--muted);
+    color: var(--card-muted);
 }

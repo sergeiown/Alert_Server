@@ -1,27 +1,29 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
-import { createRegionTree } from './components/RegionTree.js';
+import { createRegionTree, countSelectedRegions } from './components/RegionTree.js';
 import { createUkraineMap } from './components/UkraineMap.js';
+import { setupNotifyProfile } from './notifyProfileUi.js';
+import { setupSectionNav } from './sectionNav.js';
 
 let mapInstance = null;
 
 const treeContainer = document.getElementById('tree');
 const mapContainer = document.getElementById('map-container');
 const searchInput = document.getElementById('search');
+const searchClear = document.getElementById('searchClear');
 const summary = document.getElementById('summary');
 const clearRegionsButton = document.getElementById('clearRegionsButton');
 const runAtStartupInput = document.getElementById('runAtStartup');
 const minimizeToTrayOnCloseInput = document.getElementById('minimizeToTrayOnClose');
 const visualNotificationsEnabledInput = document.getElementById('visualNotificationsEnabled');
 const activeAlertNotifyEnabledInput = document.getElementById('activeAlertNotifyEnabled');
-const showLiveMapOnAlertInput = document.getElementById('showLiveMapOnAlert');
 const forecastNotifyEnabledInput = document.getElementById('forecastNotifyEnabled');
 const forecastNotifyLookaheadMinutesInput = document.getElementById('forecastNotifyLookaheadMinutes');
 const alertLevelChangeNotifyEnabledInput = document.getElementById('alertLevelChangeNotifyEnabled');
+let notifyProfileUi = null;
 const alertSoundModeInput = document.getElementById('alertSoundMode');
 const alertSoundCountInput = document.getElementById('alertSoundCount');
-const massAttackThresholdInput = document.getElementById('massAttackThreshold');
 const updateCheckIntervalHoursInput = document.getElementById('updateCheckIntervalHours');
 const languageInput = document.getElementById('language');
 const themeInput = document.getElementById('theme');
@@ -32,7 +34,6 @@ function applyStrings(strings) {
     document.getElementById('minimizeToTrayOnCloseLabel').textContent = strings.minimizeToTrayOnCloseLabel;
     document.getElementById('visualNotificationsLabel').textContent = strings.visualNotificationsLabel;
     document.getElementById('activeAlertNotifyLabel').textContent = strings.activeAlertNotifyLabel;
-    document.getElementById('showLiveMapOnAlertLabel').textContent = strings.showLiveMapOnAlertLabel;
     document.getElementById('alertLevelChangeNotifyLabel').textContent = strings.alertLevelChangeNotifyLabel;
     document.getElementById('settingsForecastNotifyLabel').textContent = strings.settingsForecastNotifyLabel;
     document.getElementById('forecastNotifyLookaheadLabel').textContent = strings.forecastNotifyLookaheadLabel;
@@ -41,7 +42,6 @@ function applyStrings(strings) {
     document.getElementById('alertSoundModeSirenOption').textContent = strings.alertSoundModeSiren;
     document.getElementById('alertSoundModeVoiceOption').textContent = strings.alertSoundModeVoice;
     document.getElementById('alertSoundCountLabel').textContent = strings.alertSoundCountLabel;
-    document.getElementById('massAttackThresholdLabel').textContent = strings.massAttackThresholdLabel;
     document.getElementById('updateCheckIntervalLabel').textContent = strings.updateCheckIntervalLabel;
     document.getElementById('languageLabel').textContent = strings.languageLabel;
     document.getElementById('themeLabel').textContent = strings.themeLabel;
@@ -50,8 +50,11 @@ function applyStrings(strings) {
     document.getElementById('themeSystemOption').textContent = strings.themeSystem;
     document.getElementById('settingsGroupGeneral').textContent = strings.settingsGroupGeneral;
     document.getElementById('settingsGroupNotifications').textContent = strings.settingsGroupNotifications;
+    document.getElementById('settingsGroupSound').textContent = strings.settingsGroupSound;
     document.getElementById('regionsHeader').textContent = strings.regionsHeader;
     searchInput.placeholder = strings.searchPlaceholder;
+    searchClear.title = strings.searchClear;
+    searchClear.setAttribute('aria-label', strings.searchClear);
     clearRegionsButton.textContent = strings.clearRegionsButton;
     return strings;
 }
@@ -63,27 +66,38 @@ function formatSummary(template, selected, total) {
 function updateNotifyDisabledState() {
     const visualOn = visualNotificationsEnabledInput.checked;
     activeAlertNotifyEnabledInput.disabled = !visualOn;
-    showLiveMapOnAlertInput.disabled = !visualOn || !activeAlertNotifyEnabledInput.checked;
     alertLevelChangeNotifyEnabledInput.disabled = !visualOn || !activeAlertNotifyEnabledInput.checked;
     forecastNotifyEnabledInput.disabled = !visualOn;
     forecastNotifyLookaheadMinutesInput.disabled = !visualOn || !forecastNotifyEnabledInput.checked;
+    if (notifyProfileUi) {
+        const alertsOff = !activeAlertNotifyEnabledInput.checked;
+        const levelsOff = alertsOff || !alertLevelChangeNotifyEnabledInput.checked;
+        notifyProfileUi.setDisabled(!visualOn, {
+            startRed: alertsOff,
+            startYellow: alertsOff,
+            digest: alertsOff,
+            end: alertsOff,
+            escalateRed: levelsOff,
+            levelChange: levelsOff,
+            forecast: !forecastNotifyEnabledInput.checked,
+        });
+    }
 }
 
 function updateSoundCountDisabledState() {
     alertSoundCountInput.disabled = alertSoundModeInput.value === 'none';
 }
 
-async function initGeneralSettings(settings) {
+async function initGeneralSettings(settings, strings) {
     minimizeToTrayOnCloseInput.checked = settings.minimizeToTrayOnClose;
     visualNotificationsEnabledInput.checked = settings.visualNotificationsEnabled;
     activeAlertNotifyEnabledInput.checked = settings.activeAlertNotifyEnabled;
-    showLiveMapOnAlertInput.checked = settings.showLiveMapOnAlert;
     alertLevelChangeNotifyEnabledInput.checked = settings.alertLevelChangeNotifyEnabled;
+    notifyProfileUi = setupNotifyProfile(strings, settings.notifyProfile, (profile) => window.alertServer.setSetting('notifyProfile', profile));
     forecastNotifyEnabledInput.checked = settings.forecastNotifyEnabled;
     forecastNotifyLookaheadMinutesInput.value = settings.forecastNotifyLookaheadMinutes;
     alertSoundModeInput.value = settings.alertSoundMode;
     alertSoundCountInput.value = settings.alertSoundCount;
-    massAttackThresholdInput.value = settings.massAttackThreshold;
     updateCheckIntervalHoursInput.value = settings.updateCheckIntervalHours;
     languageInput.value = settings.language;
     themeInput.value = settings.theme;
@@ -100,11 +114,9 @@ async function initGeneralSettings(settings) {
         window.alertServer.setSetting('activeAlertNotifyEnabled', activeAlertNotifyEnabledInput.checked);
         updateNotifyDisabledState();
     });
-    showLiveMapOnAlertInput.addEventListener('change', () => {
-        window.alertServer.setSetting('showLiveMapOnAlert', showLiveMapOnAlertInput.checked);
-    });
     alertLevelChangeNotifyEnabledInput.addEventListener('change', () => {
         window.alertServer.setSetting('alertLevelChangeNotifyEnabled', alertLevelChangeNotifyEnabledInput.checked);
+        updateNotifyDisabledState();
     });
     forecastNotifyEnabledInput.addEventListener('change', () => {
         window.alertServer.setSetting('forecastNotifyEnabled', forecastNotifyEnabledInput.checked);
@@ -120,14 +132,9 @@ async function initGeneralSettings(settings) {
         updateSoundCountDisabledState();
     });
     alertSoundCountInput.addEventListener('change', () => {
-        const count = Math.max(1, Math.min(10, Number(alertSoundCountInput.value) || 1));
+        const count = Math.max(1, Math.min(2, Number(alertSoundCountInput.value) || 1));
         alertSoundCountInput.value = count;
         window.alertServer.setSetting('alertSoundCount', count);
-    });
-    massAttackThresholdInput.addEventListener('change', () => {
-        const threshold = Math.max(50, Math.min(100, Number(massAttackThresholdInput.value) || 75));
-        massAttackThresholdInput.value = threshold;
-        window.alertServer.setSetting('massAttackThreshold', threshold);
     });
     updateCheckIntervalHoursInput.addEventListener('change', () => {
         const hours = Math.max(1, Math.min(24, Number(updateCheckIntervalHoursInput.value) || 1));
@@ -182,7 +189,8 @@ function dropCoveredDescendants(uids, tree) {
 (async () => {
     const strings = applyStrings(await window.alertServer.getStrings());
     const settings = await window.alertServer.getSettings();
-    await initGeneralSettings(settings);
+    await initGeneralSettings(settings, strings);
+    setupSectionNav(strings);
 
     const tree = await window.alertServer.getRegionTree();
     const storedUids = await window.alertServer.getSelectedRegions();
@@ -190,8 +198,8 @@ function dropCoveredDescendants(uids, tree) {
     if (selectedUids.length !== storedUids.length) await window.alertServer.setSelectedRegions(selectedUids);
     const total = totalRegionsCount(tree);
 
-    function updateSummary(selectedCount) {
-        summary.textContent = formatSummary(strings.selectedSummary, selectedCount, total);
+    function updateSummary() {
+        summary.textContent = formatSummary(strings.selectedSummary, countSelectedRegions(tree, selectedUidSet), total);
     }
 
     let selectedCount = selectedUids.length;
@@ -241,7 +249,7 @@ function dropCoveredDescendants(uids, tree) {
 
     clearRegionsButton.addEventListener('click', async () => {
         if (!selectedUidSet.size) return;
-        if (!confirm(strings.clearRegionsConfirm)) return;
+        if (!(await window.alertServer.confirmClearRegions())) return;
 
         const uidsToClear = Array.from(selectedUidSet);
         await window.alertServer.setSelectedRegions([]);
@@ -259,7 +267,24 @@ function dropCoveredDescendants(uids, tree) {
 
     let searchTimer = null;
     searchInput.addEventListener('input', () => {
+        searchClear.hidden = !searchInput.value;
         clearTimeout(searchTimer);
         searchTimer = setTimeout(() => regionTree.setQuery(searchInput.value), 150);
+    });
+
+    function clearSearch() {
+        searchInput.value = '';
+        searchClear.hidden = true;
+        clearTimeout(searchTimer);
+        regionTree.setQuery('');
+        searchInput.focus();
+    }
+
+    searchClear.addEventListener('click', clearSearch);
+    searchInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && searchInput.value) {
+            event.preventDefault();
+            clearSearch();
+        }
     });
 })();

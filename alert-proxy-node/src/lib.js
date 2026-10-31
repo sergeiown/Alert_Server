@@ -18,6 +18,9 @@ const UKRAINEALARM_TYPE_MAP = {
 const UKRAINEALARM_ID_TO_UID = { 9999: 29 };
 const UKRAINEALARM_IGNORED_REGION_IDS = new Set(['0']);
 
+const BACKOFF_BASE_MS = 60 * 1000;
+const BACKOFF_MAX_MS = 15 * 60 * 1000;
+
 function ukraineAlarmUid(regionId) {
     return UKRAINEALARM_ID_TO_UID[regionId] || Number(regionId);
 }
@@ -105,6 +108,23 @@ function mapUkraineAlarmThreats(activeAlertLevels) {
     }));
 }
 
+function parseActiveAlerts(body) {
+    let parsed;
+    try {
+        parsed = JSON.parse(body);
+    } catch (err) {
+        return null;
+    }
+    if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.alerts)) return null;
+    return parsed.alerts;
+}
+
+function backoffDelayMs(step, retryAfterSec) {
+    const exponential = Math.min(BACKOFF_MAX_MS, BACKOFF_BASE_MS * 2 ** step);
+    const advised = Number.isFinite(retryAfterSec) && retryAfterSec > 0 ? retryAfterSec * 1000 : 0;
+    return Math.min(BACKOFF_MAX_MS, Math.max(exponential, advised));
+}
+
 function delay(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -174,6 +194,14 @@ async function fetchKaggleCsv(kaggleToken, kaggleUsername, kaggleKey, dataset, f
     return parseCsv(await response.text());
 }
 
+function classifyPublication(statusData) {
+    const status = String(statusData || '').trim().toLowerCase();
+    if (!status) return 'published';
+    if (status.includes('hidden')) return 'hidden';
+    if (/infer|minim|estimat|assum|copied/.test(status)) return 'inferred';
+    return 'published';
+}
+
 function buildWeaponStats(attacks, models, topModels) {
     const categoryByModel = new Map(models.map((m) => [m.model, m.category || 'unknown']));
 
@@ -183,8 +211,27 @@ function buildWeaponStats(attacks, models, topModels) {
     const byMonth = new Map();
     let minDate = null;
     let maxDate = null;
+    let anyMinDate = null;
+    let anyMaxDate = null;
+    const unpublished = { rows: 0, hiddenRows: 0, inferredRows: 0, from: null, to: null };
+    const statusValues = new Map();
 
     attacks.forEach((row) => {
+        const statusKey = String(row.status_data || '').trim() || '(empty)';
+        statusValues.set(statusKey, (statusValues.get(statusKey) || 0) + 1);
+        const publication = classifyPublication(row.status_data);
+        const anyDay = (row.time_start || '').slice(0, 10);
+        if (anyDay && (!anyMinDate || anyDay < anyMinDate)) anyMinDate = anyDay;
+        if (anyDay && (!anyMaxDate || anyDay > anyMaxDate)) anyMaxDate = anyDay;
+        if (publication !== 'published') {
+            const day = (row.time_start || '').slice(0, 10);
+            unpublished.rows += 1;
+            if (publication === 'hidden') unpublished.hiddenRows += 1;
+            else unpublished.inferredRows += 1;
+            if (day && (!unpublished.from || day < unpublished.from)) unpublished.from = day;
+            if (day && (!unpublished.to || day > unpublished.to)) unpublished.to = day;
+            return;
+        }
         const launched = Number(row.launched) || 0;
         const destroyed = Number(row.destroyed) || 0;
         const model = row.model || 'Unknown';
@@ -216,9 +263,12 @@ function buildWeaponStats(attacks, models, topModels) {
         monthEntry.categories[category] = (monthEntry.categories[category] || 0) + launched;
     });
 
+    console.log(`[weapon-stats] status_data values: ${JSON.stringify(Object.fromEntries(statusValues))}`);
+
     return {
         generatedAt: new Date().toISOString(),
-        dateRange: { from: minDate, to: maxDate },
+        dateRange: { from: minDate || anyMinDate, to: maxDate || anyMaxDate },
+        unpublished,
         totals,
         byCategory: Array.from(byCategory.values()).sort((a, b) => b.launched - a.launched),
         byModel: Array.from(byModel.values())
@@ -229,6 +279,9 @@ function buildWeaponStats(attacks, models, topModels) {
 }
 
 module.exports = {
+    classifyPublication,
+    parseActiveAlerts,
+    backoffDelayMs,
     ALL_OBLAST_UIDS,
     UKRAINEALARM_TYPE_MAP,
     UKRAINEALARM_IGNORED_REGION_IDS,

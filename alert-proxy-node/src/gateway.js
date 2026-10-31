@@ -75,6 +75,8 @@ const LOAD_WINDOW_MS = 60 * 1000;
 const state = {
     activeCache: null,
     activeOriginError: null,
+    activeBackoffUntil: 0,
+    activeBackoffStep: 0,
     historyCache: new Map(),
     historyOriginErrors: new Map(),
     regionStatusesCache: null,
@@ -147,9 +149,11 @@ function jsonResponse(body, status = 200, extraHeaders = {}) {
 
 async function ensureActiveCacheFresh({ force = false } = {}) {
     const now = Date.now();
+    if (now < state.activeBackoffUntil) return;
     if (!force && state.activeCache && now - state.activeCache.fetchedAt < ACTIVE_CACHE_TTL_MS) return;
 
     const run = async () => {
+        if (Date.now() < state.activeBackoffUntil) return;
         const waitMs = Math.max(0, ACTIVE_MIN_GAP_MS - (Date.now() - state.lastActiveOriginFetchAt));
         if (waitMs > 0) await lib.delay(waitMs);
 
@@ -173,6 +177,7 @@ async function ensureActiveCacheFresh({ force = false } = {}) {
         }
 
         if (upstream.status === 304 && state.activeCache) {
+            state.activeBackoffStep = 0;
             state.activeOriginError = null;
             state.activeCache.fetchedAt = Date.now();
             broadcastActive();
@@ -181,14 +186,27 @@ async function ensureActiveCacheFresh({ force = false } = {}) {
 
         if (!upstream.ok) {
             state.activeOriginError = { status: upstream.status, body };
+            if (upstream.status === 429 || upstream.status === 403) {
+                const delayMs = lib.backoffDelayMs(state.activeBackoffStep, Number(upstream.headers.get('retry-after')));
+                state.activeBackoffStep += 1;
+                state.activeBackoffUntil = Date.now() + delayMs;
+                console.warn(`[alerts.in.ua] answered ${upstream.status}; pausing requests for ${Math.round(delayMs / 1000)} s`);
+            }
             return;
         }
 
+        const activeAlerts = lib.parseActiveAlerts(body);
+        if (!activeAlerts) {
+            state.activeOriginError = { status: 502, body: 'alerts.in.ua returned an unexpected response shape' };
+            console.error('[alerts.in.ua] response is not {"alerts": [...]}; keeping the previous data');
+            return;
+        }
+
+        state.activeBackoffStep = 0;
         state.activeOriginError = null;
         const lastModified = upstream.headers.get('Last-Modified');
         state.activeCache = { body, lastModified, fetchedAt: Date.now() };
         try {
-            const activeAlerts = JSON.parse(body).alerts || [];
             archive.recordActiveAlerts(activeAlerts);
             trends.recordAlertCount(activeAlerts.length);
         } catch (err) {
@@ -529,6 +547,12 @@ function settleUkraineAlarmUnconfirmed(now) {
         state.ukraineAlarmMisses.push({ key, at: entry.at, kind: entry.kind });
         uaWebhookHealth.recordMiss(state.ukraineAlarmMissHistory, key, entry.at);
         if (entry.kind === 'level') return;
+        const decision = uaWebhookHealth.missLogDecision(state.ukraineAlarmMissHistory, key);
+        if (decision === 'silent') return;
+        if (decision === 'chronic') {
+            console.warn(`[ukrainealarm-reconcile] UkraineAlarm webhook keeps missing alerts in ${ukraineAlarmRegionTitle(key)}; repeats are not logged for the next few hours`);
+            return;
+        }
         console.warn(`[ukrainealarm-reconcile] UkraineAlarm webhook did not report ${MISS_KIND_TEXT[entry.kind] || entry.kind} in ${ukraineAlarmRegionTitle(key)}; the snapshot caught it`);
     });
 }

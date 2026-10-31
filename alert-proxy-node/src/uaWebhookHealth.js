@@ -38,6 +38,12 @@ function recordMiss(history, key, at) {
     history.set(key, times.filter((value) => at - value <= CHRONIC_WINDOW_MS));
 }
 
+function missLogDecision(history, key) {
+    const count = (history.get(key) || []).length;
+    if (count < CHRONIC_MISSES) return 'log';
+    return count === CHRONIC_MISSES ? 'chronic' : 'silent';
+}
+
 function pruneHistory(history, now) {
     history.forEach((times, key) => {
         const recent = times.filter((at) => now - at <= CHRONIC_WINDOW_MS);
@@ -46,4 +52,4 @@ function pruneHistory(history, now) {
     });
 }
 
-module.exports = { classifyWebhook, recordMiss, pruneHistory, CHRONIC_WINDOW_MS, CHRONIC_MISSES };
+module.exports = { classifyWebhook, recordMiss, missLogDecision, pruneHistory, CHRONIC_WINDOW_MS, CHRONIC_MISSES };

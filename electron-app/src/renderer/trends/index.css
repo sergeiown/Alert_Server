@@ -1,45 +1,50 @@
-:root {
-    --bg: #ffffff;
-    --fg: #1f1f1f;
-    --border: #ddd;
-    --muted: #888;
-    --card-bg: #ffffff;
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --bg: #1e1e1e;
-        --fg: #e6e6e6;
-        --border: #3a3a3a;
-        --muted: #999999;
-        --card-bg: #262626;
-    }
-}
-
-* {
-    box-sizing: border-box;
-}
-
 body {
-    margin: 0;
-    font-family: 'IBM Plex Sans', 'Segoe UI', Tahoma, sans-serif;
-    font-size: 13px;
-    color: var(--fg);
-    background: var(--bg);
     display: flex;
     flex-direction: column;
     height: 100vh;
+    overflow: hidden;
 }
 
 header {
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--border);
     flex: 0 0 auto;
+    padding: 16px 20px 0;
 }
 
 header h1 {
-    font-size: 15px;
     margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-strong);
+}
+
+#tabsHost {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.tab {
+    height: 32px;
+    padding: 0 16px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--button-border);
+    background: var(--button-bg);
+    color: var(--text-strong);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.tab:hover {
+    background: var(--button-hover);
+}
+
+.tab.active {
+    background: var(--accent);
+    border-color: var(--accent-strong);
+    color: #ffffff;
 }
 
 #trendsRange:empty {
@@ -47,28 +52,34 @@ header h1 {
 }
 
 #trendsRange {
-    margin: 4px 0 0;
-    font-size: 11px;
+    margin: 10px 0 0;
+    font-size: 12px;
+    line-height: 1.4;
     color: var(--muted);
 }
 
 main {
     flex: 1 1 auto;
-    overflow-y: auto;
-    padding: 10px 14px;
+    min-height: 0;
 }
 
 .card {
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 10px 12px;
-    margin-bottom: 14px;
-    background: var(--card-bg);
+    flex: 0 0 auto;
+    padding: 14px 20px 16px;
 }
 
 .card h2 {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--card-text);
+}
+
+.card h3 {
+    margin: 18px 0 8px;
     font-size: 13px;
-    margin: 0 0 10px;
+    font-weight: 600;
+    color: var(--card-muted);
 }
 
 #summaryRow {
@@ -80,16 +91,21 @@ main {
 .stat-tile {
     flex: 1 1 140px;
     text-align: center;
+    padding: 8px 6px;
+    border-radius: var(--radius-control);
+    background: var(--input-bg);
+    border: 1px solid var(--card-divider);
 }
 
 .stat-tile .value {
-    font-size: 20px;
-    font-weight: 600;
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
 }
 
 .stat-tile .label {
     font-size: 11px;
-    color: var(--muted);
+    color: var(--card-muted);
     margin-top: 2px;
 }
 
@@ -107,17 +123,17 @@ main {
     min-width: 0;
     overflow-x: auto;
     scrollbar-width: thin;
-    scrollbar-color: var(--muted) transparent;
+    scrollbar-color: var(--button-border) transparent;
 }
 
 .chart-grid {
-    stroke: var(--border);
+    stroke: var(--card-divider);
     stroke-width: 1;
     shape-rendering: crispEdges;
 }
 
 .chart-label {
-    fill: var(--muted);
+    fill: var(--card-muted);
     font-size: 11px;
     font-variant-numeric: tabular-nums;
 }
@@ -132,103 +148,86 @@ main {
 }
 
 .chart-hit:hover {
-    fill: rgba(127, 127, 127, 0.14);
+    fill: var(--card-divider);
 }
 
 .chart-legend {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 8px;
+    gap: 6px 14px;
+    margin-top: 10px;
     font-size: 11px;
+    color: var(--card-muted);
 }
 
-.chart-legend .swatch {
+.chart-legend .swatch,
+.threat-legend .swatch,
+td .swatch {
     display: inline-block;
     width: 10px;
     height: 10px;
-    border-radius: 2px;
-    margin-right: 4px;
+    border-radius: 3px;
+    margin-right: 6px;
     vertical-align: middle;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
+    font-size: 13px;
+    color: var(--card-text);
 }
 
 th,
 td {
     text-align: left;
-    padding: 4px 8px;
-    border-bottom: 1px solid var(--border);
+    padding: 7px 8px;
+    border-bottom: 1px solid var(--card-divider);
+}
+
+tbody tr:last-child td {
+    border-bottom: 0;
 }
 
 th {
-    color: var(--muted);
-    font-weight: 500;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--card-muted);
 }
 
 td.numeric,
 th.numeric {
     text-align: right;
+    font-variant-numeric: tabular-nums;
 }
 
 #loadingText,
 #errorText {
+    margin: 0;
     color: var(--muted);
 }
 
 .muted-note {
+    margin: 0;
     color: var(--muted);
     font-size: 12px;
     line-height: 1.5;
 }
 
-#tabsHost {
-    display: flex;
-    gap: 4px;
-    margin-top: 10px;
-}
-
-.tab {
-    font: inherit;
-    font-size: 12px;
-    color: var(--fg);
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    padding: 5px 12px;
-    cursor: pointer;
-}
-
-.tab.active {
-    background: #2563eb;
-    border-color: #2563eb;
-    color: #ffffff;
-}
-
-.card h3 {
-    margin: 16px 0 8px;
-    font-size: 13px;
-    color: var(--muted);
+.card .muted-note {
+    margin-bottom: 10px;
+    color: var(--card-muted);
 }
 
 .threat-legend {
     display: flex;
     flex-wrap: wrap;
-    gap: 14px;
-    margin-bottom: 10px;
+    gap: 6px 14px;
+    margin-bottom: 12px;
     font-size: 12px;
-}
-
-.threat-legend .swatch {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    margin-right: 6px;
-    border-radius: 2px;
+    color: var(--card-muted);
 }
 
 .threat-columns {
@@ -237,7 +236,7 @@ th.numeric {
     gap: 3px;
     height: var(--plot-height);
     padding-bottom: 20px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--card-divider);
 }
 
 .threat-column {
@@ -265,7 +264,7 @@ th.numeric {
     transform: translateX(-50%);
     font-size: 10px;
     white-space: nowrap;
-    color: var(--muted);
+    color: var(--card-muted);
 }
 
 .threat-hbars {
@@ -276,16 +275,17 @@ th.numeric {
 
 .threat-hbar-row {
     display: grid;
-    grid-template-columns: 170px 1fr 56px;
+    grid-template-columns: minmax(130px, 190px) 1fr 56px;
     align-items: center;
     gap: 10px;
+    color: var(--card-text);
 }
 
 .threat-hbar-track {
     display: block;
     height: 14px;
-    background: var(--active-bg);
-    border-radius: 4px;
+    background: var(--card-divider);
+    border-radius: var(--radius-pill);
     overflow: hidden;
 }
 
@@ -297,4 +297,94 @@ th.numeric {
 .threat-hbar-value {
     text-align: right;
     font-variant-numeric: tabular-nums;
+}
+
+.hourly-layout {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 20px 40px;
+}
+
+.hourly-layout .chart-frame {
+    flex: 0 1 auto;
+    max-width: 100%;
+}
+
+.day-clock {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin: 0 auto;
+}
+
+.clock-svg {
+    display: block;
+}
+
+.clock-ring {
+    fill: none;
+    stroke: var(--card-divider);
+    stroke-width: 1;
+}
+
+.clock-track {
+    fill: var(--card-divider);
+    opacity: 0.45;
+}
+
+.clock-hit {
+    fill: transparent;
+}
+
+.clock-hit:hover {
+    fill: var(--card-divider);
+}
+
+.clock-now {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1.6;
+    pointer-events: none;
+}
+
+.clock-tick {
+    stroke: var(--card-muted);
+    stroke-width: 1;
+}
+
+.clock-tick.major {
+    stroke-width: 1.6;
+}
+
+.clock-label {
+    font-weight: 600;
+}
+
+.clock-hand-hour {
+    stroke: var(--card-text);
+    stroke-width: 4;
+    stroke-linecap: round;
+}
+
+.clock-hand-minute {
+    stroke: var(--card-text);
+    stroke-width: 2;
+    stroke-linecap: round;
+    opacity: 0.85;
+}
+
+.clock-pin {
+    fill: var(--accent);
+    stroke: var(--card-bg);
+    stroke-width: 1.5;
+}
+
+.clock-time {
+    font-size: 15px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--card-text);
 }

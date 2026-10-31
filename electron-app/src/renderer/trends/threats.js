@@ -5,13 +5,24 @@ import { normalizeOblastName, oblastDisplayName } from '../liveMap/regionNameUti
 
 const TYPE_ORDER = ['uav', 'fpv', 'uav_recon', 'missile', 'kab', 'mig31k', 'unknown'];
 const TYPE_COLOR = {
-    uav: '#f5a623',
-    fpv: '#0d9488',
-    uav_recon: '#5b8fb0',
-    missile: '#991b1b',
-    kab: '#dc2626',
-    mig31k: '#7c3aed',
-    unknown: '#6b7280',
+    light: {
+        uav: '#e09112',
+        fpv: '#0d9488',
+        uav_recon: '#5b8fb0',
+        missile: '#991b1b',
+        kab: '#dc2626',
+        mig31k: '#7c3aed',
+        unknown: '#6b7280',
+    },
+    dark: {
+        uav: '#f5b13d',
+        fpv: '#2dd4bf',
+        uav_recon: '#7fb2d6',
+        missile: '#e0605a',
+        kab: '#ff7a9a',
+        mig31k: '#a78bfa',
+        unknown: '#9aa4b2',
+    },
 };
 const FALLBACK_COLOR = '#94a3b8';
 const SECTORS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
@@ -32,7 +43,8 @@ function typeName(kind, strings) {
 }
 
 function typeColor(kind) {
-    return TYPE_COLOR[kind] || FALLBACK_COLOR;
+    const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return TYPE_COLOR[theme][kind] || FALLBACK_COLOR;
 }
 
 function sortedKinds(byType) {
@@ -43,7 +55,7 @@ function sortedKinds(byType) {
 
 function card(title) {
     const section = document.createElement('section');
-    section.className = 'card';
+    section.className = 'card ui-card';
     const heading = document.createElement('h2');
     heading.textContent = title;
     section.appendChild(heading);

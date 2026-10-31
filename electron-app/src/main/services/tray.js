@@ -29,6 +29,7 @@ let lastActiveCount = 0;
 let animationTimer = null;
 let alertLoopActive = false;
 let tooltipOverride = null;
+const MASS_ATTACK_THRESHOLD = 75;
 let massAttackActive = false;
 let alertLevelKey = null;
 let noDataActive = false;
@@ -194,6 +195,7 @@ function createTray() {
     trayInstance.setToolTip(t('trayDefaultTooltip', language));
     trayInstance.setContextMenu(buildMenu(language));
     trayInstance.on('click', () => toggleStatus());
+    logEvent('Tray icon created', 'INFO');
 
     nativeTheme.on('updated', refreshIconForCurrentState);
     screen.on('display-metrics-changed', refreshIconForCurrentState);
@@ -221,8 +223,8 @@ function updateTrayState(activeCount, totalCount, level) {
 
     const wasIdle = lastActiveCount === 0;
     lastActiveCount = activeCount;
-    const { language, massAttackThreshold } = settingsStore.getSettings();
-    massAttackActive = totalCount >= massAttackThreshold;
+    const { language } = settingsStore.getSettings();
+    massAttackActive = totalCount >= MASS_ATTACK_THRESHOLD;
     const previousLevelKey = alertLevelKey;
     alertLevelKey = levelKeyFor(activeCount, level);
 

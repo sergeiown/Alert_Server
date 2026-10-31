@@ -1,0 +1,53 @@
+html,
+body {
+    overflow: hidden;
+    height: auto;
+    min-height: 100%;
+}
+
+body {
+    padding: 16px;
+    user-select: none;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+#card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px 24px 18px;
+}
+
+#message {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--card-text);
+}
+
+#detail {
+    margin: 0;
+    max-height: 360px;
+    padding-right: 6px;
+    user-select: text;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-line;
+    color: var(--card-text);
+}
+
+#buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+#buttons .ui-button:focus-visible {
+    outline: 2px solid var(--accent-strong);
+    outline-offset: 2px;
+}

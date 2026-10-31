@@ -8,23 +8,25 @@
     />
     <title>Alert Server</title>
     <link rel="stylesheet" href="../shared/fonts/fonts.css" />
+    <link rel="stylesheet" href="../shared/ui.css" />
     <link rel="stylesheet" href="index.css" />
-    <link rel="stylesheet" href="../shared/theme.css" />
 </head>
 <body>
-    <img id="icon" alt="" />
-    <h1 id="heading"></h1>
-    <p id="message"></p>
-    <p id="note" hidden></p>
-    <div id="highlights" hidden>
-        <h2 id="highlightsTitle"></h2>
-        <ul id="highlightsList"></ul>
-    </div>
-    <p id="hint"></p>
-    <div id="buttons">
-        <button id="laterButton" type="button"></button>
-        <button id="installButton" type="button"></button>
-    </div>
+    <main id="card" class="ui-card">
+        <img id="icon" alt="" />
+        <h1 id="heading"></h1>
+        <p id="message"></p>
+        <p id="note" hidden></p>
+        <div id="highlights" class="ui-card" hidden>
+            <h2 id="highlightsTitle"></h2>
+            <ul id="highlightsList"></ul>
+        </div>
+        <p id="hint"></p>
+        <div id="buttons">
+            <button id="laterButton" class="ui-button" type="button"></button>
+            <button id="installButton" class="ui-button primary" type="button"></button>
+        </div>
+    </main>
     <script type="module" src="index.js"></script>
 </body>
 </html>

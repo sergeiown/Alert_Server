@@ -370,8 +370,8 @@
       "uid": 8,
       "districts": [
         {
-          "districtName": "Володимир-Волинський район",
-          "districtNameLat": "Volodymyr-Volynskyy district",
+          "districtName": "Володимирський район",
+          "districtNameLat": "Volodymyrskyy district",
           "uid": 38,
           "communities": [
             {
@@ -400,9 +400,12 @@
               "uid": 260
             },
             {
-              "communityName": "м. Володимир та Володимир-Волинська територіальна громада",
-              "communityNameLat": "Volodymyr City and Volodymyr-Volynska territorial community",
-              "uid": 255
+              "communityName": "м. Володимир та Володимирська територіальна громада",
+              "communityNameLat": "Volodymyr City and Volodymyrska territorial community",
+              "uid": 255,
+              "previousNames": [
+                "м. Володимир та Володимир-Волинська територіальна громада"
+              ]
             },
             {
               "communityName": "м. Нововолинськ та Нововолинська територіальна громада",
@@ -429,6 +432,9 @@
               "communityNameLat": "Ustyluzka territorial community",
               "uid": 265
             }
+          ],
+          "previousNames": [
+            "Володимир-Волинський район"
           ]
         },
         {
@@ -978,9 +984,12 @@
               "uid": 325
             },
             {
-              "communityName": "м. Новомосковськ та Новомосковська територіальна громада",
-              "communityNameLat": "Novomoskovsk City and Novomoskovska territorial community",
-              "uid": 327
+              "communityName": "м. Самар та Самарівська територіальна громада",
+              "communityNameLat": "Samar City and Samarivska territorial community",
+              "uid": 327,
+              "previousNames": [
+                "м. Новомосковськ та Новомосковська територіальна громада"
+              ]
             },
             {
               "communityName": "Магдалинівська територіальна громада",
@@ -1087,9 +1096,12 @@
               "uid": 310
             },
             {
-              "communityName": "м. Першотравенськ та Першотравенська територіальна громада",
-              "communityNameLat": "Pershotravensk City and Pershotravenska territorial community",
-              "uid": 315
+              "communityName": "м. Шахтарськ та Шахтарська територіальна громада",
+              "communityNameLat": "Shakhtarsk City and Shakhtarska territorial community",
+              "uid": 315,
+              "previousNames": [
+                "м. Першотравенськ та Першотравенська територіальна громада"
+              ]
             },
             {
               "communityName": "м. Синельникове та Синельниківська територіальна громада",
@@ -1857,8 +1869,8 @@
           ]
         },
         {
-          "districtName": "Новоград-Волинський район",
-          "districtNameLat": "Novohrad-Volynskyy district",
+          "districtName": "Звягельський район",
+          "districtNameLat": "Zvyahelskyy district",
           "uid": 60,
           "communities": [
             {
@@ -1897,9 +1909,12 @@
               "uid": 470
             },
             {
-              "communityName": "м. Новоград-Волинський та Новоград-Волинська територіальна громада",
-              "communityNameLat": "Novohrad-Volynskyy City and Novohrad-Volynska territorial community",
-              "uid": 471
+              "communityName": "м. Звягель та Звягельська територіальна громада",
+              "communityNameLat": "Zvyahel City and Zvyahelska territorial community",
+              "uid": 471,
+              "previousNames": [
+                "м. Новоград-Волинський та Новоград-Волинська територіальна громада"
+              ]
             },
             {
               "communityName": "Піщівська територіальна громада",
@@ -1921,6 +1936,9 @@
               "communityNameLat": "Yarunska territorial community",
               "uid": 475
             }
+          ],
+          "previousNames": [
+            "Новоград-Волинський район"
           ]
         }
       ]
@@ -3765,8 +3783,8 @@
           ]
         },
         {
-          "districtName": "Сєвєродонецький район",
-          "districtNameLat": "Syevyerodonetskyy district",
+          "districtName": "Сіверськодонецький район",
+          "districtNameLat": "Siverskodonetskyy district",
           "uid": 84,
           "communities": [
             {
@@ -3790,15 +3808,21 @@
               "uid": 819
             },
             {
-              "communityName": "м. Сєвєродонецьк та Сєвєродонецька територіальна громада",
-              "communityNameLat": "Syevyerodonetsk City and Syevyerodonetska territorial community",
-              "uid": 820
+              "communityName": "м. Сіверськодонецьк та Сіверськодонецька територіальна громада",
+              "communityNameLat": "Siverskodonetsk City and Siverskodonetska territorial community",
+              "uid": 820,
+              "previousNames": [
+                "м. Сєвєродонецьк та Сєвєродонецька територіальна громада"
+              ]
             },
             {
               "communityName": "Попаснянська територіальна громада",
               "communityNameLat": "Popasnyanska territorial community",
               "uid": 818
             }
+          ],
+          "previousNames": [
+            "Сєвєродонецький район"
           ]
         },
         {
@@ -3877,6 +3901,89 @@
               "communityName": "Щастинська територіальна громада",
               "communityNameLat": "Shchastynska territorial community",
               "uid": 825
+            }
+          ]
+        },
+        {
+          "districtName": "Луганський район",
+          "districtNameLat": "Luhanskyy district",
+          "uid": 1801,
+          "communities": [
+            {
+              "communityName": "м. Луганськ та Луганська територіальна громада",
+              "communityNameLat": "Luhansk City and Luhanska territorial community",
+              "uid": 1901
+            },
+            {
+              "communityName": "м. Лутугине та Лутугинська територіальна громада",
+              "communityNameLat": "Lutuhyne City and Lutuhynska territorial community",
+              "uid": 1910
+            },
+            {
+              "communityName": "м. Молодогвардійськ та Молодогвардійська територіальна громада",
+              "communityNameLat": "Molodohvardiysk City and Molodohvardiyska territorial community",
+              "uid": 1904
+            }
+          ]
+        },
+        {
+          "districtName": "Ровеньківський район",
+          "districtNameLat": "Rovenkivskyy district",
+          "uid": 1802,
+          "communities": [
+            {
+              "communityName": "м. Антрацит та Антрацитівська територіальна громада",
+              "communityNameLat": "Antratsyt City and Antratsytivska territorial community",
+              "uid": 1902
+            },
+            {
+              "communityName": "м. Ровеньки та Ровеньківська територіальна громада",
+              "communityNameLat": "Rovenky City and Rovenkivska territorial community",
+              "uid": 1907
+            },
+            {
+              "communityName": "м. Хрустальний та Хрустальненська територіальна громада",
+              "communityNameLat": "Khrustalnyy City and Khrustalnenska territorial community",
+              "uid": 1906
+            }
+          ]
+        },
+        {
+          "districtName": "Алчевський район",
+          "districtNameLat": "Alchevskyy district",
+          "uid": 1803,
+          "communities": [
+            {
+              "communityName": "м. Алчевськ та Алчевська територіальна громада",
+              "communityNameLat": "Alchevsk City and Alchevska territorial community",
+              "uid": 1903
+            },
+            {
+              "communityName": "м. Зимогір'я та Зимогір'ївська територіальна громада",
+              "communityNameLat": "Zymohiria City and Zymohiriivska territorial community",
+              "uid": 1911
+            },
+            {
+              "communityName": "м. Кадіївка та Кадіївська територіальна громада",
+              "communityNameLat": "Kadiivka City and Kadiivska territorial community",
+              "uid": 1909
+            }
+          ]
+        },
+        {
+          "districtName": "Довжанський район",
+          "districtNameLat": "Dovzhanskyy district",
+          "uid": 1804,
+          "communities": [
+            {
+              "communityName": "м. Довжанськ та Довжанська територіальна громада",
+              "communityNameLat": "Dovzhansk City and Dovzhanska territorial community",
+              "uid": 1908
+            },
+            {
+              "communityName": "м. Сорокине та Сорокинська територіальна громада",
+              "communityNameLat": "Sorokyne City and Sorokynska territorial community",
+              "uid": 1905
             }
           ]
         }
@@ -4223,8 +4330,8 @@
           ]
         },
         {
-          "districtName": "Червоноградський район",
-          "districtNameLat": "Chervonohradskyy district",
+          "districtName": "Шептицький район",
+          "districtNameLat": "Sheptytskyy district",
           "uid": 92,
           "communities": [
             {
@@ -4248,9 +4355,12 @@
               "uid": 829
             },
             {
-              "communityName": "м. Червоноград та Червоноградська територіальна громада",
-              "communityNameLat": "Chervonohrad City and Chervonohradska territorial community",
-              "uid": 832
+              "communityName": "м. Шептицький та Шептицька територіальна громада",
+              "communityNameLat": "Sheptytskyi City and Sheptytska territorial community",
+              "uid": 832,
+              "previousNames": [
+                "м. Червоноград та Червоноградська територіальна громада"
+              ]
             },
             {
               "communityName": "Радехівська територіальна громада",
@@ -4262,6 +4372,9 @@
               "communityNameLat": "Sokalska territorial community",
               "uid": 831
             }
+          ],
+          "previousNames": [
+            "Червоноградський район"
           ]
         },
         {
@@ -4943,9 +5056,12 @@
               "uid": 969
             },
             {
-              "communityName": "м. Южне та Южненська територіальна громада",
-              "communityNameLat": "Yuzhne City and Yuzhnenska territorial community",
-              "uid": 971
+              "communityName": "м. Південне та Південна територіальна громада",
+              "communityNameLat": "Pivdenne City and Pivdenna territorial community",
+              "uid": 971,
+              "previousNames": [
+                "м. Южне та Южненська територіальна громада"
+              ]
             },
             {
               "communityName": "Маяківська територіальна громада",
@@ -6490,8 +6606,8 @@
           ]
         },
         {
-          "districtName": "Красноградський район",
-          "districtNameLat": "Krasnohradskyy district",
+          "districtName": "Берестинський район",
+          "districtNameLat": "Berestynskyy district",
           "uid": 127,
           "communities": [
             {
@@ -6505,9 +6621,12 @@
               "uid": 1323
             },
             {
-              "communityName": "Красноградська територіальна громада",
-              "communityNameLat": "Krasnohradska territorial community",
-              "uid": 1324
+              "communityName": "Берестинська територіальна громада",
+              "communityNameLat": "Berestynska territorial community",
+              "uid": 1324,
+              "previousNames": [
+                "Красноградська територіальна громада"
+              ]
             },
             {
               "communityName": "Наталинська територіальна громада",
@@ -6524,6 +6643,9 @@
               "communityNameLat": "Starovirivska territorial community",
               "uid": 1327
             }
+          ],
+          "previousNames": [
+            "Красноградський район"
           ]
         },
         {
@@ -6594,9 +6716,12 @@
               "uid": 1297
             },
             {
-              "communityName": "м. Первомайський та Первомайська територіальна громада",
-              "communityNameLat": "Pervomayskyy City and Pervomayska territorial community",
-              "uid": 1299
+              "communityName": "м. Златопіль та Златопільська територіальна громада",
+              "communityNameLat": "Zlatopil City and Zlatopilska territorial community",
+              "uid": 1299,
+              "previousNames": [
+                "м. Первомайський та Первомайська територіальна громада"
+              ]
             },
             {
               "communityName": "Олексіївська територіальна громада",
@@ -8343,12 +8468,12 @@
       ]
     },
     {
-      "stateName": "Aвmoнoмнa Pecпублiкa Kpuм",
+      "stateName": "Автономна Республіка Крим",
       "stateNameLat": "Autonomous Republic of Crimea",
       "uid": 29,
       "districts": [
         {
-          "districtName": "м. Ceвacmoпoль",
+          "districtName": "м. Севастополь",
           "districtNameLat": "Sevastopol",
           "uid": 30,
           "communities": []

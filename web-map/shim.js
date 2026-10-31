@@ -211,8 +211,9 @@
                 });
             })
             .catch(() => {}),
-        poll(),
-    ]).then(refreshOccupied);
+    ]);
+
+    const firstData = poll().then(refreshOccupied);
 
     setInterval(refreshOccupied, 30 * 60 * 1000);
     connectSocket();
@@ -251,6 +252,9 @@
         getBaseMapUrl () {
             return Promise.resolve(effectiveDark() ? 'basemap-dark.svg' : 'basemap-light.svg');
         },
+        isDataLoaded () {
+            return ready.then(() => Boolean(state));
+        },
         getActiveAlertCount () {
             return ready.then(() => {
                 return state ? state.total : 0;
@@ -272,7 +276,7 @@
             });
         },
         getOccupiedTerritory () {
-            return ready.then(() => {
+            return Promise.all([ready, firstData]).then(() => {
                 return occupied;
             });
         },

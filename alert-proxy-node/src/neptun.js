@@ -14,6 +14,9 @@ const RECONNECT_MAX_MS = 60 * 1000;
 const HEARTBEAT_TIMEOUT_MS = 120 * 1000;
 const CONNECT_TIMEOUT_MS = 20 * 1000;
 const WATCHDOG_INTERVAL_MS = 30 * 1000;
+const FETCH_TIMEOUT_MS = 15 * 1000;
+const EMPTY_SNAPSHOT_GUARD_MIN = 5;
+const EMPTY_SNAPSHOT_STREAK_WINDOW_MS = 10 * 60 * 1000;
 const WATCHDOG_IDLE_MS = RECONNECT_MAX_MS + CONNECT_TIMEOUT_MS + 10 * 1000;
 
 const sockets = new Set();
@@ -31,6 +34,8 @@ const state = {
     snapshotFetchedAt: 0,
     snapshotError: null,
     lastConnectAttemptAt: 0,
+    emptySnapshotStreak: 0,
+    emptySnapshotFirstAt: 0,
 };
 
 let stream = null;
@@ -62,7 +67,24 @@ setInterval(() => {
 }, CLIENT_HEARTBEAT_MS).unref();
 
 function applySnapshot(threats) {
-    const incoming = (threats || []).filter((t) => t && t.id);
+    if (!Array.isArray(threats)) {
+        log('snapshot ignored: threats is not an array');
+        return 'invalid';
+    }
+    const incoming = threats.filter((t) => t && t.id);
+    if (!incoming.length && threatsById.size >= EMPTY_SNAPSHOT_GUARD_MIN) {
+        const now = Date.now();
+        if (now - state.emptySnapshotFirstAt > EMPTY_SNAPSHOT_STREAK_WINDOW_MS) {
+            state.emptySnapshotStreak = 0;
+            state.emptySnapshotFirstAt = now;
+        }
+        state.emptySnapshotStreak += 1;
+        if (state.emptySnapshotStreak < 2) {
+            log(`empty snapshot ignored once (${threatsById.size} threats were on the map)`);
+            return 'ignored';
+        }
+    }
+    state.emptySnapshotStreak = 0;
     const incomingIds = new Set(incoming.map((t) => String(t.id)));
     const removedIds = [];
     threatsById.forEach((_, id) => {
@@ -73,6 +95,7 @@ function applySnapshot(threats) {
     incoming.forEach((t) => threatsById.set(t.id, t));
     archive.recordThreats(incoming, removedIds);
     trends.recordThreatCount(threatsById.size);
+    return 'applied';
 }
 
 function applyUpsert(threat) {
@@ -170,8 +193,7 @@ function connect() {
 
         try {
             if (message.type === 'snapshot') {
-                applySnapshot(message.data && message.data.threats);
-                broadcast(snapshotMessage());
+                if (applySnapshot(message.data && message.data.threats) === 'applied') broadcast(snapshotMessage());
             } else if (message.type === 'upsert') {
                 applyUpsert(message.data);
                 broadcast(String(event.data));
@@ -207,13 +229,18 @@ function watchdog() {
 async function pollSnapshot() {
     if (state.streamConnected) return;
     try {
-        const response = await fetch(THREATS_URL);
+        const response = await fetch(THREATS_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
         if (!response.ok) {
             state.snapshotError = { status: response.status };
             return;
         }
         const data = await response.json();
-        applySnapshot(data.threats);
+        const outcome = applySnapshot(data && data.threats);
+        if (outcome === 'invalid') {
+            state.snapshotError = { status: 0, message: 'unexpected snapshot shape' };
+            return;
+        }
+        if (outcome === 'ignored') return;
         broadcast(snapshotMessage());
         state.snapshotFetchedAt = Date.now();
         state.snapshotError = null;
@@ -224,13 +251,17 @@ async function pollSnapshot() {
 
 async function pollAlerts() {
     try {
-        const response = await fetch(ALERTS_URL);
+        const response = await fetch(ALERTS_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
         if (!response.ok) {
             state.alertsError = { status: response.status };
             return;
         }
         const body = await response.text();
         const parsed = JSON.parse(body);
+        if (!parsed || typeof parsed !== 'object' || (!Array.isArray(parsed.oblasts) && !Array.isArray(parsed.raions))) {
+            state.alertsError = { status: 0, message: 'unexpected alerts shape' };
+            return;
+        }
         state.alertsBody = body;
         state.alertsFetchedAt = Date.now();
         state.alertsCounts = {

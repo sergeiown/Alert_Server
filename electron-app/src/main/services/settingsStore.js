@@ -3,19 +3,19 @@
 
 const fs = require('fs');
 const { getUserDataFile } = require('./appPaths');
+const notifyProfile = require('./notifyProfile');
 
 const defaultSettings = {
     language: 'English',
     theme: 'system',
     visualNotificationsEnabled: true,
     activeAlertNotifyEnabled: true,
-    showLiveMapOnAlert: false,
     alertLevelChangeNotifyEnabled: true,
+    notifyProfile: notifyProfile.normalize(),
     alertSoundMode: 'siren',
     alertSoundCount: 1,
     forecastNotifyEnabled: true,
     forecastNotifyLookaheadMinutes: 120,
-    massAttackThreshold: 75,
     updateCheckIntervalHours: 1,
     updateIntervalMigrated: false,
     minimizeToTrayOnClose: true,
@@ -38,6 +38,7 @@ function load() {
     try {
         const parsed = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
         settings = { ...defaultSettings, ...parsed };
+        settings.alertSoundCount = Math.max(1, Math.min(2, Number(settings.alertSoundCount) || 1));
 
         if (!parsed.hasOwnProperty('alertSoundMode') && parsed.hasOwnProperty('alertSound')) {
             settings.alertSoundMode = parsed.alertSound ? 'siren' : 'none';
@@ -57,7 +58,10 @@ function load() {
         }
         settings.updateCheckIntervalHours = Math.max(1, Math.min(24, Math.round(Number(settings.updateCheckIntervalHours)) || 1));
 
-        settings.massAttackThreshold = Math.max(50, Math.min(100, settings.massAttackThreshold));
+        delete settings.massAttackThreshold;
+        delete settings.showLiveMapOnAlert;
+        delete settings.emergencyNotifyMode;
+        settings.notifyProfile = notifyProfile.normalize(settings.notifyProfile);
     } catch (err) {
         settings = { ...defaultSettings, updateIntervalMigrated: true };
         save();
@@ -85,7 +89,7 @@ function updateSetting(key, value) {
     if (!defaultSettings.hasOwnProperty(key)) {
         throw new Error(`Key "${key}" does not exist in the settings.`);
     }
-    settings[key] = value;
+    settings[key] = key === 'notifyProfile' ? notifyProfile.normalize(value) : value;
     save();
 }
 

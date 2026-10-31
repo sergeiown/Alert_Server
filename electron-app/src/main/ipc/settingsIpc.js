@@ -12,7 +12,7 @@ function registerSettingsIpc() {
     ipcMain.handle('i18n:getStrings', () => getDictionary(settingsStore.getSettings().language));
     ipcMain.handle('settings:set', (event, key, value) => {
         settingsStore.updateSetting(key, value);
-        logEvent(`Setting changed: ${key} = ${value}`, 'INFO');
+        logEvent(`Setting changed: ${key} = ${value && typeof value === 'object' ? JSON.stringify(value) : value}`, 'INFO');
 
         if (key === 'language') {
 
