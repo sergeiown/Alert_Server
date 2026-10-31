@@ -104,6 +104,11 @@ function record(hashedId, route, version, country) {
     const day = lib.kyivDateKey(now);
     const safeVersion = version && /^[0-9A-Za-z._-]{1,20}$/.test(version) ? version : null;
 
+    if (!safeVersion) {
+        countHit(day, kyivHourNow(now), route);
+        return;
+    }
+
     const safeCountry = country && /^[A-Z]{2}$/.test(country) && country !== 'ZZ' ? country : null;
 
     const nowMs = now.getTime();

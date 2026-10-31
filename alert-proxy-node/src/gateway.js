@@ -108,7 +108,6 @@ const state = {
     ukraineAlarmMissHistory: new Map(),
     ukraineAlarmLastEventAt: 0,
     ukraineAlarmSnapshotInFlight: false,
-    lastBroadcastAlertsBody: null,
     lastBroadcastActiveBody: null,
     activeQueue: Promise.resolve(),
     historyQueue: Promise.resolve(),
@@ -116,7 +115,7 @@ const state = {
     weaponStatsQueue: Promise.resolve(),
 };
 
-const sockets = { alerts: new Set(), active: new Set(), merged: new Set() };
+const sockets = { active: new Set(), merged: new Set() };
 
 function registerSocket(tag, ws) {
     sockets[tag].add(ws);
@@ -127,7 +126,7 @@ function unregisterSocket(tag, ws) {
 }
 
 function totalConnections() {
-    return sockets.alerts.size + sockets.active.size + sockets.merged.size + neptun.socketCount();
+    return sockets.active.size + sockets.merged.size + neptun.socketCount();
 }
 
 function forEachSocket(tag, fn) {
@@ -512,7 +511,6 @@ async function applyUkraineAlarmEvent(event) {
     if (!region.activeAlerts.length) saved.latestAlerts = saved.latestAlerts.filter((r) => r !== region);
 
     store.put('ukraineAlarmState', saved);
-    broadcastUkraineAlarmAlerts(saved);
 }
 
 function ukraineAlarmRegionAlertMap(regions) {
@@ -751,7 +749,6 @@ async function pollUkraineAlarmIfDue({ force = false, maxWaitMs = Infinity, minG
     }
 
     store.put('ukraineAlarmState', current);
-    broadcastUkraineAlarmAlerts(current);
 }
 
 function requestUkraineAlarmSnapshot() {
@@ -818,30 +815,6 @@ function buildUkraineAlarmAlertsBody(saved) {
     });
 
     return JSON.stringify({ alerts });
-}
-
-function broadcastUkraineAlarmAlerts(saved) {
-    if (!socketCount('alerts')) return;
-
-    const body = buildUkraineAlarmAlertsBody(saved);
-    const unchanged = body === state.lastBroadcastAlertsBody;
-    state.lastBroadcastAlertsBody = body;
-
-    const message = unchanged ? '{"type":"heartbeat"}' : body;
-
-    sockets.alerts.forEach((ws) => {
-        try {
-            ws.send(message);
-        } catch (err) {}
-    });
-}
-
-function acceptAlertsSocket(ws) {
-    registerSocket('alerts', ws);
-    const saved = store.get('ukraineAlarmState');
-    try {
-        ws.send(buildUkraineAlarmAlertsBody(saved));
-    } catch (err) {}
 }
 
 function isUkraineAlarmUnavailable() {
@@ -1170,7 +1143,6 @@ function buildStatus() {
             },
             system: system.getSystemMetrics(),
             connections: {
-                alerts: socketCount('alerts'),
                 active: socketCount('active'),
                 merged: socketCount('merged'),
                 neptun: neptun.socketCount(),
@@ -1293,7 +1265,6 @@ module.exports = {
     socketCount,
     ACTIVE_POLL_INTERVAL_MS,
     acceptActiveSocket,
-    acceptAlertsSocket,
     getActive,
     getHistory,
     recordUniqueUser,

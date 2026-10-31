@@ -13,18 +13,10 @@ const config = require('./config');
 const { checkClientKey } = require('./auth');
 
 function attachWebSockets(server) {
-    const alertsWss = new WebSocketServer({ noServer: true });
     const activeWss = new WebSocketServer({ noServer: true });
     const neptunWss = new WebSocketServer({ noServer: true });
     const mergedWss = new WebSocketServer({ noServer: true });
     const publicWss = new WebSocketServer({ noServer: true, maxPayload: 1024 });
-
-    alertsWss.on('connection', (ws) => {
-        gateway.acceptAlertsSocket(ws);
-        ws.on('close', () => gateway.unregisterSocket('alerts', ws));
-        ws.on('error', () => {});
-        ws.on('message', () => {});
-    });
 
     activeWss.on('connection', (ws) => {
         gateway.acceptActiveSocket(ws);
@@ -99,16 +91,6 @@ function attachWebSockets(server) {
 
         if (url.pathname === '/ws-neptun') {
             neptunWss.handleUpgrade(request, socket, head, (ws) => neptunWss.emit('connection', ws, request));
-            return;
-        }
-
-        if (url.pathname === '/ws') {
-            if (gateway.isUkraineAlarmUnavailable()) {
-                socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n');
-                socket.destroy();
-                return;
-            }
-            alertsWss.handleUpgrade(request, socket, head, (ws) => alertsWss.emit('connection', ws, request));
             return;
         }
 
