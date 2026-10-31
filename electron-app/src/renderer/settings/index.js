@@ -24,6 +24,9 @@ const alertLevelChangeNotifyEnabledInput = document.getElementById('alertLevelCh
 let notifyProfileUi = null;
 const alertSoundModeInput = document.getElementById('alertSoundMode');
 const alertSoundCountInput = document.getElementById('alertSoundCount');
+const alertSoundVolumeInput = document.getElementById('alertSoundVolume');
+const alertSoundVolumeValue = document.getElementById('alertSoundVolumeValue');
+const alertSoundTestButton = document.getElementById('alertSoundTest');
 const updateCheckIntervalHoursInput = document.getElementById('updateCheckIntervalHours');
 const languageInput = document.getElementById('language');
 const themeInput = document.getElementById('theme');
@@ -42,6 +45,8 @@ function applyStrings(strings) {
     document.getElementById('alertSoundModeSirenOption').textContent = strings.alertSoundModeSiren;
     document.getElementById('alertSoundModeVoiceOption').textContent = strings.alertSoundModeVoice;
     document.getElementById('alertSoundCountLabel').textContent = strings.alertSoundCountLabel;
+    document.getElementById('alertSoundVolumeLabel').textContent = strings.alertSoundVolumeLabel;
+    alertSoundTestButton.textContent = strings.alertSoundTest;
     document.getElementById('updateCheckIntervalLabel').textContent = strings.updateCheckIntervalLabel;
     document.getElementById('languageLabel').textContent = strings.languageLabel;
     document.getElementById('themeLabel').textContent = strings.themeLabel;
@@ -86,6 +91,7 @@ function updateNotifyDisabledState() {
 
 function updateSoundCountDisabledState() {
     alertSoundCountInput.disabled = alertSoundModeInput.value === 'none';
+    alertSoundVolumeInput.disabled = alertSoundModeInput.value === 'none';
 }
 
 async function initGeneralSettings(settings, strings) {
@@ -98,6 +104,8 @@ async function initGeneralSettings(settings, strings) {
     forecastNotifyLookaheadMinutesInput.value = settings.forecastNotifyLookaheadMinutes;
     alertSoundModeInput.value = settings.alertSoundMode;
     alertSoundCountInput.value = settings.alertSoundCount;
+    alertSoundVolumeInput.value = settings.alertSoundVolume;
+    alertSoundVolumeValue.textContent = `${settings.alertSoundVolume}%`;
     updateCheckIntervalHoursInput.value = settings.updateCheckIntervalHours;
     languageInput.value = settings.language;
     themeInput.value = settings.theme;
@@ -136,6 +144,13 @@ async function initGeneralSettings(settings, strings) {
         alertSoundCountInput.value = count;
         window.alertServer.setSetting('alertSoundCount', count);
     });
+    alertSoundVolumeInput.addEventListener('input', () => {
+        alertSoundVolumeValue.textContent = `${alertSoundVolumeInput.value}%`;
+    });
+    alertSoundVolumeInput.addEventListener('change', () => {
+        window.alertServer.setSetting('alertSoundVolume', Number(alertSoundVolumeInput.value));
+    });
+    alertSoundTestButton.addEventListener('click', () => window.alertServer.testSound());
     updateCheckIntervalHoursInput.addEventListener('change', () => {
         const hours = Math.max(1, Math.min(24, Number(updateCheckIntervalHoursInput.value) || 1));
         updateCheckIntervalHoursInput.value = hours;

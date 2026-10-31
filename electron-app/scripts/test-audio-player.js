@@ -4,29 +4,29 @@
 const assert = require('assert');
 const Module = require('module');
 const path = require('path');
-const { EventEmitter } = require('events');
 
 const root = path.join(__dirname, '..');
 const children = [];
 
-class FakeChild extends EventEmitter {
-    constructor(file) {
-        super();
+class FakeChild {
+    constructor(file, volume, done) {
         this.file = file;
+        this.volume = volume;
+        this.done = done;
         this.killed = false;
         children.push(this);
     }
     kill() {
         this.killed = true;
-        setImmediate(() => this.emit('exit', null));
+        setImmediate(() => this.done(null));
     }
     finish() {
-        this.emit('exit', 0);
+        this.done(null);
     }
 }
 
 const mocks = {
-    child_process: { spawn: (command, args) => new FakeChild(args[args.length - 1]) },
+    './soundEngine': { play: (file, volume, done) => new FakeChild(file, volume, done) },
     './appPaths': { getResourcePath: (...parts) => path.join(root, 'resources', ...parts) },
     './logger': { logEvent() {} },
 };
@@ -56,6 +56,21 @@ const check = async (name, fn) => {
         assert.strictEqual(soundFor('unknown', 'siren', 'English', 1), null);
         assert.strictEqual(soundFor('start', 'siren', 'English', 10).count, 2);
         assert.strictEqual(soundFor('start', 'siren', 'English', 0).count, 1);
+    });
+
+    await check('volume is passed as a fraction, clamped to 10 percent and 100 percent, and defaults to full', () => {
+        assert.strictEqual(soundFor('start', 'siren', 'English', 1, 50).volume, 0.5);
+        assert.strictEqual(soundFor('start', 'siren', 'English', 1, 0).volume, 0.1);
+        assert.strictEqual(soundFor('start', 'siren', 'English', 1, 500).volume, 1);
+        assert.strictEqual(soundFor('end', 'voice', 'English', 1).volume, 1);
+        assert.strictEqual(soundFor('up', 'siren', 'English', 1, 30).volume, 0.3);
+    });
+
+    await check('the engine receives the volume of the spec', async () => {
+        playFor('toast-v', { kind: 'start', file: 'v.wav', count: 1, gapMs: 0, volume: 0.4 });
+        assert.strictEqual(children[0].volume, 0.4);
+        stopFor('toast-v');
+        await wait(10);
     });
 
     await check('a new sound interrupts the previous one, so only the latest toast has a voice', async () => {

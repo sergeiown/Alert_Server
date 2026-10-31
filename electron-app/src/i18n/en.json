@@ -153,6 +153,8 @@
     "alertSoundModeNone": "No sound",
     "alertSoundModeSiren": "Siren",
     "alertSoundModeVoice": "Voice",
+    "alertSoundVolumeLabel": "Alert volume",
+    "alertSoundTest": "Test sound",
     "alertSoundCountLabel": "Sound repeats while the notification is shown",
     "updateCheckIntervalLabel": "Application update check interval (hours, 1 to 24):",
     "updatePromptHeading": "Update available",

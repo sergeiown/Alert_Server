@@ -78,6 +78,7 @@ app.whenReady().then(() => {
     nativeTheme.themeSource = settingsStore.getSettings().theme;
 
     registerSettingsIpc();
+    require('./services/soundEngine').warmUp();
     registerRegionsIpc();
     registerSystemIpc();
     registerForecastIpc();

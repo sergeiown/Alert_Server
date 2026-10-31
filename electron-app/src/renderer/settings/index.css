@@ -808,3 +808,24 @@ footer {
 .notify-dot[data-row='forecast'] {
     background: var(--accent-strong);
 }
+
+.settings-pane label.volume-row {
+    flex-wrap: nowrap;
+}
+
+.volume-row span {
+    white-space: nowrap;
+}
+
+.volume-row input[type='range'] {
+    flex: 0 1 240px;
+    min-width: 120px;
+    accent-color: var(--accent);
+}
+
+.volume-row output {
+    min-width: 44px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--card-muted);
+}

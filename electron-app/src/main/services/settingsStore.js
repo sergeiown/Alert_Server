@@ -14,6 +14,7 @@ const defaultSettings = {
     notifyProfile: notifyProfile.normalize(),
     alertSoundMode: 'siren',
     alertSoundCount: 1,
+    alertSoundVolume: 100,
     forecastNotifyEnabled: true,
     forecastNotifyLookaheadMinutes: 120,
     updateCheckIntervalHours: 1,
@@ -39,6 +40,7 @@ function load() {
         const parsed = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
         settings = { ...defaultSettings, ...parsed };
         settings.alertSoundCount = Math.max(1, Math.min(2, Number(settings.alertSoundCount) || 1));
+        settings.alertSoundVolume = Math.max(10, Math.min(100, Number(settings.alertSoundVolume) || 100));
 
         if (!parsed.hasOwnProperty('alertSoundMode') && parsed.hasOwnProperty('alertSound')) {
             settings.alertSoundMode = parsed.alertSound ? 'siren' : 'none';

@@ -6,6 +6,7 @@ const settingsStore = require('../services/settingsStore');
 const { getDictionary } = require('../../i18n/i18n');
 const { logEvent } = require('../services/logger');
 const { getLiveMapWindow } = require('../windows/liveMapWindow');
+const { soundFor, playFor } = require('../services/audioPlayer');
 
 function registerSettingsIpc() {
     ipcMain.handle('settings:get', () => settingsStore.getSettings());
@@ -30,6 +31,12 @@ function registerSettingsIpc() {
         }
 
         return settingsStore.getSettings();
+    });
+    ipcMain.handle('sound:test', () => {
+        const settings = settingsStore.getSettings();
+        const mode = settings.alertSoundMode === 'none' ? 'siren' : settings.alertSoundMode;
+        const spec = soundFor('start', mode, settings.language, 1, settings.alertSoundVolume);
+        if (spec) playFor('settings-test', spec);
     });
 }
 

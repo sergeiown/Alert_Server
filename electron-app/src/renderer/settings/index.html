@@ -101,6 +101,12 @@
                                 <option value="2">2</option>
                             </select>
                         </label>
+                        <label class="volume-row">
+                            <span id="alertSoundVolumeLabel"></span>
+                            <input type="range" id="alertSoundVolume" min="10" max="100" step="5" />
+                            <output id="alertSoundVolumeValue"></output>
+                        </label>
+                        <button type="button" id="alertSoundTest" class="ui-button"></button>
                     </fieldset>
                 </section>
                 <section id="notifications-settings" class="settings-pane" data-section="notifications" hidden>

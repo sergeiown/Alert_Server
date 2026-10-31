@@ -83,7 +83,7 @@ function isAlertActivityRecent(withinMs) {
 function resolveSound(soundKind) {
     if (!soundKind) return null;
     const settings = settingsStore.getSettings();
-    return soundFor(soundKind, settings.alertSoundMode, settings.language, settings.alertSoundCount);
+    return soundFor(soundKind, settings.alertSoundMode, settings.language, settings.alertSoundCount, settings.alertSoundVolume);
 }
 
 function playStandalone(soundKind) {

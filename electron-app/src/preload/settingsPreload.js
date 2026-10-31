@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('alertServer', {
     confirmClearRegions: () => ipcRenderer.invoke('dialog:confirmClearRegions'),
     getUrgentStatus: () => ipcRenderer.invoke('system:getUrgentStatus'),
     openNotificationSettings: () => ipcRenderer.invoke('system:openNotificationSettings'),
+    testSound: () => ipcRenderer.invoke('sound:test'),
     getStrings: () => ipcRenderer.invoke('i18n:getStrings'),
     getConnectionState: () => ipcRenderer.invoke('connection:get'),
     onConnectionChange: (callback) => ipcRenderer.on('connection:changed', (event, state) => callback(state)),

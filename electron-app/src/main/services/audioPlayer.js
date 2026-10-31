@@ -1,32 +1,15 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
-const { spawn } = require('child_process');
 const { getResourcePath } = require('./appPaths');
 const { logEvent } = require('./logger');
+const { play } = require('./soundEngine');
 
 const START_GAP_MS = 8000;
 const END_GAP_MS = 6000;
 const MAX_REPEATS = 2;
 
 let current = null;
-
-function runPlayer(filePath, done) {
-    const command = `(New-Object System.Media.SoundPlayer '${filePath.replace(/'/g, "''")}').PlaySync()`;
-    const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-Command', command], {
-        windowsHide: true,
-        stdio: 'ignore',
-    });
-    let finished = false;
-    const finish = (err) => {
-        if (finished) return;
-        finished = true;
-        done(err);
-    };
-    child.on('error', finish);
-    child.on('exit', (code) => finish(code ? new Error(`player exited with ${code}`) : null));
-    return child;
-}
 
 function voicePath(language, cancelled) {
     const base = cancelled ? 'alert_cancellation' : 'alert';
@@ -38,13 +21,20 @@ function sirenPath(cancelled) {
     return getResourcePath('audio', cancelled ? 'siren_cancel.wav' : 'siren_alert.wav');
 }
 
-function soundFor(kind, mode, language, count) {
+function normalizeVolume(volume) {
+    const percent = Number(volume);
+    if (!Number.isFinite(percent)) return 1;
+    return Math.max(0.1, Math.min(1, percent / 100));
+}
+
+function soundFor(kind, mode, language, count, volume) {
     if (!mode || mode === 'none') return null;
     const repeats = Math.max(1, Math.min(MAX_REPEATS, Number(count) || 1));
-    if (kind === 'start') return { kind, file: mode === 'voice' ? voicePath(language, false) : sirenPath(false), count: repeats, gapMs: START_GAP_MS };
-    if (kind === 'end') return { kind, file: mode === 'voice' ? voicePath(language, true) : sirenPath(true), count: repeats, gapMs: END_GAP_MS };
-    if (kind === 'up') return { kind, file: getResourcePath('audio', 'level_up.wav'), count: 1, gapMs: 0 };
-    if (kind === 'down') return { kind, file: getResourcePath('audio', 'level_down.wav'), count: 1, gapMs: 0 };
+    const level = normalizeVolume(volume);
+    if (kind === 'start') return { kind, file: mode === 'voice' ? voicePath(language, false) : sirenPath(false), count: repeats, gapMs: START_GAP_MS, volume: level };
+    if (kind === 'end') return { kind, file: mode === 'voice' ? voicePath(language, true) : sirenPath(true), count: repeats, gapMs: END_GAP_MS, volume: level };
+    if (kind === 'up') return { kind, file: getResourcePath('audio', 'level_up.wav'), count: 1, gapMs: 0, volume: level };
+    if (kind === 'down') return { kind, file: getResourcePath('audio', 'level_down.wav'), count: 1, gapMs: 0, volume: level };
     return null;
 }
 
@@ -77,7 +67,7 @@ function playFor(owner, spec) {
         }
         run.left -= 1;
         const startedAt = Date.now();
-        run.child = runPlayer(spec.file, (err) => {
+        run.child = play(spec.file, spec.volume, (err) => {
             if (run.stopped) return;
             if (err) logEvent(`Sound playback error: ${err.message}`, 'ERROR');
             if (run.left <= 0) {
