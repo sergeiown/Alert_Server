@@ -550,10 +550,10 @@ function settleUkraineAlarmUnconfirmed(now) {
         const decision = uaWebhookHealth.missLogDecision(state.ukraineAlarmMissHistory, key);
         if (decision === 'silent') return;
         if (decision === 'chronic') {
-            console.warn(`[ukrainealarm-reconcile] UkraineAlarm webhook keeps missing alerts in ${ukraineAlarmRegionTitle(key)}; repeats are not logged for the next few hours`);
+            console.log(`[ukrainealarm-reconcile] UkraineAlarm webhook keeps missing alerts in ${ukraineAlarmRegionTitle(key)}; repeats are not logged for the next few hours`);
             return;
         }
-        console.warn(`[ukrainealarm-reconcile] UkraineAlarm webhook did not report ${MISS_KIND_TEXT[entry.kind] || entry.kind} in ${ukraineAlarmRegionTitle(key)}; the snapshot caught it`);
+        console.log(`[ukrainealarm-reconcile] UkraineAlarm webhook did not report ${MISS_KIND_TEXT[entry.kind] || entry.kind} in ${ukraineAlarmRegionTitle(key)}; the snapshot caught it`);
     });
 }
 
