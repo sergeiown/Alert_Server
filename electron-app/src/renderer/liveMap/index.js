@@ -117,6 +117,12 @@ async function main() {
         renderer: L.svg({ padding: 1 }),
     });
 
+    const floatingPanes = ['popupPane', 'tooltipPane'].map((name) => map.getPane(name));
+    floatingPanes.forEach((pane) => map.getContainer().appendChild(pane));
+    const syncFloatingPanes = () => floatingPanes.forEach((pane) => L.DomUtil.setPosition(pane, map._getMapPanePos()));
+    map.on('move zoom viewreset moveend zoomend resize', syncFloatingPanes);
+    syncFloatingPanes();
+
     map.getContainer().classList.add('map-transitioning');
 
     let resolveMapRevealed;
@@ -533,9 +539,26 @@ async function main() {
         if (!kyivModeActive) applyKyivMode(true);
     });
 
-    new ResizeObserver(() => {
+    function baseFitZoom() {
+        const bounds = kyivModeActive ? KYIV_BOUNDS : UKRAINE_BOUNDS;
+        const padding = kyivModeActive ? [0, 0] : window.alertServerLiveMap.fitPadding || [0, 0];
+        return map.getBoundsZoom(bounds, false, L.point(padding));
+    }
+
+    let observedSize = null;
+    new ResizeObserver((entries) => {
+        const { width, height } = entries[0].contentRect;
+        const size = `${Math.round(width)}x${Math.round(height)}`;
+        if (size === observedSize) return;
+        const firstRun = observedSize === null;
+        observedSize = size;
+        const atBase = Math.abs(map.getZoom() - map.getMinZoom()) < 0.05;
         map.invalidateSize();
-        fitAndLockMinZoom();
+        if (firstRun || atBase) {
+            fitAndLockMinZoom();
+            return;
+        }
+        map.setMinZoom(Math.min(baseFitZoom(), map.getZoom()));
     }).observe(document.getElementById('map'));
 
     const statusBar = startStatusBar(strings, settings.language);

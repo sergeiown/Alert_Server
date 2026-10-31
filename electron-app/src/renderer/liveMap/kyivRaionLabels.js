@@ -39,7 +39,8 @@ function createKyivRaionLabels(isEnglish) {
             this._inner = L.DomUtil.create('div', '', this._container);
             this._elements = items.map((item) => {
                 const el = L.DomUtil.create('span', 'kyiv-raion-label', this._inner);
-                el.textContent = item.text;
+                const text = L.DomUtil.create('span', '', el);
+                text.textContent = item.text;
                 return el;
             });
 

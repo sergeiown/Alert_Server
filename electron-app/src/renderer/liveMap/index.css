@@ -436,6 +436,14 @@ body {
     position: absolute;
     left: 0;
     top: 0;
+    width: 0;
+    height: 0;
+}
+
+.kyiv-raion-label > span {
+    position: absolute;
+    left: 0;
+    top: 0;
     transform: translate(-50%, -50%);
     white-space: nowrap;
     font-size: 12px;
@@ -647,7 +655,7 @@ body {
         filter: none;
     }
 
-    .kyiv-raion-label {
+    .kyiv-raion-label > span {
         color: #d6dbe4;
         text-shadow:
             -1px -1px 2px #162030,
