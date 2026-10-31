@@ -214,6 +214,13 @@ function collectedDays(oldestDay) {
     return Number.isFinite(oldestMs) ? Math.floor((Date.now() - oldestMs) / DAY_MS) + 1 : 0;
 }
 
+function getTotals() {
+    safeFlush();
+    const today = lib.kyivDateKey(new Date());
+    const one = (sql, ...params) => db.prepare(sql).get(...params);
+    return { date: today, allTime: one('SELECT COUNT(*) AS c FROM users').c, today: one('SELECT COUNT(*) AS c FROM user_days WHERE day = ?', today).c };
+}
+
 function getStats(currentConnections, connectedUsers) {
     safeFlush();
     const now = Date.now();
@@ -329,4 +336,4 @@ function getUserList() {
         }));
 }
 
-module.exports = { record, recordRequest, recordHit, notePeak, prune, getStats, getUserList };
+module.exports = { record, recordRequest, recordHit, notePeak, prune, getStats, getTotals, getUserList };

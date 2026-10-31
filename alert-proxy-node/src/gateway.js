@@ -1075,7 +1075,7 @@ function buildStatus() {
     const todayState = loadTodayStatsState();
     const oblastsRemaining = Math.max(0, lib.ALL_OBLAST_UIDS.length - todayState.cursor);
     const ukraineAlarmTodayState = loadUkraineAlarmTodayState();
-    const uniqueCounts = uniqueUsers.counts();
+    const uniqueCounts = require('./users').getTotals();
 
     const generalRequestsLastMinute = lib.pruneAndCount(state.allAlertsInUaFetchTimestamps, now, LOAD_WINDOW_MS);
     const historyRequestsLastMinute = lib.pruneAndCount(state.historyFetchTimestamps, now, LOAD_WINDOW_MS);
