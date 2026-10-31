@@ -7,6 +7,13 @@ const path = require('node:path');
 const store = require('./store');
 const { DATA_DIR } = require('./config');
 
+let extra = null;
+try {
+    extra = require('./private/backupExtra');
+} catch (err) {
+    extra = null;
+}
+
 const BACKUP_DIR = path.join(DATA_DIR, 'backups');
 const BACKUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const KEEP_COUNT = 7;
@@ -57,6 +64,15 @@ async function runBackupIfDue() {
     console.log(`[backup] wrote ${file} (${sizeBytes} bytes)`);
 }
 
+function listBackupFiles() {
+    return listBackups()
+        .map((name) => {
+            const stat = fs.statSync(path.join(BACKUP_DIR, name));
+            return { name, sizeBytes: stat.size, modifiedAt: stat.mtime.toISOString() };
+        })
+        .sort((a, b) => (a.modifiedAt < b.modifiedAt ? 1 : -1));
+}
+
 function getStatusInfo() {
     const last = store.get('lastBackup');
     return {
@@ -66,6 +82,8 @@ function getStatusInfo() {
         sizeBytes: last ? last.sizeBytes : null,
         keptCount: listBackups().length,
         keepLimit: KEEP_COUNT,
+        files: listBackupFiles(),
+        ...(extra ? extra.getInfo() : {}),
     };
 }
 

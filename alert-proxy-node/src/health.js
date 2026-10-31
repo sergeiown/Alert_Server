@@ -1,6 +1,13 @@
 // Copyright (c) 2024-2026 Serhii I. Myshko
 // Licensed under the MIT License. See LICENSE for details.
 
+let privateChecks = null;
+try {
+    privateChecks = require('./private/healthChecks');
+} catch (err) {
+    privateChecks = null;
+}
+
 const RESOURCE_WARN_PERCENT = 80;
 const RESOURCE_CRIT_PERCENT = 90;
 const HEAP_WARN_PERCENT = 60;
@@ -118,6 +125,8 @@ function evaluate(status, flags) {
     if (status.backup.ageMs === null || status.backup.ageMs > BACKUP_STALE_MS) {
         add('warn', 'backup', 'no recent database backup');
     }
+
+    if (privateChecks) privateChecks(status).forEach((issue) => add(issue.level, issue.code, issue.message));
 
     return issues;
 }
