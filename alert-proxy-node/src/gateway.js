@@ -15,6 +15,7 @@ const trends = require('./trends');
 const occupied = require('./occupied');
 const geoip = require('./geoip');
 const uniqueUsers = require('./uniqueUsers');
+const perfStats = require('./perfStats');
 
 const UNIQUE_USERS_HISTORY_MAX_DAYS = 90;
 
@@ -1142,6 +1143,7 @@ function buildStatus() {
                 history: store.get('uniqueUsersHistory') || [],
             },
             system: system.getSystemMetrics(),
+            performance: perfStats.snapshot(),
             connections: {
                 active: socketCount('active'),
                 merged: socketCount('merged'),

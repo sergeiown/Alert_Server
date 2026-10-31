@@ -3,6 +3,7 @@
 
 const archive = require('./archive');
 const trends = require('./trends');
+const perfStats = require('./perfStats');
 
 const ALERTS_URL = 'https://neptun.in.ua/api/v1/alerts';
 const THREATS_URL = 'https://neptun.in.ua/api/v1/threats';
@@ -192,15 +193,17 @@ function connect() {
         }
 
         try {
-            if (message.type === 'snapshot') {
-                if (applySnapshot(message.data && message.data.threats) === 'applied') broadcast(snapshotMessage());
-            } else if (message.type === 'upsert') {
-                applyUpsert(message.data);
-                broadcast(String(event.data));
-            } else if (message.type === 'remove') {
-                applyRemove(message.data && message.data.id);
-                broadcast(String(event.data));
-            }
+            perfStats.timed(`neptun: ${message.type}`, () => {
+                if (message.type === 'snapshot') {
+                    if (applySnapshot(message.data && message.data.threats) === 'applied') broadcast(snapshotMessage());
+                } else if (message.type === 'upsert') {
+                    applyUpsert(message.data);
+                    broadcast(String(event.data));
+                } else if (message.type === 'remove') {
+                    applyRemove(message.data && message.data.id);
+                    broadcast(String(event.data));
+                }
+            });
         } catch (err) {
             console.error('[neptun] message handling failed', err && err.stack ? err.stack : err);
         }

@@ -4,6 +4,7 @@
 const { db } = require('./store');
 const lib = require('./lib');
 const geoip = require('./geoip');
+const perfStats = require('./perfStats');
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
@@ -79,7 +80,7 @@ function flush() {
 
 function safeFlush() {
     try {
-        flush();
+        perfStats.timed('users: flush', flush);
     } catch (err) {
         console.error('[users] flush failed', err && err.stack ? err.stack : err);
     }

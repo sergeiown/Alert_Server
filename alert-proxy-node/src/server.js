@@ -18,6 +18,7 @@ const trends = require('./trends');
 const threatAnalytics = require('./threatAnalytics');
 const occupied = require('./occupied');
 const publicApi = require('./publicApi');
+const perfStats = require('./perfStats');
 const webstats = require('./webstats');
 const config = require('./config');
 const logbook = require('./logbook');
@@ -374,10 +375,16 @@ async function handleRequest(req, res) {
 }
 
 const server = http.createServer((req, res) => {
-    handleRequest(req, res).catch((err) => {
-        console.error('[request]', err && err.stack ? err.stack : err);
-        if (!res.headersSent) send(res, { status: 500, headers: {}, body: 'Internal error' });
-    });
+    const started = process.hrtime.bigint();
+    handleRequest(req, res)
+        .catch((err) => {
+            console.error('[request]', err && err.stack ? err.stack : err);
+            if (!res.headersSent) send(res, { status: 500, headers: {}, body: 'Internal error' });
+        })
+        .finally(() => {
+            const route = normalizeRoute((req.url || '/').split('?')[0]);
+            perfStats.record(`http ${route}`, Number(process.hrtime.bigint() - started) / 1e6);
+        });
 });
 
 attachWebSockets(server);

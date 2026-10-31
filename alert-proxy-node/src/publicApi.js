@@ -8,6 +8,7 @@ const occupied = require('./occupied');
 const trends = require('./trends');
 const regions = require('./regions');
 const merge = require('./merge');
+const perfStats = require('./perfStats');
 const ratelimit = require('./ratelimit');
 const webstats = require('./webstats');
 
@@ -151,6 +152,10 @@ function originAllowed(origin) {
 }
 
 function tick() {
+    perfStats.timed('public: state tick', runTick);
+}
+
+function runTick() {
     if (!sockets.size) return;
 
     const state = buildState();

@@ -5,6 +5,7 @@ const gateway = require('./gateway');
 const lib = require('./lib');
 const neptun = require('./neptun');
 const store = require('./store');
+const perfStats = require('./perfStats');
 const { loadConfig, buildDirectory, createMerger, signatureOf } = require('./mergeCore');
 const tree = require('../resources/locations.json');
 
@@ -138,9 +139,9 @@ function broadcastIfNeeded(now) {
 function tick() {
     const now = Date.now();
     try {
-        compute(now);
-        triggerSnapshots(now, current.result);
-        broadcastIfNeeded(now);
+        perfStats.timed('merge: compute', () => compute(now));
+        perfStats.timed('merge: snapshots', () => triggerSnapshots(now, current.result));
+        perfStats.timed('merge: broadcast', () => broadcastIfNeeded(now));
     } catch (err) {
         console.error('[merge]', err && err.stack ? err.stack : err);
     }
