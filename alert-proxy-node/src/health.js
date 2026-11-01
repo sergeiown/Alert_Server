@@ -14,6 +14,7 @@ const HEAP_WARN_PERCENT = 60;
 const HEAP_CRIT_PERCENT = 85;
 const ACTIVE_STALE_MS = 90 * 1000;
 const REREGISTER_REPORT_MS = 6 * 60 * 60 * 1000;
+const WEBHOOK_BROKEN_REPORT_MS = 15 * 60 * 1000;
 const UKRAINEALARM_SNAPSHOT_WARN_MS = 6 * 60 * 1000;
 const UKRAINEALARM_SNAPSHOT_CRIT_MS = 20 * 60 * 1000;
 const NEPTUN_STREAM_DOWN_MS = 5 * 60 * 1000;
@@ -52,7 +53,7 @@ function evaluate(status, flags) {
 
     if (flags.ukraineAlarmConfigured && status.ukraineAlarm.webhook) {
         const webhook = status.ukraineAlarm.webhook;
-        if (webhook.state === 'broken') {
+        if (webhook.state === 'broken' && webhook.brokenSince && Date.now() - webhook.brokenSince >= WEBHOOK_BROKEN_REPORT_MS) {
             add('crit', 'ukrainealarm-webhook', `UkraineAlarm webhook looks broken (${webhook.missesLast30Min} missed events in 30 min), relying on snapshots`);
         }
 

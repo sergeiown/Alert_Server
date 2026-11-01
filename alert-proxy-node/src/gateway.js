@@ -648,6 +648,7 @@ function getUkraineAlarmWebhookHealth() {
         distinctKeys,
         eventsLast30Min: events,
         silentKeys,
+        brokenSince: state.ukraineAlarmBrokenSince || null,
         recentMisses: state.ukraineAlarmMisses.slice(-10),
         reRegister: store.get(UKRAINEALARM_REREGISTER_KEY) || null,
         lastEventAgeMs: state.ukraineAlarmLastEventAt ? now - state.ukraineAlarmLastEventAt : null,
