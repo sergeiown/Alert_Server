@@ -130,6 +130,9 @@ try {
     if (err.code !== 'MODULE_NOT_FOUND') throw err;
 }
 
+const STATUS_CACHE_MS = 5000;
+let statusCache = null;
+
 async function handleRequest(req, res) {
     const url = new URL(req.url, 'http://localhost');
 
@@ -262,7 +265,9 @@ async function handleRequest(req, res) {
     }
 
     if (url.pathname === '/status') {
-        send(res, gateway.getStatus());
+        const now = Date.now();
+        if (!statusCache || now - statusCache.at > STATUS_CACHE_MS) statusCache = { at: now, response: gateway.getStatus() };
+        send(res, statusCache.response);
         return;
     }
 
@@ -293,7 +298,7 @@ async function handleRequest(req, res) {
             send(res, { status: 400, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'uids required' }) });
             return;
         }
-        send(res, { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ forecasts: forecast.getForecasts(uids) }) });
+        send(res, { status: 200, headers: { 'Content-Type': 'application/json' }, body: forecast.getForecastsJson(uids) });
         return;
     }
 

@@ -8,10 +8,12 @@ const forecastConfig = require('./forecastConfig');
 const states = require('../resources/states.json');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const CACHE_TTL_MS = 60 * 1000;
+const CACHE_TTL_MS = 5 * 60 * 1000;
 const CACHE_MAX_ENTRIES = 500;
+const BATCH_CACHE_MAX_ENTRIES = 200;
 
 const cache = new Map();
+const batchCache = new Map();
 
 function durationStats(usableAlerts, nowMs) {
     const avgOf = (list) => (list.length ? list.reduce((sum, a) => sum + a._durationMs, 0) / list.length : null);
@@ -87,4 +89,16 @@ function getForecasts(uids) {
     return Object.fromEntries(unique.map((uid) => [uid, getForecast(uid)]));
 }
 
-module.exports = { getForecast, getForecasts };
+function getForecastsJson(uids) {
+    const unique = Array.from(new Set(uids.map(String))).slice(0, MAX_BATCH).sort();
+    const key = unique.join(',');
+    const cached = batchCache.get(key);
+    if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.body;
+
+    const body = JSON.stringify({ forecasts: Object.fromEntries(unique.map((uid) => [uid, getForecast(uid)])) });
+    if (batchCache.size >= BATCH_CACHE_MAX_ENTRIES) batchCache.clear();
+    batchCache.set(key, { at: Date.now(), body });
+    return body;
+}
+
+module.exports = { getForecast, getForecasts, getForecastsJson };
