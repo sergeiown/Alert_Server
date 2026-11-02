@@ -241,6 +241,9 @@
         get threatIconScale() {
             return window.matchMedia('(max-width: 560px)').matches ? 0.75 : 1;
         },
+        get clusterIconScale() {
+            return window.matchMedia('(max-width: 560px)').matches ? 0.8 : 1;
+        },
         getStrings () {
             return ready.then(() => {
                 return strings;

@@ -197,7 +197,7 @@ function threatIcon(threat, sizeMultiplier = 1) {
 
 function clusterIcon(count, typeKey, allUncertain, sizeMultiplier) {
     const { color, svg, align } = TYPE_ICONS[typeKey];
-    const sizePx = Math.round((isTouchDevice() ? CLUSTER_ICON_TOUCH_PX : CLUSTER_ICON_DESKTOP_PX) * sizeMultiplier);
+    const sizePx = Math.round((isTouchDevice() ? CLUSTER_ICON_TOUCH_PX : CLUSTER_ICON_DESKTOP_PX) * sizeMultiplier * (window.alertServerLiveMap.clusterIconScale || 1));
     const fillColor = allUncertain ? UNCERTAIN_ICON_COLOR : color;
     const label = count > 99 ? '99+' : String(count);
     return L.divIcon({
