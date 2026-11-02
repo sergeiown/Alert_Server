@@ -308,6 +308,9 @@ function getStats(currentConnections, connectedUsers) {
         },
         connections: { now: currentConnections, users: connectedUsers || 0, peakToday: peak.day === today ? peak.connections : currentConnections },
         onlineByVersion: online.byVersion(),
+        activeDayByVersion: Object.fromEntries(
+            all("SELECT COALESCE(version, 'unknown') AS version, COUNT(*) AS c FROM users WHERE last_seen >= ? GROUP BY COALESCE(version, 'unknown')", now - DAY_MS).map((row) => [row.version, row.c])
+        ),
         retention,
         daily,
         hourlyRequestsToday: hourly,
