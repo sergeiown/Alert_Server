@@ -40,7 +40,12 @@ function applyStrings(strings) {
     document.getElementById('activeAlertNotifyLabel').textContent = strings.activeAlertNotifyLabel;
     document.getElementById('alertLevelChangeNotifyLabel').textContent = strings.alertLevelChangeNotifyLabel;
     document.getElementById('settingsForecastNotifyLabel').textContent = strings.settingsForecastNotifyLabel;
-    document.getElementById('forecastNotifyLookaheadLabel').textContent = strings.forecastNotifyLookaheadLabel;
+    document.getElementById('visualNotificationsHint').textContent = strings.visualNotificationsHint;
+    document.getElementById('notifyWhatHeading').textContent = strings.notifyWhatHeading;
+    document.getElementById('activeAlertNotifyHint').textContent = strings.activeAlertNotifyHint;
+    document.getElementById('alertLevelChangeNotifyHint').textContent = strings.alertLevelChangeNotifyHint;
+    document.getElementById('forecastNotifyHint').textContent = strings.forecastNotifyHint;
+    document.getElementById('forecastNotifyUnit').textContent = strings.forecastNotifyUnit;
     document.getElementById('alertSoundLabel').textContent = strings.alertSoundLabel;
     document.getElementById('alertSoundModeNoneOption').textContent = strings.alertSoundModeNone;
     document.getElementById('alertSoundModeSirenOption').textContent = strings.alertSoundModeSiren;

@@ -849,14 +849,14 @@ footer {
     color: var(--card-muted);
 }
 
-:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) label.check input {
+:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) label.check > input {
     grid-column: 2;
     grid-row: 1;
     justify-self: start;
     margin: 0;
 }
 
-:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) label.check span {
+:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) label.check > span:first-child {
     grid-column: 1;
     grid-row: 1;
 }
@@ -878,4 +878,51 @@ footer {
 #alertSoundTest:not(.running) > span:last-child,
 #alertSoundTest.running > span:first-child {
     visibility: hidden;
+}
+
+:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) .opt-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) .opt-hint {
+    font-size: 12px;
+    line-height: 1.35;
+    color: var(--card-muted);
+}
+
+:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) .opt-control {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) .opt-control input {
+    margin: 0;
+}
+
+:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) .opt-control input.num {
+    width: 84px;
+}
+
+:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) .opt-control input.num:disabled {
+    opacity: 0.5;
+}
+
+#forecastRow:has(input[type='checkbox']:not(:disabled)) {
+    opacity: 1;
+}
+
+.group-heading {
+    margin: 6px 0 -4px;
+    padding-top: 14px;
+    border-top: 1px solid var(--card-border, rgba(0, 0, 0, 0.1));
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--card-muted);
 }

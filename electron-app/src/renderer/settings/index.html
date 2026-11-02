@@ -113,13 +113,26 @@
                 <section id="notifications-settings" class="settings-pane" data-section="notifications" hidden>
                     <fieldset class="settings-group ui-card no-legend">
                         <legend id="settingsGroupNotifications"></legend>
-                        <label class="check"><input type="checkbox" id="visualNotificationsEnabled" /> <span id="visualNotificationsLabel"></span></label>
-                        <label class="check"><input type="checkbox" id="activeAlertNotifyEnabled" /> <span id="activeAlertNotifyLabel"></span></label>
-                        <label class="sub check"><input type="checkbox" id="alertLevelChangeNotifyEnabled" /> <span id="alertLevelChangeNotifyLabel"></span></label>
-                        <label class="check"><input type="checkbox" id="forecastNotifyEnabled" /> <span id="settingsForecastNotifyLabel"></span></label>
-                        <label class="sub">
-                            <span id="forecastNotifyLookaheadLabel"></span>
-                            <input type="number" class="ui-input num" id="forecastNotifyLookaheadMinutes" min="1" max="600" />
+                        <label class="check opt">
+                            <span class="opt-text"><span class="opt-title" id="visualNotificationsLabel"></span><span class="opt-hint" id="visualNotificationsHint"></span></span>
+                            <input type="checkbox" id="visualNotificationsEnabled" />
+                        </label>
+                        <h3 class="group-heading" id="notifyWhatHeading"></h3>
+                        <label class="check opt">
+                            <span class="opt-text"><span class="opt-title" id="activeAlertNotifyLabel"></span><span class="opt-hint" id="activeAlertNotifyHint"></span></span>
+                            <input type="checkbox" id="activeAlertNotifyEnabled" />
+                        </label>
+                        <label class="check opt">
+                            <span class="opt-text"><span class="opt-title" id="alertLevelChangeNotifyLabel"></span><span class="opt-hint" id="alertLevelChangeNotifyHint"></span></span>
+                            <input type="checkbox" id="alertLevelChangeNotifyEnabled" />
+                        </label>
+                        <label class="check opt" id="forecastRow">
+                            <span class="opt-text"><span class="opt-title" id="settingsForecastNotifyLabel"></span><span class="opt-hint" id="forecastNotifyHint"></span></span>
+                            <span class="opt-control">
+                                <input type="checkbox" id="forecastNotifyEnabled" />
+                                <input type="number" class="ui-input num" id="forecastNotifyLookaheadMinutes" min="1" max="600" />
+                                <span id="forecastNotifyUnit"></span>
+                            </span>
                         </label>
                     </fieldset>
                     <fieldset class="settings-group ui-card no-legend collapsible" id="notifyProfileGroup">
