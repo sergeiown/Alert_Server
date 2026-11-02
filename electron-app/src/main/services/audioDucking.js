@@ -7,7 +7,7 @@ const { spawn } = require('child_process');
 const { getUserDataFile } = require('./appPaths');
 const { logEvent } = require('./logger');
 
-const DUCK_FACTOR = 0.25;
+const DUCK_FACTOR = 0.1;
 const DUCK_RAMP_MS = 350;
 const RESTORE_RAMP_MS = 1000;
 const RESTORE_DELAY_MS = 700;
