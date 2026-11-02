@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('alertServerHub', {
     getState: () => ipcRenderer.invoke('hub:getState'),
     onState: (callback) => ipcRenderer.on('hub:state', (event, state) => callback(state)),
     navigate: (view) => ipcRenderer.invoke('hub:navigate', view),
+    openFeedback: () => ipcRenderer.invoke('hub:openFeedback'),
     back: () => ipcRenderer.invoke('hub:back'),
     close: () => ipcRenderer.invoke('hub:close'),
     minimize: () => ipcRenderer.invoke('hub:minimize'),

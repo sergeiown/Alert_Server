@@ -32,6 +32,7 @@ let fullscreenRequestedByPage = false;
 let revealWhenReady = false;
 let rememberedBounds = null;
 let rememberedMaximized = false;
+let feedbackRequested = false;
 const history = [];
 const views = new Map();
 
@@ -157,6 +158,19 @@ function navigate(name, { record = true } = {}) {
     }
     currentView = name;
     applyCurrentView();
+}
+
+function openFeedback() {
+    const loaded = views.has('about');
+    navigate('about');
+    if (loaded) views.get('about').webContents.send('about:openFeedback');
+    else feedbackRequested = true;
+}
+
+function takeFeedbackRequest() {
+    const requested = feedbackRequested;
+    feedbackRequested = false;
+    return requested;
 }
 
 function goBack() {
@@ -294,6 +308,8 @@ module.exports = {
     showHub,
     toggleStatus,
     navigate,
+    openFeedback,
+    takeFeedbackRequest,
     goBack,
     requestClose,
     getView,

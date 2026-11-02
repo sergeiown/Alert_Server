@@ -193,6 +193,10 @@ function setupFeedback(strings) {
         textInput.focus();
     });
     el('feedbackLink').addEventListener('click', open);
+    window.alertServerAbout.onOpenFeedback(open);
+    window.alertServerAbout.takeFeedbackRequest().then((requested) => {
+        if (requested) open();
+    });
     el('feedbackCancel').addEventListener('click', close);
     el('thanksClose').addEventListener('click', close);
     overlay.addEventListener('mousedown', (event) => {

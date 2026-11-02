@@ -106,6 +106,7 @@ async function main() {
     document.getElementById('appIcon').src = await hub.getIcon();
     document.getElementById('menuLabel').textContent = strings.hubMenu;
     document.getElementById('backLabel').textContent = strings.hubBack;
+    document.getElementById('feedbackLabel').textContent = strings.hubFeedback;
     document.getElementById('updateLabel').textContent = strings.aboutCheckUpdates;
     document.getElementById('closeButton').title = strings.hubClose;
     document.getElementById('welcome').textContent = strings.hubWelcome;
@@ -120,6 +121,7 @@ async function main() {
 
     menuButton.addEventListener('click', () => hub.navigate('home'));
     backButton.addEventListener('click', () => hub.back());
+    document.getElementById('feedbackButton').addEventListener('click', () => hub.openFeedback());
     updateButton.addEventListener('click', checkForUpdates);
     document.getElementById('closeButton').addEventListener('click', () => hub.close());
     document.getElementById('minimizeButton').addEventListener('click', () => hub.minimize());

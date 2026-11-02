@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld('alertServerAbout', {
     getConnectionState: () => ipcRenderer.invoke('connection:get'),
     onConnectionChange: (callback) => ipcRenderer.on('connection:changed', (event, state) => callback(state)),
     reportOnline: (online) => ipcRenderer.send('connection:report', online),
+    takeFeedbackRequest: () => ipcRenderer.invoke('hub:takeFeedbackRequest'),
+    onOpenFeedback: (callback) => ipcRenderer.on('about:openFeedback', () => callback()),
     sendFeedback: (input) => ipcRenderer.invoke('feedback:send', input),
     openExternal: (url) => ipcRenderer.invoke('system:openExternal', url),
 });
