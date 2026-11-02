@@ -6,6 +6,7 @@ const { loadLocalConfig } = require('./localConfig');
 const { alertTypeName } = require('./alertTypes');
 const { t } = require('../../i18n/i18n');
 const { PROXY_URL, getClientVersion, proxyFetch, describeError } = require('./proxyConfig');
+const serverClock = require('./serverClock');
 
 const FORECAST_CACHE_TTL_MS = 60 * 1000;
 const FETCH_ERROR_LOG_COOLDOWN_MS = 10 * 60 * 1000;
@@ -142,7 +143,7 @@ function buildForecastText(stats, language, source, extra = {}) {
     const lines = [];
     const allTime = extra.allTime && extra.allTime.total ? extra.allTime : null;
 
-    lines.push(`${t('forecastAsOf', language)}: ${formatShortDateTime(Date.now(), language)}`);
+    lines.push(`${t('forecastAsOf', language)}: ${formatShortDateTime(serverClock.now(), language)}`);
 
     const sourceName = HISTORY_SOURCE_DISPLAY[source];
     lines.push(`${t('forecastSourceLabel', language)}: ${sourceName || t('forecastSourceUnknown', language)}`);
@@ -249,7 +250,7 @@ function buildActiveDurationLines(durationStats, language) {
         lines.push({ text: activeSentence(entry.type, language), level: null });
         (entry.threatLines || []).forEach((threatLine) => lines.push({ text: threatLine.text, level: threatLine.level }));
         lines.push({
-            text: `${t('alertStartedAt', language)}: ${formatShortDateTime(entry.ongoingSinceMs, language)}. ${t('alertOngoingDuration', language)}: ${formatDuration(Date.now() - entry.ongoingSinceMs, language)}.`,
+            text: `${t('alertStartedAt', language)}: ${formatShortDateTime(entry.ongoingSinceMs, language)}. ${t('alertOngoingDuration', language)}: ${formatDuration(serverClock.now() - entry.ongoingSinceMs, language)}.`,
             level: null,
         });
         lines.push({ text: `${t('forecastActiveDurationHeader', language)}:`, level: null });

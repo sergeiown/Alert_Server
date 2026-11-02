@@ -19,6 +19,7 @@ const { diffAlerts } = require('./alertDiff');
 const { KYIV_CITY_UID } = require('./regionAlertStatus');
 const { transliterate } = require('./transliterate');
 const { t } = require('../../i18n/i18n');
+const serverClock = require('./serverClock');
 const { createThrottle } = require('./notificationThrottle');
 
 const ALERT_COLOR = '#dc2626';
@@ -180,7 +181,7 @@ function formatStartedAt(startedAt, language) {
 function describeDurationRange(entries, language) {
     const durations = entries
         .filter((entry) => entry.startedAt)
-        .map((entry) => Date.now() - new Date(entry.startedAt).getTime())
+        .map((entry) => serverClock.now() - new Date(entry.startedAt).getTime())
         .filter((ms) => Number.isFinite(ms) && ms >= 0);
     if (!durations.length) return [];
 
@@ -353,7 +354,7 @@ async function notifyWithMapNow({ uid, uids, title, bodyLines, iconName, color, 
 function showAlertDetails({ language, title, typeName, locationName, level, levelKey, threatLines, startedAt, eventAt, durationMs, kyiv, locationUid, focusNames }) {
     const startedAtText = formatStartedAt(startedAt, language);
     const eventAtText = formatStartedAt(eventAt, language);
-    const elapsed = durationMs !== undefined ? durationMs : startedAt ? Date.now() - new Date(startedAt).getTime() : null;
+    const elapsed = durationMs !== undefined ? durationMs : startedAt ? serverClock.now() - new Date(startedAt).getTime() : null;
     const levelWord = levelShort(level, language).toLowerCase();
     const rows = [
         `${t('location', language)}: ${locationName}`,
@@ -402,7 +403,7 @@ function regionRow(name, level, parts, language) {
 }
 
 function listClick(language, heading, items) {
-    const eventAt = Date.now();
+    const eventAt = serverClock.now();
     return () => showRegionList(language, heading, items, eventAt);
 }
 
@@ -455,7 +456,7 @@ function iconForLevel(level) {
 
 function durationLine(startedAt, language) {
     if (!startedAt) return null;
-    const ms = Date.now() - new Date(startedAt).getTime();
+    const ms = serverClock.now() - new Date(startedAt).getTime();
     if (!Number.isFinite(ms) || ms < 0) return null;
     return `${t('alertDuration', language)}: ${formatDuration(ms, language)}`;
 }
@@ -550,7 +551,7 @@ function notifyLevelChanges(events, ctx) {
                 bodyLines: bodyLines.filter(Boolean),
                 iconName: iconForLevel(level),
                 color: levelColor(level),
-                onClick: ctx.onClick ? ((eventAt) => () => ctx.onClick(event, title, language, eventAt))(Date.now()) : undefined,
+                onClick: ctx.onClick ? ((eventAt) => () => ctx.onClick(event, title, language, eventAt))(serverClock.now()) : undefined,
                 kind: 'level',
                 meta: { name, level },
                 critical: event.type === 'escalate' && level === 'red',
@@ -618,7 +619,7 @@ function startNotificationOptions(alert, language, alertCount) {
         iconName: iconForLevel(alert.alert_level),
         color: levelColor(alert.alert_level),
         onClick: (() => {
-            const eventAt = Date.now();
+            const eventAt = serverClock.now();
             const threatText = describeThreats(alert.threats, language);
             return () =>
                 showAlertDetails({
@@ -794,7 +795,7 @@ function processAlerts(matchedAlerts, allAlerts) {
         const locationName = language === 'English' ? value.locationLat : value.locationTitle;
         const title = `${t('alertAllClear', language)}: ${String(typeName).toLowerCase()}`;
         const durationText = value.startedAt
-            ? formatDuration(Date.now() - new Date(value.startedAt).getTime(), language)
+            ? formatDuration(serverClock.now() - new Date(value.startedAt).getTime(), language)
             : null;
 
         if (!massCancel && canNotify) {
@@ -820,7 +821,7 @@ function processAlerts(matchedAlerts, allAlerts) {
                         eventAt,
                         durationMs: value.startedAt ? eventAt - new Date(value.startedAt).getTime() : null,
                         locationUid: value.locationUid,
-                    }))(Date.now()),
+                    }))(serverClock.now()),
                 kind: 'end',
                 meta: { name: locationName, level: null },
                 soundKind: 'end',
@@ -937,7 +938,7 @@ function processKyivDistricts(kyivRaions) {
                         eventAt,
                         kyiv: true,
                         focusNames: [district.name, 'м. Київ'],
-                    }))(Date.now()),
+                    }))(serverClock.now()),
                 kind: 'start',
                 meta: { name: displayName, level: district.alertLevel },
                 critical: district.alertLevel === 'red',
@@ -1005,7 +1006,7 @@ function processKyivDistricts(kyivRaions) {
     newlyEnded.forEach((value) => {
         const displayName = kyivDistrictDisplayName(value.name, language);
         const durationText = value.startedAt
-            ? formatDuration(Date.now() - new Date(value.startedAt).getTime(), language)
+            ? formatDuration(serverClock.now() - new Date(value.startedAt).getTime(), language)
             : null;
 
         if (!massCancel && canNotify) {
@@ -1031,7 +1032,7 @@ function processKyivDistricts(kyivRaions) {
                         durationMs: value.startedAt ? eventAt - new Date(value.startedAt).getTime() : null,
                         kyiv: true,
                         focusNames: [value.name, 'м. Київ'],
-                    }))(Date.now()),
+                    }))(serverClock.now()),
                 kind: 'end',
                 meta: { name: displayName, level: null },
                 ...effects(profileOf('end')),

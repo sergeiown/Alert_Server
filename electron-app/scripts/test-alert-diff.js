@@ -181,7 +181,7 @@ const mocks = {
         playFor: (owner, spec) => captured.sounds.push(SOUND_NAME[spec.kind]),
         stopFor: (owner) => captured.stops.push(owner),
     },
-    './locationFilter': { getMapRegion: () => ({ stateUid: 1 }) },
+    './locationFilter': { getMapRegion: () => ({ stateUid: 1 }), getFocusNames: (uid) => [`region-${uid}`] },
     './notificationMap': { renderRegionMapImage: async () => null },
     './forecast': { formatDuration: (ms) => `${Math.round(ms / 60000)} хв` },
     '../windows/messageWindow': {
@@ -198,6 +198,9 @@ const mocks = {
         },
         openLiveMapWindowInKyivMode() {
             captured.maps.push('kyiv');
+        },
+        openLiveMapWindowAtRegion(names) {
+            captured.maps.push(`region:${names.join('|')}`);
         },
     },
 };
@@ -614,10 +617,10 @@ async function run() {
         assert.deepStrictEqual(captured.messages[0].buttons.map((button) => button.id), ['map', 'status', 'close']);
     });
     await flush();
-    check('details window: the open map button opens the live map of Ukraine', () => {
+    check('details window: the open map button focuses the map on the alert location', () => {
         captured.nextChoice = 'map';
         captured.shown[0].emit('click');
-        return flush().then(() => assert.deepStrictEqual(captured.maps, ['ukraine']));
+        return flush().then(() => assert.deepStrictEqual(captured.maps, ['region:region-950']));
     });
     await clearAll();
     reset();
@@ -636,7 +639,7 @@ async function run() {
         assert.ok(/Розпочалась: /.test(detail) && /Час сповіщення: /.test(detail), detail);
     });
     await flush();
-    check('kyiv district: the open map button opens the map in the Kyiv mode', () => assert.deepStrictEqual(captured.maps, ['kyiv']));
+    check('kyiv district: the open map button focuses the map on the district in the Kyiv mode', () => assert.deepStrictEqual(captured.maps, ['region:Шевченківський|м. Київ']));
     notifier.processKyivDistricts([]);
     offset += 20000;
     notifier.processKyivDistricts([]);

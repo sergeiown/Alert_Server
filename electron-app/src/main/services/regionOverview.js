@@ -15,6 +15,7 @@ const {
 const { alertTypeName } = require('./alertTypes');
 const { worstLevelAmong, getThreatLines } = require('./alertLevels');
 const { t } = require('../../i18n/i18n');
+const serverClock = require('./serverClock');
 
 const FORECAST_WAIT_MS = 1500;
 
@@ -67,7 +68,7 @@ async function getActiveRegionDetail(uid, language) {
         entry.threatLines = getThreatLines(typeAlerts.flatMap((alert) => alert.threats || []), language);
     });
 
-    const ongoingMs = Math.max(...durationStats.map((entry) => Date.now() - entry.ongoingSinceMs));
+    const ongoingMs = Math.max(...durationStats.map((entry) => serverClock.now() - entry.ongoingSinceMs));
     return {
         alertLevel: worstLevelAmong(activeAlertsHere),
         lines: buildActiveDurationLines(durationStats, language),

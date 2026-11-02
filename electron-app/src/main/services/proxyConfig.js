@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const { getInstallId } = require('./installId');
+const serverClock = require('./serverClock');
 
 const PROXY_URL = 'https://alert-proxy-ua.duckdns.org';
 const PROXY_WS_URL = PROXY_URL.replace(/^http/, 'ws');
@@ -39,7 +40,13 @@ function withInstallId(url, options) {
 }
 
 function fetchWithTimeout(url, options, timeoutMs = REQUEST_TIMEOUT_MS) {
-    return fetch(url, withTimeout(withInstallId(url, options), timeoutMs));
+    const startedAt = Date.now();
+    const request = fetch(url, withTimeout(withInstallId(url, options), timeoutMs));
+    if (typeof url !== 'string' || !url.startsWith(PROXY_URL)) return request;
+    return request.then((response) => {
+        serverClock.observeResponse(response, startedAt, Date.now());
+        return response;
+    });
 }
 
 async function proxyFetch(url, options) {
