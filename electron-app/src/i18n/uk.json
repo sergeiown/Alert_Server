@@ -161,7 +161,7 @@
     "alertSoundTestStop": "Зупинити тест",
     "duckOtherSoundsLabel": "Приглушувати інші звуки на час сигналу",
     "alertSoundCountLabel": "Повторів звуку, поки сповіщення на екрані",
-    "updateCheckIntervalLabel": "Періодичність перевірки оновлень застосунку (годин, від 1 до 24):",
+    "updateCheckIntervalLabel": "Перевіряти оновлення, годин:",
     "updatePromptHeading": "Доступне оновлення",
     "updatePromptMessage": "Вийшла нова версія {version}. У вас встановлена {current}.",
     "updatePromptHint": "Оновлення займає хвилину, застосунок перезапуститься сам. Нові версії виправляють помилки й додають покращення.",

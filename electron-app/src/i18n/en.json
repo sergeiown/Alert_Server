@@ -161,7 +161,7 @@
     "alertSoundTestStop": "Stop test",
     "duckOtherSoundsLabel": "Lower other sounds while the alert plays",
     "alertSoundCountLabel": "Sound repeats while the notification is shown",
-    "updateCheckIntervalLabel": "Application update check interval (hours, 1 to 24):",
+    "updateCheckIntervalLabel": "Check for updates, hours:",
     "updatePromptHeading": "Update available",
     "updatePromptMessage": "Version {version} is out. You have {current} installed.",
     "updatePromptHint": "The update takes about a minute and the app restarts by itself. New versions fix bugs and bring improvements.",
