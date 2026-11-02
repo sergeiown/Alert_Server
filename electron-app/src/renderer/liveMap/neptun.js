@@ -301,7 +301,7 @@ const ALL_TYPE_KEYS = ['uav', 'uav_recon', 'fpv', 'kab', 'missile', 'mig31k', 'u
 
 const TRAIL_SWATCH_HTML =
     '<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#6b7280" ' +
-    'stroke-width="1.8" stroke-linecap="round" stroke-dasharray="1.5 4"><path d="M3 20 L21 4"/></svg></span>';
+    'stroke-width="1.8" stroke-linecap="round"><path d="M3 21 Q9 15 13 11"/><path d="M13 11 Q16 8 21 4" stroke-dasharray="1.5 4"/></svg></span>';
 
 const APPROX_SWATCH_HTML =
     `<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${UNCERTAINTY_CIRCLE_COLOR}" ` +
@@ -406,6 +406,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const activeClusters = new Map();
     let expanded = null;
     const driftById = new Map();
+    const displayById = new Map();
+    const correctionById = new Map();
     const isEnglish = language === 'English';
     let lastThreats = [];
     let kyivMode = false;
@@ -477,6 +479,16 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const DRIFT_MAX_KM = { uav: 18, recon: 12, fpv: 10, missile: 30, kab: 10, ballistic: 20, mig31k: 24, unknown: 10 };
     const EARTH_RADIUS_KM = 6371;
     const KYIV_THREAT_CLICK_ZOOM = 12;
+    const TRAIL_WINDOW_MS = 10 * 60 * 1000;
+    const TRAIL_SEGMENTS = 8;
+    const TRAIL_SUBSTEPS = 6;
+    const PREDICT_MINUTES = 3;
+    const PREDICT_MAX_KM = 12;
+    const PREDICT_STEP_KM = 0.5;
+    const PREDICT_MAX_TURN_DEG_PER_KM = 3;
+    const CORRECTION_TAU_MS = 1600;
+    const GLIDE_TAU_MS = 2600;
+    const CORRECTION_MAX_KM = 8;
 
     function randomDuration(baseMs, spreadMs) {
         return Math.round(baseMs + (Math.random() * 2 - 1) * spreadMs);
@@ -492,6 +504,44 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             lonRad +
             Math.atan2(Math.sin(bearing) * Math.sin(angular) * Math.cos(latRad), Math.cos(angular) - Math.sin(latRad) * Math.sin(newLat));
         return [(newLat * 180) / Math.PI, (((newLon * 180) / Math.PI + 540) % 360) - 180];
+    }
+
+    function distanceKm(a, b) {
+        const toRad = Math.PI / 180;
+        const dLat = (b[0] - a[0]) * toRad;
+        const dLon = (b[1] - a[1]) * toRad;
+        const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * toRad) * Math.cos(b[0] * toRad) * Math.sin(dLon / 2) ** 2;
+        return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(h)));
+    }
+
+    function bearingBetween(a, b) {
+        const toRad = Math.PI / 180;
+        const dLon = (b[1] - a[1]) * toRad;
+        const y = Math.sin(dLon) * Math.cos(b[0] * toRad);
+        const x = Math.cos(a[0] * toRad) * Math.sin(b[0] * toRad) - Math.sin(a[0] * toRad) * Math.cos(b[0] * toRad) * Math.cos(dLon);
+        return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+    }
+
+    function smoothPath(points) {
+        if (points.length < 3) return points;
+        const cosLat = Math.cos((points[0][0] * Math.PI) / 180);
+        const flat = points.map((p) => [p[1] * cosLat, p[0]]);
+        const result = [points[0]];
+        for (let i = 0; i < flat.length - 1; i++) {
+            const p0 = flat[Math.max(0, i - 1)];
+            const p1 = flat[i];
+            const p2 = flat[i + 1];
+            const p3 = flat[Math.min(flat.length - 1, i + 2)];
+            for (let step = 1; step <= TRAIL_SUBSTEPS; step++) {
+                const t = step / TRAIL_SUBSTEPS;
+                const t2 = t * t;
+                const t3 = t2 * t;
+                const x = 0.5 * (2 * p1[0] + (-p0[0] + p2[0]) * t + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3);
+                const y = 0.5 * (2 * p1[1] + (-p0[1] + p2[1]) * t + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3);
+                result.push([y, x / cosLat]);
+            }
+        }
+        return result;
     }
 
     function updateVelocityEstimate(threat) {
@@ -517,23 +567,54 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         });
     }
 
+    function predictedPosition(threat, now) {
+        const drift = driftById.get(threat.id);
+        if (!drift) return [threat.lat, threat.lon];
+
+        const ageMin = (now - drift.anchorMs) / 60000;
+        if (ageMin <= 0) return [threat.lat, threat.lon];
+
+        const limitMin = DRIFT_LIMIT_MIN[drift.type] ?? 6;
+        const maxKm = DRIFT_MAX_KM[drift.type] ?? 8;
+        const distKm = Math.min(maxKm, drift.speedKmh * (Math.min(ageMin, limitMin) / 60));
+        return destinationPoint(drift.baseLat, drift.baseLon, drift.bearing, distKm);
+    }
+
+    function withMotion(threat, serverUpdate) {
+        const now = Date.now();
+        const id = threat.id;
+        let [lat, lon] = predictedPosition(threat, now);
+
+        if (serverUpdate) {
+            const previous = displayById.get(id);
+            if (previous) {
+                const errorKm = distanceKm(previous, [lat, lon]);
+                if (errorKm > 0.02 && errorKm <= CORRECTION_MAX_KM) {
+                    correctionById.set(id, { dLat: previous[0] - lat, dLon: previous[1] - lon, at: now, tau: driftById.has(id) ? CORRECTION_TAU_MS : GLIDE_TAU_MS });
+                } else {
+                    correctionById.delete(id);
+                }
+            }
+        }
+
+        const correction = correctionById.get(id);
+        if (correction) {
+            const weight = Math.exp(-(now - correction.at) / correction.tau);
+            if (weight < 0.02) {
+                correctionById.delete(id);
+            } else {
+                lat += correction.dLat * weight;
+                lon += correction.dLon * weight;
+            }
+        }
+
+        displayById.set(id, [lat, lon]);
+        return { ...threat, lat, lon };
+    }
+
     function extrapolatedThreats() {
         if (!lastThreats.length) return lastThreats;
-        const now = Date.now();
-
-        return lastThreats.map((threat) => {
-            const drift = driftById.get(threat.id);
-            if (!drift) return threat;
-
-            const ageMin = (now - drift.anchorMs) / 60000;
-            if (ageMin <= 0) return threat;
-
-            const limitMin = DRIFT_LIMIT_MIN[drift.type] ?? 6;
-            const maxKm = DRIFT_MAX_KM[drift.type] ?? 8;
-            const distKm = Math.min(maxKm, drift.speedKmh * (Math.min(ageMin, limitMin) / 60));
-            const [lat, lon] = destinationPoint(drift.baseLat, drift.baseLon, drift.bearing, distKm);
-            return { ...threat, lat, lon };
-        });
+        return lastThreats.map((threat) => (typeof threat.lat === 'number' && typeof threat.lon === 'number' && !threat.areaOnly ? withMotion(threat, false) : threat));
     }
 
     function revealWhenReady(reveal) {
@@ -727,12 +808,81 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
 
     let zoomHideToken = 0;
 
-    function trailPoints(threat) {
+    function trailFixes(threat) {
         if (!Array.isArray(threat.trail)) return null;
-        const points = threat.trail.filter((p) => p && typeof p.lat === 'number' && typeof p.lon === 'number').map((p) => [p.lat, p.lon]);
-        const last = points[points.length - 1];
-        if (!last || last[0] !== threat.lat || last[1] !== threat.lon) points.push([threat.lat, threat.lon]);
-        return points.length >= 2 ? points : null;
+        const fixes = threat.trail
+            .filter((p) => p && typeof p.lat === 'number' && typeof p.lon === 'number')
+            .map((p) => ({ lat: p.lat, lon: p.lon, t: Date.parse(p.t) }));
+        if (!fixes.length) return null;
+        const times = fixes.map((p) => p.t).filter((t) => Number.isFinite(t));
+        const newest = times.length ? Math.max(...times) : null;
+        const recent = newest === null ? fixes : fixes.filter((p) => !Number.isFinite(p.t) || p.t >= newest - TRAIL_WINDOW_MS);
+        return recent.map((p) => [p.lat, p.lon]);
+    }
+
+    function predictionArc(threat, fixes, from) {
+        const drift = driftById.get(threat.id);
+        if (!drift || threat.status !== 'active') return [];
+
+        const ageMin = (Date.now() - drift.anchorMs) / 60000;
+        if (ageMin >= (DRIFT_LIMIT_MIN[drift.type] ?? 6)) return [];
+
+        let turnPerKm = 0;
+        if (fixes && fixes.length >= 3) {
+            const [a, b, c] = fixes.slice(-3);
+            const lengthAB = distanceKm(a, b);
+            const lengthBC = distanceKm(b, c);
+            if (lengthAB > 0.3 && lengthBC > 0.3) {
+                const change = normalizedDelta(bearingBetween(a, b), bearingBetween(b, c));
+                turnPerKm = Math.max(-PREDICT_MAX_TURN_DEG_PER_KM, Math.min(PREDICT_MAX_TURN_DEG_PER_KM, change / ((lengthAB + lengthBC) / 2)));
+            }
+        }
+
+        const lengthKm = Math.min(PREDICT_MAX_KM, (drift.speedKmh * PREDICT_MINUTES) / 60);
+        const points = [from];
+        let bearing = drift.bearing;
+        let current = from;
+        for (let travelled = 0; travelled < lengthKm - 1e-6; travelled += PREDICT_STEP_KM) {
+            const step = Math.min(PREDICT_STEP_KM, lengthKm - travelled);
+            bearing += turnPerKm * step;
+            current = destinationPoint(current[0], current[1], bearing, step);
+            points.push(current);
+        }
+        return points.length >= 2 ? points : [];
+    }
+
+    function createTrailEntry(color) {
+        const group = L.layerGroup().addTo(circlesGroup);
+        const tail = L.polyline([], { pane: UNCERTAINTY_PANE, color, weight: 2.2, opacity: 0.8, lineCap: 'round', interactive: false, className: 'threat-trail' }).addTo(group);
+        const arc = L.polyline([], { pane: UNCERTAINTY_PANE, color, weight: 1.6, opacity: 0.6, dashArray: '1 6', lineCap: 'round', interactive: false, className: 'threat-trail threat-forecast' }).addTo(group);
+        return { group, tail, arc, segments: [], sig: null, color };
+    }
+
+    function rebuildTrailSegments(entry, fixes) {
+        entry.segments.forEach((line) => entry.group.removeLayer(line));
+        entry.segments = [];
+        if (!fixes || fixes.length < 2) return;
+
+        const path = smoothPath(fixes);
+        const chunk = Math.max(2, Math.ceil((path.length - 1) / TRAIL_SEGMENTS));
+        const chunks = Math.ceil((path.length - 1) / chunk);
+        for (let index = 0; index < chunks; index++) {
+            const start = index * chunk;
+            const part = path.slice(start, Math.min(path.length, start + chunk + 1));
+            if (part.length < 2) continue;
+            const ratio = chunks > 1 ? index / (chunks - 1) : 1;
+            const line = L.polyline(part, {
+                pane: UNCERTAINTY_PANE,
+                color: entry.color,
+                weight: 1.1 + ratio * 1.2,
+                opacity: 0.14 + ratio * 0.66,
+                lineCap: 'round',
+                lineJoin: 'round',
+                interactive: false,
+                className: 'threat-trail',
+            }).addTo(entry.group);
+            entry.segments.push(line);
+        }
     }
 
     function hideDuringMove(targetLatLng, targetZoom) {
@@ -808,9 +958,14 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
 
         if (!isExtrapolation) valid.forEach((threat) => updateVelocityEstimate(threat));
 
-        const pointThreats = valid;
+        const pointThreats = isExtrapolation ? valid : valid.map((threat) => withMotion(threat, true));
         const sizeMultiplier = kyivMode ? KYIV_ICON_SCALE : 1;
         const currentIdsAll = new Set(valid.map((t) => t.id));
+        [displayById, correctionById].forEach((store) => {
+            store.forEach((_, id) => {
+                if (!currentIdsAll.has(id)) store.delete(id);
+            });
+        });
 
         const items = pointThreats.map((threat) => {
             const point = map.latLngToContainerPoint([threat.lat, threat.lon]);
@@ -843,7 +998,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             confirmedTypeKeys: pointThreats.filter((t) => t.lifecycle !== 'uncertain').map((t) => resolveTypeKey(t)),
             uncertainTypeKeys: pointThreats.filter((t) => t.lifecycle === 'uncertain').map((t) => resolveTypeKey(t)),
             hasApprox: pointThreats.some((t) => t.positionQuality === 'approx' && typeof t.uncertaintyKm === 'number'),
-            hasTrail: singles.some((threat) => trailPoints(threat)),
+            hasTrail: singles.some((threat) => (trailFixes(threat) || []).length >= 1),
         });
         if (typeof onCountChange === 'function') onCountChange(valid.length);
         hint.update({ hasThreats: valid.length > 0, hasClusters: clusterGroups.length > 0 });
@@ -892,29 +1047,28 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
 
         const trailIds = new Set();
         singles.forEach((threat) => {
-            const points = trailPoints(threat);
-            if (!points) return;
+            const fixes = trailFixes(threat);
+            const here = [threat.lat, threat.lon];
+            const arc = predictionArc(threat, fixes, here);
+            if ((!fixes || fixes.length < 1) && !arc.length) return;
+
             trailIds.add(threat.id);
-            const existingTrail = activeTrails.get(threat.id);
-            if (existingTrail) {
-                existingTrail.setLatLngs(points);
-                return;
+            let entry = activeTrails.get(threat.id);
+            if (!entry) {
+                entry = createTrailEntry(TYPE_ICONS[resolveTypeKey(threat)].color);
+                activeTrails.set(threat.id, entry);
             }
-            const line = L.polyline(points, {
-                pane: UNCERTAINTY_PANE,
-                color: TYPE_ICONS[resolveTypeKey(threat)].color,
-                weight: 1.6,
-                opacity: 0.65,
-                dashArray: '2 5',
-                lineCap: 'round',
-                interactive: false,
-                className: 'threat-trail',
-            }).addTo(circlesGroup);
-            activeTrails.set(threat.id, line);
+            const signature = fixes ? fixes.map((p) => `${p[0].toFixed(4)},${p[1].toFixed(4)}`).join('|') : '';
+            if (entry.sig !== signature) {
+                rebuildTrailSegments(entry, fixes);
+                entry.sig = signature;
+            }
+            entry.tail.setLatLngs(fixes && fixes.length ? [fixes[fixes.length - 1], here] : []);
+            entry.arc.setLatLngs(arc);
         });
-        activeTrails.forEach((line, id) => {
+        activeTrails.forEach((entry, id) => {
             if (trailIds.has(id)) return;
-            circlesGroup.removeLayer(line);
+            circlesGroup.removeLayer(entry.group);
             activeTrails.delete(id);
         });
 
@@ -984,8 +1138,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             if (existing) {
                 const el = existing.getElement();
                 if (el) {
-                    const moveDuration = randomDuration(MOVE_DURATION_MS, MOVE_SPREAD_MS);
-                    el.style.transition = `opacity ${randomDuration(MARKER_FADE_MS, MARKER_FADE_SPREAD_MS)}ms ease, transform ${moveDuration}ms ease`;
+                    const moveDuration = isZoomEvent ? 0 : EXTRAPOLATION_TICK_MS;
+                    el.style.transition = `opacity ${randomDuration(MARKER_FADE_MS, MARKER_FADE_SPREAD_MS)}ms ease, transform ${moveDuration}ms linear`;
                 }
                 existing.setLatLng(latlng);
                 existing._truePos = [threat.lat, threat.lon];
