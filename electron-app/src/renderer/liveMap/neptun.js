@@ -332,10 +332,10 @@ const ALL_TYPE_KEYS = ['uav', 'uav_recon', 'fpv', 'kab', 'missile', 'mig31k', 'u
 
 const TRAIL_SWATCH_HTML =
     '<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#6b7280" ' +
-    'stroke-width="1.8" stroke-dasharray="4 3"><path d="M3 21 Q10 15 21 5"/></svg></span>';
+    'stroke-width="1.8" stroke-linecap="round"><path d="M3 21 Q10 15 21 5"/></svg></span>';
 
 const FORECAST_SWATCH_HTML =
-    '<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#6b7280" ' +
+    '<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#b3b8c0" ' +
     'stroke-width="1.8" stroke-linecap="round" stroke-dasharray="1.5 4"><path d="M3 21 Q10 15 21 5"/></svg></span>';
 
 const APPROX_SWATCH_HTML =
@@ -524,6 +524,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const TRAIL_MIN_DT_S = 30;
     const TRAIL_SPIKE_TURN_DEG = 100;
     const TRAIL_SPIKE_MIN_KM = 0.5;
+    const TRAIL_SOLID_FROM = 0.6;
     const INFER_MIN_KM = 2;
     const INFER_MAX_AGE_MS = 15 * 60 * 1000;
     const TRAIL_SEGMENTS = 8;
@@ -964,10 +965,15 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         return points.length >= 2 ? points : [];
     }
 
+    function lighten(hex, amount) {
+        const channels = [1, 3, 5].map((index) => parseInt(hex.slice(index, index + 2), 16));
+        return `#${channels.map((value) => Math.round(value + (255 - value) * amount).toString(16).padStart(2, '0')).join('')}`;
+    }
+
     function createTrailEntry(color) {
         const group = L.layerGroup().addTo(circlesGroup);
-        const tail = L.polyline([], { pane: UNCERTAINTY_PANE, color, weight: 2.2, opacity: 0.8, dashArray: '7 5', lineCap: 'butt', interactive: false, className: 'threat-trail' }).addTo(group);
-        const arc = L.polyline([], { pane: UNCERTAINTY_PANE, color, weight: 1.6, opacity: 0.6, dashArray: '1 6', lineCap: 'round', interactive: false, className: 'threat-trail threat-forecast' }).addTo(group);
+        const tail = L.polyline([], { pane: UNCERTAINTY_PANE, color, weight: 2.4, opacity: 0.85, lineCap: 'round', interactive: false, className: 'threat-trail' }).addTo(group);
+        const arc = L.polyline([], { pane: UNCERTAINTY_PANE, color: lighten(color, 0.5), weight: 2, opacity: 0.9, dashArray: '1 6', lineCap: 'round', interactive: false, className: 'threat-trail threat-forecast' }).addTo(group);
         return { group, tail, arc, segments: [], sig: null, color };
     }
 
@@ -989,8 +995,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                 color: entry.color,
                 weight: 1.1 + ratio * 1.2,
                 opacity: 0.14 + ratio * 0.66,
-                dashArray: '7 5',
-                lineCap: 'butt',
+                dashArray: ratio < TRAIL_SOLID_FROM ? '7 5' : null,
+                lineCap: ratio < TRAIL_SOLID_FROM ? 'butt' : 'round',
                 lineJoin: 'round',
                 interactive: false,
                 className: 'threat-trail',

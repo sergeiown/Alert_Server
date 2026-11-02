@@ -296,6 +296,10 @@
         },
         openExternal,
         onForceKyivMode () {},
+        onFocusRegion () {},
+        consumePendingFocusRegion () {
+            return Promise.resolve(null);
+        },
         onMapReady (api) {
             mapApi = api;
             mapReadyListeners.forEach((listener) => {
