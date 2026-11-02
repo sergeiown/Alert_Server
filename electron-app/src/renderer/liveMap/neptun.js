@@ -509,6 +509,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const TRAIL_MAX_SPEED_KMH = { missile: 1200, mig31k: 2200, kab: 900, uav: 250, uav_recon: 250, fpv: 200, unknown: 350 };
     const TRAIL_NOISE_KM = 1.5;
     const TRAIL_MIN_DT_S = 30;
+    const TRAIL_SPIKE_TURN_DEG = 100;
+    const TRAIL_SPIKE_MIN_KM = 0.5;
     const INFER_MIN_KM = 2;
     const INFER_MAX_AGE_MS = 15 * 60 * 1000;
     const TRAIL_SEGMENTS = 8;
@@ -840,6 +842,26 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
 
     let zoomHideToken = 0;
 
+    function dropSpikes(points) {
+        const kept = [];
+        points.forEach((point) => {
+            while (kept.length >= 2) {
+                const a = kept[kept.length - 2];
+                const b = kept[kept.length - 1];
+                const legBefore = distanceKm([a.lat, a.lon], [b.lat, b.lon]);
+                const legAfter = distanceKm([b.lat, b.lon], [point.lat, point.lon]);
+                if (legBefore < TRAIL_SPIKE_MIN_KM || legAfter < TRAIL_SPIKE_MIN_KM) break;
+                const before = bearingBetween([a.lat, a.lon], [b.lat, b.lon]);
+                const after = bearingBetween([b.lat, b.lon], [point.lat, point.lon]);
+                const turn = Math.abs(((after - before + 540) % 360) - 180);
+                if (turn > TRAIL_SPIKE_TURN_DEG) kept.pop();
+                else break;
+            }
+            kept.push(point);
+        });
+        return kept;
+    }
+
     function trailFixes(threat) {
         if (!Array.isArray(threat.trail)) return null;
         const fixes = threat.trail
@@ -866,8 +888,9 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             }
             accepted.unshift(point);
         }
-        accepted.pop();
-        return accepted.length ? accepted.map((p) => [p.lat, p.lon]) : null;
+        const smoothed = dropSpikes(accepted);
+        smoothed.pop();
+        return smoothed.length ? accepted.map((p) => [p.lat, p.lon]) : null;
     }
 
     function inferHeading(threat) {
