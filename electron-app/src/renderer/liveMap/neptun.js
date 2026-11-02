@@ -1255,7 +1255,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         singles.forEach((threat) => {
             const latlng = spreadPos.get(threat.id) || [threat.lat, threat.lon];
             const existing = activeMarkers.get(threat.id);
-            const showCount = typeof threat.count === 'number' && threat.count > 1 && map.getZoom() >= (kyivMode ? KYIV_THREAT_CLICK_ZOOM : RAION_MIN_ZOOM) - 0.01;
+            const showCount = typeof threat.count === 'number' && threat.count > 1 && (kyivMode || map.getZoom() >= RAION_MIN_ZOOM - 0.01);
             const typeSig = `${resolveTypeKey(threat)}|${threat.lifecycle}|${sizeMultiplier}|${showCount ? threat.count : 0}`;
 
             if (existing) {
