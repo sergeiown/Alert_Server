@@ -19,6 +19,7 @@ const threatAnalytics = require('./threatAnalytics');
 const occupied = require('./occupied');
 const publicApi = require('./publicApi');
 const perfStats = require('./perfStats');
+const online = require('./online');
 const webstats = require('./webstats');
 const config = require('./config');
 const logbook = require('./logbook');
@@ -288,7 +289,7 @@ async function handleRequest(req, res) {
     }
 
     if (url.pathname === '/users-stats') {
-        send(res, { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(users.getStats(gateway.totalConnections(), ratelimit.connectedClientCount())) });
+        send(res, { status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(users.getStats(gateway.totalConnections(), online.count())) });
         return;
     }
 
