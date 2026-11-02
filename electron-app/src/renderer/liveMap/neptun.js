@@ -147,7 +147,20 @@ const TYPE_ICONS = {
 function headingOf(threat) {
     if (typeof threat.heading === 'number') return threat.heading;
     if (threat.velocity && typeof threat.velocity.bearingDeg === 'number') return threat.velocity.bearingDeg;
+    if (typeof threat.headingInferred === 'number') return threat.headingInferred;
     return undefined;
+}
+
+function headingIsInferred(threat) {
+    return typeof threat.heading !== 'number' && !(threat.velocity && typeof threat.velocity.bearingDeg === 'number') && typeof threat.headingInferred === 'number';
+}
+
+const COMPASS_UK = ['північ', 'північний схід', 'схід', 'південний схід', 'південь', 'південний захід', 'захід', 'північний захід'];
+const COMPASS_EN = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'];
+
+function compassName(degrees, isEnglish) {
+    const index = Math.round((((degrees % 360) + 360) % 360) / 45) % 8;
+    return (isEnglish ? COMPASS_EN : COMPASS_UK)[index];
 }
 
 function resolveTypeKey(threat) {
@@ -259,6 +272,11 @@ function tooltipContent(threat, strings, isEnglish) {
     if (threat.velocity && typeof threat.velocity.speedKmh === 'number' && threat.velocity.speedKmh > 0) {
         facts.push(`${strings.liveMapSpeed}: ${Math.round(threat.velocity.speedKmh)} ${strings.liveMapSpeedUnit}`);
     }
+    const course = headingOf(threat);
+    if (typeof course === 'number' && !threat.presumptiveCourse) {
+        const source = headingIsInferred(threat) ? ` - ${strings.liveMapCourseInferred}` : '';
+        facts.push(`${strings.liveMapCourse}: ${compassName(course, isEnglish)} (${Math.round(course)}°)${source}`);
+    }
     if (threat.sea) facts.push(strings.liveMapOverSea);
     if (threat.presumptiveCourse) facts.push(strings.liveMapCoursePresumptive);
 
@@ -301,7 +319,11 @@ const ALL_TYPE_KEYS = ['uav', 'uav_recon', 'fpv', 'kab', 'missile', 'mig31k', 'u
 
 const TRAIL_SWATCH_HTML =
     '<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#6b7280" ' +
-    'stroke-width="1.8" stroke-linecap="round"><path d="M3 21 Q9 15 13 11"/><path d="M13 11 Q16 8 21 4" stroke-dasharray="1.5 4"/></svg></span>';
+    'stroke-width="1.8" stroke-linecap="round"><path d="M3 21 Q10 15 21 5"/><path d="M16 4 L21 5 L20 10" stroke-width="1.6" stroke-linejoin="round"/></svg></span>';
+
+const FORECAST_SWATCH_HTML =
+    '<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#6b7280" ' +
+    'stroke-width="1.8" stroke-linecap="round" stroke-dasharray="1.5 4"><path d="M3 21 Q10 15 21 5"/></svg></span>';
 
 const APPROX_SWATCH_HTML =
     `<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${UNCERTAINTY_CIRCLE_COLOR}" ` +
@@ -313,16 +335,16 @@ function buildLegend(strings) {
 
     legend.onAdd = () => {
         container = L.DomUtil.create('div', 'threat-legend');
-        legend.update({ confirmedTypeKeys: [], uncertainTypeKeys: [], hasApprox: false, hasTrail: false });
+        legend.update({ confirmedTypeKeys: [], uncertainTypeKeys: [], hasApprox: false, hasTrail: false, hasForecast: false });
         return container;
     };
 
-    legend.update = ({ confirmedTypeKeys, uncertainTypeKeys, hasApprox, hasTrail }) => {
+    legend.update = ({ confirmedTypeKeys, uncertainTypeKeys, hasApprox, hasTrail, hasForecast }) => {
         if (!container) return;
         const confirmedKeys = ALL_TYPE_KEYS.filter((key) => confirmedTypeKeys.includes(key));
         const uncertainKeys = ALL_TYPE_KEYS.filter((key) => uncertainTypeKeys.includes(key));
 
-        if (!confirmedKeys.length && !uncertainKeys.length && !hasApprox && !hasTrail) {
+        if (!confirmedKeys.length && !uncertainKeys.length && !hasApprox && !hasTrail && !hasForecast) {
             container.style.display = 'none';
             return;
         }
@@ -343,7 +365,10 @@ function buildLegend(strings) {
         const trailRow = hasTrail
             ? `<div class="legend-row">${TRAIL_SWATCH_HTML}<span>${escapeHtml(strings.liveMapLegendTrail)}</span></div>`
             : '';
-        container.innerHTML = `<div class="legend-title">${escapeHtml(strings.liveMapLegendTitle)}</div>${confirmedRows}${uncertainRows}${approxRow}${trailRow}`;
+        const forecastRow = hasForecast
+            ? `<div class="legend-row">${FORECAST_SWATCH_HTML}<span>${escapeHtml(strings.liveMapLegendForecast)}</span></div>`
+            : '';
+        container.innerHTML = `<div class="legend-title">${escapeHtml(strings.liveMapLegendTitle)}</div>${confirmedRows}${uncertainRows}${approxRow}${trailRow}${forecastRow}`;
     };
 
     return legend;
@@ -408,6 +433,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const driftById = new Map();
     const displayById = new Map();
     const correctionById = new Map();
+    const headingCache = new Map();
     const isEnglish = language === 'English';
     let lastThreats = [];
     let kyivMode = false;
@@ -483,6 +509,10 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const TRAIL_MAX_SPEED_KMH = { missile: 1200, mig31k: 2200, kab: 900, uav: 250, uav_recon: 250, fpv: 200, unknown: 350 };
     const TRAIL_NOISE_KM = 1.5;
     const TRAIL_MIN_DT_S = 30;
+    const INFER_MIN_KM = 2;
+    const INFER_MAX_AGE_MS = 15 * 60 * 1000;
+    const TRAIL_ARROW_LEGS = 8;
+    const TRAIL_ARROW_MIN_KM = 0.3;
     const TRAIL_SEGMENTS = 8;
     const TRAIL_SUBSTEPS = 6;
     const PREDICT_MINUTES = 3;
@@ -612,7 +642,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         }
 
         displayById.set(id, [lat, lon]);
-        return { ...threat, lat, lon };
+        const headingInferred = inferHeading(threat);
+        return typeof headingInferred === 'number' ? { ...threat, lat, lon, headingInferred } : { ...threat, lat, lon };
     }
 
     function extrapolatedThreats() {
@@ -841,6 +872,31 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         return accepted.length ? accepted.map((p) => [p.lat, p.lon]) : null;
     }
 
+    function inferHeading(threat) {
+        if (typeof threat.heading === 'number' || (threat.velocity && typeof threat.velocity.bearingDeg === 'number')) return undefined;
+        const key = `${threat.updatedAt}|${threat.trail ? threat.trail.length : 0}|${threat.lat}|${threat.lon}`;
+        const cached = headingCache.get(threat.id);
+        if (cached && cached.key === key) return cached.value;
+
+        let value;
+        const updated = Date.parse(threat.updatedAt || threat.confirmedAt);
+        const fresh = !Number.isFinite(updated) || Date.now() - updated <= INFER_MAX_AGE_MS;
+        const fixes = fresh ? trailFixes(threat) : null;
+        if (fixes && fixes.length) {
+            const here = [threat.lat, threat.lon];
+            const last = fixes[fixes.length - 1];
+            let from = last;
+            let to = here;
+            if (distanceKm(last, here) < INFER_MIN_KM && fixes.length >= 2) {
+                from = fixes[fixes.length - 2];
+                to = last;
+            }
+            if (distanceKm(from, to) >= INFER_MIN_KM) value = bearingBetween(from, to);
+        }
+        headingCache.set(threat.id, { key, value });
+        return value;
+    }
+
     function predictionArc(threat, fixes, from) {
         const drift = driftById.get(threat.id);
         if (!drift || threat.status !== 'active') return [];
@@ -876,13 +932,40 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         const group = L.layerGroup().addTo(circlesGroup);
         const tail = L.polyline([], { pane: UNCERTAINTY_PANE, color, weight: 2.2, opacity: 0.8, lineCap: 'round', interactive: false, className: 'threat-trail' }).addTo(group);
         const arc = L.polyline([], { pane: UNCERTAINTY_PANE, color, weight: 1.6, opacity: 0.6, dashArray: '1 6', lineCap: 'round', interactive: false, className: 'threat-trail threat-forecast' }).addTo(group);
-        return { group, tail, arc, segments: [], sig: null, color };
+        return { group, tail, arc, segments: [], arrows: [], sig: null, color };
+    }
+
+    function arrowIcon(bearing, color) {
+        return L.divIcon({
+            className: 'threat-trail threat-trail-arrow',
+            html: `<svg viewBox="-5 -5 10 10" width="13" height="13" style="transform: rotate(${Math.round(bearing)}deg)"><path d="M-3 2.4 L0 -2.6 L3 2.4" fill="none" stroke="${color}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+            iconSize: [13, 13],
+            iconAnchor: [6.5, 6.5],
+        });
     }
 
     function rebuildTrailSegments(entry, fixes) {
         entry.segments.forEach((line) => entry.group.removeLayer(line));
         entry.segments = [];
+        entry.arrows.forEach((marker) => entry.group.removeLayer(marker));
+        entry.arrows = [];
         if (!fixes || fixes.length < 2) return;
+
+        const firstLeg = Math.max(1, fixes.length - TRAIL_ARROW_LEGS);
+        for (let i = firstLeg; i < fixes.length; i++) {
+            const from = fixes[i - 1];
+            const to = fixes[i];
+            if (distanceKm(from, to) < TRAIL_ARROW_MIN_KM) continue;
+            const ratio = (i - firstLeg + 1) / (fixes.length - firstLeg);
+            const marker = L.marker([(from[0] + to[0]) / 2, (from[1] + to[1]) / 2], {
+                pane: UNCERTAINTY_PANE,
+                icon: arrowIcon(bearingBetween(from, to), entry.color),
+                interactive: false,
+                keyboard: false,
+                opacity: 0.35 + ratio * 0.55,
+            }).addTo(entry.group);
+            entry.arrows.push(marker);
+        }
 
         const path = smoothPath(fixes);
         const chunk = Math.max(2, Math.ceil((path.length - 1) / TRAIL_SEGMENTS));
@@ -982,7 +1065,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         const pointThreats = isExtrapolation ? valid : valid.map((threat) => withMotion(threat, true));
         const sizeMultiplier = kyivMode ? KYIV_ICON_SCALE : 1;
         const currentIdsAll = new Set(valid.map((t) => t.id));
-        [displayById, correctionById].forEach((store) => {
+        [displayById, correctionById, headingCache].forEach((store) => {
             store.forEach((_, id) => {
                 if (!currentIdsAll.has(id)) store.delete(id);
             });
@@ -1020,6 +1103,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             uncertainTypeKeys: pointThreats.filter((t) => t.lifecycle === 'uncertain').map((t) => resolveTypeKey(t)),
             hasApprox: pointThreats.some((t) => t.positionQuality === 'approx' && typeof t.uncertaintyKm === 'number'),
             hasTrail: singles.some((threat) => (trailFixes(threat) || []).length >= 1),
+            hasForecast: singles.some((threat) => predictionArc(threat, trailFixes(threat), [threat.lat, threat.lon]).length > 0),
         });
         if (typeof onCountChange === 'function') onCountChange(valid.length);
         hint.update({ hasThreats: valid.length > 0, hasClusters: clusterGroups.length > 0 });
