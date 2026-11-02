@@ -319,7 +319,7 @@ const ALL_TYPE_KEYS = ['uav', 'uav_recon', 'fpv', 'kab', 'missile', 'mig31k', 'u
 
 const TRAIL_SWATCH_HTML =
     '<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#6b7280" ' +
-    'stroke-width="1.8" stroke-linecap="round"><path d="M3 21 Q10 15 21 5"/></svg></span>';
+    'stroke-width="1.8" stroke-dasharray="4 3"><path d="M3 21 Q10 15 21 5"/></svg></span>';
 
 const FORECAST_SWATCH_HTML =
     '<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#6b7280" ' +
@@ -928,7 +928,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
 
     function createTrailEntry(color) {
         const group = L.layerGroup().addTo(circlesGroup);
-        const tail = L.polyline([], { pane: UNCERTAINTY_PANE, color, weight: 2.2, opacity: 0.8, lineCap: 'round', interactive: false, className: 'threat-trail' }).addTo(group);
+        const tail = L.polyline([], { pane: UNCERTAINTY_PANE, color, weight: 2.2, opacity: 0.8, dashArray: '7 5', lineCap: 'butt', interactive: false, className: 'threat-trail' }).addTo(group);
         const arc = L.polyline([], { pane: UNCERTAINTY_PANE, color, weight: 1.6, opacity: 0.6, dashArray: '1 6', lineCap: 'round', interactive: false, className: 'threat-trail threat-forecast' }).addTo(group);
         return { group, tail, arc, segments: [], sig: null, color };
     }
@@ -951,7 +951,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                 color: entry.color,
                 weight: 1.1 + ratio * 1.2,
                 opacity: 0.14 + ratio * 0.66,
-                lineCap: 'round',
+                dashArray: '7 5',
+                lineCap: 'butt',
                 lineJoin: 'round',
                 interactive: false,
                 className: 'threat-trail',
@@ -1289,7 +1290,17 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         });
     }
 
-    map.on('zoomend', () => renderThreats(lastThreats, { isZoomEvent: true }));
+    const TRAIL_REVEAL_DELAY_MS = 800;
+    let trailRevealTimer = null;
+    map.on('zoomstart', () => {
+        clearTimeout(trailRevealTimer);
+        map.getContainer().classList.add('trails-wait');
+    });
+    map.on('zoomend', () => {
+        renderThreats(lastThreats, { isZoomEvent: true });
+        clearTimeout(trailRevealTimer);
+        trailRevealTimer = setTimeout(() => map.getContainer().classList.remove('trails-wait'), TRAIL_REVEAL_DELAY_MS);
+    });
 
     layer.setKyivMode = function (active) {
         if (kyivMode === active) return;

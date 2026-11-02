@@ -128,6 +128,11 @@ body {
     opacity: 0 !important;
 }
 
+.trails-wait .threat-trail {
+    opacity: 0 !important;
+    transition: none !important;
+}
+
 .zoom-no-fill-animate .alert-status-shape {
     transition: none !important;
 }
