@@ -350,7 +350,7 @@ async function notifyWithMapNow({ uid, uids, title, bodyLines, iconName, color, 
     });
 }
 
-function showAlertDetails({ language, title, typeName, locationName, level, levelKey, threatLines, startedAt, eventAt, durationMs, kyiv }) {
+function showAlertDetails({ language, title, typeName, locationName, level, levelKey, threatLines, startedAt, eventAt, durationMs, kyiv, locationUid, focusNames }) {
     const startedAtText = formatStartedAt(startedAt, language);
     const eventAtText = formatStartedAt(eventAt, language);
     const elapsed = durationMs !== undefined ? durationMs : startedAt ? Date.now() - new Date(startedAt).getTime() : null;
@@ -379,7 +379,9 @@ function showAlertDetails({ language, title, typeName, locationName, level, leve
         .then((choice) => {
             if (choice === 'map') {
                 const liveMap = require('../windows/liveMapWindow');
-                if (kyiv) liveMap.openLiveMapWindowInKyivMode();
+                const names = focusNames || (locationUid !== undefined ? require('./locationFilter').getFocusNames(locationUid) : []);
+                if (names.length) liveMap.openLiveMapWindowAtRegion(names);
+                else if (kyiv) liveMap.openLiveMapWindowInKyivMode();
                 else liveMap.openLiveMapWindow();
             } else if (choice === 'status') {
                 require('../windows/hubWindow').showHub('status');
@@ -628,6 +630,7 @@ function startNotificationOptions(alert, language, alertCount) {
                     threatLines: threatText ? threatText.split('\n') : [],
                     startedAt: alert.started_at,
                     eventAt,
+                    locationUid: alert.location_uid,
                 });
         })(),
         kind: 'start',
@@ -752,6 +755,7 @@ function processAlerts(matchedAlerts, allAlerts) {
                 threatLines: alertThreatLines(event, false, lang),
                 startedAt: event.entry.startedAt,
                 eventAt,
+                locationUid: event.entry.locationUid,
             });
         },
     });
@@ -815,6 +819,7 @@ function processAlerts(matchedAlerts, allAlerts) {
                         startedAt: value.startedAt,
                         eventAt,
                         durationMs: value.startedAt ? eventAt - new Date(value.startedAt).getTime() : null,
+                        locationUid: value.locationUid,
                     }))(Date.now()),
                 kind: 'end',
                 meta: { name: locationName, level: null },
@@ -931,6 +936,7 @@ function processKyivDistricts(kyivRaions) {
                         startedAt: district.startedAt,
                         eventAt,
                         kyiv: true,
+                        focusNames: [district.name, 'м. Київ'],
                     }))(Date.now()),
                 kind: 'start',
                 meta: { name: displayName, level: district.alertLevel },
@@ -969,6 +975,7 @@ function processKyivDistricts(kyivRaions) {
                 startedAt: event.entry.startedAt,
                 eventAt,
                 kyiv: true,
+                focusNames: [event.entry.name, 'м. Київ'],
             });
         },
     });
@@ -1023,6 +1030,7 @@ function processKyivDistricts(kyivRaions) {
                         eventAt,
                         durationMs: value.startedAt ? eventAt - new Date(value.startedAt).getTime() : null,
                         kyiv: true,
+                        focusNames: [value.name, 'м. Київ'],
                     }))(Date.now()),
                 kind: 'end',
                 meta: { name: displayName, level: null },

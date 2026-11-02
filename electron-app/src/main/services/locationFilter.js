@@ -99,6 +99,11 @@ function getAncestorUids(uid) {
     return [info.districtUid, info.stateUid].filter((ancestor) => ancestor !== undefined);
 }
 
+function getFocusNames(uid) {
+    const lookup = getLocationLookup();
+    return [uid, ...getAncestorUids(uid)].map((id) => (lookup.get(String(id)) || {}).name).filter(Boolean);
+}
+
 function getAlertCoverageUids(alert) {
     const lookup = getLocationLookup();
     const uids = [String(alert.location_uid)];
@@ -156,4 +161,5 @@ module.exports = {
     getMapRegion,
     getAlertCoverageUids,
     getAncestorUids,
+    getFocusNames,
 };

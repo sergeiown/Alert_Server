@@ -5,7 +5,7 @@ const { ipcMain, nativeImage } = require('electron');
 const settingsStore = require('../services/settingsStore');
 const { getResourcePath } = require('../services/appPaths');
 const { getRegionOverviews } = require('../services/regionOverview');
-const { getLocationLookup, getAncestorUids } = require('../services/locationFilter');
+const { getFocusNames } = require('../services/locationFilter');
 const { openLiveMapWindowAtRegion } = require('../windows/liveMapWindow');
 
 function registerStatusIpc() {
@@ -13,11 +13,7 @@ function registerStatusIpc() {
         nativeImage.createFromPath(getResourcePath('icons', 'app-icon-256.png')).toDataURL()
     );
 
-    ipcMain.handle('status:openRegionOnMap', (event, uid) => {
-        const lookup = getLocationLookup();
-        const names = [uid, ...getAncestorUids(uid)].map((id) => (lookup.get(String(id)) || {}).name).filter(Boolean);
-        openLiveMapWindowAtRegion(names);
-    });
+    ipcMain.handle('status:openRegionOnMap', (event, uid) => openLiveMapWindowAtRegion(getFocusNames(uid)));
 
     ipcMain.handle('status:getOverview', () => getRegionOverviews(settingsStore.getSettings().language));
 }
