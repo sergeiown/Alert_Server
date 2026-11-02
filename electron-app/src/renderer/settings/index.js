@@ -47,7 +47,11 @@ function applyStrings(strings) {
     document.getElementById('alertSoundModeVoiceOption').textContent = strings.alertSoundModeVoice;
     document.getElementById('alertSoundCountLabel').textContent = strings.alertSoundCountLabel;
     document.getElementById('alertSoundVolumeLabel').textContent = strings.alertSoundVolumeLabel;
-    alertSoundTestButton.textContent = strings.alertSoundTest;
+    const testIdle = document.createElement('span');
+    testIdle.textContent = strings.alertSoundTest;
+    const testRunning = document.createElement('span');
+    testRunning.textContent = strings.alertSoundTestStop;
+    alertSoundTestButton.replaceChildren(testIdle, testRunning);
     document.getElementById('duckOtherSoundsLabel').textContent = strings.duckOtherSoundsLabel;
     document.getElementById('updateCheckIntervalLabel').textContent = strings.updateCheckIntervalLabel;
     document.getElementById('languageLabel').textContent = strings.languageLabel;
@@ -155,7 +159,13 @@ async function initGeneralSettings(settings, strings) {
     alertSoundVolumeInput.addEventListener('change', () => {
         window.alertServer.setSetting('alertSoundVolume', Number(alertSoundVolumeInput.value));
     });
-    alertSoundTestButton.addEventListener('click', () => window.alertServer.testSound());
+    window.alertServer.onSoundTestEnded(() => {
+        alertSoundTestButton.classList.remove('running');
+    });
+    alertSoundTestButton.addEventListener('click', async () => {
+        const started = await window.alertServer.testSound();
+        alertSoundTestButton.classList.toggle('running', started);
+    });
     duckOtherSoundsInput.addEventListener('change', () => {
         window.alertServer.setSetting('duckOtherSounds', duckOtherSoundsInput.checked);
     });

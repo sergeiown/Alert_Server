@@ -46,12 +46,20 @@ function releaseDucking(run) {
     ducking.end();
 }
 
+function endRun(run) {
+    if (!run.onEnd) return;
+    const callback = run.onEnd;
+    run.onEnd = null;
+    callback();
+}
+
 function stopCurrent() {
     if (!current) return;
     const run = current;
     current = null;
     run.stopped = true;
     releaseDucking(run);
+    endRun(run);
     clearTimeout(run.timer);
     if (run.child) {
         try {
@@ -62,11 +70,14 @@ function stopCurrent() {
     }
 }
 
-function playFor(owner, spec) {
+function playFor(owner, spec, onEnd) {
     stopCurrent();
-    if (!spec) return;
+    if (!spec) {
+        if (onEnd) onEnd();
+        return;
+    }
 
-    const run = { owner, stopped: false, child: null, timer: null, left: spec.count, ducking: false };
+    const run = { owner, stopped: false, child: null, timer: null, left: spec.count, ducking: false, onEnd: onEnd || null };
     current = run;
     if (spec.duck) {
         run.ducking = true;
@@ -77,6 +88,7 @@ function playFor(owner, spec) {
         if (run.stopped || run.left <= 0) {
             if (current === run) current = null;
             releaseDucking(run);
+            endRun(run);
             return;
         }
         run.left -= 1;
@@ -87,6 +99,7 @@ function playFor(owner, spec) {
             if (run.left <= 0) {
                 if (current === run) current = null;
                 releaseDucking(run);
+                endRun(run);
                 return;
             }
             run.timer = setTimeout(next, Math.max(0, spec.gapMs - (Date.now() - startedAt)));
@@ -100,4 +113,8 @@ function stopFor(owner) {
     if (current && current.owner === owner) stopCurrent();
 }
 
-module.exports = { soundFor, playFor, stopFor };
+function isPlayingFor(owner) {
+    return Boolean(current && current.owner === owner);
+}
+
+module.exports = { soundFor, playFor, stopFor, isPlayingFor };

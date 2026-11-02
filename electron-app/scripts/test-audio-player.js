@@ -38,7 +38,7 @@ Module._load = function patched(request, parent, isMain) {
     return originalLoad.call(this, request, parent, isMain);
 };
 
-const { soundFor, playFor, stopFor } = require(path.join(root, 'src/main/services/audioPlayer.js'));
+const { soundFor, playFor, stopFor, isPlayingFor } = require(path.join(root, 'src/main/services/audioPlayer.js'));
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 let passed = 0;
 const check = async (name, fn) => {
@@ -136,6 +136,26 @@ const check = async (name, fn) => {
         children[1].finish();
         await wait(30);
         assert.strictEqual(children.length, 2);
+    });
+
+    await check('the end callback fires once when the sequence finishes or is stopped, and ownership is reported', async () => {
+        let ended = 0;
+        playFor('toast-e', { kind: 'start', file: 'e.wav', count: 2, gapMs: 10 }, () => (ended += 1));
+        assert.strictEqual(isPlayingFor('toast-e'), true);
+        children[0].finish();
+        await wait(30);
+        assert.strictEqual(ended, 0);
+        children[1].finish();
+        await wait(30);
+        assert.strictEqual(ended, 1);
+        assert.strictEqual(isPlayingFor('toast-e'), false);
+
+        let stoppedEnds = 0;
+        playFor('toast-f', { kind: 'start', file: 'f.wav', count: 2, gapMs: 10 }, () => (stoppedEnds += 1));
+        stopFor('toast-f');
+        await wait(30);
+        assert.strictEqual(stoppedEnds, 1);
+        assert.strictEqual(isPlayingFor('toast-f'), false);
     });
 
     Module._load = originalLoad;

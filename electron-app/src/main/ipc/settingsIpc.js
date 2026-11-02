@@ -6,7 +6,7 @@ const settingsStore = require('../services/settingsStore');
 const { getDictionary } = require('../../i18n/i18n');
 const { logEvent } = require('../services/logger');
 const { getLiveMapWindow } = require('../windows/liveMapWindow');
-const { soundFor, playFor } = require('../services/audioPlayer');
+const { soundFor, playFor, stopFor, isPlayingFor } = require('../services/audioPlayer');
 
 function registerSettingsIpc() {
     ipcMain.handle('settings:get', () => settingsStore.getSettings());
@@ -32,11 +32,20 @@ function registerSettingsIpc() {
 
         return settingsStore.getSettings();
     });
-    ipcMain.handle('sound:test', () => {
+    ipcMain.handle('sound:test', (event) => {
+        if (isPlayingFor('settings-test')) {
+            stopFor('settings-test');
+            return false;
+        }
         const settings = settingsStore.getSettings();
-        if (settings.alertSoundMode === 'none') return;
-        const spec = soundFor('start', settings.alertSoundMode, settings.language, 1, settings.alertSoundVolume, settings.duckOtherSounds);
-        if (spec) playFor('settings-test', spec);
+        if (settings.alertSoundMode === 'none') return false;
+        const spec = soundFor('start', settings.alertSoundMode, settings.language, settings.alertSoundCount, settings.alertSoundVolume, settings.duckOtherSounds);
+        if (!spec) return false;
+        const sender = event.sender;
+        playFor('settings-test', spec, () => {
+            if (!sender.isDestroyed()) sender.send('sound:testEnded');
+        });
+        return true;
     });
 }
 

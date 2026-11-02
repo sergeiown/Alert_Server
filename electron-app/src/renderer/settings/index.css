@@ -809,23 +809,73 @@ footer {
     background: var(--accent-strong);
 }
 
-.settings-pane label.volume-row {
-    flex-wrap: nowrap;
+:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) {
+    align-items: stretch;
+    gap: 16px;
 }
 
-.volume-row span {
-    white-space: nowrap;
+:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) label {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 240px 44px;
+    align-items: center;
+    column-gap: 12px;
 }
 
-.volume-row input[type='range'] {
-    flex: 0 1 240px;
-    min-width: 120px;
+:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) label > span:first-child {
+    grid-column: 1;
+}
+
+:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) label > :is(select, input[type='range']) {
+    grid-column: 2;
+    width: 240px;
+    min-width: 0;
+    margin: 0;
+}
+
+:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) label > input.num {
+    grid-column: 2;
+    justify-self: start;
+    width: 96px;
+}
+
+:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) input[type='range'] {
     accent-color: var(--accent);
 }
 
-.volume-row output {
-    min-width: 44px;
+:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) output {
+    grid-column: 3;
     text-align: right;
     font-variant-numeric: tabular-nums;
     color: var(--card-muted);
+}
+
+:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) label.check input {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: start;
+    margin: 0;
+}
+
+:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) label.check span {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+:is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) #alertSoundTest {
+    align-self: flex-start;
+    margin-left: calc(100% - 296px);
+}
+
+#alertSoundTest {
+    display: inline-grid;
+}
+
+#alertSoundTest > span {
+    grid-area: 1 / 1;
+    text-align: center;
+}
+
+#alertSoundTest:not(.running) > span:last-child,
+#alertSoundTest.running > span:first-child {
+    visibility: hidden;
 }
