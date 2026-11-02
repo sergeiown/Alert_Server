@@ -10,6 +10,9 @@ import { ready as alertedRegionsReady, refresh as refreshAlertedRegions } from '
 import { startStatusBar } from './statusBar.js';
 import { addScreenshotControl } from './screenshot.js';
 import { KYIV_RAION_BORDERS } from './kyivRaionBorders.js';
+import { OBLAST_BORDERS } from './oblastBorders.js';
+import { RAION_BORDERS } from './raionBorders.js';
+import { normalizeOblastName, normalizeRaionName } from './regionNameUtils.js';
 import { createKyivRaionLabels } from './kyivRaionLabels.js';
 import { UKRAINE_OUTLINE } from './ukraineOutline.js';
 import { offsetRing, metersPerPixel } from './outlineOffset.js';
@@ -527,6 +530,41 @@ async function main() {
         swapScene(active);
     }
 
+    function collectPoints(geometry, points = []) {
+        if (!Array.isArray(geometry)) return points;
+        if (geometry.length === 2 && typeof geometry[0] === 'number' && typeof geometry[1] === 'number') points.push(geometry);
+        else geometry.forEach((part) => collectPoints(part, points));
+        return points;
+    }
+
+    function focusRegion(names) {
+        if (!Array.isArray(names) || !names.length) return;
+        const inKyiv = names.includes('м. Київ');
+        for (const raw of names) {
+            if (raw === 'м. Київ') {
+                if (!kyivModeActive) applyKyivMode(true);
+                return;
+            }
+            const raionKey = normalizeRaionName(raw.replace(/\s*район\s*$/u, ''));
+            const kyivRaion = inKyiv ? KYIV_RAION_BORDERS[raionKey] : null;
+            const raion = inKyiv ? null : RAION_BORDERS[raionKey];
+            const oblast = OBLAST_BORDERS[normalizeOblastName(raw)];
+            const geometry = kyivRaion || raion || oblast;
+            if (!geometry) continue;
+            const bounds = L.latLngBounds(collectPoints(geometry));
+            if (!bounds.isValid()) continue;
+            const wantKyiv = Boolean(kyivRaion);
+            const switching = kyivModeActive !== wantKyiv;
+            if (switching) applyKyivMode(wantKyiv);
+            const fit = () => map.fitBounds(bounds, { animate: true, padding: [30, 30], maxZoom: wantKyiv ? KYIV_MAX_ZOOM : UKRAINE_MAX_ZOOM });
+            if (switching) setTimeout(fit, 1100);
+            else fit();
+            return;
+        }
+    }
+
+    window.alertServerLiveMap.onFocusRegion((names) => focusRegion(names));
+
     const kyivToggle = new KyivToggleControl({
         onLabel: strings.liveMapKyivButtonLabel,
         offLabel: strings.liveMapUkraineButtonLabel,
@@ -644,6 +682,9 @@ async function main() {
     resolveMapRevealed();
 
     if (forceKyivMode && !kyivModeActive) applyKyivMode(true);
+
+    const pendingFocus = await window.alertServerLiveMap.consumePendingFocusRegion();
+    if (pendingFocus) focusRegion(pendingFocus);
 }
 
 main();

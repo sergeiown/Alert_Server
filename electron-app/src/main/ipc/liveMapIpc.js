@@ -8,7 +8,7 @@ const { getLatestOccupiedTerritory } = require('../services/occupiedTerritorySto
 const { getLatestThreats } = require('../services/neptunThreatsStore');
 const { getDailyPeaks } = require('../services/dailyPeakStore');
 const { alertTypeName } = require('../services/alertTypes');
-const { consumePendingKyivMode } = require('../windows/liveMapWindow');
+const { consumePendingKyivMode, consumePendingFocusRegion } = require('../windows/liveMapWindow');
 const settingsStore = require('../services/settingsStore');
 const { logEvent } = require('../services/logger');
 
@@ -53,6 +53,7 @@ function registerLiveMapIpc() {
     ipcMain.handle('liveMap:getThreats', () => getLatestThreats());
 
     ipcMain.handle('liveMap:consumePendingKyivMode', () => consumePendingKyivMode());
+    ipcMain.handle('liveMap:consumePendingFocusRegion', () => consumePendingFocusRegion());
 
     ipcMain.handle('liveMap:takeScreenshot', async (event) => {
         try {

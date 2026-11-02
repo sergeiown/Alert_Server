@@ -49,6 +49,19 @@ function appendLines(container, lines) {
     });
 }
 
+function makeOpenable(element, region) {
+    element.classList.add('openable');
+    element.tabIndex = 0;
+    element.setAttribute('role', 'button');
+    const open = () => window.alertServerStatus.openRegionOnMap(region.uid);
+    element.addEventListener('click', open);
+    element.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        open();
+    });
+}
+
 function buildTile(region) {
     const tile = document.createElement('article');
     tile.className = `tile tone-${toneOf(region)}`;
@@ -68,6 +81,7 @@ function buildTile(region) {
     appendLines(body, region.lines);
 
     tile.append(head, body);
+    makeOpenable(tile, region);
     return tile;
 }
 
@@ -93,6 +107,7 @@ function buildRow(region) {
               : strings.statusListCalm;
 
     row.append(bar, name, state, detail);
+    makeOpenable(row, region);
     return row;
 }
 

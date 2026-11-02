@@ -236,3 +236,16 @@ body {
 .row-detail {
     color: var(--card-muted);
 }
+
+.openable {
+    cursor: pointer;
+}
+
+.openable:hover {
+    filter: brightness(0.97);
+}
+
+.openable:focus-visible {
+    outline: 2px solid var(--accent, #4a7ab5);
+    outline-offset: 2px;
+}

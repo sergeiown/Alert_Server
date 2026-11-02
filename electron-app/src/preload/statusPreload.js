@@ -5,6 +5,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('alertServerStatus', {
     getOverview: () => ipcRenderer.invoke('status:getOverview'),
+    openRegionOnMap: (uid) => ipcRenderer.invoke('status:openRegionOnMap', uid),
     openLiveMap: () => ipcRenderer.invoke('hub:navigate', 'liveMap'),
     getStrings: () => ipcRenderer.invoke('i18n:getStrings'),
     getConnectionState: () => ipcRenderer.invoke('connection:get'),

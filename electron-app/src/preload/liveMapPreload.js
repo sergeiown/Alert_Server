@@ -20,5 +20,7 @@ contextBridge.exposeInMainWorld('alertServerLiveMap', {
     takeScreenshot: () => ipcRenderer.invoke('liveMap:takeScreenshot'),
     openExternal: (url) => ipcRenderer.invoke('system:openExternal', url),
     onForceKyivMode: (callback) => ipcRenderer.on('liveMap:forceKyivMode', () => callback()),
+    onFocusRegion: (callback) => ipcRenderer.on('liveMap:focusRegion', (event, names) => callback(names)),
+    consumePendingFocusRegion: () => ipcRenderer.invoke('liveMap:consumePendingFocusRegion'),
     consumePendingKyivMode: () => ipcRenderer.invoke('liveMap:consumePendingKyivMode'),
 });

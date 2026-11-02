@@ -4,6 +4,7 @@
 const { withView, getView, isViewShowing } = require('./hubWindow');
 
 let pendingKyivMode = false;
+let pendingFocusNames = null;
 
 function openLiveMapWindow() {
     return withView('liveMap');
@@ -26,10 +27,36 @@ function openLiveMapWindowInKyivMode() {
     return view;
 }
 
+function openLiveMapWindowAtRegion(names) {
+    const alreadyShowing = isViewShowing('liveMap');
+    const view = withView('liveMap');
+
+    if (!alreadyShowing || view.webContents.isLoading()) {
+        pendingFocusNames = names;
+    } else {
+        view.webContents.send('liveMap:focusRegion', names);
+    }
+
+    return view;
+}
+
+function consumePendingFocusRegion() {
+    const value = pendingFocusNames;
+    pendingFocusNames = null;
+    return value;
+}
+
 function consumePendingKyivMode() {
     const value = pendingKyivMode;
     pendingKyivMode = false;
     return value;
 }
 
-module.exports = { openLiveMapWindow, getLiveMapWindow, openLiveMapWindowInKyivMode, consumePendingKyivMode };
+module.exports = {
+    openLiveMapWindow,
+    getLiveMapWindow,
+    openLiveMapWindowInKyivMode,
+    openLiveMapWindowAtRegion,
+    consumePendingKyivMode,
+    consumePendingFocusRegion,
+};
