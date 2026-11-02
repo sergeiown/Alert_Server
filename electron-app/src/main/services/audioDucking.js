@@ -7,7 +7,9 @@ const { spawn } = require('child_process');
 const { getUserDataFile } = require('./appPaths');
 const { logEvent } = require('./logger');
 
-const DUCK_FACTOR = 0.2;
+const DUCK_FACTOR = 0.25;
+const DUCK_RAMP_MS = 350;
+const RESTORE_RAMP_MS = 1000;
 const RESTORE_DELAY_MS = 700;
 
 let child = null;
@@ -56,7 +58,7 @@ function begin() {
     clearTimeout(restoreTimer);
     if (engaged) return;
     engaged = true;
-    send(`duck ${DUCK_FACTOR} x`);
+    send(`duck ${DUCK_FACTOR} ${DUCK_RAMP_MS}`);
 }
 
 function end() {
@@ -66,14 +68,14 @@ function end() {
     restoreTimer = setTimeout(() => {
         if (depth > 0 || !engaged) return;
         engaged = false;
-        send('restore');
+        send(`restore ${RESTORE_RAMP_MS}`);
     }, RESTORE_DELAY_MS);
 }
 
 function warmUp() {
     try {
         ensureHelper();
-        if (fs.existsSync(stateFile())) send('restore');
+        if (fs.existsSync(stateFile())) send('restore 0');
     } catch (err) {
         logEvent(`Audio ducking warm-up error: ${err.message}`, 'ERROR');
     }

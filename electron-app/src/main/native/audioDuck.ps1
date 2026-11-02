@@ -110,11 +110,30 @@ public static class AudioDuck
         return rows.ToArray();
     }
 
-    public static int Duck(float factor, string exclude, string stateFile)
+    static void Ramp(List<ISimpleAudioVolume> volumes, List<float> from, List<float> to, int rampMs)
+    {
+        Guid context = Guid.Empty;
+        int steps = rampMs <= 0 ? 1 : Math.Max(2, rampMs / 30);
+        for (int step = 1; step <= steps; step++)
+        {
+            double t = (double)step / steps;
+            double eased = t * t * (3.0 - 2.0 * t);
+            for (int i = 0; i < volumes.Count; i++)
+            {
+                float level = (float)(from[i] + (to[i] - from[i]) * eased);
+                volumes[i].SetMasterVolume(level, ref context);
+            }
+            if (step < steps) System.Threading.Thread.Sleep(rampMs / steps);
+        }
+    }
+
+    public static int Duck(float factor, string exclude, string stateFile, int rampMs)
     {
         if (saved.Count > 0) return saved.Count;
-        Guid context = Guid.Empty;
         var lines = new List<string>();
+        var volumes = new List<ISimpleAudioVolume>();
+        var from = new List<float>();
+        var to = new List<float>();
         foreach (object session in Sessions())
         {
             var control = (IAudioSessionControl2)session;
@@ -130,13 +149,16 @@ public static class AudioDuck
             volume.GetMasterVolume(out original);
             saved[id] = original;
             lines.Add(id + "|" + original.ToString(System.Globalization.CultureInfo.InvariantCulture));
-            volume.SetMasterVolume(original * factor, ref context);
+            volumes.Add(volume);
+            from.Add(original);
+            to.Add(original * factor);
         }
         File.WriteAllLines(stateFile, lines.ToArray());
+        Ramp(volumes, from, to, rampMs);
         return saved.Count;
     }
 
-    public static int Restore(string stateFile)
+    public static int Restore(string stateFile, int rampMs)
     {
         var originals = new Dictionary<string, float>(saved);
         if (originals.Count == 0 && File.Exists(stateFile))
@@ -147,8 +169,9 @@ public static class AudioDuck
                 if (cut > 0) originals[line.Substring(0, cut)] = float.Parse(line.Substring(cut + 1), System.Globalization.CultureInfo.InvariantCulture);
             }
         }
-        Guid context = Guid.Empty;
-        int restored = 0;
+        var volumes = new List<ISimpleAudioVolume>();
+        var from = new List<float>();
+        var to = new List<float>();
         if (originals.Count > 0)
         {
             foreach (object session in Sessions())
@@ -159,14 +182,19 @@ public static class AudioDuck
                 float original;
                 if (originals.TryGetValue(id, out original))
                 {
-                    ((ISimpleAudioVolume)session).SetMasterVolume(original, ref context);
-                    restored++;
+                    var volume = (ISimpleAudioVolume)session;
+                    float current;
+                    volume.GetMasterVolume(out current);
+                    volumes.Add(volume);
+                    from.Add(current);
+                    to.Add(original);
                 }
             }
         }
+        Ramp(volumes, from, to, rampMs);
         saved.Clear();
         try { File.Delete(stateFile); } catch { }
-        return restored;
+        return volumes.Count;
     }
 }
 '@
@@ -176,19 +204,21 @@ Add-Type -TypeDefinition $source -Language CSharp
 while ($true) {
     $line = [Console]::In.ReadLine()
     if ($null -eq $line) {
-        try { [AudioDuck]::Restore($env:ALERT_DUCK_STATE) | Out-Null } catch { }
+        try { [AudioDuck]::Restore($env:ALERT_DUCK_STATE, 0) | Out-Null } catch { }
         break
     }
     $parts = $line.Split(' ')
     try {
         if ($parts[0] -eq 'duck') {
             $factor = [float]::Parse($parts[1], [System.Globalization.CultureInfo]::InvariantCulture)
-            $count = [AudioDuck]::Duck($factor, $env:ALERT_DUCK_EXCLUDE, $env:ALERT_DUCK_STATE)
+            $ramp = [int]::Parse($parts[2])
+            $count = [AudioDuck]::Duck($factor, $env:ALERT_DUCK_EXCLUDE, $env:ALERT_DUCK_STATE, $ramp)
             [Console]::Out.WriteLine("ducked $count")
         } elseif ($parts[0] -eq 'list') {
             [Console]::Out.WriteLine(([AudioDuck]::List() -join '; '))
         } elseif ($parts[0] -eq 'restore') {
-            $count = [AudioDuck]::Restore($env:ALERT_DUCK_STATE)
+            $ramp = if ($parts.Length -gt 1) { [int]::Parse($parts[1]) } else { 0 }
+            $count = [AudioDuck]::Restore($env:ALERT_DUCK_STATE, $ramp)
             [Console]::Out.WriteLine("restored $count")
         }
     } catch {

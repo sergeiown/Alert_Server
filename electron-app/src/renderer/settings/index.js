@@ -95,6 +95,7 @@ function updateSoundCountDisabledState() {
     alertSoundCountInput.disabled = alertSoundModeInput.value === 'none';
     alertSoundVolumeInput.disabled = alertSoundModeInput.value === 'none';
     duckOtherSoundsInput.disabled = alertSoundModeInput.value === 'none';
+    alertSoundTestButton.disabled = alertSoundModeInput.value === 'none';
 }
 
 async function initGeneralSettings(settings, strings) {
