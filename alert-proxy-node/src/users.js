@@ -222,6 +222,16 @@ function getTotals() {
     return { date: today, allTime: one('SELECT COUNT(*) AS c FROM users').c, today: one('SELECT COUNT(*) AS c FROM user_days WHERE day = ?', today).c };
 }
 
+function getRoutesToday(limit = 8) {
+    safeFlush();
+    const today = lib.kyivDateKey(new Date());
+    const rows = db.prepare('SELECT route, SUM(count) AS c FROM route_hits WHERE day = ? GROUP BY route ORDER BY c DESC').all(today);
+    return {
+        total: rows.reduce((sum, row) => sum + row.c, 0),
+        routes: rows.slice(0, limit).map((row) => ({ route: row.route, count: row.c })),
+    };
+}
+
 function getStats(currentConnections, connectedUsers) {
     safeFlush();
     const now = Date.now();
@@ -341,4 +351,4 @@ function getUserList() {
         }));
 }
 
-module.exports = { record, recordRequest, recordHit, notePeak, prune, getStats, getTotals, getUserList };
+module.exports = { record, recordRequest, recordHit, notePeak, prune, getStats, getTotals, getRoutesToday, getUserList };

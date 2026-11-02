@@ -38,6 +38,13 @@ check('the route counters still include the unversioned requests', () => {
     assert.strictEqual(routes['/alerts-merged'], 2);
 });
 
+check('the busiest routes of the day are listed with their totals', () => {
+    const today = users.getRoutesToday(1);
+    assert.strictEqual(today.routes.length, 1);
+    assert.strictEqual(today.routes[0].count, 2);
+    assert.strictEqual(today.total, 4);
+});
+
 try {
     fs.rmSync(process.env.DATA_DIR, { recursive: true, force: true });
 } catch (err) {

@@ -1145,6 +1145,7 @@ function buildStatus() {
             },
             system: system.getSystemMetrics(),
             performance: perfStats.snapshot(),
+            requestsToday: require('./users').getRoutesToday(),
             connections: {
                 active: socketCount('active'),
                 merged: socketCount('merged'),
