@@ -182,7 +182,7 @@ const DEFAULT_ICON_SIZE_PX = 22;
 
 const MAP_ICON_SIZE_OVERRIDES = { uav: 18, fpv: 18, missile: 26 };
 
-function iconHtml(typeKey, rotationDeg, lifecycle, sizePx = DEFAULT_ICON_SIZE_PX) {
+function iconHtml(typeKey, rotationDeg, lifecycle, sizePx = DEFAULT_ICON_SIZE_PX, groupCount = 0) {
     const { color, svg, align } = TYPE_ICONS[typeKey];
     const rotation = typeof rotationDeg === 'number' ? `transform: rotate(${rotationDeg}deg);` : '';
     const fillColor = lifecycle === 'uncertain' ? UNCERTAIN_ICON_COLOR : color;
@@ -191,18 +191,20 @@ function iconHtml(typeKey, rotationDeg, lifecycle, sizePx = DEFAULT_ICON_SIZE_PX
         `<div class="threat-icon-rotate" style="${rotation}">` +
         `<svg viewBox="0 0 24 24" width="${sizePx}" height="${sizePx}" fill="currentColor" stroke="#ffffff" stroke-width="1">` +
         `<g transform="${align}">${svg}</g></svg>` +
-        `</div></div>`
+        `</div>` +
+        (groupCount > 1 ? `<span class="threat-group-badge">${groupCount > 99 ? '99+' : groupCount}</span>` : '') +
+        `</div>`
     );
 }
 
-function threatIcon(threat, sizeMultiplier = 1) {
+function threatIcon(threat, sizeMultiplier = 1, showCount = false) {
     const typeKey = resolveTypeKey(threat);
     const rotation = headingOf(threat);
     const sizePx = Math.round((MAP_ICON_SIZE_OVERRIDES[typeKey] || DEFAULT_ICON_SIZE_PX) * sizeMultiplier * (window.alertServerLiveMap.threatIconScale || 1));
 
     return L.divIcon({
         className: 'threat-icon-wrapper',
-        html: iconHtml(typeKey, rotation, threat.lifecycle, sizePx),
+        html: iconHtml(typeKey, rotation, threat.lifecycle, sizePx, showCount ? threat.count : 0),
         iconSize: [sizePx, sizePx],
         iconAnchor: [sizePx / 2, sizePx / 2],
     });
@@ -1060,6 +1062,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         const pointThreats = isExtrapolation ? valid : valid.map((threat) => withMotion(threat, true));
         const sizeMultiplier = kyivMode ? KYIV_ICON_SCALE : 1;
         const currentIdsAll = new Set(valid.map((t) => t.id));
+        if (selectedThreatId !== null && !currentIdsAll.has(selectedThreatId)) clearSelectedThreat();
         [displayById, correctionById, headingCache].forEach((store) => {
             store.forEach((_, id) => {
                 if (!currentIdsAll.has(id)) store.delete(id);
@@ -1233,7 +1236,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         singles.forEach((threat) => {
             const latlng = spreadPos.get(threat.id) || [threat.lat, threat.lon];
             const existing = activeMarkers.get(threat.id);
-            const typeSig = `${resolveTypeKey(threat)}|${threat.lifecycle}|${sizeMultiplier}`;
+            const showCount = typeof threat.count === 'number' && threat.count > 1 && map.getZoom() >= map.getMaxZoom() - 0.01;
+            const typeSig = `${resolveTypeKey(threat)}|${threat.lifecycle}|${sizeMultiplier}|${showCount ? threat.count : 0}`;
 
             if (existing) {
                 const el = existing.getElement();
@@ -1246,7 +1250,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                 if (existing._typeSig !== typeSig) {
                     animateIconSwap(
                         existing,
-                        () => threatIcon(threat, sizeMultiplier),
+                        () => threatIcon(threat, sizeMultiplier, showCount),
                         () => {
                             existing._headingDeg = headingOf(threat);
                         }
@@ -1265,7 +1269,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             }
 
             const info = tooltipContent(threat, strings, isEnglish);
-            const marker = L.marker(latlng, { icon: threatIcon(threat, sizeMultiplier), pane: THREATS_PANE });
+            const marker = L.marker(latlng, { icon: threatIcon(threat, sizeMultiplier, showCount), pane: THREATS_PANE });
             if (selectHandler) {
                 marker.on('click', () => {
                     selectedThreatId = threat.id;
