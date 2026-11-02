@@ -951,23 +951,29 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         entry.arrows = [];
         if (!fixes || fixes.length < 2) return;
 
-        const firstLeg = Math.max(1, fixes.length - TRAIL_ARROW_LEGS);
-        for (let i = firstLeg; i < fixes.length; i++) {
-            const from = fixes[i - 1];
-            const to = fixes[i];
-            if (distanceKm(from, to) < TRAIL_ARROW_MIN_KM) continue;
-            const ratio = (i - firstLeg + 1) / (fixes.length - firstLeg);
-            const marker = L.marker([(from[0] + to[0]) / 2, (from[1] + to[1]) / 2], {
+        const path = smoothPath(fixes);
+        const legs = fixes.length - 1;
+        const firstLeg = Math.max(0, legs - TRAIL_ARROW_LEGS);
+        const step = path.length > fixes.length ? TRAIL_SUBSTEPS : 1;
+        for (let leg = firstLeg; leg < legs; leg++) {
+            if (distanceKm(fixes[leg], fixes[leg + 1]) < TRAIL_ARROW_MIN_KM) continue;
+            const index = step > 1 ? leg * step + Math.round(step / 2) : leg;
+            const before = path[Math.max(0, index - 1)];
+            const after = path[Math.min(path.length - 1, index + 1)];
+            const from = map.project(before, 12);
+            const to = map.project(after, 12);
+            if (from.distanceTo(to) < 0.01) continue;
+            const angle = (Math.atan2(to.x - from.x, -(to.y - from.y)) * 180) / Math.PI;
+            const ratio = (leg - firstLeg + 1) / (legs - firstLeg);
+            const marker = L.marker(path[index], {
                 pane: UNCERTAINTY_PANE,
-                icon: arrowIcon(bearingBetween(from, to), entry.color),
+                icon: arrowIcon(angle, entry.color),
                 interactive: false,
                 keyboard: false,
                 opacity: 0.35 + ratio * 0.55,
             }).addTo(entry.group);
             entry.arrows.push(marker);
         }
-
-        const path = smoothPath(fixes);
         const chunk = Math.max(2, Math.ceil((path.length - 1) / TRAIL_SEGMENTS));
         const chunks = Math.ceil((path.length - 1) / chunk);
         for (let index = 0; index < chunks; index++) {
