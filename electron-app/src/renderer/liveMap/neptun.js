@@ -319,7 +319,7 @@ const ALL_TYPE_KEYS = ['uav', 'uav_recon', 'fpv', 'kab', 'missile', 'mig31k', 'u
 
 const TRAIL_SWATCH_HTML =
     '<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#6b7280" ' +
-    'stroke-width="1.8" stroke-linecap="round"><path d="M3 21 Q10 15 21 5"/><path d="M16 4 L21 5 L20 10" stroke-width="1.6" stroke-linejoin="round"/></svg></span>';
+    'stroke-width="1.8" stroke-linecap="round"><path d="M3 21 Q10 15 21 5"/></svg></span>';
 
 const FORECAST_SWATCH_HTML =
     '<span class="legend-swatch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#6b7280" ' +
@@ -511,8 +511,6 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const TRAIL_MIN_DT_S = 30;
     const INFER_MIN_KM = 2;
     const INFER_MAX_AGE_MS = 15 * 60 * 1000;
-    const TRAIL_ARROW_LEGS = 8;
-    const TRAIL_ARROW_MIN_KM = 0.3;
     const TRAIL_SEGMENTS = 8;
     const TRAIL_SUBSTEPS = 6;
     const PREDICT_MINUTES = 3;
@@ -932,48 +930,15 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         const group = L.layerGroup().addTo(circlesGroup);
         const tail = L.polyline([], { pane: UNCERTAINTY_PANE, color, weight: 2.2, opacity: 0.8, lineCap: 'round', interactive: false, className: 'threat-trail' }).addTo(group);
         const arc = L.polyline([], { pane: UNCERTAINTY_PANE, color, weight: 1.6, opacity: 0.6, dashArray: '1 6', lineCap: 'round', interactive: false, className: 'threat-trail threat-forecast' }).addTo(group);
-        return { group, tail, arc, segments: [], arrows: [], sig: null, color };
-    }
-
-    function arrowIcon(bearing, color) {
-        return L.divIcon({
-            className: 'threat-trail threat-trail-arrow',
-            html: `<svg viewBox="-5 -5 10 10" width="13" height="13" style="transform: rotate(${Math.round(bearing)}deg)"><path d="M-3 2.4 L0 -2.6 L3 2.4" fill="none" stroke="${color}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-            iconSize: [13, 13],
-            iconAnchor: [6.5, 6.5],
-        });
+        return { group, tail, arc, segments: [], sig: null, color };
     }
 
     function rebuildTrailSegments(entry, fixes) {
         entry.segments.forEach((line) => entry.group.removeLayer(line));
         entry.segments = [];
-        entry.arrows.forEach((marker) => entry.group.removeLayer(marker));
-        entry.arrows = [];
         if (!fixes || fixes.length < 2) return;
 
         const path = smoothPath(fixes);
-        const legs = fixes.length - 1;
-        const firstLeg = Math.max(0, legs - TRAIL_ARROW_LEGS);
-        const step = path.length > fixes.length ? TRAIL_SUBSTEPS : 1;
-        for (let leg = firstLeg; leg < legs; leg++) {
-            if (distanceKm(fixes[leg], fixes[leg + 1]) < TRAIL_ARROW_MIN_KM) continue;
-            const index = step > 1 ? leg * step + Math.round(step / 2) : leg;
-            const before = path[Math.max(0, index - 1)];
-            const after = path[Math.min(path.length - 1, index + 1)];
-            const from = map.project(before, 12);
-            const to = map.project(after, 12);
-            if (from.distanceTo(to) < 0.01) continue;
-            const angle = (Math.atan2(to.x - from.x, -(to.y - from.y)) * 180) / Math.PI;
-            const ratio = (leg - firstLeg + 1) / (legs - firstLeg);
-            const marker = L.marker(path[index], {
-                pane: UNCERTAINTY_PANE,
-                icon: arrowIcon(angle, entry.color),
-                interactive: false,
-                keyboard: false,
-                opacity: 0.35 + ratio * 0.55,
-            }).addTo(entry.group);
-            entry.arrows.push(marker);
-        }
         const chunk = Math.max(2, Math.ceil((path.length - 1) / TRAIL_SEGMENTS));
         const chunks = Math.ceil((path.length - 1) / chunk);
         for (let index = 0; index < chunks; index++) {
