@@ -811,10 +811,11 @@ footer {
 
 :is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) {
     align-items: stretch;
-    gap: 16px;
+    gap: 6px;
 }
 
 :is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) label {
+    min-height: 42px;
     display: grid;
     grid-template-columns: minmax(0, 1fr) 240px 44px;
     align-items: center;
@@ -862,6 +863,7 @@ footer {
 }
 
 :is(#general-settings, #sound-settings, #notifications-settings) .settings-group:not(.collapsible) #alertSoundTest {
+    margin-top: 8px;
     align-self: flex-start;
     margin-left: calc(100% - 296px);
 }
