@@ -10,6 +10,8 @@ const ratelimit = require('./ratelimit');
 const publicApi = require('./publicApi');
 const webstats = require('./webstats');
 const config = require('./config');
+const lib = require('./lib');
+const online = require('./online');
 const { checkClientKey } = require('./auth');
 
 function attachWebSockets(server) {
@@ -84,6 +86,15 @@ function attachWebSockets(server) {
             return;
         }
         socket.once('close', () => ratelimit.closeSocket(ip));
+        const clientId = request.headers['x-client-id'] || url.searchParams.get('id');
+        const rawVersion = url.searchParams.get('v') || request.headers['x-client-version'];
+        const clientVersion = rawVersion && /^[0-9A-Za-z._-]{1,20}$/.test(rawVersion) ? rawVersion : null;
+        lib.hashClientIdentity(ip, clientId)
+            .then((hashed) => {
+                if (socket.destroyed) return;
+                socket.once('close', online.open(hashed, clientVersion));
+            })
+            .catch(() => {});
         users
             .recordRequest(ip, `ws:${url.pathname}`, url.searchParams.get('v'), request.headers['x-client-id'] || url.searchParams.get('id'))
             .then(() => users.notePeak(gateway.totalConnections() + 1))

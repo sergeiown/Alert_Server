@@ -5,6 +5,7 @@ const { db } = require('./store');
 const lib = require('./lib');
 const geoip = require('./geoip');
 const perfStats = require('./perfStats');
+const online = require('./online');
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
@@ -306,6 +307,7 @@ function getStats(currentConnections, connectedUsers) {
             stickiness: active30 ? Math.round((todayActive / active30) * 100) : 0,
         },
         connections: { now: currentConnections, users: connectedUsers || 0, peakToday: peak.day === today ? peak.connections : currentConnections },
+        onlineByVersion: online.byVersion(),
         retention,
         daily,
         hourlyRequestsToday: hourly,
