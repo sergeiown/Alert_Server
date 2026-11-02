@@ -480,6 +480,9 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     const EARTH_RADIUS_KM = 6371;
     const KYIV_THREAT_CLICK_ZOOM = 12;
     const TRAIL_WINDOW_MS = 10 * 60 * 1000;
+    const TRAIL_MAX_SPEED_KMH = { missile: 1200, mig31k: 2200, kab: 900, uav: 250, uav_recon: 250, fpv: 200, unknown: 350 };
+    const TRAIL_NOISE_KM = 1.5;
+    const TRAIL_MIN_DT_S = 30;
     const TRAIL_SEGMENTS = 8;
     const TRAIL_SUBSTEPS = 6;
     const PREDICT_MINUTES = 3;
@@ -814,10 +817,28 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             .filter((p) => p && typeof p.lat === 'number' && typeof p.lon === 'number')
             .map((p) => ({ lat: p.lat, lon: p.lon, t: Date.parse(p.t) }));
         if (!fixes.length) return null;
+
+        const timed = fixes.every((p) => Number.isFinite(p.t));
+        if (timed) fixes.sort((x, y) => x.t - y.t);
         const times = fixes.map((p) => p.t).filter((t) => Number.isFinite(t));
         const newest = times.length ? Math.max(...times) : null;
         const recent = newest === null ? fixes : fixes.filter((p) => !Number.isFinite(p.t) || p.t >= newest - TRAIL_WINDOW_MS);
-        return recent.map((p) => [p.lat, p.lon]);
+
+        const maxSpeed = TRAIL_MAX_SPEED_KMH[resolveTypeKey(threat)] || TRAIL_MAX_SPEED_KMH.unknown;
+        const anchorTime = Date.parse(threat.confirmedAt || threat.updatedAt);
+        const accepted = [{ lat: threat.lat, lon: threat.lon, t: Number.isFinite(anchorTime) ? anchorTime : newest }];
+        for (let i = recent.length - 1; i >= 0; i--) {
+            const point = recent[i];
+            const later = accepted[0];
+            if (Number.isFinite(point.t) && Number.isFinite(later.t)) {
+                const seconds = Math.max(TRAIL_MIN_DT_S, Math.abs(later.t - point.t) / 1000);
+                const allowedKm = (maxSpeed * seconds) / 3600 + TRAIL_NOISE_KM;
+                if (distanceKm([point.lat, point.lon], [later.lat, later.lon]) > allowedKm) continue;
+            }
+            accepted.unshift(point);
+        }
+        accepted.pop();
+        return accepted.length ? accepted.map((p) => [p.lat, p.lon]) : null;
     }
 
     function predictionArc(threat, fixes, from) {
