@@ -144,15 +144,26 @@ const TYPE_ICONS = {
     },
 };
 
-function headingOf(threat) {
+const HEADING_CONFLICT_DEG = 120;
+
+function sourceHeadingOf(threat) {
     if (typeof threat.heading === 'number') return threat.heading;
     if (threat.velocity && typeof threat.velocity.bearingDeg === 'number') return threat.velocity.bearingDeg;
-    if (typeof threat.headingInferred === 'number') return threat.headingInferred;
     return undefined;
 }
 
+function headingsConflict(a, b) {
+    return Math.abs(((a - b + 540) % 360) - 180) > HEADING_CONFLICT_DEG;
+}
+
 function headingIsInferred(threat) {
-    return typeof threat.heading !== 'number' && !(threat.velocity && typeof threat.velocity.bearingDeg === 'number') && typeof threat.headingInferred === 'number';
+    if (typeof threat.headingInferred !== 'number') return false;
+    const source = sourceHeadingOf(threat);
+    return source === undefined || headingsConflict(source, threat.headingInferred);
+}
+
+function headingOf(threat) {
+    return headingIsInferred(threat) ? threat.headingInferred : sourceHeadingOf(threat);
 }
 
 const COMPASS_UK = ['північ', 'північний схід', 'схід', 'південний схід', 'південь', 'південний захід', 'захід', 'північний захід'];
@@ -896,7 +907,6 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     }
 
     function inferHeading(threat) {
-        if (typeof threat.heading === 'number' || (threat.velocity && typeof threat.velocity.bearingDeg === 'number')) return undefined;
         const key = `${threat.updatedAt}|${threat.trail ? threat.trail.length : 0}|${threat.lat}|${threat.lon}`;
         const cached = headingCache.get(threat.id);
         if (cached && cached.key === key) return cached.value;
@@ -910,12 +920,15 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             const last = fixes[fixes.length - 1];
             let from = last;
             let to = here;
-            if (distanceKm(last, here) < INFER_MIN_KM && fixes.length >= 2) {
+            const placeholder = threat.positionQuality === 'approx';
+            if ((placeholder || distanceKm(last, here) < INFER_MIN_KM) && fixes.length >= 2) {
                 from = fixes[fixes.length - 2];
                 to = last;
             }
-            if (distanceKm(from, to) >= INFER_MIN_KM) value = bearingBetween(from, to);
+            if (!(placeholder && fixes.length < 2) && distanceKm(from, to) >= INFER_MIN_KM) value = bearingBetween(from, to);
         }
+        const source = sourceHeadingOf(threat);
+        if (source !== undefined && value !== undefined && !headingsConflict(source, value)) value = undefined;
         headingCache.set(threat.id, { key, value });
         return value;
     }
@@ -1166,7 +1179,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                 rebuildTrailSegments(entry, fixes);
                 entry.sig = signature;
             }
-            entry.tail.setLatLngs(fixes && fixes.length ? [fixes[fixes.length - 1], here] : []);
+            entry.tail.setLatLngs(fixes && fixes.length && threat.positionQuality !== 'approx' ? [fixes[fixes.length - 1], here] : []);
             entry.arc.setLatLngs(arc);
         });
         activeTrails.forEach((entry, id) => {
