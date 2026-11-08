@@ -993,8 +993,8 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             const line = L.polyline(part, {
                 pane: UNCERTAINTY_PANE,
                 color: entry.color,
-                weight: 1.1 + ratio * 1.2,
-                opacity: 0.14 + ratio * 0.66,
+                weight: 0.9 + ratio * 0.8,
+                opacity: 0.1 + ratio * 0.38,
                 dashArray: ratio < TRAIL_SOLID_FROM ? '7 5' : null,
                 lineCap: ratio < TRAIL_SOLID_FROM ? 'butt' : 'round',
                 lineJoin: 'round',

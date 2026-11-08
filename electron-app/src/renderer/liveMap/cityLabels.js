@@ -144,8 +144,8 @@ function buildCityGroup(strings, language) {
             icon: L.divIcon({
                 className: 'map-label-anchor',
                 html: border
-                    ? `<span class="city-label">${displayName}</span>`
-                    : `<span class="city-dot"></span><span class="city-label">${displayName}</span>`,
+                    ? `<span class="city-label${city.uk === 'Київ' ? ' city-label-kyiv' : ''}">${displayName}</span>`
+                    : `<span class="city-dot"></span><span class="city-label${city.uk === 'Київ' ? ' city-label-kyiv' : ''}">${displayName}</span>`,
                 iconSize: [0, 0],
                 iconAnchor: [0, 0],
             }),

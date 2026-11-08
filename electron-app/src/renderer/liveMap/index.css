@@ -109,11 +109,13 @@ body {
     filter: drop-shadow(0 0 0.75px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 0.5px rgba(0, 0, 0, 0.6));
 }
 
-.leaflet-raionBorders-pane {
+.leaflet-raionBorders-pane,
+.leaflet-osmLabelsPane-pane {
     transition: opacity 0.45s ease;
 }
 
 .map-transitioning .leaflet-raionBorders-pane,
+.map-transitioning .leaflet-osmLabelsPane-pane,
 .map-transitioning .alert-status-shape,
 .map-transitioning .occupied-territory-shape,
 .map-transitioning .region-label,
@@ -138,6 +140,7 @@ body {
 }
 
 .map-transitioning-instant .leaflet-raionBorders-pane,
+.map-transitioning-instant .leaflet-osmLabelsPane-pane,
 .map-transitioning-instant .alert-status-shape,
 .map-transitioning-instant .occupied-territory-shape,
 .map-transitioning-instant .region-label,
@@ -752,7 +755,7 @@ body {
     }
 
     .raion-border {
-        stroke: #8c94a0;
+        stroke: #a8b1bd;
     }
 
     .raion-label {
@@ -789,6 +792,77 @@ body {
     transition: opacity 0.25s ease;
 }
 
+.sat-map-on .leaflet-image-layer {
+    opacity: 0 !important;
+}
+
+.sat-basemap:not(.detail-map-on) .city-label-kyiv {
+    display: none;
+}
+
+.sat-basemap .region-label,
+.sat-basemap .raion-label,
+.sat-basemap .city-label,
+.sat-basemap .kyiv-raion-label > span {
+    color: #23282c;
+    opacity: 1;
+    font-style: normal;
+    letter-spacing: 0.03em;
+    text-shadow:
+        0 0 3px #eef0f0,
+        0 0 3px #eef0f0,
+        -1px -1px 2px #eef0f0,
+        1px -1px 2px #eef0f0,
+        -1px 1px 2px #eef0f0,
+        1px 1px 2px #eef0f0;
+}
+
+@media (prefers-color-scheme: dark) {
+    .sat-basemap .region-label,
+    .sat-basemap .raion-label,
+    .sat-basemap .city-label,
+    .sat-basemap .kyiv-raion-label > span {
+        color: #e6e9eb;
+        text-shadow:
+            0 0 3px #0c0f12,
+            0 0 3px #0c0f12,
+            -1px -1px 2px #0c0f12,
+            1px -1px 2px #0c0f12,
+            -1px 1px 2px #0c0f12,
+            1px 1px 2px #0c0f12;
+    }
+}
+
+.sat-basemap .region-label {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.sat-basemap .region-label.region-label-small {
+    font-size: 11px;
+}
+
+.sat-basemap .region-label.region-label-tiny {
+    font-size: 10px;
+}
+
+.sat-basemap .raion-label {
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.sat-basemap .city-label {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.sat-basemap .kyiv-raion-label > span {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.sat-map-on .river-line,
+.sat-map-on .river-area,
 .detail-map-on .river-line,
 .detail-map-on .river-area {
     display: none;
@@ -919,4 +993,104 @@ body {
     display: inline;
     font-size: 9px;
     line-height: 1.5;
+}
+
+.map-search {
+    position: relative;
+}
+
+.leaflet-bar a.map-search-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.map-search-panel {
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 0;
+    width: min(320px, calc(100vw - 86px));
+    background: var(--map-chrome-bg);
+    border: 1px solid var(--map-chrome-border);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    z-index: 1100;
+}
+
+.map-search-panel[hidden] {
+    display: none;
+}
+
+.map-search-input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 34px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--map-chrome-text);
+    font: inherit;
+    font-size: 14px;
+    outline: none;
+}
+
+.map-search-input::placeholder {
+    color: var(--map-chrome-text);
+    opacity: 0.6;
+}
+
+.map-search-results {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-height: 288px;
+    overflow-y: auto;
+}
+
+.map-search-results:not(:empty) {
+    border-top: 1px solid var(--map-chrome-border);
+}
+
+.map-search-item,
+.map-search-empty {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 6px 10px;
+    color: var(--map-chrome-text);
+    font-size: 13px;
+}
+
+.map-search-item {
+    cursor: pointer;
+}
+
+.map-search-item.active {
+    background: var(--map-chrome-hover);
+}
+
+.map-search-name {
+    font-weight: 600;
+}
+
+.map-search-extra {
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+.map-search-empty {
+    opacity: 0.7;
+}
+
+.screenshot-hide-controls .map-search {
+    visibility: hidden !important;
+}
+
+.kyiv-mode-active .map-search {
+    display: none;
+}
+
+.outside-mask-shape {
+    filter: blur(var(--outside-blur, 24px));
 }

@@ -40,11 +40,11 @@ const YELLOW_DARK_SHADES = ['#5c5230', '#605432', '#655735', '#6a5a37', '#705d39
 const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 const RED_SHADES = isDark ? RED_DARK_SHADES : RED_LIGHT_SHADES;
 const YELLOW_SHADES = isDark ? YELLOW_DARK_SHADES : YELLOW_LIGHT_SHADES;
-const ALERTED_FILL_OPACITY = isDark ? 0.5 : 0.42;
-const NEUTRAL_COLOR = isDark ? '#3a4650' : '#6b6350';
+const ALERTED_FILL_OPACITY = isDark ? 0.32 : 0.26;
+const NEUTRAL_COLOR = isDark ? '#8f9aa8' : '#6b6350';
 const NEUTRAL_FILL_OPACITY = isDark ? 0.06 : 0.05;
 
-const ALERTED_BORDER_OPACITY = isDark ? 0.5 : 0.75;
+const ALERTED_BORDER_OPACITY = isDark ? 0.7 : 0.75;
 const LIGHT_BORDER_DARKEN = 0.6;
 
 function borderColorFor(shade) {
@@ -238,7 +238,7 @@ const RegionStatusLayer = L.LayerGroup.extend({
             {
                 color: alerted ? borderColorFor(color) : color,
                 weight: (alerted || forceBorder) && !baseMapBorder ? 1 : 0,
-                opacity: alerted ? ALERTED_BORDER_OPACITY : forceBorder ? 0.35 : 0,
+                opacity: alerted ? ALERTED_BORDER_OPACITY : forceBorder ? (isDark ? 0.6 : 0.35) : 0,
                 fillColor,
                 fillOpacity: alerted ? ALERTED_FILL_OPACITY : NEUTRAL_FILL_OPACITY,
             },

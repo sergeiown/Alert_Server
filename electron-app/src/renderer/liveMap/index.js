@@ -11,11 +11,14 @@ import { startStatusBar } from './statusBar.js';
 import { addScreenshotControl } from './screenshot.js';
 import { KYIV_RAION_BORDERS } from './kyivRaionBorders.js';
 import { OBLAST_BORDERS } from './oblastBorders.js';
+import { RAION_MIN_ZOOM } from './zoomTiers.js';
 import { RAION_BORDERS } from './raionBorders.js';
 import { normalizeOblastName, normalizeRaionName } from './regionNameUtils.js';
+import { createSearchControl } from './mapSearch.js';
 import { createKyivRaionLabels } from './kyivRaionLabels.js';
 import { UKRAINE_OUTLINE } from './ukraineOutline.js';
-import { offsetRing, metersPerPixel } from './outlineOffset.js';
+import { metersPerPixel } from './outlineOffset.js';
+import { OUTLINE_OFFSETS } from './outlineOffsets.js';
 
 const UKRAINE_BOUNDS = [
     [44.387017, 22.138577],
@@ -46,7 +49,18 @@ function computeKyivBounds() {
 const KYIV_BOUNDS = computeKyivBounds();
 
 const KYIV_TILES_URL = 'https://alert-proxy-ua.duckdns.org/live/tiles/kyiv.pmtiles';
-const DETAIL_TILES_URL = 'https://alert-proxy-ua.duckdns.org/live/tiles/ukraine.pmtiles';
+const DETAIL_TILES_URL = 'https://alert-proxy-ua.duckdns.org/live/tiles/ukraine-lite.pmtiles';
+const SATELLITE_TILES_URL = 'https://alert-proxy-ua.duckdns.org/live/tiles/landcover.pmtiles';
+const RELIEF_TILES_URL = 'https://alert-proxy-ua.duckdns.org/live/tiles/hillshade.pmtiles';
+const NAMES_BASE_URL = 'https://alert-proxy-ua.duckdns.org/live/tiles/';
+
+const SATELLITE_BASEMAP = (() => {
+    try {
+        return localStorage.getItem('alertServer.satMap') !== '0';
+    } catch (err) {
+        return true;
+    }
+})();
 const MAP_MIN_ZOOM = window.alertServerLiveMap.minZoom || 5;
 const UKRAINE_MAX_ZOOM = 12;
 const KYIV_MAX_ZOOM = 14;
@@ -152,19 +166,32 @@ async function main() {
         requestAnimationFrame(() => requestAnimationFrame(applyBaseFit));
     }
 
+    if (SATELLITE_BASEMAP) map.getContainer().classList.add('sat-basemap');
+
     const baseMapOverlay = L.imageOverlay(baseMapUrl, UKRAINE_BOUNDS).addTo(map);
     setOpacity(baseMapOverlay.getElement(), 0);
 
     const isDarkMap = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
+    const osmLabelsPane = map.createPane('osmLabelsPane');
+    osmLabelsPane.style.zIndex = 450;
+    osmLabelsPane.style.pointerEvents = 'none';
+
     const kyivTilesUrl = window.alertServerLiveMap.kyivTilesUrl || KYIV_TILES_URL;
+    const kyivLanguage = settings.language === 'English' ? 'en' : 'uk';
     const kyivImageryLayer = window.alertOsmBasemap.create({
         url: kyivTilesUrl,
         bounds: L.latLngBounds(KYIV_BOUNDS).pad(0.15),
         dark: isDarkMap,
+        satellite: SATELLITE_BASEMAP,
+        boundaries: !SATELLITE_BASEMAP,
+        part: SATELLITE_BASEMAP ? 'paint' : 'all',
         lang: settings.language === 'English' ? 'en' : 'uk',
         attribution: `<span class="attr-item"><a href="#" id="osmAttribution">${strings.liveMapOsmAttribution}</a></span>`,
     });
+    const kyivOsmLabelsLayer = SATELLITE_BASEMAP
+        ? window.alertOsmBasemap.create({ url: kyivTilesUrl, bounds: L.latLngBounds(KYIV_BOUNDS).pad(0.15), dark: isDarkMap, satellite: true, lang: kyivLanguage, part: 'labels', pane: 'osmLabelsPane', labels: 'city' })
+        : null;
     const DETAIL_MIN_ZOOM = 9;
     const detailTilesUrl = window.alertServerLiveMap.detailTilesUrl || DETAIL_TILES_URL;
     const detailLayer = detailTilesUrl
@@ -173,20 +200,43 @@ async function main() {
               dark: isDarkMap,
               lang: settings.language === 'English' ? 'en' : 'uk',
               attribution: '<span class="attr-item"><a href="#" id="osmDetailAttribution">© OpenStreetMap contributors</a></span>',
+              overlay: SATELLITE_BASEMAP,
+              part: SATELLITE_BASEMAP ? 'paint' : 'all',
               labels: window.matchMedia('(pointer: coarse)').matches ? 'places-major' : 'places',
               boundaries: false,
               maxDataZoom: 12,
           })
         : null;
 
+    const detailLabelsLayer =
+        SATELLITE_BASEMAP && detailTilesUrl
+            ? window.alertOsmBasemap.create({
+                  url: detailTilesUrl,
+                  dark: isDarkMap,
+                  lang: kyivLanguage,
+                  overlay: true,
+                  part: 'labels',
+                  pane: 'osmLabelsPane',
+                  labels: window.matchMedia('(pointer: coarse)').matches ? 'places-major' : 'places',
+                  boundaries: false,
+                  maxDataZoom: 12,
+              })
+            : null;
+
+    const satelliteLayer = SATELLITE_BASEMAP ? window.alertOsmBasemap.createSatellite({ url: window.alertServerLiveMap.landcoverTilesUrl || SATELLITE_TILES_URL, dark: isDarkMap, attribution: `<span class="attr-item"><a href="#" id="worldcoverAttribution">${strings.liveMapWorldcoverAttribution}</a></span>` }) : null;
+    const reliefLayer = SATELLITE_BASEMAP ? window.alertOsmBasemap.createRelief({ url: window.alertServerLiveMap.hillshadeTilesUrl || RELIEF_TILES_URL, dark: isDarkMap, attribution: `<span class="attr-item"><a href="#" id="reliefAttribution">${strings.liveMapReliefAttribution}</a></span>` }) : null;
+    if (satelliteLayer) satelliteLayer.setZIndex(1);
+    if (reliefLayer) reliefLayer.setZIndex(2);
+    if (detailLayer && SATELLITE_BASEMAP) detailLayer.setZIndex(3);
+
     const raionBordersPane = map.createPane('raionBordersPane');
-    raionBordersPane.style.zIndex = 410;
+    raionBordersPane.style.zIndex = 456;
     raionBordersPane.style.pointerEvents = 'none';
 
     const outsideMaskPane = map.createPane('outsideMaskPane');
-    outsideMaskPane.style.zIndex = 250;
+    outsideMaskPane.style.zIndex = 455;
     outsideMaskPane.style.pointerEvents = 'none';
-    const outsideMaskRenderer = L.svg({ pane: 'outsideMaskPane', padding: 2 });
+    const outsideMaskRenderer = L.svg({ pane: 'outsideMaskPane', padding: 1 });
     const WORLD_MASK_RING = [
         [-85, -180],
         [-85, 180],
@@ -196,58 +246,74 @@ async function main() {
     const FADE_OFFSET_PX = 90;
     const FADE_OFFSET_MIN_M = 3000;
     const FADE_OFFSET_MAX_M = 7000;
+    const OUTSIDE_BLUR_MIN_PX = 14;
+    const OUTLINE_OFFSET_STEPS = Object.keys(OUTLINE_OFFSETS).map(Number);
+    const OUTSIDE_BLUR_MAX_PX = 46;
     const outsideUkraineMask = L.polygon(
         [WORLD_MASK_RING, ...UKRAINE_OUTLINE],
         {
             pane: 'outsideMaskPane',
             renderer: outsideMaskRenderer,
+            className: 'outside-mask-shape',
             stroke: false,
-            fillColor: isDarkMap ? '#101720' : '#a9bcc4',
+            fillColor: SATELLITE_BASEMAP ? (isDarkMap ? '#12161a' : '#b5bbc0') : isDarkMap ? '#101720' : '#a9bcc4',
             fillOpacity: 1,
             interactive: false,
         }
     );
 
-    const outsideMaskFade = L.layerGroup(
-        [56, 44, 34, 25, 17, 10, 5].map((weight) =>
-            L.polygon(UKRAINE_OUTLINE, {
-                pane: 'outsideMaskPane',
-            renderer: outsideMaskRenderer,
-                fill: false,
-                color: isDarkMap ? '#101720' : '#a9bcc4',
-                weight,
-                opacity: 0.16,
-                lineJoin: 'round',
+    function refreshOutsideMask() {
+        const mpp = metersPerPixel(map.getZoom());
+        const meters = Math.min(FADE_OFFSET_MAX_M, Math.max(FADE_OFFSET_MIN_M, FADE_OFFSET_PX * mpp));
+        const distance = OUTLINE_OFFSET_STEPS.reduce((best, step) => (Math.abs(step - meters) < Math.abs(best - meters) ? step : best));
+        const rings = OUTLINE_OFFSETS[distance];
+        outsideUkraineMask.setLatLngs([WORLD_MASK_RING, ...rings]);
+        const blur = Math.min(OUTSIDE_BLUR_MAX_PX, Math.max(OUTSIDE_BLUR_MIN_PX, meters / mpp / 2));
+        outsideMaskPane.style.setProperty('--outside-blur', `${blur}px`);
+    }
+
+    const oblastBordersLayer = L.layerGroup(
+        Object.values(OBLAST_BORDERS).map((rings) =>
+            L.polygon(rings, {
+                pane: 'raionBordersPane',
                 interactive: false,
+                className: 'oblast-border',
+                color: isDarkMap ? '#a8b1bd' : '#5e5238',
+                fill: false,
+                weight: 1,
+                opacity: isDarkMap ? 0.12 : 0.14,
             })
         )
     );
-
-    function refreshOutsideMask() {
-        const meters = Math.min(FADE_OFFSET_MAX_M, Math.max(FADE_OFFSET_MIN_M, FADE_OFFSET_PX * metersPerPixel(map.getZoom())));
-        const rings = UKRAINE_OUTLINE.map((ring) => offsetRing(ring, meters));
-        outsideUkraineMask.setLatLngs([WORLD_MASK_RING, ...rings]);
-        outsideMaskFade.eachLayer((layer) => layer.setLatLngs(rings));
-    }
 
     let sceneSwapping = false;
 
     function syncDetailLayer() {
         if (!detailLayer) return;
-        const wanted = !kyivModeActive && !sceneSwapping && map.getZoom() >= DETAIL_MIN_ZOOM;
-        map.getContainer().classList.toggle('detail-map-on', wanted);
+        const wanted = !kyivModeActive && !sceneSwapping && (SATELLITE_BASEMAP || map.getZoom() >= DETAIL_MIN_ZOOM);
+        map.getContainer().classList.toggle('detail-map-on', wanted && map.getZoom() >= DETAIL_MIN_ZOOM);
+        map.getContainer().classList.toggle('sat-map-on', wanted && SATELLITE_BASEMAP);
         if (wanted && !map.hasLayer(detailLayer)) {
             refreshOutsideMask();
+            if (satelliteLayer) satelliteLayer.addTo(map);
+            if (reliefLayer) reliefLayer.addTo(map);
             detailLayer.addTo(map);
+            if (detailLabelsLayer) detailLabelsLayer.addTo(map);
             outsideUkraineMask.addTo(map);
-            outsideMaskFade.addTo(map);
             bindAttributionLink('osmDetailAttribution', 'https://www.openstreetmap.org/copyright');
+            bindAttributionLink('worldcoverAttribution', 'https://creativecommons.org/licenses/by/4.0/');
+            bindAttributionLink('reliefAttribution', 'https://github.com/tilezen/joerd/blob/master/docs/attribution.md');
         }
         else if (!wanted && map.hasLayer(detailLayer)) {
             map.removeLayer(detailLayer);
+            if (detailLabelsLayer) map.removeLayer(detailLabelsLayer);
+            if (reliefLayer) map.removeLayer(reliefLayer);
+            if (satelliteLayer) map.removeLayer(satelliteLayer);
             map.removeLayer(outsideUkraineMask);
-            map.removeLayer(outsideMaskFade);
         }
+        const oblastBordersWanted = wanted && SATELLITE_BASEMAP && map.getZoom() < RAION_MIN_ZOOM;
+        if (oblastBordersWanted && !map.hasLayer(oblastBordersLayer)) oblastBordersLayer.addTo(map);
+        else if (!oblastBordersWanted && map.hasLayer(oblastBordersLayer)) map.removeLayer(oblastBordersLayer);
     }
     const kyivLabelsLayer = createKyivRaionLabels(settings.language === 'English');
 
@@ -260,11 +326,17 @@ async function main() {
         [85, 180],
         [85, -180],
     ];
+    const kyivMaskPane = map.createPane('kyivMaskPane');
+    kyivMaskPane.style.zIndex = 455;
+    kyivMaskPane.style.pointerEvents = 'none';
+    const kyivMaskRenderer = L.svg({ pane: 'kyivMaskPane', padding: 2 });
     const kyivMask = L.polygon([WORLD_RING, ...Object.values(KYIV_RAION_BORDERS)], {
+        pane: 'kyivMaskPane',
+        renderer: kyivMaskRenderer,
         className: 'kyiv-mask-shape',
         stroke: false,
 
-        fillColor: isDarkMap ? '#101720' : '#a9bcc4',
+        fillColor: SATELLITE_BASEMAP ? (isDarkMap ? '#12161a' : '#b5bbc0') : isDarkMap ? '#101720' : '#a9bcc4',
         fillOpacity: 1,
         interactive: false,
     });
@@ -326,6 +398,14 @@ async function main() {
         });
     }
 
+    function trackedTileLayers() {
+        return [satelliteLayer, reliefLayer, detailLayer, detailLabelsLayer, kyivImageryLayer, kyivOsmLabelsLayer, kyivLabelsLayer].filter((layer) => layer && map.hasLayer(layer));
+    }
+
+    function waitForAllTiles() {
+        return Promise.all(trackedTileLayers().map(waitForTilesLoaded));
+    }
+
     function waitForImageLoaded(imgEl) {
         if (!imgEl || imgEl.complete) return Promise.resolve();
         return new Promise((resolve) => {
@@ -359,7 +439,7 @@ async function main() {
     }
 
     function sceneLayersFor(active) {
-        return active ? [kyivImageryLayer, kyivLabelsLayer] : [baseMapOverlay];
+        return active ? [kyivImageryLayer, kyivLabelsLayer, ...(kyivOsmLabelsLayer ? [kyivOsmLabelsLayer] : [])] : [baseMapOverlay];
     }
 
     async function waitForSceneReady(active) {
@@ -368,6 +448,8 @@ async function main() {
         } else {
             await waitForImageLoaded(baseMapOverlay.getElement());
         }
+        await sleep(80);
+        await waitForAllTiles();
         await sleep(50);
     }
 
@@ -408,6 +490,7 @@ async function main() {
             if (riverLayerWasOn) map.removeLayer(riverLayer);
             if (occupiedTerritoryLayerWasOn) map.removeLayer(occupiedTerritoryLayer);
             kyivImageryLayer.addTo(map);
+            if (kyivOsmLabelsLayer) kyivOsmLabelsLayer.addTo(map);
             kyivLabelsLayer.addTo(map);
             bindAttributionLink('osmAttribution', 'https://www.openstreetmap.org/copyright');
 
@@ -415,6 +498,7 @@ async function main() {
             kyivMask.bringToBack();
         } else {
             map.removeLayer(kyivImageryLayer);
+            if (kyivOsmLabelsLayer) map.removeLayer(kyivOsmLabelsLayer);
             map.removeLayer(kyivLabelsLayer);
             map.removeLayer(kyivMask);
             baseMapOverlay.addTo(map);
@@ -439,6 +523,57 @@ async function main() {
     fitAndLockMinZoom();
     map.attributionControl.setPrefix(false);
     map.on('zoomend', syncDetailLayer);
+
+    let zoomSettleToken = 0;
+    let zoomSettleOwned = false;
+    let zoomSettleSafety = null;
+
+    function restorePreloadRing() {
+        window.__alertPreloadRing = undefined;
+        trackedTileLayers().forEach((layer) => {
+            if (typeof layer._update === 'function') layer._update();
+        });
+    }
+
+    function beginSettle() {
+        const container = map.getContainer();
+        if (sceneSwapping || (container.classList.contains('map-transitioning') && !zoomSettleOwned)) return;
+        zoomSettleToken++;
+        zoomSettleOwned = true;
+        window.__alertPreloadRing = 0;
+        container.classList.add('map-transitioning');
+        clearTimeout(zoomSettleSafety);
+        zoomSettleSafety = setTimeout(() => {
+            if (!zoomSettleOwned) return;
+            zoomSettleOwned = false;
+            map.getContainer().classList.remove('map-transitioning');
+            restorePreloadRing();
+        }, 9000);
+    }
+
+    async function finishSettle() {
+        if (!zoomSettleOwned) return;
+        const token = zoomSettleToken;
+        await sleep(90);
+        await waitForAllTiles();
+        await sleep(70);
+        if (token !== zoomSettleToken || sceneSwapping || !zoomSettleOwned) return;
+        zoomSettleOwned = false;
+        clearTimeout(zoomSettleSafety);
+        map.getContainer().classList.remove('map-transitioning');
+        restorePreloadRing();
+    }
+
+    function settleBeforeJump(center, zoom) {
+        if (Math.abs(zoom - map.getZoom()) >= 0.01) return;
+        if (map.latLngToContainerPoint(center).distanceTo(map.getSize().divideBy(2)) <= 40) return;
+        beginSettle();
+    }
+
+    map.on('zoomstart', beginSettle);
+    map.on('zoomend', finishSettle);
+    map.on('moveend', finishSettle);
+    if (SATELLITE_BASEMAP) syncDetailLayer();
     map.on('zoomend', () => {
         if (map.hasLayer(outsideUkraineMask)) refreshOutsideMask();
     });
@@ -556,7 +691,11 @@ async function main() {
             const wantKyiv = Boolean(kyivRaion);
             const switching = kyivModeActive !== wantKyiv;
             if (switching) applyKyivMode(wantKyiv);
-            const fit = () => map.fitBounds(bounds, { animate: true, padding: [30, 30], maxZoom: wantKyiv ? KYIV_MAX_ZOOM : UKRAINE_MAX_ZOOM });
+            const fit = () => {
+                const targetZoom = Math.min(wantKyiv ? KYIV_MAX_ZOOM : UKRAINE_MAX_ZOOM, map.getBoundsZoom(bounds, false, L.point(60, 60)));
+                settleBeforeJump(bounds.getCenter(), targetZoom);
+                map.fitBounds(bounds, { animate: true, padding: [30, 30], maxZoom: wantKyiv ? KYIV_MAX_ZOOM : UKRAINE_MAX_ZOOM });
+            };
             if (switching) setTimeout(fit, 1100);
             else fit();
             return;
@@ -564,6 +703,56 @@ async function main() {
     }
 
     window.alertServerLiveMap.onFocusRegion((names) => focusRegion(names));
+
+    let searchNamesPromise = null;
+    function loadSearchNames() {
+        if (!searchNamesPromise) {
+            const base = window.alertServerLiveMap.namesBaseUrl || NAMES_BASE_URL;
+            searchNamesPromise = fetch(`${base}names-ukraine.json`)
+                .then((r) => r.json())
+                .then((places) => ({ places }))
+                .catch((error) => {
+                    searchNamesPromise = null;
+                    throw error;
+                });
+        }
+        return searchNamesPromise;
+    }
+
+    function goToSearchEntry(entry) {
+        if (entry.kind === 'place') {
+            const zoom = entry.detail === 'city' || entry.detail === 'town' ? 11 : 12;
+            const switching = kyivModeActive;
+            if (switching) applyKyivMode(false);
+            const fly = () => {
+                const targetZoom = Math.min(map.getMaxZoom(), zoom);
+                settleBeforeJump(L.latLng(entry.lat, entry.lng), targetZoom);
+                map.flyTo([entry.lat, entry.lng], targetZoom, { duration: 0.8 });
+            };
+            if (switching) setTimeout(fly, 1100);
+            else fly();
+            return;
+        }
+        if (entry.kind === 'city') {
+            if (entry.key === 'Київ') {
+                focusRegion(['м. Київ']);
+                return;
+            }
+            const switching = kyivModeActive;
+            if (switching) applyKyivMode(false);
+            const fly = () => {
+                const targetZoom = Math.min(map.getMaxZoom(), Math.max(map.getZoom(), 11));
+                settleBeforeJump(L.latLng(entry.lat, entry.lng), targetZoom);
+                map.flyTo([entry.lat, entry.lng], targetZoom, { duration: 0.8 });
+            };
+            if (switching) setTimeout(fly, 1100);
+            else fly();
+            return;
+        }
+        if (entry.kind === 'kyivRaion') focusRegion([`${entry.key} район`, 'м. Київ']);
+        else if (entry.kind === 'raion') focusRegion([`${entry.key} район`]);
+        else focusRegion(entry.key === 'Київ' ? ['м. Київ'] : [entry.key]);
+    }
 
     const kyivToggle = new KyivToggleControl({
         onLabel: strings.liveMapKyivButtonLabel,
@@ -576,6 +765,9 @@ async function main() {
     window.alertServerLiveMap.onForceKyivMode(() => {
         if (!kyivModeActive) applyKyivMode(true);
     });
+
+    const SearchControl = createSearchControl({ strings, isEnglish: settings.language === 'English', onSelect: goToSearchEntry, loadNames: loadSearchNames });
+    new SearchControl().addTo(map);
 
     function baseFitZoom() {
         const bounds = kyivModeActive ? KYIV_BOUNDS : UKRAINE_BOUNDS;
@@ -604,7 +796,7 @@ async function main() {
     const regionStatusLayer = addRegionStatusLayer(map, strings, settings.language);
     const occupiedTerritoryLayer = addOccupiedTerritoryLayer(map);
     const threatsLayer = startNeptunLayer(map, strings, settings.language, statusBar.setThreatCount, mapRevealedPromise);
-    const riverLayer = addRiversLayer(map);
+    const riverLayer = SATELLITE_BASEMAP ? L.layerGroup() : addRiversLayer(map);
     const labelsLayer = addLabelsLayer(map, strings, settings.language);
 
     const layersControl = L.control
@@ -612,7 +804,7 @@ async function main() {
             [strings.liveMapLayerAlertStatus]: regionStatusLayer,
             [strings.liveMapLayerOccupiedTerritory]: occupiedTerritoryLayer,
             [strings.liveMapLayerThreats]: threatsLayer,
-            [strings.liveMapLayerRiver]: riverLayer,
+            ...(SATELLITE_BASEMAP ? {} : { [strings.liveMapLayerRiver]: riverLayer }),
             [strings.liveMapLayerLabels]: labelsLayer,
             [strings.liveMapLegendTitle]: threatsLayer.legendLayer,
             [strings.liveMapHintTitle]: threatsLayer.hintLayer,
