@@ -7,7 +7,7 @@
     const LANGUAGE_KEY = 'alertmap.language';
     const POLL_MS = 10000;
     const MAX_RECONNECT_MS = 60000;
-    const ALLOWED_LINK_HOSTS = ['www.openstreetmap.org', 'neptun.in.ua', 'alerts.in.ua', 'deepstatemap.live', 'github.com', 'www.naturalearthdata.com', 'creativecommons.org'];
+    const ALLOWED_LINK_HOSTS = ['www.openstreetmap.org', 'neptun.in.ua', 'alerts.in.ua', 'deepstatemap.live', 'github.com', 'www.naturalearthdata.com', 'creativecommons.org', 'www.ukrainealarm.com'];
 
     function detectLanguage() {
         let stored = null;

@@ -300,9 +300,6 @@ async function main() {
             detailLayer.addTo(map);
             if (detailLabelsLayer) detailLabelsLayer.addTo(map);
             outsideUkraineMask.addTo(map);
-            bindAttributionLink('osmDetailAttribution', 'https://www.openstreetmap.org/copyright');
-            bindAttributionLink('worldcoverAttribution', 'https://creativecommons.org/licenses/by/4.0/');
-            bindAttributionLink('reliefAttribution', 'https://github.com/tilezen/joerd/blob/master/docs/attribution.md');
         }
         else if (!wanted && map.hasLayer(detailLayer)) {
             map.removeLayer(detailLayer);
@@ -492,7 +489,6 @@ async function main() {
             kyivImageryLayer.addTo(map);
             if (kyivOsmLabelsLayer) kyivOsmLabelsLayer.addTo(map);
             kyivLabelsLayer.addTo(map);
-            bindAttributionLink('osmAttribution', 'https://www.openstreetmap.org/copyright');
 
             kyivMask.addTo(map);
             kyivMask.bringToBack();
@@ -578,12 +574,25 @@ async function main() {
         if (map.hasLayer(outsideUkraineMask)) refreshOutsideMask();
     });
 
-    function bindAttributionLink(id, url) {
-        document.getElementById(id)?.addEventListener('click', (event) => {
-            event.preventDefault();
-            window.alertServerLiveMap.openExternal(url);
-        });
-    }
+    const ATTRIBUTION_LINKS = {
+        osmAttribution: 'https://www.openstreetmap.org/copyright',
+        osmDetailAttribution: 'https://www.openstreetmap.org/copyright',
+        worldcoverAttribution: 'https://creativecommons.org/licenses/by/4.0/',
+        reliefAttribution: 'https://github.com/tilezen/joerd/blob/master/docs/attribution.md',
+        appAttribution: 'https://github.com/sergeiown/Alert_Server',
+        alertsAttribution: 'https://alerts.in.ua',
+        ukraineAlarmAttribution: 'https://www.ukrainealarm.com',
+        neptunAttribution: 'https://neptun.in.ua',
+        deepStateAttribution: 'https://deepstatemap.live/',
+    };
+
+    map.attributionControl.getContainer().addEventListener('click', (event) => {
+        const link = event.target.closest('a[id]');
+        const url = link ? ATTRIBUTION_LINKS[link.id] : null;
+        if (!url) return;
+        event.preventDefault();
+        window.alertServerLiveMap.openExternal(url);
+    });
 
     function labelledLink(text, id, name) {
         if (name && text.includes(name)) {
@@ -602,14 +611,6 @@ async function main() {
 
     const deepStateAttributionHtml = labelledLink(strings.liveMapDeepStateAttribution, 'deepStateAttribution', 'DeepState');
     map.attributionControl.addAttribution(deepStateAttributionHtml);
-
-    [
-        ['appAttribution', 'https://github.com/sergeiown/Alert_Server'],
-        ['alertsAttribution', 'https://alerts.in.ua'],
-        ['ukraineAlarmAttribution', 'https://www.ukrainealarm.com'],
-        ['neptunAttribution', 'https://neptun.in.ua'],
-        ['deepStateAttribution', 'https://deepstatemap.live/'],
-    ].forEach(([id, url]) => bindAttributionLink(id, url));
 
     new CenterControl({ title: strings.liveMapCenterButtonTitle, onClick: fitAndLockMinZoom }).addTo(map);
 
@@ -654,7 +655,6 @@ async function main() {
             map.attributionControl.removeAttribution(deepStateAttributionHtml);
         } else {
             map.attributionControl.addAttribution(deepStateAttributionHtml);
-            bindAttributionLink('deepStateAttribution', 'https://deepstatemap.live/');
         }
 
         riverLayer.options.minZoom = active ? Infinity : undefined;

@@ -1094,3 +1094,90 @@ body {
 .outside-mask-shape {
     filter: blur(var(--outside-blur, 24px));
 }
+
+.threat-hint .hint-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    margin: 0 0 4px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.threat-hint .hint-head .hint-title {
+    margin: 0;
+}
+
+.threat-hint .hint-chevron {
+    flex: none;
+    opacity: 0.7;
+    transition: transform 0.2s ease;
+}
+
+.threat-hint.hint-expanded .hint-chevron {
+    transform: rotate(180deg);
+}
+
+.threat-hint .hint-head:hover .hint-chevron {
+    opacity: 1;
+}
+
+.threat-hint:not(.hint-expanded) .hint-rows,
+.threat-hint:not(.hint-expanded) .hint-disclaimer-full,
+.threat-hint.hint-expanded .hint-disclaimer-short {
+    display: none;
+}
+
+.threat-hint:not(.hint-expanded) .hint-disclaimer-short {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+}
+
+.threat-hint:not(.hint-expanded) + .leaflet-control-attribution .attr-item:not(:has(#osmDetailAttribution, #osmAttribution, #neptunAttribution)) {
+    display: none;
+}
+
+.threat-hint .hint-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex: none;
+    font-size: 11px;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+.threat-hint .hint-head:hover .hint-toggle {
+    opacity: 1;
+}
+
+.threat-hint .hint-toggle .hint-chevron {
+    opacity: 1;
+}
+
+.threat-hint:not(.hint-expanded) .hint-label-collapse,
+.threat-hint.hint-expanded .hint-label-expand {
+    display: none;
+}
+
+.threat-hint {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.threat-hint .hint-head {
+    padding: 2px 0;
+}
+
+.threat-hint:hover .hint-toggle {
+    opacity: 1;
+}

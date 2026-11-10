@@ -391,8 +391,34 @@ function buildHint(strings) {
     const hint = L.control({ position: 'bottomright' });
     let container = null;
 
+    const CHEVRON =
+        '<svg class="hint-chevron" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 L6 8 L9.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+    function readExpanded() {
+        try {
+            return localStorage.getItem('alertServer.hintExpanded') === '1';
+        } catch (err) {
+            return false;
+        }
+    }
+
+    function saveExpanded(value) {
+        try {
+            localStorage.setItem('alertServer.hintExpanded', value ? '1' : '0');
+        } catch (err) {
+            return;
+        }
+    }
+
     hint.onAdd = () => {
         container = L.DomUtil.create('div', 'threat-hint');
+        container.classList.toggle('hint-expanded', readExpanded());
+        L.DomEvent.disableClickPropagation(container);
+        container.addEventListener('click', (event) => {
+            const expanded = container.classList.toggle('hint-expanded');
+            container.querySelector('.hint-head')?.setAttribute('aria-expanded', String(expanded));
+            saveExpanded(expanded);
+        });
         hint.update({ hasThreats: false, hasClusters: false });
         return container;
     };
@@ -408,9 +434,12 @@ function buildHint(strings) {
             .filter(Boolean)
             .map((text) => `<div class="hint-row">${escapeHtml(text)}</div>`)
             .join('');
+        const expanded = container.classList.contains('hint-expanded');
         container.innerHTML =
-            `<div class="hint-title">${escapeHtml(strings.liveMapHintTitle)}</div>${rows}` +
-            `<div class="hint-disclaimer">${escapeHtml(strings.liveMapHintDisclaimer)}</div>`;
+            `<button type="button" class="hint-head" aria-expanded="${expanded}"><span class="hint-title">${escapeHtml(strings.liveMapHintTitle)}</span><span class="hint-toggle"><span class="hint-label hint-label-expand">${escapeHtml(strings.liveMapHintExpand)}</span><span class="hint-label hint-label-collapse">${escapeHtml(strings.liveMapHintCollapse)}</span>${CHEVRON}</span></button>` +
+            `<div class="hint-rows">${rows}</div>` +
+            `<div class="hint-disclaimer hint-disclaimer-full">${escapeHtml(strings.liveMapHintDisclaimer)}</div>` +
+            `<div class="hint-disclaimer hint-disclaimer-short">${escapeHtml(strings.liveMapHintDisclaimerShort)}</div>`;
     };
 
     return hint;
