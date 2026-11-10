@@ -262,7 +262,13 @@ function confidenceLabel(threat, strings) {
 function tooltipContent(threat, strings, isEnglish) {
     const typeKey = resolveTypeKey(threat);
     const locale = isEnglish ? 'en-US' : 'uk-UA';
-    const updatedTime = threat.updatedAt ? new Date(threat.updatedAt).toLocaleTimeString(locale) : '';
+    const updatedDate = threat.updatedAt ? new Date(threat.updatedAt) : null;
+    const updatedToday = updatedDate && updatedDate.toDateString() === new Date().toDateString();
+    const updatedTime = updatedDate
+        ? updatedToday
+            ? updatedDate.toLocaleTimeString(locale)
+            : `${updatedDate.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })} ${updatedDate.toLocaleTimeString(locale)}`
+        : '';
     const title = strings[`liveMapType_${typeKey}`] || threat.title;
 
     const oblastPart = threat.region ? oblastDisplayName(normalizeOblastName(threat.region), true) : '';
@@ -1062,6 +1068,13 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
         return null;
     }
 
+    function isMapAlreadyAt(latlng, zoom) {
+        if (Math.abs(map.getZoom() - zoom) > 0.01) return false;
+        const from = map.latLngToContainerPoint(map.getCenter());
+        const to = map.latLngToContainerPoint(latlng);
+        return from.distanceTo(to) <= 4;
+    }
+
     function zoomIntoCluster(marker) {
         const members = marker._members;
         const bounds = L.latLngBounds(members.map((threat) => [threat.lat, threat.lon]));
@@ -1333,7 +1346,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                         shown = true;
                         selectHandler(tooltipContent(threat, strings, isEnglish), marker._truePos);
                     };
-                    if (kyivMode && !isInsideKyiv(marker._truePos)) {
+                    if ((kyivMode && !isInsideKyiv(marker._truePos)) || isMapAlreadyAt(marker._truePos, targetZoom)) {
                         showCard();
                         return;
                     }
@@ -1351,6 +1364,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
                         if (kyivMode && !isInsideKyiv(marker._truePos)) return;
                         const cityZoom = kyivMode ? KYIV_THREAT_CLICK_ZOOM : RAION_MIN_ZOOM;
                         const targetZoom = Math.min(Math.max(map.getZoom(), cityZoom), map.getMaxZoom());
+                        if (isMapAlreadyAt(marker._truePos, targetZoom)) return;
                         marker.closeTooltip();
                         hideDuringMove(marker._truePos, targetZoom);
                         map.flyTo(marker._truePos, targetZoom, { animate: true, duration: 0.8 });

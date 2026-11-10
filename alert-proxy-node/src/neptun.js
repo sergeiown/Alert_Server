@@ -48,8 +48,18 @@ function log(message) {
     console.log(`[neptun] ${message}`);
 }
 
+const THREAT_MAX_AGE_MS = 3 * 60 * 60 * 1000;
+
+function freshThreats() {
+    const now = Date.now();
+    return Array.from(threatsById.values()).filter((t) => {
+        const updated = Date.parse(t.updatedAt || t.confirmedAt);
+        return !Number.isFinite(updated) || now - updated <= THREAT_MAX_AGE_MS;
+    });
+}
+
 function snapshotMessage() {
-    return JSON.stringify({ type: 'snapshot', data: { threats: Array.from(threatsById.values()) } });
+    return JSON.stringify({ type: 'snapshot', data: { threats: freshThreats() } });
 }
 
 function broadcast(raw) {
@@ -229,8 +239,17 @@ function watchdog() {
     connect();
 }
 
+function snapshotDiffers(threats) {
+    if (!Array.isArray(threats)) return false;
+    const incoming = threats.filter((t) => t && t.id);
+    if (incoming.length !== threatsById.size) return true;
+    return incoming.some((t) => {
+        const known = threatsById.get(t.id);
+        return !known || known.updatedAt !== t.updatedAt;
+    });
+}
+
 async function pollSnapshot() {
-    if (state.streamConnected) return;
     try {
         const response = await fetch(THREATS_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
         if (!response.ok) {
@@ -238,6 +257,10 @@ async function pollSnapshot() {
             return;
         }
         const data = await response.json();
+        if (state.streamConnected) {
+            if (!snapshotDiffers(data && data.threats)) return;
+            log('reconcile: stream list differs from the source, snapshot applied');
+        }
         const outcome = applySnapshot(data && data.threats);
         if (outcome === 'invalid') {
             state.snapshotError = { status: 0, message: 'unexpected snapshot shape' };
@@ -245,7 +268,7 @@ async function pollSnapshot() {
         }
         if (outcome === 'ignored') return;
         broadcast(snapshotMessage());
-        state.snapshotFetchedAt = Date.now();
+        if (!state.streamConnected) state.snapshotFetchedAt = Date.now();
         state.snapshotError = null;
     } catch (err) {
         state.snapshotError = { status: 0, message: err.message };
@@ -325,7 +348,7 @@ function getThreatsResponse() {
     return {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ threats: Array.from(threatsById.values()) }),
+        body: JSON.stringify({ threats: freshThreats() }),
     };
 }
 
