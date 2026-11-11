@@ -114,7 +114,8 @@ const KyivToggleControl = L.Control.extend({
 });
 
 async function main() {
-    const forceKyivMode = await window.alertServerLiveMap.consumePendingKyivMode();
+    const pendingFocus = await window.alertServerLiveMap.consumePendingFocusRegion();
+    const forceKyivMode = (await window.alertServerLiveMap.consumePendingKyivMode()) || Boolean(pendingFocus && pendingFocus.includes('м. Київ'));
     const strings = await window.alertServerLiveMap.getStrings();
     const settings = await window.alertServerLiveMap.getSettings();
     const baseMapUrl = await window.alertServerLiveMap.getBaseMapUrl();
@@ -341,6 +342,7 @@ async function main() {
     const OCCUPIED_WAIT_MS = 15000;
     const DATA_LOAD_MAX_FAILURES = 3;
     const KYIV_SCENE_FADE_MS = 450;
+    const PRELOAD_RESTORE_DELAY_MS = 700;
     const TILE_LOAD_TIMEOUT_MS = 5000;
     const RESIZE_SETTLE_POLL_MS = 50;
     const RESIZE_SETTLE_STABLE_TICKS = 3;
@@ -524,6 +526,13 @@ async function main() {
     let zoomSettleOwned = false;
     let zoomSettleSafety = null;
 
+    let preloadRestoreTimer = null;
+
+    function schedulePreloadRestore() {
+        clearTimeout(preloadRestoreTimer);
+        preloadRestoreTimer = setTimeout(restorePreloadRing, PRELOAD_RESTORE_DELAY_MS);
+    }
+
     function restorePreloadRing() {
         window.__alertPreloadRing = undefined;
         trackedTileLayers().forEach((layer) => {
@@ -536,6 +545,7 @@ async function main() {
         if (sceneSwapping || (container.classList.contains('map-transitioning') && !zoomSettleOwned)) return;
         zoomSettleToken++;
         zoomSettleOwned = true;
+        clearTimeout(preloadRestoreTimer);
         window.__alertPreloadRing = 0;
         container.classList.add('map-transitioning');
         clearTimeout(zoomSettleSafety);
@@ -543,7 +553,7 @@ async function main() {
             if (!zoomSettleOwned) return;
             zoomSettleOwned = false;
             map.getContainer().classList.remove('map-transitioning');
-            restorePreloadRing();
+            schedulePreloadRestore();
         }, 9000);
     }
 
@@ -557,7 +567,7 @@ async function main() {
         zoomSettleOwned = false;
         clearTimeout(zoomSettleSafety);
         map.getContainer().classList.remove('map-transitioning');
-        restorePreloadRing();
+        schedulePreloadRestore();
     }
 
     function settleBeforeJump(center, zoom) {
@@ -828,6 +838,8 @@ async function main() {
         });
     }
 
+    if (forceKyivMode && !kyivModeActive) applyKyivMode(true);
+
     const initialRevealToken = sceneToken;
     const awaitingContainer = map.getContainer();
     const dataGate = L.DomUtil.create('div', 'data-gate', awaitingContainer);
@@ -873,10 +885,8 @@ async function main() {
     }
     resolveMapRevealed();
 
-    if (forceKyivMode && !kyivModeActive) applyKyivMode(true);
-
-    const pendingFocus = await window.alertServerLiveMap.consumePendingFocusRegion();
-    if (pendingFocus) focusRegion(pendingFocus);
+    const kyivOnlyFocus = pendingFocus && pendingFocus.length === 1 && pendingFocus[0] === 'м. Київ';
+    if (pendingFocus && !kyivOnlyFocus) focusRegion(pendingFocus);
 }
 
 main();

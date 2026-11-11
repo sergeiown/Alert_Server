@@ -122,6 +122,9 @@ const HISTORY_SOURCE_DISPLAY = {
     'alerts.in.ua': 'alerts.in.ua',
 };
 
+const MIN_LISTED_PROBABILITY = 0.005;
+const MAX_LISTED_ETA_MS = 24 * 60 * 60 * 1000;
+
 function formatProbabilityPercent(fraction, language) {
     const percent = fraction * 100;
     return percent >= 99.5 ? t('forecastProbabilityNearCertain', language) : Math.round(percent).toString();
@@ -184,13 +187,15 @@ function buildForecastText(stats, language, source, extra = {}) {
 
     lines.push('');
     lines.push(`${t('forecastProbabilityToday', language)} (${weekdayName(stats.todayWeekday, language)}):`);
-    stats.typeBreakdown.forEach((entry) => {
+    const likelyTypes = stats.typeBreakdown.filter((entry) => entry.probabilityToday >= MIN_LISTED_PROBABILITY);
+    if (!likelyTypes.length) lines.push(`  - ${t('forecastProbabilityNegligible', language)}`);
+    likelyTypes.forEach((entry) => {
         const typeName = alertTypeName(entry.type, language);
         const etaText =
-            entry.projectedNextMs !== null
+            entry.projectedNextMs !== null && entry.projectedNextMs <= MAX_LISTED_ETA_MS
                 ? `, ${t('forecastEtaLabel', language)} ${formatDuration(entry.projectedNextMs, language)}`
                 : '';
-        const rangeText = entry.gapRange
+        const rangeText = entry.gapRange && entry.projectedNextMs !== null && entry.projectedNextMs <= MAX_LISTED_ETA_MS
             ? ` (${t('forecastRangeLabel', language)} ${formatDuration(entry.gapRange.low, language)} - ${formatDuration(entry.gapRange.high, language)})`
             : '';
         lines.push(`  - ${typeName}: ${t('forecastProbabilityPrefix', language)} ${formatProbabilityPercent(entry.probabilityToday, language)}%${etaText}${rangeText}`);
