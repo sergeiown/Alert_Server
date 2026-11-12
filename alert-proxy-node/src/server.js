@@ -27,14 +27,13 @@ const lib = require('./lib');
 const geoip = require('./geoip');
 const { db } = require('./store');
 const { createFeedbackStore } = require('./feedback');
+const { clientIpOf } = require('./clientIp');
 
 const feedbackStore = createFeedbackStore(db);
 const FEEDBACK_BODY_LIMIT = 16 * 1024;
 
 function getClientIp(req) {
-    const forwarded = req.headers['x-forwarded-for'];
-    if (forwarded) return forwarded.split(',')[0].trim();
-    return req.socket.remoteAddress;
+    return clientIpOf(req);
 }
 
 function normalizeRoute(pathname) {

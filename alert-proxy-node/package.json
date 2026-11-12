@@ -8,7 +8,7 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node --env-file=.env src/server.js",
-    "test": "node scripts/test-forecast-model.js && node scripts/test-merge.js && node scripts/test-webhook-health.js && node scripts/test-webhook-reregister.js && node scripts/test-client-identity.js && node scripts/test-source-guards.js && node scripts/test-feedback.js && node scripts/test-resource-history.js && node scripts/test-users-version.js && node scripts/test-perf-stats.js && node scripts/test-forecast-cache.js && node scripts/test-online.js",
+    "test": "node scripts/test-forecast-model.js && node scripts/test-merge.js && node scripts/test-webhook-health.js && node scripts/test-webhook-reregister.js && node scripts/test-client-identity.js && node scripts/test-source-guards.js && node scripts/test-feedback.js && node scripts/test-resource-history.js && node scripts/test-users-version.js && node scripts/test-perf-stats.js && node scripts/test-forecast-cache.js && node scripts/test-online.js && node scripts/test-client-ip.js",
     "backtest": "node scripts/backtest-forecast.js"
   },
   "dependencies": {

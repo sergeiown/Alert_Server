@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const { WebSocketServer } = require('ws');
+const { clientIpOf } = require('./clientIp');
 const gateway = require('./gateway');
 const neptun = require('./neptun');
 const merge = require('./merge');
@@ -52,8 +53,7 @@ function attachWebSockets(server) {
         const url = new URL(request.url, 'http://localhost');
 
         if (url.pathname === '/public/ws') {
-            const forwardedFor = request.headers['x-forwarded-for'];
-            const publicIp = forwardedFor ? forwardedFor.split(',')[0].trim() : request.socket.remoteAddress;
+            const publicIp = clientIpOf(request);
 
             if (!config.PUBLIC_API_ENABLED || !publicApi.originAllowed(request.headers.origin)) {
                 socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
@@ -77,8 +77,7 @@ function attachWebSockets(server) {
             return;
         }
 
-        const forwarded = request.headers['x-forwarded-for'];
-        const ip = forwarded ? forwarded.split(',')[0].trim() : request.socket.remoteAddress;
+        const ip = clientIpOf(request);
 
         if (!ratelimit.openSocket(ip)) {
             socket.write('HTTP/1.1 429 Too Many Requests\r\n\r\n');
