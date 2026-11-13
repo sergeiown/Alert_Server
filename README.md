@@ -53,7 +53,7 @@ The **Live map** shows everything at once; the **Kyiv** button switches it to a 
   <img src="docs/images/settings-window-en-light.png" alt="settings window">
 </picture>
 
-**Trends** has three tabs: weapon usage (from a public dataset, see [Data sources & credits](#data-sources--credits)), alerts today with a 24-hour dial, and threats seen by Neptun over the last 90 days.
+**Trends** has three tabs: weapon usage (from a public dataset, see [Data sources & credits](#data-sources--credits)), alerts today with a 24-hour dial, and threats seen by Neptun over the last 30 days.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/trends-en-dark.png">
