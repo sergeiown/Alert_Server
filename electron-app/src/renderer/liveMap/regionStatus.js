@@ -24,7 +24,7 @@ import {
 } from './alertedRegionsStore.js';
 import { alertPopupHtml } from './alertPopup.js';
 import { RAION_OBLAST } from './raionOblastMap.js';
-import { RAION_MIN_ZOOM } from './zoomTiers.js';
+import { RAION_MIN_ZOOM, FILL_HIDE_ZOOM } from './zoomTiers.js';
 import { RAION_EN_BY_UK } from './raionLabels.js';
 import { oblastDisplayName, raionDisplayName } from './regionNameUtils.js';
 import { pulseLayerStyle, PULSE_TOTAL_MS } from './alertFillPulse.js';
@@ -228,6 +228,8 @@ const RegionStatusLayer = L.LayerGroup.extend({
         districtNames
     ) {
         const alerted = Boolean(ownStartedAt);
+        const outlineOnly = !key.startsWith('kyivRaion:') && this._map.getZoom() >= FILL_HIDE_ZOOM;
+        if (outlineOnly && !alerted) return;
         const baseMapBorder = !key.startsWith('kyivRaion:') && this._map.getZoom() < RAION_MIN_ZOOM;
         const color = alerted ? shadeFor(ownStartedAt, now, alertLevel) : NEUTRAL_COLOR;
         const fillColor = alerted && hasBothLevels ? `url(#${DUAL_LEVEL_PATTERN_ID})` : color;
@@ -240,7 +242,7 @@ const RegionStatusLayer = L.LayerGroup.extend({
                 weight: (alerted || forceBorder) && !baseMapBorder ? 1 : 0,
                 opacity: alerted ? ALERTED_BORDER_OPACITY : forceBorder ? (isDark ? 0.6 : 0.35) : 0,
                 fillColor,
-                fillOpacity: alerted ? ALERTED_FILL_OPACITY : NEUTRAL_FILL_OPACITY,
+                fillOpacity: outlineOnly ? 0 : alerted ? ALERTED_FILL_OPACITY : NEUTRAL_FILL_OPACITY,
             },
             {
                 displayName,

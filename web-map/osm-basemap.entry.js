@@ -329,7 +329,10 @@ function sharedSource(url) {
 
 const PRELOAD_RING_TILES = 1;
 
+const MAX_LABELED_TILES = 4096;
+
 function withPreload(layer) {
+    if (layer.labelers) layer.labelers.maxLabeledTiles = MAX_LABELED_TILES;
     const original = layer._getTiledPixelBounds;
     if (typeof original !== 'function' || !window.L) return layer;
     layer.options.keepBuffer = Math.max(layer.options.keepBuffer || 2, PRELOAD_RING_TILES + 2);

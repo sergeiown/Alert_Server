@@ -50,6 +50,7 @@ const KYIV_BOUNDS = computeKyivBounds();
 
 const KYIV_TILES_URL = 'https://alert-proxy-ua.duckdns.org/live/tiles/kyiv.pmtiles';
 const DETAIL_TILES_URL = 'https://alert-proxy-ua.duckdns.org/live/tiles/ukraine-lite.pmtiles';
+const PLACES_TILES_URL = 'https://alert-proxy-ua.duckdns.org/live/tiles/ukraine-places.pmtiles';
 const SATELLITE_TILES_URL = 'https://alert-proxy-ua.duckdns.org/live/tiles/landcover.pmtiles';
 const RELIEF_TILES_URL = 'https://alert-proxy-ua.duckdns.org/live/tiles/hillshade.pmtiles';
 const NAMES_BASE_URL = 'https://alert-proxy-ua.duckdns.org/live/tiles/';
@@ -135,6 +136,37 @@ async function main() {
         renderer: L.svg({ padding: 1 }),
     });
 
+    const USER_ZOOM_MIN_INTERVAL_MS = 280;
+    let lastUserZoomAt = 0;
+    const allowUserZoom = () => {
+        const now = performance.now();
+        if (now - lastUserZoomAt < USER_ZOOM_MIN_INTERVAL_MS) return false;
+        lastUserZoomAt = now;
+        window.__alertUserZoomAt = now;
+        return true;
+    };
+    const markTouchZoom = (event) => {
+        if (event.touches && event.touches.length > 1) window.__alertUserZoomAt = performance.now();
+    };
+    map.getContainer().addEventListener('touchstart', markTouchZoom, { passive: true });
+    map.getContainer().addEventListener('touchmove', markTouchZoom, { passive: true });
+    const zoomIn = map.zoomIn.bind(map);
+    const zoomOut = map.zoomOut.bind(map);
+    map.zoomIn = (delta, options) => (allowUserZoom() ? zoomIn(delta, options) : map);
+    map.zoomOut = (delta, options) => (allowUserZoom() ? zoomOut(delta, options) : map);
+    const performWheelZoom = map.scrollWheelZoom._performZoom;
+    map.scrollWheelZoom._performZoom = function () {
+        if (allowUserZoom()) performWheelZoom.call(this);
+        else this._delta = 0;
+    };
+    const doubleClickZoom = map.doubleClickZoom;
+    const onDoubleClick = doubleClickZoom._onDoubleClick;
+    doubleClickZoom.disable();
+    doubleClickZoom._onDoubleClick = function (event) {
+        if (allowUserZoom()) onDoubleClick.call(this, event);
+    };
+    doubleClickZoom.enable();
+
     const floatingPanes = ['popupPane', 'tooltipPane'].map((name) => map.getPane(name));
     floatingPanes.forEach((pane) => map.getContainer().appendChild(pane));
     const syncFloatingPanes = () => floatingPanes.forEach((pane) => L.DomUtil.setPosition(pane, map._getMapPanePos()));
@@ -212,7 +244,7 @@ async function main() {
     const detailLabelsLayer =
         SATELLITE_BASEMAP && detailTilesUrl
             ? window.alertOsmBasemap.create({
-                  url: detailTilesUrl,
+                  url: window.alertServerLiveMap.placesTilesUrl || PLACES_TILES_URL,
                   dark: isDarkMap,
                   lang: kyivLanguage,
                   overlay: true,
@@ -342,7 +374,7 @@ async function main() {
     const OCCUPIED_WAIT_MS = 15000;
     const DATA_LOAD_MAX_FAILURES = 3;
     const KYIV_SCENE_FADE_MS = 450;
-    const PRELOAD_RESTORE_DELAY_MS = 700;
+    const PRELOAD_RESTORE_DELAY_MS = 1500;
     const TILE_LOAD_TIMEOUT_MS = 5000;
     const RESIZE_SETTLE_POLL_MS = 50;
     const RESIZE_SETTLE_STABLE_TICKS = 3;

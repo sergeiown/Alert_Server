@@ -514,6 +514,10 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
     map.on('click', collapseExpanded);
     map.on('zoomstart', () => {
         expanded = null;
+        if (performance.now() - (window.__alertUserZoomAt || -1e9) < 700) {
+            map.closePopup();
+            clearSelectedThreat();
+        }
     });
 
     map.on('tooltipopen', (e) => {
@@ -1333,6 +1337,7 @@ function startNeptunLayer(map, strings, language, onCountChange, readyPromise) {
             const marker = L.marker(latlng, { icon: threatIcon(threat, sizeMultiplier, showCount), pane: THREATS_PANE });
             if (selectHandler) {
                 marker.on('click', () => {
+                    window.__alertUserZoomAt = 0;
                     selectedThreatId = threat.id;
                     if (expanded && expanded.ids.has(threat.id)) {
                         selectHandler(tooltipContent(threat, strings, isEnglish), marker._truePos);

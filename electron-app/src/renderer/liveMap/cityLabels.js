@@ -4,6 +4,7 @@
 import { CITY_BORDERS } from './cityBorders.js';
 import { shadeFor } from './regionStatus.js';
 import { pulseLayerStyle } from './alertFillPulse.js';
+import { FILL_HIDE_ZOOM } from './zoomTiers.js';
 import {
     subscribe as subscribeAlertedRegions,
     getOblastStartedAt,
@@ -100,7 +101,7 @@ function resolveCityAlert(city) {
     return { startedAt: null, alertTypeName: null, alertLevel: null, hasBothLevels: false, threats: null, fromOblast: false };
 }
 
-function borderStyle(neutralColor, alert) {
+function borderStyle(neutralColor, alert, hideFill = false) {
     const alerted = Boolean(alert.startedAt);
     const fillColor = alerted ? shadeFor(alert.startedAt, Date.now(), alert.alertLevel) : neutralColor;
     return {
@@ -109,7 +110,7 @@ function borderStyle(neutralColor, alert) {
         weight: 1.5,
         opacity: 0.7,
         fillColor,
-        fillOpacity: alerted ? 0.35 : 0,
+        fillOpacity: alerted && !hideFill ? 0.35 : 0,
     };
 }
 
@@ -154,14 +155,39 @@ function buildCityGroup(strings, language) {
         if (!border) marker.bindPopup(popupContent);
     });
 
+    let zoomMap = null;
+    const fillHidden = () => Boolean(zoomMap) && zoomMap.getZoom() >= FILL_HIDE_ZOOM;
+
     subscribeAlertedRegions(() => {
         borderPolygons.forEach((entry) => {
-            const style = borderStyle(color, resolveCityAlert(entry.city));
+            const style = borderStyle(color, resolveCityAlert(entry.city), fillHidden());
             const styleKey = JSON.stringify(style);
             if (styleKey === entry.styleKey) return;
             entry.styleKey = styleKey;
             pulseLayerStyle(entry.polygon, entry.pulse, style);
         });
+    });
+
+    const syncFillWithZoom = () => {
+        borderPolygons.forEach((entry) => {
+            const style = borderStyle(color, resolveCityAlert(entry.city), fillHidden());
+            const styleKey = JSON.stringify(style);
+            if (styleKey === entry.styleKey) return;
+            entry.styleKey = styleKey;
+            if (entry.pulse.list) entry.pulse.list.forEach(clearTimeout);
+            entry.polygon.setStyle(style);
+        });
+    };
+
+    layer.on('add', () => {
+        zoomMap = layer._map || null;
+        if (!zoomMap) return;
+        zoomMap.on('zoomend', syncFillWithZoom);
+        syncFillWithZoom();
+    });
+    layer.on('remove', () => {
+        if (zoomMap) zoomMap.off('zoomend', syncFillWithZoom);
+        zoomMap = null;
     });
 
     return layer;
