@@ -235,7 +235,7 @@ async function main() {
               attribution: '<span class="attr-item"><a href="#" id="osmDetailAttribution">© OpenStreetMap contributors</a></span>',
               overlay: SATELLITE_BASEMAP,
               part: SATELLITE_BASEMAP ? 'paint' : 'all',
-              labels: window.matchMedia('(pointer: coarse)').matches ? 'places-major' : 'places',
+              labels: 'places',
               boundaries: false,
               maxDataZoom: 12,
           })
@@ -250,7 +250,7 @@ async function main() {
                   overlay: true,
                   part: 'labels',
                   pane: 'osmLabelsPane',
-                  labels: window.matchMedia('(pointer: coarse)').matches ? 'places-major' : 'places',
+                  labels: 'places',
                   boundaries: false,
                   maxDataZoom: 12,
               })

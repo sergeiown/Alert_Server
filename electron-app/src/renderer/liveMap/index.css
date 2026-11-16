@@ -1027,6 +1027,12 @@ body {
     outline: none;
 }
 
+@media (pointer: coarse) {
+    .map-search-input {
+        font-size: 16px;
+    }
+}
+
 .map-search-input::placeholder {
     color: var(--map-chrome-text);
     opacity: 0.6;

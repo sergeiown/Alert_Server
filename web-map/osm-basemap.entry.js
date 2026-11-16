@@ -327,7 +327,9 @@ function sharedSource(url) {
     return source;
 }
 
-const PRELOAD_RING_TILES = 1;
+const COARSE_POINTER = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+const TILE_DPR = COARSE_POINTER ? Math.min(window.devicePixelRatio || 1, 2) : window.devicePixelRatio || 1;
+const PRELOAD_RING_TILES = COARSE_POINTER ? 0 : 1;
 
 const MAX_LABELED_TILES = 4096;
 
@@ -335,7 +337,7 @@ function withPreload(layer) {
     if (layer.labelers) layer.labelers.maxLabeledTiles = MAX_LABELED_TILES;
     const original = layer._getTiledPixelBounds;
     if (typeof original !== 'function' || !window.L) return layer;
-    layer.options.keepBuffer = Math.max(layer.options.keepBuffer || 2, PRELOAD_RING_TILES + 2);
+    layer.options.keepBuffer = COARSE_POINTER ? 1 : Math.max(layer.options.keepBuffer || 2, PRELOAD_RING_TILES + 2);
     layer._getTiledPixelBounds = function (center) {
         const bounds = original.call(this, center);
         const ring = window.__alertPreloadRing === undefined ? PRELOAD_RING_TILES : window.__alertPreloadRing;
@@ -352,7 +354,7 @@ function withAttribution(layer, attribution) {
 
 function createSatellite({ url, dark, attribution, maxDataZoom = 10 }) {
     const palette = dark ? SATELLITE_DARK : SATELLITE_LIGHT;
-    return withAttribution(leafletLayer({
+    return withAttribution(leafletLayer({ devicePixelRatio: TILE_DPR,
         url,
         paintRules: [{ dataLayer: 'landcover', symbolizer: new PolygonSymbolizer({ fill: (zoom, feature) => palette[feature.props.kind] || palette.sea }) }],
         labelRules: [],
@@ -366,7 +368,7 @@ function createRelief({ url, dark, attribution, maxDataZoom = 10 }) {
     const lightOpacity = dark ? 0.06 : 0.3;
     const shadeOpacity = dark ? 0.22 : 0.08;
     return withAttribution(
-        leafletLayer({
+        leafletLayer({ devicePixelRatio: TILE_DPR,
             url,
             paintRules: [
                 { dataLayer: 'hillshade-vectors', filter: (zoom, feature) => feature.props.shade === 'light', symbolizer: new PolygonSymbolizer({ fill: '#ffffff', opacity: lightOpacity }) },
@@ -383,7 +385,7 @@ function createRelief({ url, dark, attribution, maxDataZoom = 10 }) {
 function create({ url, dark, lang, attribution, labels = true, boundaries = true, maxDataZoom = 15, bounds, overlay = false, satellite = false, labelsAllZooms = false, part = 'all', pane }) {
     const base = dark ? DARK : LIGHT;
     const flavor = satellite ? satelliteFlavor(base, dark) : overlay ? overlayFlavor(base) : base;
-    return withAttribution(leafletLayer({
+    return withAttribution(leafletLayer({ devicePixelRatio: TILE_DPR,
         url: sharedSource(url),
         paintRules: part === 'labels' ? [] : paintRules(flavor).filter((rule) => boundaries || rule.dataLayer !== 'boundaries'),
         labelRules: part === 'paint' ? [] : buildLabelRules(flavor, lang, labels, labelsAllZooms),
