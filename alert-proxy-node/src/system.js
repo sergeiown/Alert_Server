@@ -6,6 +6,7 @@ const fs = require('node:fs');
 const { DATA_DIR } = require('./config');
 const { db } = require('./store');
 const { createResourceHistory, parseNetDev, SAMPLE_INTERVAL_MS } = require('./resourceHistory');
+const { readResources, resourceWarnings } = require('./resources');
 
 function cpuUsagePercentSample() {
     const cpus = os.cpus();
@@ -105,6 +106,8 @@ function getSystemMetrics() {
     const totalMem = os.totalmem();
     const freeMem = os.freemem();
     const usedMem = totalMem - freeMem;
+    const resources = readResources();
+    const loadAvg = os.loadavg();
 
     return {
         cpuLoadAvg: os.loadavg(),
@@ -123,6 +126,8 @@ function getSystemMetrics() {
         nodeVersion: process.version,
         platform: `${os.platform()}/${os.arch()}`,
         idleRisk: resourceHistory.getIdleRisk(),
+        resources,
+        resourceWarnings: resourceWarnings(resources, { loadAvg5: loadAvg[1], cpuCount: os.cpus().length }),
     };
 }
 
