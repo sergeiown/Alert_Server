@@ -18,8 +18,14 @@ const merge = require('./merge');
 
 const TICK_INTERVAL_MS = 5 * 60 * 1000;
 
+function causeOf(err) {
+    const cause = err && err.cause;
+    if (!cause) return '';
+    return ` | cause: ${cause.code || cause.name}${cause.message ? `: ${cause.message}` : ''}`;
+}
+
 function logError(label, err) {
-    console.error(`[job:${label}]`, err && err.stack ? err.stack : err);
+    console.error(`[job:${label}]`, `${err && err.stack ? err.stack : err}${causeOf(err)}`);
 }
 
 async function tick() {
